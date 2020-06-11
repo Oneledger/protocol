@@ -4,6 +4,7 @@ import (
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
+
 	"github.com/pkg/errors"
 )
 
@@ -13,9 +14,11 @@ type ProposalStore struct {
 
 	prefix []byte //Current Store Prefix
 
-	prefixActive []byte
-	prefixPassed []byte
-	prefixFailed []byte
+	prefixActive         []byte
+	prefixPassed         []byte
+	prefixFailed         []byte
+	prefixFinalized      []byte
+	prefixFinalizeFailed []byte
 
 	proposalOptions *ProposalOptionSet
 }
@@ -51,7 +54,9 @@ func (ps *ProposalStore) Exists(key ProposalID) bool {
 	active := append(ps.prefixActive, key...)
 	passed := append(ps.prefixPassed, key...)
 	failed := append(ps.prefixFailed, key...)
-	return ps.state.Exists(active) || ps.state.Exists(passed) || ps.state.Exists(failed)
+	finalized := append(ps.prefixFinalized, key...)
+	finalizeFailed := append(ps.prefixFinalizeFailed, key...)
+	return ps.state.Exists(active) || ps.state.Exists(passed) || ps.state.Exists(failed) || ps.state.Exists(finalized) || ps.state.Exists(finalizeFailed)
 }
 
 func (ps *ProposalStore) Delete(key ProposalID) (bool, error) {
@@ -125,6 +130,11 @@ func (ps *ProposalStore) WithPrefixType(prefixType ProposalState) *ProposalStore
 		ps.prefix = ps.prefixPassed
 	case ProposalStateFailed:
 		ps.prefix = ps.prefixFailed
+	case ProposalStateFinalized:
+		ps.prefix = ps.prefixFinalized
+	case ProposalStateFinalizeFailed:
+		ps.prefix = ps.prefixFinalizeFailed
+
 	}
 	return ps
 }
@@ -145,7 +155,15 @@ func (ps *ProposalStore) QueryAllStores(key ProposalID) (*Proposal, ProposalStat
 	if err == nil {
 		return proposal, ProposalStateFailed, nil
 	}
-	return nil, ProposalStateInvalid, errors.Wrap(err, errorGettingRecord)
+	proposal, err = ps.WithPrefixType(ProposalStateFinalized).Get(key)
+	if err == nil {
+		return proposal, ProposalStateFinalized, nil
+	}
+	proposal, err = ps.WithPrefixType(ProposalStateFinalizeFailed).Get(key)
+	if err == nil {
+		return proposal, ProposalStateFinalizeFailed, nil
+	}
+	return nil, ProposalStateError, errors.Wrap(err, errorGettingRecord)
 }
 
 // Filter proposals by Proposer and Type in a specified store
@@ -187,14 +205,16 @@ func (ps *ProposalStore) GetOptionsByType(typ ProposalType) *ProposalOption {
 	return nil
 }
 
-func NewProposalStore(prefixActive string, prefixPassed string, prefixFailed string, state *storage.State) *ProposalStore {
+func NewProposalStore(prefixActive string, prefixPassed string, prefixFailed string, prefixFinalized string, prefixFinalizeFailed string, state *storage.State) *ProposalStore {
 	return &ProposalStore{
-		state:           state,
-		szlr:            serialize.GetSerializer(serialize.PERSISTENT),
-		prefix:          []byte(prefixActive),
-		prefixActive:    []byte(prefixActive),
-		prefixPassed:    []byte(prefixPassed),
-		prefixFailed:    []byte(prefixFailed),
-		proposalOptions: &ProposalOptionSet{},
+		state:                state,
+		szlr:                 serialize.GetSerializer(serialize.PERSISTENT),
+		prefix:               []byte(prefixActive),
+		prefixActive:         []byte(prefixActive),
+		prefixPassed:         []byte(prefixPassed),
+		prefixFailed:         []byte(prefixFailed),
+		prefixFinalized:      []byte(prefixFinalized),
+		prefixFinalizeFailed: []byte(prefixFinalizeFailed),
+		proposalOptions:      &ProposalOptionSet{},
 	}
 }

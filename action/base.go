@@ -2,13 +2,15 @@ package action
 
 import (
 	"encoding/hex"
+
 	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/kv"
+
+	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
-	"github.com/pkg/errors"
 )
 
 type MsgData []byte

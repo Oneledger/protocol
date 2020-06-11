@@ -3,10 +3,10 @@ package app
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/Oneledger/protocol/data/governance"
-
 	"math"
 	"runtime/debug"
+
+	"github.com/Oneledger/protocol/data/governance"
 
 	"github.com/pkg/errors"
 
@@ -25,11 +25,11 @@ import (
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/serialize"
+	codes "github.com/Oneledger/protocol/status_codes"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/Oneledger/protocol/utils"
 	"github.com/Oneledger/protocol/utils/transition"
 	"github.com/Oneledger/protocol/version"
-	codes "github.com/Oneledger/protocol/status_codes"
 )
 
 // The following set of functions will be passed to the abciController
@@ -432,6 +432,23 @@ func updateProposals(proposalMaster *governance.ProposalMasterStore, jobStore *j
 				}
 			}
 		}
+
+		return false
+	})
+
+	passedProposals := proposals.WithPrefixType(governance.ProposalStatePassed)
+	passedProposals.Iterate(func(id governance.ProposalID, proposal *governance.Proposal) bool {
+		if proposal.Status == governance.ProposalStatusCompleted {
+			finalizeJob := event.NewGovFinalizeProposalJob(proposal.ProposalID, proposal.Status)
+
+			exists, _ := jobStore.WithChain(chain.ONELEDGER).JobExists(finalizeJob.JobID)
+			if !exists {
+				err := jobStore.WithChain(chain.ONELEDGER).SaveJob(finalizeJob)
+				if err != nil {
+					return true
+				}
+			}
+		}
 		return false
 	})
 }
@@ -454,7 +471,7 @@ func marshalLog(ok bool, response action.Response, feeResponse action.Response) 
 			// been done(will do it later)
 			errorObj = codes.ProtocolError{
 				Code: codes.GeneralErr,
-				Msg: response.Log,
+				Msg:  response.Log,
 			}
 		}
 

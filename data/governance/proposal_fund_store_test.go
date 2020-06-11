@@ -17,10 +17,8 @@ var (
 	cs       *storage.State
 	address  keys.Address
 	address2 keys.Address
-	address3 keys.Address
 	ID1      ProposalID
 	ID2      ProposalID
-	ID3      ProposalID
 )
 
 func init() {
@@ -40,15 +38,12 @@ func generateAddresses() {
 	pub2, _, _ := keys.NewKeyPairFromTendermint()
 	h2, _ := pub2.GetHandler()
 	address2 = h2.Address()
-	pub3, _, _ := keys.NewKeyPairFromTendermint()
-	h3, _ := pub3.GetHandler()
-	address3 = h3.Address()
+
 }
 
 func generateIDs() {
 	ID1 = generateProposalID("Test")
 	ID2 = generateProposalID("Test1")
-	ID3 = generateProposalID("Test2")
 
 }
 func TestProposalFundStore_AddFunds(t *testing.T) {
@@ -122,9 +117,19 @@ func TestProposalFundStore_GetProposalForFunder(t *testing.T) {
 	assert.EqualValues(t, 2, len(funds), "")
 }
 
-func TestProposalFund_getCurrentFunds(t *testing.T) {
+func TestGetCurrentFunds(t *testing.T) {
 	//fmt.Println("Getting Total fund for ProposalID")
 	currentFunds := GetCurrentFunds(ID1, store)
 	funds := currentFunds.BigInt().Int64()
 	assert.EqualValues(t, int64(1000), funds, "")
+}
+
+func TestDeleteAllFunds(t *testing.T) {
+	err := DeleteAllFunds(ID1, store)
+	if err != nil {
+		fmt.Println("Error Deleting all funds", err)
+	}
+	currentFunds := GetCurrentFunds(ID1, store)
+	funds := currentFunds.BigInt().Int64()
+	assert.EqualValues(t, int64(0), funds, "")
 }
