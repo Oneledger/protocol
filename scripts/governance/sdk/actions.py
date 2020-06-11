@@ -20,6 +20,7 @@ ProposalOutcomeInsufficientVotes  = 0x28
 ProposalOutcomeCancelled          = 0x29
 ProposalOutcomeCompleted          = 0x30
 
+
 class bcolors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -30,10 +31,12 @@ class bcolors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
+
 class Proposal:
-    def __init__(self, pid, pType, description, proposer, init_fund):
+    def __init__(self, pid, pType, description, headline, proposer, init_fund):
         self.pid = pid
         self.pty = pType
+        self.headline = headline
         self.des = description
         self.proposer = proposer
         self.init_fund = init_fund
@@ -41,6 +44,7 @@ class Proposal:
     def _create_proposal(self):
         req = {
             "proposal_id": self.pid,
+            "headline": self.headline,
             "description": self.des,
             "proposer": self.proposer,
             "proposal_type": self.pty,

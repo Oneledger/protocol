@@ -11,7 +11,7 @@ _each_funding = (int("5") * 10 ** 9)
 
 
 def expired_votes():
-    _prop = Proposal(_pid1, "general", "proposal for vote expired", _proposer, _initial_funding)
+    _prop = Proposal(_pid1, "general", "proposal for vote expired", "proposal headline", _proposer, _initial_funding)
 
     # create proposal
     _prop.send_create()
@@ -35,7 +35,7 @@ def expired_votes():
 
 
 def completed_votes():
-    _prop = Proposal(_pid, "general", "proposal for vote", _proposer, _initial_funding)
+    _prop = Proposal(_pid, "general", "proposal for vote", "proposal headline", _proposer, _initial_funding)
 
     # create proposal
     _prop.send_create()

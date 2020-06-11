@@ -10,6 +10,7 @@ import (
 type CreateProposalRequest struct {
 	ProposalID     string        `json:"proposal_id"`
 	ProposalType   string        `json:"proposal_type"`
+	Headline       string        `json:"headline"`
 	Description    string        `json:"description"`
 	Proposer       keys.Address  `json:"proposer"`
 	InitialFunding action.Amount `json:"initial_funding"`

@@ -23,6 +23,7 @@ func (s *Service) CreateProposal(args client.CreateProposalRequest, reply *clien
 		ProposalID:     governance.ProposalID(args.ProposalID),
 		ProposalType:   proposalType,
 		Description:    args.Description,
+		Headline:       args.Headline,
 		Proposer:       args.Proposer,
 		InitialFunding: args.InitialFunding,
 	}

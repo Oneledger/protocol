@@ -94,8 +94,8 @@ func init() {
 
 		fundingGoal := balance.NewAmountFromBigInt(opt.FundingGoal.BigInt())
 
-		proposals = append(proposals, NewProposal(ProposalID(time.Now().String()), ProposalType(k), "Test Proposal", proposer,
-			opt.FundingDeadline, fundingGoal, opt.VotingDeadline, opt.PassPercentage))
+		proposals = append(proposals, NewProposal(ProposalID(time.Now().String()), ProposalType(k), "Test Proposal",
+			"Test Headline", proposer, opt.FundingDeadline, fundingGoal, opt.VotingDeadline, opt.PassPercentage))
 	}
 
 	//Create Test DB

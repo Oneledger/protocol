@@ -13,7 +13,7 @@ _funding_goal_general = (int("10") * 10 ** 9)
 
 def gen_prop():
     global _pid
-    prop = Proposal(str(_pid), "general", "proposal for fund", _proposer, _initial_funding)
+    prop = Proposal(str(_pid), "general", "proposal for fund", "proposal headline", _proposer, _initial_funding)
     _pid += 1
     return prop
 
