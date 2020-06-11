@@ -16,12 +16,6 @@ pipeline {
             }
         }
 
-        stage('unit testing') {
-            steps {
-                sh 'make utest'
-            }
-        }
-
 
         stage('validator test') {
             steps {
