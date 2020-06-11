@@ -1,6 +1,8 @@
 package governance
 
 import (
+	"strings"
+
 	"github.com/pkg/errors"
 )
 
@@ -28,9 +30,23 @@ func (id ProposalID) Err() error {
 	return nil
 }
 
+func NewProposalState(prefix string) ProposalState {
+	prefix = strings.ToLower(prefix)
+	switch prefix {
+	case "active":
+		return ProposalStateActive
+	case "passed":
+		return ProposalStatePassed
+	case "failed":
+		return ProposalStateFailed
+	default:
+		return ProposalStateInvalid
+	}
+}
+
 func (state ProposalState) String() string {
 	switch state {
-	case ProposalStateError:
+	case ProposalStateInvalid:
 		return "Error"
 	case ProposalStateActive:
 		return "Active"
@@ -40,6 +56,77 @@ func (state ProposalState) String() string {
 		return "Failed"
 	default:
 		return "Invalid state"
+	}
+}
+
+func NewProposalType(propType string) ProposalType {
+	propType = strings.ToLower(propType)
+	switch propType {
+	case "codechange":
+		return ProposalTypeCodeChange
+	case "configupdate":
+		return ProposalTypeConfigUpdate
+	case "general":
+		return ProposalTypeGeneral
+	default:
+		return ProposalTypeInvalid
+	}
+}
+
+func (propType ProposalType) String() string {
+	switch propType {
+	case ProposalTypeCodeChange:
+		return "Code change"
+	case ProposalTypeConfigUpdate:
+		return "Config update"
+	case ProposalTypeGeneral:
+		return "General"
+	default:
+		return "Invalid type"
+	}
+}
+
+func (status ProposalStatus) String() string {
+	switch status {
+	case ProposalStatusFunding:
+		return "Funding"
+	case ProposalStatusVoting:
+		return "Voting"
+	case ProposalStatusCompleted:
+		return "Completed"
+	default:
+		return "Invalid status"
+	}
+}
+
+func (outCome ProposalOutcome) String() string {
+	switch outCome {
+	case ProposalOutcomeInProgress:
+		return "In progress"
+	case ProposalOutcomeInsufficientFunds:
+		return "Failed [insufficient funds]"
+	case ProposalOutcomeInsufficientVotes:
+		return "Failed [insufficient votes]"
+	case ProposalOutcomeCancelled:
+		return "Failed [cancelled]"
+	case ProposalOutcomeCompleted:
+		return "Passed"
+	default:
+		return "Invalid outcome"
+	}
+}
+
+func NewVoteOpinion(opin string) VoteOpinion {
+	opin = strings.ToUpper(opin)
+	switch opin {
+	case "YES":
+		return OPIN_POSITIVE
+	case "NO":
+		return OPIN_NEGATIVE
+	case "GIVEUP":
+		return OPIN_GIVEUP
+	default:
+		return OPIN_UNKNOWN
 	}
 }
 
@@ -73,7 +160,7 @@ func (opinion VoteResult) String() string {
 	case VOTE_RESULT_FAILED:
 		return "Failed"
 	case VOTE_RESULT_TBD:
-		return "To Be Determined"
+		return "To be determined"
 	default:
 		return "Invalid vote result"
 	}

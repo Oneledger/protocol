@@ -3,16 +3,22 @@ import sys
 import hashlib
 from rpc_call import *
 
+#Proposal Types
+ProposalTypeConfigUpdate = 0x20
+ProposalTypeCodeChange   = 0x21
+ProposalTypeGeneral      = 0x22
+
 #Proposal Status
 ProposalStatusFunding    = 0x23
 ProposalStatusVoting     = 0x24
 ProposalStatusCompleted  = 0x25
 
-#Proposal States
-ProposalStateError   = 0xEE
-ProposalStateActive  = 0x31
-ProposalStatePassed  = 0x32
-ProposalStateFailed  = 0x33
+#Proposal Outcome
+ProposalOutcomeInProgress         = 0x26
+ProposalOutcomeInsufficientFunds  = 0x27
+ProposalOutcomeInsufficientVotes  = 0x28
+ProposalOutcomeCancelled          = 0x29
+ProposalOutcomeCompleted          = 0x30
 
 
 class bcolors:
@@ -303,24 +309,24 @@ def broadcast_sync(raw_tx, signature, pub_key):
     })
     return resp["result"]
 
-def query_proposals(prefix):
+def query_proposals(prefix, proposer="", proposal_type=""):
     req = {
-        "proposal_id": "",
         "state": prefix,
+        "proposer": proposer,
+        "proposal_type": proposal_type,
     }
 
     resp = rpc_call('query.ListProposals', req)
-    print json.dumps(resp, indent=4)
-    return resp["result"]["proposals"]
+    result = resp["result"]
+    return result["proposal_stats"]
 
 def query_proposal(proposal_id):
     req = {
         "proposal_id": proposal_id,
-        "state": "",
     }
     resp = rpc_call('query.ListProposal', req)
-    print json.dumps(resp, indent=4)
-    return resp["result"]["proposals"][0], resp["result"]["state"]
+    stat = resp["result"]["proposal_stats"][0]
+    return stat["proposal"], stat["funds"]
 
 def query_balance(address):
     req = {"address": address}

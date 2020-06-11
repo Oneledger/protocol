@@ -15,10 +15,10 @@ type ProposalVote struct {
 }
 
 type VoteStatus struct {
-	Result   VoteResult
-	PowerYes int64
-	PowerNo  int64
-	PowerAll int64
+	Result   VoteResult `json:"result"`
+	PowerYes int64      `json:"powerYes"`
+	PowerNo  int64      `json:"powerNo"`
+	PowerAll int64      `json:"powerAll"`
 }
 
 func NewProposalVote(validator keys.Address, opinion VoteOpinion, power int64) *ProposalVote {

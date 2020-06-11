@@ -49,5 +49,5 @@ if __name__ == "__main__":
     if len(failedList) != 0:
         sys.exit(-1)
 
-    print "#### Test create proposals succeed: ####"
+    print bcolors.OKGREEN + "#### Test create proposals succeed" + bcolors.ENDC
     print ""
