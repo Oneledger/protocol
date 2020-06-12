@@ -15,9 +15,9 @@ import (
 var _ action.Msg = &CancelProposal{}
 
 type CancelProposal struct {
-	ProposalId gov.ProposalID	`json:"proposalId"`
-	Proposer   keys.Address		`json:"proposerAddress"`
-	Reason     string			`json:"cancelReason"`
+	ProposalId gov.ProposalID `json:"proposalId"`
+	Proposer   keys.Address   `json:"proposerAddress"`
+	Reason     string         `json:"cancelReason"`
 }
 
 func (cp CancelProposal) Signers() []action.Address {
@@ -102,7 +102,7 @@ func (c cancelProposalTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bo
 }
 
 func (c cancelProposalTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
-	return action.BasicFeeHandling(ctx, signedTx, start, size, 2)
+	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
 
 func (c cancelProposalTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
@@ -166,7 +166,7 @@ func runCancel(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	// Delete proposal in ACTIVE store
 	ok, err := pms.Proposal.WithPrefixType(gov.ProposalStateActive).Delete(cc.ProposalId)
 	if err != nil || !ok {
-		panic(fmt.Sprintf("cancel proposal failed, id= %v, failed to delete proposal from ACTIVE store", cc.ProposalId))
+		return false, action.Response{Log: gov.ErrDeletingProposalFromActiveStore.Marshal()}
 	}
 
 	return true, action.Response{Events: action.GetEvent(cc.Tags(), "cancel_proposal_success")}
