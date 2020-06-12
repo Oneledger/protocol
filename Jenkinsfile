@@ -27,6 +27,11 @@ pipeline {
                 }
             }
         }
+        stage('coverage test') {
+            steps {
+                 sh 'make coverage'
+            }
+        }
 
        
         stage('validator test') {
