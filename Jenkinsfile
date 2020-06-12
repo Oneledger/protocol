@@ -15,6 +15,18 @@ pipeline {
                 sh 'make install_c'
             }
         }
+        stage('unit testing') {
+            steps {
+                script {
+                    try {
+                        sh 'make utest'
+                    } catch (e) {
+                        unstable('Unit testing stage failed!')
+                        sh 'exit 0'
+                    }
+                }
+            }
+        }
 
        
         stage('validator test') {
@@ -23,9 +35,16 @@ pipeline {
             }
         }
         
-        stage('ons test') {
+       stage('ons testing') {
             steps {
-                 sh 'make onstest'
+                script {
+                    try {
+                        sh 'make onstest'
+                    } catch (e) {
+                        unstable('onstesting stage failed!')
+                        sh 'exit 0'
+                    }
+                }
             }
         }
         
