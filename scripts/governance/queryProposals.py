@@ -44,7 +44,8 @@ def create_some_proposals():
     vote_proposal(prop_1.pid, "YES", url_0, addr_list[0])
     vote_proposal(prop_1.pid, "YES", url_1, addr_list[1])
     vote_proposal(prop_1.pid, "YES", url_2, addr_list[2])
-    result_by_id[prop_1.pid] = (ProposalTypeCodeChange, ProposalOutcomeCompleted, ProposalStatusCompleted, _total_funding)
+    # Passed proposal's fund drops to 0 due to fund distribution
+    result_by_id[prop_1.pid] = (ProposalTypeCodeChange, ProposalOutcomeCompleted, ProposalStatusCompleted, 0)
     result_by_proposer[_proposer_1].append(prop_1.pid)
     result_by_type[ProposalTypeCodeChange].append(prop_1.pid)
 
