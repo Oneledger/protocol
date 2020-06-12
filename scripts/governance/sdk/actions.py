@@ -4,6 +4,7 @@ import sys
 from rpc_call import *
 
 #Proposal Types
+ProposalTypeInvalid      = 0xEE
 ProposalTypeConfigUpdate = 0x20
 ProposalTypeCodeChange   = 0x21
 ProposalTypeGeneral      = 0x22
@@ -20,6 +21,11 @@ ProposalOutcomeInsufficientVotes  = 0x28
 ProposalOutcomeCancelled          = 0x29
 ProposalOutcomeCompleted          = 0x30
 
+#Proposal States
+ProposalStateInvalid = 0xEE
+ProposalStateActive  = 0x31
+ProposalStatePassed  = 0x32
+ProposalStateFailed  = 0x33
 
 class bcolors:
     HEADER = '\033[95m'
@@ -346,16 +352,15 @@ def broadcast_sync(raw_tx, signature, pub_key):
     })
     return resp["result"]
 
-def query_proposals(prefix, proposer="", proposal_type=""):
+def query_proposals(prefix, proposer="", proposalType=ProposalTypeInvalid):
     req = {
         "state": prefix,
         "proposer": proposer,
-        "proposalType": proposal_type,
+        "proposalType": proposalType,
     }
 
     resp = rpc_call('query.ListProposals', req)
     result = resp["result"]
-    print json.dumps(result, indent=4)
     return result["proposalStats"]
 
 def query_proposal(proposal_id):
@@ -363,9 +368,7 @@ def query_proposal(proposal_id):
         "proposalId": proposal_id,
     }
     resp = rpc_call('query.ListProposal', req)
-
     stat = resp["result"]["proposalStats"][0]
-    print json.dumps(stat, indent=4)
     return stat["proposal"], stat["funds"]
 
 def query_balance(address):

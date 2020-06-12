@@ -23,9 +23,9 @@ type ListProposalRequest struct {
 }
 
 type ListProposalsRequest struct {
-	State        string       `json:"state"`
-	Proposer     keys.Address `json:"proposer"`
-	ProposalType string       `json:"proposalType"`
+	State        governance.ProposalState `json:"state"`
+	Proposer     keys.Address             `json:"proposer"`
+	ProposalType governance.ProposalType  `json:"proposalType"`
 }
 
 type ProposalStat struct {
