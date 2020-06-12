@@ -15,9 +15,9 @@ import (
 var _ action.Msg = &CancelProposal{}
 
 type CancelProposal struct {
-	ProposalId gov.ProposalID	`json:"proposalId"`
-	Proposer   keys.Address		`json:"proposerAddress"`
-	Reason     string			`json:"proposalReason"`
+	ProposalId gov.ProposalID `json:"proposalId"`
+	Proposer   keys.Address   `json:"proposerAddress"`
+	Reason     string         `json:"proposalReason"`
 }
 
 func (cp CancelProposal) Signers() []action.Address {
@@ -102,7 +102,7 @@ func (c cancelProposalTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bo
 }
 
 func (c cancelProposalTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
-	return action.BasicFeeHandling(ctx, signedTx, start, size, 2)
+	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
 
 func (c cancelProposalTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
