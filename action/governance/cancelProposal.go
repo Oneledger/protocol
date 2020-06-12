@@ -17,7 +17,7 @@ var _ action.Msg = &CancelProposal{}
 type CancelProposal struct {
 	ProposalId gov.ProposalID `json:"proposalId"`
 	Proposer   keys.Address   `json:"proposerAddress"`
-	Reason     string         `json:"proposalReason"`
+	Reason     string         `json:"cancelReason"`
 }
 
 func (cp CancelProposal) Signers() []action.Address {
