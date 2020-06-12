@@ -15,12 +15,12 @@ import (
 var _ action.Msg = &CreateProposal{}
 
 type CreateProposal struct {
-	ProposalID     governance.ProposalID   `json:"proposal_id"`
-	ProposalType   governance.ProposalType `json:"proposal_type"`
-	Headline       string                  `json:"proposal_headline"`
-	Description    string                  `json:"proposal_description"`
-	Proposer       keys.Address            `json:"proposer_address"`
-	InitialFunding action.Amount           `json:"initial_funding"`
+	ProposalID     governance.ProposalID   `json:"proposalId"`
+	ProposalType   governance.ProposalType `json:"proposalType"`
+	Headline       string                  `json:"proposalHeadline"`
+	Description    string                  `json:"proposalDescription"`
+	Proposer       keys.Address            `json:"proposerAddress"`
+	InitialFunding action.Amount           `json:"initialFunding"`
 }
 
 func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {

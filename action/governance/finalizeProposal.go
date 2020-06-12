@@ -14,8 +14,8 @@ import (
 )
 
 type FinalizeProposal struct {
-	ProposalID       governance.ProposalID
-	ValidatorAddress action.Address
+	ProposalID       governance.ProposalID	`json:"proposalId"`
+	ValidatorAddress action.Address			`json:"validatorAddress"`
 }
 
 func (p FinalizeProposal) Signers() []action.Address {
