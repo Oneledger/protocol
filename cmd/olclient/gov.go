@@ -198,10 +198,8 @@ func listProposals(cmd *cobra.Command, args []string) error {
 	// List single proposal
 	if listArgs.ProposalID != "" {
 		pID := governance.ProposalID(listArgs.ProposalID)
-		if listArgs.ProposalID != "" {
-			if err := pID.Err(); err != nil {
-				return err
-			}
+		if err := pID.Err(); err != nil {
+			return err
 		}
 
 		req := client.ListProposalRequest{
