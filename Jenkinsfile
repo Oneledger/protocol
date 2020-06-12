@@ -16,13 +16,7 @@ pipeline {
             }
         }
 
-        stage('unit testing') {
-            steps {
-                sh 'make utest'
-            }
-        }
-
-
+       
         stage('validator test') {
             steps {
                  sh 'make applytest'
@@ -53,18 +47,6 @@ pipeline {
             }
         }
          
-        stage('rpcAuthtest') {
-            steps {
-                 sh 'make rpcAuthtest'
-            }
-        }
-        
-        stage('coverage test') {
-            steps {
-                 sh 'make coverage'
-            }
-        }
-      
         stage('Results') {
           steps {
              publishHTML([allowMissing: false,
