@@ -1,6 +1,7 @@
 package governance
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/Oneledger/protocol/data/balance"
@@ -25,6 +26,7 @@ func GetCurrentFunds(id ProposalID, store *ProposalFundStore) *balance.Amount {
 			fundingAmount: amt,
 		}
 	})
+
 	totalBalance := balance.NewAmountFromInt(0)
 	for _, fund := range funds {
 		totalBalance = totalBalance.Plus(fund.fundingAmount)
@@ -48,4 +50,26 @@ func GetCurrentFundsByFunder(id ProposalID, funder keys.Address, store *Proposal
 		}
 	}
 	return nil, ErrWithdrawCheckFundsFailed
+}
+
+func DeleteAllFunds(id ProposalID, store *ProposalFundStore) error {
+	funds := store.GetFundersForProposalID(id, func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund {
+		return ProposalFund{
+			id:            proposalID,
+			address:       fundingAddr,
+			fundingAmount: amt,
+		}
+	})
+	for _, fund := range funds {
+		//fund.Print()
+
+		ok, err := store.DeleteFunds(fund.id, fund.address)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return errors.New(errorDeletingRecord)
+		}
+	}
+	return nil
 }

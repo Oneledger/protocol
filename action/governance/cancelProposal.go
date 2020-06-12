@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/pkg/errors"
+	"github.com/tendermint/tendermint/libs/kv"
+
 	"github.com/Oneledger/protocol/action"
 	gov "github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/kv"
 )
 
 var _ action.Msg = &CancelProposal{}
@@ -86,10 +87,10 @@ func (c cancelProposalTx) Validate(ctx *action.Context, tx action.SignedTx) (boo
 
 	// validate params
 	if err = cc.ProposalId.Err(); err != nil {
-		return false, action.ErrInvalidProposalId
+		return false, gov.ErrInvalidProposalId
 	}
 	if err = cc.Proposer.Err(); err != nil {
-		return false, action.ErrInvalidProposerAddr
+		return false, action.ErrInvalidAddress
 	}
 
 	return true, nil
@@ -123,28 +124,28 @@ func runCancel(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	proposal, err := pms.Proposal.WithPrefixType(gov.ProposalStateActive).Get(cc.ProposalId)
 	if err != nil {
 		return false, action.Response{
-			Log: action.ErrProposalNotExists.Wrap(err).Marshal(),
+			Log: gov.ErrProposalNotExists.Wrap(err).Marshal(),
 		}
 	}
 
 	// Check if proposal is in FUNDING status
 	if proposal.Status != gov.ProposalStatusFunding {
 		return false, action.Response{
-			Log: action.ErrNotInFunding.Marshal(),
+			Log: gov.ErrStatusNotFunding.Marshal(),
 		}
 	}
 
 	// Check if proposal funding height is passed
 	if ctx.Header.Height > proposal.FundingDeadline {
 		return false, action.Response{
-			Log: action.ErrFundingHeightReached.Marshal(),
+			Log: gov.ErrFundingDeadlineCrossed.Marshal(),
 		}
 	}
 
 	// Check if proposer matches
 	if !proposal.Proposer.Equal(cc.Proposer) {
 		return false, action.Response{
-			Log: action.ErrUnmatchedProposer.Marshal(),
+			Log: gov.ErrUnmatchedProposer.Marshal(),
 		}
 	}
 
@@ -158,7 +159,7 @@ func runCancel(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	err = pms.Proposal.WithPrefixType(gov.ProposalStateFailed).Set(proposal)
 	if err != nil {
 		return false, action.Response{
-			Log: action.ErrAddingProposalToFailedStore.Wrap(err).Marshal(),
+			Log: gov.ErrAddingProposalToFailedStore.Wrap(err).Marshal(),
 		}
 	}
 

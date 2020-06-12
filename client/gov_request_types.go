@@ -76,3 +76,10 @@ type WithdrawFundsRequest struct {
 	GasPrice      action.Amount         `json:"gasPrice"`
 	Gas           int64                 `json:"gas"`
 }
+
+type FinalizeProposalRequest struct {
+	ProposalId governance.ProposalID `json:"proposal_id"`
+	Proposer   action.Address        `json:"proposer"`
+	GasPrice   action.Amount         `json:"gasPrice"`
+	Gas        int64                 `json:"gas"`
+}
