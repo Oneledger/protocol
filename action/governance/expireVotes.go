@@ -13,8 +13,8 @@ import (
 var _ action.Msg = &ExpireVotes{}
 
 type ExpireVotes struct {
-	ProposalID       governance.ProposalID `json:"proposal_id"`
-	ValidatorAddress action.Address        `json:"validator_address"`
+	ProposalID       governance.ProposalID `json:"proposalId"`
+	ValidatorAddress action.Address        `json:"validatorAddress"`
 }
 
 func (e ExpireVotes) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
