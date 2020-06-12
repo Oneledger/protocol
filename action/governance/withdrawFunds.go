@@ -15,10 +15,10 @@ import (
 var _ action.Msg = &WithdrawFunds{}
 
 type WithdrawFunds struct {
-	ProposalID    governance.ProposalID `json:"proposal_id"`
-	Funder        keys.Address          `json:"funder_address"`
-	WithdrawValue action.Amount         `json:"withdraw_value"`
-	Beneficiary   keys.Address          `json:"beneficiary_address"`
+	ProposalID    governance.ProposalID `json:"proposalId"`
+	Funder        keys.Address          `json:"funderAddress"`
+	WithdrawValue action.Amount         `json:"withdrawValue"`
+	Beneficiary   keys.Address          `json:"beneficiaryAddress"`
 }
 
 func (wp WithdrawFunds) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
