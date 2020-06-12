@@ -15,9 +15,9 @@ import (
 var _ action.Msg = &FundProposal{}
 
 type FundProposal struct {
-	ProposalId    governance.ProposalID `json:"proposal_id"`
-	FunderAddress keys.Address          `json:"funder_address"`
-	FundValue     action.Amount         `json:"fund_value"`
+	ProposalId    governance.ProposalID `json:"proposalId"`
+	FunderAddress keys.Address          `json:"funderAddress"`
+	FundValue     action.Amount         `json:"fundValue"`
 }
 
 func (fp FundProposal) Signers() []action.Address {

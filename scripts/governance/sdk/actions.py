@@ -281,7 +281,7 @@ class ProposalFinalize:
 
     def _finalize_proposal(self):
         req = {
-            "proposal_id": self.pid,
+            "proposalId": self.pid,
             "proposer": self.proposer,
             "gasPrice": {
                 "currency": "OLT",

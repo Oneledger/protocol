@@ -78,7 +78,7 @@ type WithdrawFundsRequest struct {
 }
 
 type FinalizeProposalRequest struct {
-	ProposalId governance.ProposalID `json:"proposal_id"`
+	ProposalId governance.ProposalID `json:"proposalId"`
 	Proposer   action.Address        `json:"proposer"`
 	GasPrice   action.Amount         `json:"gasPrice"`
 	Gas        int64                 `json:"gas"`

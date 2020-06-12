@@ -13,10 +13,10 @@ import (
 var _ action.Msg = &VoteProposal{}
 
 type VoteProposal struct {
-	ProposalID       gov.ProposalID  `json:"proposal_id"`
+	ProposalID       gov.ProposalID  `json:"proposalId"`
 	Address          action.Address  `json:"address"`
-	ValidatorAddress action.Address  `json:"validator_address"`
-	Opinion          gov.VoteOpinion `json:"vote_opinion"`
+	ValidatorAddress action.Address  `json:"validatorAddress"`
+	Opinion          gov.VoteOpinion `json:"voteOpinion"`
 }
 
 var _ action.Tx = voteProposalTx{}
