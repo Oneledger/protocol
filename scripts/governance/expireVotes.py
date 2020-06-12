@@ -68,15 +68,15 @@ def completed_votes():
 
 def show_proposals():
     print "#### ACTIVE PROPOSALS: ####"
-    activeList = query_proposals("active")
+    activeList = query_proposals(ProposalStateActive)
     print activeList
 
     print "#### PASSED PROPOSALS: ####"
-    passedList = query_proposals("passed")
+    passedList = query_proposals(ProposalStatePassed)
     print passedList
 
     print "#### FAILED PROPOSALS: ####"
-    failedList = query_proposals("failed")
+    failedList = query_proposals(ProposalStateFailed)
     print failedList
 
 

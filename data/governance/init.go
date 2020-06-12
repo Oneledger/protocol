@@ -33,7 +33,7 @@ const (
 	ProposalOutcomeCompleted         ProposalOutcome = 0x30
 
 	//Proposal States
-	ProposalStateError          ProposalState = 0xEE
+	ProposalStateInvalid        ProposalState = 0xEE
 	ProposalStateActive         ProposalState = 0x31
 	ProposalStatePassed         ProposalState = 0x32
 	ProposalStateFailed         ProposalState = 0x33

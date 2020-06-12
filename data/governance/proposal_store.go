@@ -163,7 +163,7 @@ func (ps *ProposalStore) QueryAllStores(key ProposalID) (*Proposal, ProposalStat
 	if err == nil {
 		return proposal, ProposalStateFinalizeFailed, nil
 	}
-	return nil, ProposalStateError, errors.Wrap(err, errorGettingRecord)
+	return nil, ProposalStateInvalid, errors.Wrap(err, errorGettingRecord)
 }
 
 // Filter proposals by Proposer and Type in a specified store
