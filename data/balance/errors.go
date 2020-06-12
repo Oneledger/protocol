@@ -15,12 +15,18 @@
 
 package balance
 
-import "errors"
+import (
+	"errors"
+
+	codes "github.com/Oneledger/protocol/status_codes"
+)
 
 var (
 	ErrWrongBalanceAdapter = errors.New("error in asserting to BalanceAdapter")
 	ErrDuplicateCurrency   = errors.New("provided currency has already been registered")
 	ErrMismatchingCurrency = errors.New("mismatching currencies")
 
-	ErrInsufficientBalance = errors.New("insufficient balance")
+	ErrInsufficientBalance     = errors.New("insufficient balance")
+	ErrBalanceErrorAddFailed   = codes.ProtocolError{Code: codes.BalanceErrorAddFailed, Msg: "Failed to add balance to account"}
+	ErrBalanceErrorMinusFailed = codes.ProtocolError{Code: codes.BalanceErrorMinusFailed, Msg: "Failed to minus balance from account"}
 )

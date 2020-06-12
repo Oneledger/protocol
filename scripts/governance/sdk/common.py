@@ -3,6 +3,7 @@ import time
 import subprocess
 from actions import *
 
+
 def fund_proposal(pid, amount, funder, secs=1):
     # fund the proposal
     prop_fund = ProposalFund(pid, amount, funder)
@@ -16,11 +17,20 @@ def cancel_proposal(pid, proposer, reason, secs=1):
     time.sleep(secs)
     return res
 
+
 def vote_proposal(pid, opinion, url, address, secs=1):
     # vote the proposal
     prop_vote = ProposalVote(pid, opinion, url, address)
     prop_vote.send_vote()
     time.sleep(secs)
+
+
+def finalize_proposal(pid, address, secs=1):
+    # fund the proposal
+    prop_finalize = ProposalFinalize(pid, address)
+    prop_finalize.send_finalize()
+    time.sleep(secs)
+
 
 def vote_proposal_cli(pid, opinion, node, address, secs=1):
     # vote the proposal through CLI

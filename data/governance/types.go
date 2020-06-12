@@ -39,6 +39,10 @@ func NewProposalState(prefix string) ProposalState {
 		return ProposalStatePassed
 	case "failed":
 		return ProposalStateFailed
+	case "finalized":
+		return ProposalStateFinalized
+	case "finalizeFailed":
+		return ProposalStateFinalizeFailed
 	default:
 		return ProposalStateInvalid
 	}
@@ -47,13 +51,17 @@ func NewProposalState(prefix string) ProposalState {
 func (state ProposalState) String() string {
 	switch state {
 	case ProposalStateInvalid:
-		return "Error"
+		return "Invalid"
 	case ProposalStateActive:
 		return "Active"
 	case ProposalStatePassed:
 		return "Passed"
 	case ProposalStateFailed:
 		return "Failed"
+	case ProposalStateFinalized:
+		return "Finalized"
+	case ProposalStateFinalizeFailed:
+		return "FinalizeFailed"
 	default:
 		return "Invalid state"
 	}

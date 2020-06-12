@@ -1,6 +1,6 @@
-import json
-import sys
 import hashlib
+import sys
+
 from rpc_call import *
 
 #Proposal Types
@@ -217,7 +217,7 @@ class ProposalVote:
 
         # broadcast Tx
         result = broadcast_commit_mtsig(raw_txn, sigs)
-        
+
         if "ok" in result:
             if not result["ok"]:
                 sys.exit(-1)
@@ -271,6 +271,43 @@ class ProposalFundsWithdraw:
                 return result["txHash"]
         else:
             print bcolors.FAIL + "################### proposal funds withdraw failed:" + result["error"]["message"] + bcolors.ENDC
+
+
+
+class ProposalFinalize:
+    def __init__(self, pid, address):
+        self.pid = pid
+        self.proposer = address
+
+    def _finalize_proposal(self):
+        req = {
+            "proposal_id": self.pid,
+            "proposer": self.proposer,
+            "gasPrice": {
+                "currency": "OLT",
+                "value": "1000000000",
+            },
+            "gas": 40000,
+        }
+        resp = rpc_call('tx.FinalizeProposal', req)
+        return resp["result"]["rawTx"]
+
+    def send_finalize(self):
+        # create Tx
+        raw_txn = self._finalize_proposal()
+
+        # sign Tx
+        signed = sign(raw_txn, self.proposer)
+
+        # broadcast Tx
+        result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
+
+        if "ok" in result:
+            if not result["ok"]:
+                sys.exit(-1)
+            else:
+                print "################### proposal finalized: " + self.pid
+                return result["txHash"]
 
 
 def addresses():

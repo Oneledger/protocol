@@ -48,6 +48,7 @@ func (st *ProposalFundStore) get(key storage.StoreKey) (amt *balance.Amount, err
 
 func (pf *ProposalFundStore) delete(key storage.StoreKey) (bool, error) {
 	prefixed := append(pf.prefix, key...)
+
 	res, err := pf.State.Delete(prefixed)
 	if err != nil {
 		return false, errors.Wrap(err, errorDeletingRecord)
@@ -61,19 +62,17 @@ func (pf *ProposalFundStore) iterate(fn func(proposalID ProposalID, addr keys.Ad
 		storage.Rangefix(string(pf.prefix)),
 		true,
 		func(key, value []byte) bool {
-
 			amt := balance.NewAmount(0)
 			err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(value, amt)
 			if err != nil {
-				fmt.Println("err", err)
 				return true
 			}
 			arr := strings.Split(string(key), storage.DB_PREFIX)
 			proposalID := arr[1]
-			fundingAddress:= keys.Address{}
+			fundingAddress := keys.Address(arr[len(arr)-1])
 			err = fundingAddress.UnmarshalText([]byte(arr[len(arr)-1]))
 			if err != nil {
-				fmt.Println("err", err)
+				fmt.Println("Error Unmarshalling ", err)
 				return true
 			}
 			return fn(ProposalID(proposalID), fundingAddress, amt)
@@ -108,7 +107,7 @@ func (pf *ProposalFundStore) GetFundersForProposalID(id ProposalID, fn func(prop
 func (pf *ProposalFundStore) GetProposalsForFunder(funderAddress keys.Address, fn func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund) []ProposalFund {
 	var foundProposals []ProposalFund
 	pf.iterate(func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) bool {
-		if bytes.Equal(keys.Address(funderAddress.String()), fundingAddr) {
+		if bytes.Equal(funderAddress, fundingAddr) {
 			foundProposals = append(foundProposals, fn(proposalID, fundingAddr, amt))
 		}
 		return false
@@ -140,8 +139,10 @@ func (pf *ProposalFundStore) DeductFunds(proposalId ProposalID, fundingAddress k
 
 func (pf *ProposalFundStore) DeleteFunds(proposalId ProposalID, fundingAddress keys.Address) (bool, error) {
 	key := storage.StoreKey(string(proposalId) + storage.DB_PREFIX + fundingAddress.String())
+
 	_, err := pf.get(key)
 	if err != nil {
+
 		return false, errors.Wrap(err, errorGettingRecord)
 	}
 	ok, err := pf.delete(key)

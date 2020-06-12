@@ -53,9 +53,13 @@ func (svc *Service) ListProposals(req client.ListProposalsRequest, reply *client
 		active := pms.Proposal.FilterProposals(governance.ProposalStateActive, req.Proposer, req.ProposalType)
 		passed := pms.Proposal.FilterProposals(governance.ProposalStatePassed, req.Proposer, req.ProposalType)
 		failed := pms.Proposal.FilterProposals(governance.ProposalStateFailed, req.Proposer, req.ProposalType)
+		finalized := pms.Proposal.FilterProposals(governance.ProposalStateFinalized, req.Proposer, req.ProposalType)
+		finalizeFailed := pms.Proposal.FilterProposals(governance.ProposalStateFinalizeFailed, req.Proposer, req.ProposalType)
 		proposals = append(proposals, active...)
 		proposals = append(proposals, passed...)
 		proposals = append(proposals, failed...)
+		proposals = append(proposals, finalized...)
+		proposals = append(proposals, finalizeFailed...)
 	}
 
 	// Organize reply packet:
