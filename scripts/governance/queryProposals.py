@@ -79,7 +79,7 @@ def create_some_proposals():
 def check_proposals(props, expected_pids):
     pids = []
     for prop in props:
-        pids.append(prop["proposal"]["proposal_id"])
+        pids.append(prop["proposal"]["proposalId"])
     expected_pids.sort()
     pids.sort()
     if pids != expected_pids:
