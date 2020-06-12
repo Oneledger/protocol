@@ -15,8 +15,12 @@ pipeline {
                 sh 'make install_c'
             }
         }
-
-       
+        stage('unit testing') {
+            steps {
+                sh 'make utest'
+            }
+        }
+        
         stage('validator test') {
             steps {
                  sh 'make applytest'
@@ -46,6 +50,20 @@ pipeline {
                  sh 'make alltest'
             }
         }
+        
+        stage('rpcAuthtest') {
+            steps {
+                sh 'make rpcAuthtest'
+            }
+        }
+        
+        stage('coverage test') {
+            steps {
+                sh 'make coverage'
+            }
+        }
+
+
          
         stage('Results') {
           steps {
