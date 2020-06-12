@@ -169,8 +169,13 @@ func (srv *Server) Prepare(u *url.URL) error {
 	//Register jsonrpc handler to authenticator.
 	srv.authenticator = &rpcAuthHandler{jsonrpc2.HTTPHandler(srv.rpc), srv.cfg}
 
+	srv.mux.Handle(Path, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+	}))
+
 	// Register the handlers with our mux
-	srv.mux.Handle(Path, srv.authenticator)
+	//srv.mux.Handle(Path, srv.authenticator)
 	srv.http.Handler = srv.mux
 	srv.listener = l
 	return nil
