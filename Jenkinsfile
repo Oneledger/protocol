@@ -15,33 +15,52 @@ pipeline {
                 sh 'make install_c'
             }
         }
-        stage('unit testing') {
+        stage('unit test') {
             steps {
                 script {
                     try {
                         sh 'make utest'
                     } catch (e) {
-                        unstable('Unit testing stage failed!')
+                        unstable('Unit test stage failed!')
                         sh 'exit 0'
                     }
                 }
             }
         }
 
-       
-        stage('validator test') {
+        stage('coverage test') {
             steps {
-                 sh 'make applytest'
+                script {
+                    try {
+                        sh 'make coverage'
+                    } catch (e) {
+                        unstable('coverage test stage failed!')
+                        sh 'exit 0'
+                    }
+                }
+            }
+        }
+       
+       stage('validator test') {
+            steps {
+                script {
+                    try {
+                        sh 'make applytest'
+                    } catch (e) {
+                        unstable('validator test stage failed!')
+                        sh 'exit 0'
+                    }
+                }
             }
         }
         
-       stage('ons testing') {
+       stage('ons test') {
             steps {
                 script {
                     try {
                         sh 'make onstest'
                     } catch (e) {
-                        unstable('onstesting stage failed!')
+                        unstable('ons test stage failed!')
                         sh 'exit 0'
                     }
                 }
@@ -50,19 +69,53 @@ pipeline {
         
         stage('withdraw test') {
             steps {
-                 sh 'make withdrawtest'
+                script {
+                    try {
+                        sh 'make withdrawtest'
+                    } catch (e) {
+                        unstable('withdraw test stage failed!')
+                        sh 'exit 0'
+                    }
+                }
             }
         }
          
-        stage('governance test') {
+       stage('governance test') {
             steps {
-                 sh 'make govtest'
+                script {
+                    try {
+                        sh 'make govtest'
+                    } catch (e) {
+                        unstable('governance test stage failed!')
+                        sh 'exit 0'
+                    }
+                }
             }
         }
         
         stage('all test') {
             steps {
-                 sh 'make alltest'
+                script {
+                    try {
+                        sh 'make alltest'
+                    } catch (e) {
+                        unstable('all test stage failed!')
+                        sh 'exit 0'
+                    }
+                }
+            }
+        }
+        
+        stage('rpcAuth test') {
+            steps {
+                script {
+                    try {
+                        sh 'make rpcAuthtest'
+                    } catch (e) {
+                        unstable('rpcAuth test stage failed!')
+                        sh 'exit 0'
+                    }
+                }
             }
         }
          
