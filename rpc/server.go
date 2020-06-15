@@ -87,6 +87,8 @@ func (r rpcAuthHandler) ServeHTTP(respW http.ResponseWriter, req *http.Request) 
 	if r.Authorized(respW, req) {
 		r.rpcHandler.ServeHTTP(respW, req)
 	}
+	respW.Header().Set("Access-Control-Allow-Origin", "*")
+	respW.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 }
 
 func (r *rpcAuthHandler) Authorized(respW http.ResponseWriter, req *http.Request) bool {
@@ -169,13 +171,8 @@ func (srv *Server) Prepare(u *url.URL) error {
 	//Register jsonrpc handler to authenticator.
 	srv.authenticator = &rpcAuthHandler{jsonrpc2.HTTPHandler(srv.rpc), srv.cfg}
 
-	srv.mux.Handle(Path, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-	}))
-
 	// Register the handlers with our mux
-	//srv.mux.Handle(Path, srv.authenticator)
+	srv.mux.Handle(Path, srv.authenticator)
 	srv.http.Handler = srv.mux
 	srv.listener = l
 	return nil
