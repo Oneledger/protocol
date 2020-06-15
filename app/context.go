@@ -6,11 +6,14 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/Oneledger/protocol/data"
+
 	"github.com/pkg/errors"
 	db "github.com/tendermint/tm-db"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/eth"
+	action_gov "github.com/Oneledger/protocol/action/governance"
 	action_ons "github.com/Oneledger/protocol/action/ons"
 	"github.com/Oneledger/protocol/action/staking"
 	"github.com/Oneledger/protocol/action/transfer"
@@ -48,6 +51,7 @@ type context struct {
 	check      *storage.State
 	deliver    *storage.State
 
+	extStores   data.Router //External Stores
 	balances    *balance.Store
 	domains     *ons.DomainStore
 	validators  *identity.ValidatorStore // Set of validators currently active
@@ -57,16 +61,16 @@ type context struct {
 	btcTrackers *bitcoin.TrackerStore  // tracker for bitcoin balance UTXO
 	ethTrackers *ethereum.TrackerStore // Tracker store for ongoing ethereum trackers
 	currencies  *balance.CurrencySet
-
 	//storage which is not a chain state
 	accounts accounts.Wallet
 
 	jobStore        *jobs.JobStore
 	lockScriptStore *bitcoin.LockScriptStore
+	internalRouter  action.Router
 	internalService *event.Service
 	jobBus          *event.JobBus
-
-	logWriter io.Writer
+	proposalMaster  *governance.ProposalMasterStore
+	logWriter       io.Writer
 }
 
 func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (context, error) {
@@ -98,7 +102,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.domains = ons.NewDomainStore("d", storage.NewState(ctx.chainstate))
 	ctx.feePool = fees.NewStore("f", storage.NewState(ctx.chainstate))
 	ctx.govern = governance.NewStore("g", storage.NewState(ctx.chainstate))
-
+	ctx.proposalMaster = NewProposalMasterStore(ctx.chainstate)
 	ctx.btcTrackers = bitcoin.NewTrackerStore("btct", storage.NewState(ctx.chainstate))
 
 	ctx.ethTrackers = ethereum.NewTrackerStore("etht", "ethfailed", "ethsuccess", storage.NewState(ctx.chainstate))
@@ -109,13 +113,15 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 
 	ctx.jobStore = jobs.NewJobStore(cfg, ctx.dbDir())
 	ctx.lockScriptStore = bitcoin.NewLockScriptStore(cfg, ctx.dbDir())
-
 	ctx.actionRouter = action.NewRouter("action")
+	ctx.internalRouter = action.NewRouter("internal")
+	ctx.extStores = data.NewStorageRouter()
 
 	testEnv := os.Getenv("OLTEST")
 
 	btime := 600 * time.Second
 	ttime := 30 * time.Second
+	oltime := 3 * time.Second
 	if testEnv == "1" {
 		btime = 30 * time.Second
 		ttime = 3 * time.Second
@@ -123,16 +129,30 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.jobBus = event.NewJobBus(event.Option{
 		BtcInterval: btime,
 		EthInterval: ttime,
+		OltInterval: oltime,
 	}, ctx.jobStore)
 
 	_ = transfer.EnableSend(ctx.actionRouter)
 	_ = staking.EnableApplyValidator(ctx.actionRouter)
 	_ = action_ons.EnableONS(ctx.actionRouter)
+
 	//"btc" service temporarily disabled
 	//_ = btc.EnableBTC(ctx.actionRouter)
+
 	_ = eth.EnableETH(ctx.actionRouter)
+	_ = eth.EnableInternalETH(ctx.internalRouter)
+
+	_ = action_gov.EnableGovernance(ctx.actionRouter)
+	_ = action_gov.EnableInternalGovernance(ctx.internalRouter)
 
 	return ctx, nil
+}
+
+func NewProposalMasterStore(chainstate *storage.ChainState) *governance.ProposalMasterStore {
+	proposals := governance.NewProposalStore("propActive", "propPassed", "propFailed", "propFinalized", "propFinalizeFailed", storage.NewState(chainstate))
+	proposalFunds := governance.NewProposalFundStore("propFunds", storage.NewState(chainstate))
+	proposalVotes := governance.NewProposalVoteStore("propVotes", storage.NewState(chainstate))
+	return governance.NewProposalMasterStore(proposals, proposalFunds, proposalVotes)
 }
 
 func (ctx context) dbDir() string {
@@ -152,12 +172,13 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.validators.WithState(state),
 		ctx.witnesses.WithState(state),
 		ctx.domains.WithState(state),
-
 		ctx.btcTrackers.WithState(state),
 		ctx.ethTrackers.WithState(state),
 		ctx.jobStore,
 		ctx.lockScriptStore,
 		log.NewLoggerWithPrefix(ctx.logWriter, "action").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
+		ctx.proposalMaster.WithState(state),
+		ctx.extStores,
 	)
 
 	return actionCtx
@@ -201,21 +222,26 @@ func (ctx *context) Services() (service.Map, error) {
 	ons := ons.NewDomainStore("d", storage.NewState(ctx.chainstate))
 	ons.SetOptions(ctx.domains.GetOptions())
 
+	proposalMaster := NewProposalMasterStore(ctx.chainstate)
+	proposalMaster.Proposal.SetOptions(ctx.proposalMaster.Proposal.GetOptions())
+
 	svcCtx := &service.Context{
-		Balances:     balance.NewStore("b", storage.NewState(ctx.chainstate)),
-		Accounts:     ctx.accounts,
-		Currencies:   ctx.currencies,
-		FeePool:      feePool,
-		Cfg:          ctx.cfg,
-		NodeContext:  ctx.node,
-		ValidatorSet: identity.NewValidatorStore("v", storage.NewState(ctx.chainstate)),
-		WitnessSet:   identity.NewWitnessStore("w", storage.NewState(ctx.chainstate)),
-		Domains:      ons,
-		Router:       ctx.actionRouter,
-		Logger:       log.NewLoggerWithPrefix(ctx.logWriter, "rpc").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
-		Services:     extSvcs,
-		EthTrackers:  ethTracker,
-		Trackers:     btcTrackers,
+		Balances:       balance.NewStore("b", storage.NewState(ctx.chainstate)),
+		Accounts:       ctx.accounts,
+		Currencies:     ctx.currencies,
+		FeePool:        feePool,
+		Cfg:            ctx.cfg,
+		NodeContext:    ctx.node,
+		ValidatorSet:   identity.NewValidatorStore("v", storage.NewState(ctx.chainstate)),
+		WitnessSet:     identity.NewWitnessStore("w", storage.NewState(ctx.chainstate)),
+		Domains:        ons,
+		ProposalMaster: proposalMaster,
+		ExtStores:      ctx.extStores,
+		Router:         ctx.actionRouter,
+		Logger:         log.NewLoggerWithPrefix(ctx.logWriter, "rpc").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
+		Services:       extSvcs,
+		EthTrackers:    ethTracker,
+		Trackers:       btcTrackers,
 	}
 
 	return service.NewMap(svcCtx)
@@ -227,17 +253,18 @@ func (ctx *context) Restful() (service.RestfulRouter, error) {
 		return nil, errors.Wrap(err, "failed to start service context")
 	}
 	svcCtx := &service.Context{
-		Cfg:          ctx.cfg,
-		Balances:     ctx.balances,
-		Accounts:     ctx.accounts,
-		Currencies:   ctx.currencies,
-		FeePool:      ctx.feePool,
-		NodeContext:  ctx.node,
-		ValidatorSet: ctx.validators,
-		Domains:      ctx.domains,
-		Router:       ctx.actionRouter,
-		Logger:       log.NewLoggerWithPrefix(ctx.logWriter, "restful").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
-		Services:     extSvcs,
+		Cfg:            ctx.cfg,
+		Balances:       ctx.balances,
+		Accounts:       ctx.accounts,
+		Currencies:     ctx.currencies,
+		FeePool:        ctx.feePool,
+		NodeContext:    ctx.node,
+		ValidatorSet:   ctx.validators,
+		Domains:        ctx.domains,
+		ProposalMaster: ctx.proposalMaster,
+		Router:         ctx.actionRouter,
+		Logger:         log.NewLoggerWithPrefix(ctx.logWriter, "restful").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
+		Services:       extSvcs,
 
 		Trackers: ctx.btcTrackers,
 	}
@@ -309,5 +336,18 @@ func (ctx *context) JobContext() *event.JobsContext {
 		ctx.node.ValidatorAddress(),         // validator address generated from validator key
 		ctx.lockScriptStore,
 		ctx.ethTrackers.WithState(ctx.deliver),
+		ctx.proposalMaster.WithState(ctx.deliver),
 		log.NewLoggerWithPrefix(ctx.logWriter, "internal_jobs").WithLevel(log.Level(ctx.cfg.Node.LogLevel)))
+}
+
+func (ctx *context) AddExternalTx(t action.Type, h action.Tx) error {
+	return ctx.actionRouter.AddHandler(t, h)
+}
+
+func (ctx *context) AddExternalStore(storeType data.Type, storeObj interface{}) error {
+	return ctx.extStores.Add(storeType, storeObj)
+}
+
+func (ctx *context) GetChainState() *storage.ChainState {
+	return ctx.chainstate
 }

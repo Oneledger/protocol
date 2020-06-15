@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	ethereum2 "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -18,6 +19,7 @@ import (
 )
 
 const DefaultTimeout = 5 * time.Second
+const gasLimit = 700000
 
 type ETHChainDriver struct {
 	cfg             *config.EthereumChainDriverConfig
@@ -136,12 +138,12 @@ func (acc *ETHChainDriver) SignRedeem(fromaddr common.Address, redeemAmount *big
 	if err != nil {
 		return nil, err
 	}
-	gasLimit := uint64(6721974)
+	gasLimit := uint64(gasLimit)
 	gasPrice, err := acc.GetClient().SuggestGasPrice(c)
+	gasPrice = big.NewInt(0).Add(gasPrice, big.NewInt(0).Div(gasPrice, big.NewInt(2)))
 	if err != nil {
 		return nil, err
 	}
-
 	contractAbi, _ := abi.JSON(strings.NewReader(acc.ContractABI))
 	bytesData, err := contractAbi.Pack("sign", redeemAmount, recipient)
 	if err != nil {
@@ -162,7 +164,7 @@ func (acc *ETHChainDriver) PrepareUnsignedETHLock(addr common.Address, lockAmoun
 	if err != nil {
 		return nil, err
 	}
-	gasLimit := uint64(6721974)
+	gasLimit := uint64(gasLimit)
 	gasPrice, err := acc.GetClient().SuggestGasPrice(c)
 	if err != nil {
 		return nil, err
@@ -227,15 +229,25 @@ func (acc *ETHChainDriver) CheckFinality(txHash TransactionHash, blockConfirmati
 
 }
 
-func (acc *ETHChainDriver) VerifyReceipt(txHash TransactionHash) (bool, error) {
+// Bool value is for recipt status
+// Err is to handle error , we need to ignore NotFound and wait for the tx
+func (acc *ETHChainDriver) VerifyReceipt(txHash TransactionHash) (VerifyReceiptStatus, error) {
+
 	result, err := acc.GetClient().TransactionReceipt(context.Background(), txHash)
+	if err == ethereum2.NotFound && result == nil {
+		return NotFound, nil
+	}
 	if err != nil {
-		return false, err
+		return Other, err
+	}
+	if result.Status == types.ReceiptStatusFailed {
+		return Failed, nil
 	}
 	if result.Status == types.ReceiptStatusSuccessful {
-		return true, nil
+		return Found, nil
 	}
-	return false, err
+	// Returning generic result ( no err )
+	return Other, nil
 }
 
 // BroadcastTx takes a signed transaction as input and broadcasts it to the network
@@ -288,23 +300,19 @@ func (acc *ETHChainDriver) ParseRedeem(data []byte, abi string) (req *RedeemRequ
 //Ongoing : 0  (amount > 0 and until > block.number)
 //Success : 1  (amount = 0 and until < block.number)
 //Expired : 2  (amount > 0 and until < block.number)
+//ErrConnecting  : - 2  (Ethereum connection cannot be established)
 
-func (acc *ETHChainDriver) VerifyRedeem(validatorAddress common.Address, recipient common.Address) (RedeemStatus, error) {
+func (acc *ETHChainDriver) VerifyRedeem(validatorAddress common.Address, recipient common.Address) RedeemStatus {
 	instance := acc.GetContract()
 	redeemStatus, err := instance.VerifyRedeem(acc.CallOpts(validatorAddress), recipient)
 	if err != nil {
-		return -2, errors.Wrap(err, "Unable to connect to ethereum smart contract")
+		return ErrorConnecting
 	}
-	if redeemStatus == 2 {
-		return 0, ErrRedeemExpired
-	}
-
-	return RedeemStatus(redeemStatus), nil
+	return RedeemStatus(redeemStatus)
 }
 
 // HasValidatorSigned takes validator address and recipient address as input and verifies if the validator has already signed
 func (acc *ETHChainDriver) HasValidatorSigned(validatorAddress common.Address, recipient common.Address) (bool, error) {
 	instance := acc.GetContract()
-
 	return instance.HasValidatorSigned(acc.CallOpts(validatorAddress), recipient)
 }

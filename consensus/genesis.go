@@ -2,6 +2,7 @@ package consensus
 
 import (
 	"encoding/json"
+	"github.com/Oneledger/protocol/data/governance"
 	"time"
 
 	"github.com/pkg/errors"
@@ -38,10 +39,11 @@ func NewGenesisDoc(chainID string, states AppState) (*GenesisDoc, error) {
 }
 
 type GovernanceState struct {
-	FeeOption   fees.FeeOption             `json:"feeOption"`
-	ETHCDOption ethchain.ChainDriverOption `json:"ethchaindriverOption"`
-	BTCCDOption bitcoin.ChainDriverOption  `json:"bitcoinChainDriverOption"`
-	ONSOptions  ons.Options                `json:"onsOptions"`
+	FeeOption   fees.FeeOption               `json:"feeOption"`
+	ETHCDOption ethchain.ChainDriverOption   `json:"ethchaindriverOption"`
+	BTCCDOption bitcoin.ChainDriverOption    `json:"bitcoinChainDriverOption"`
+	ONSOptions  ons.Options                  `json:"onsOptions"`
+	PropOptions governance.ProposalOptionSet `json:"propOptions"`
 }
 
 type BalanceState struct {

@@ -4,6 +4,7 @@ import (
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
+
 	"github.com/pkg/errors"
 )
 
@@ -13,11 +14,13 @@ type ProposalStore struct {
 
 	prefix []byte //Current Store Prefix
 
-	prefixActive []byte
-	prefixPassed []byte
-	prefixFailed []byte
+	prefixActive         []byte
+	prefixPassed         []byte
+	prefixFailed         []byte
+	prefixFinalized      []byte
+	prefixFinalizeFailed []byte
 
-	proposalOptions *ProposalOptions
+	proposalOptions *ProposalOptionSet
 }
 
 func (ps *ProposalStore) Set(proposal *Proposal) error {
@@ -48,8 +51,12 @@ func (ps *ProposalStore) Get(proposalID ProposalID) (*Proposal, error) {
 }
 
 func (ps *ProposalStore) Exists(key ProposalID) bool {
-	prefixed := append(ps.prefix, key...)
-	return ps.state.Exists(prefixed)
+	active := append(ps.prefixActive, key...)
+	passed := append(ps.prefixPassed, key...)
+	failed := append(ps.prefixFailed, key...)
+	finalized := append(ps.prefixFinalized, key...)
+	finalizeFailed := append(ps.prefixFinalizeFailed, key...)
+	return ps.state.Exists(active) || ps.state.Exists(passed) || ps.state.Exists(failed) || ps.state.Exists(finalized) || ps.state.Exists(finalizeFailed)
 }
 
 func (ps *ProposalStore) Delete(key ProposalID) (bool, error) {
@@ -101,6 +108,10 @@ func (ps *ProposalStore) IterateProposalType(fn func(id ProposalID, proposal *Pr
 	})
 }
 
+func (ps *ProposalStore) GetState() *storage.State {
+	return ps.state
+}
+
 func (ps *ProposalStore) WithState(state *storage.State) *ProposalStore {
 	ps.state = state
 	return ps
@@ -119,11 +130,19 @@ func (ps *ProposalStore) WithPrefixType(prefixType ProposalState) *ProposalStore
 		ps.prefix = ps.prefixPassed
 	case ProposalStateFailed:
 		ps.prefix = ps.prefixFailed
+	case ProposalStateFinalized:
+		ps.prefix = ps.prefixFinalized
+	case ProposalStateFinalizeFailed:
+		ps.prefix = ps.prefixFinalizeFailed
+
 	}
 	return ps
 }
 
 func (ps *ProposalStore) QueryAllStores(key ProposalID) (*Proposal, ProposalState, error) {
+	prefix := ps.prefix
+	defer func() { ps.prefix = prefix }()
+
 	proposal, err := ps.WithPrefixType(ProposalStateActive).Get(key)
 	if err == nil {
 		return proposal, ProposalStateActive, nil
@@ -136,25 +155,66 @@ func (ps *ProposalStore) QueryAllStores(key ProposalID) (*Proposal, ProposalStat
 	if err == nil {
 		return proposal, ProposalStateFailed, nil
 	}
-	return nil, ProposalStateError, errors.Wrap(err, errorGettingRecord)
+	proposal, err = ps.WithPrefixType(ProposalStateFinalized).Get(key)
+	if err == nil {
+		return proposal, ProposalStateFinalized, nil
+	}
+	proposal, err = ps.WithPrefixType(ProposalStateFinalizeFailed).Get(key)
+	if err == nil {
+		return proposal, ProposalStateFinalizeFailed, nil
+	}
+	return nil, ProposalStateInvalid, errors.Wrap(err, errorGettingRecord)
 }
 
-func (ps *ProposalStore) SetOptions(pOpt *ProposalOptions) {
+// Filter proposals by Proposer and Type in a specified store
+func (ps *ProposalStore) FilterProposals(state ProposalState, proposer keys.Address, pType ProposalType) []Proposal {
+	prefix := ps.prefix
+	defer func() { ps.prefix = prefix }()
+
+	proposals := make([]Proposal, 0)
+	ps.WithPrefixType(state).Iterate(func(id ProposalID, proposal *Proposal) bool {
+		if pType != ProposalTypeInvalid && proposal.Type != pType {
+			return false
+		}
+		if len(proposer) != 0 && !proposal.Proposer.Equal(proposer) {
+			return false
+		}
+		proposals = append(proposals, *proposal)
+		return false
+	})
+	return proposals
+}
+
+func (ps *ProposalStore) SetOptions(pOpt *ProposalOptionSet) {
 	ps.proposalOptions = pOpt
 }
 
-func (ps *ProposalStore) GetOptions() *ProposalOptions {
+func (ps *ProposalStore) GetOptions() *ProposalOptionSet {
 	return ps.proposalOptions
 }
 
-func NewProposalStore(prefixActive string, prefixPassed string, prefixFailed string, state *storage.State) *ProposalStore {
+func (ps *ProposalStore) GetOptionsByType(typ ProposalType) *ProposalOption {
+	switch typ {
+	case ProposalTypeConfigUpdate:
+		return &ps.proposalOptions.ConfigUpdate
+	case ProposalTypeCodeChange:
+		return &ps.proposalOptions.CodeChange
+	case ProposalTypeGeneral:
+		return &ps.proposalOptions.General
+	}
+	return nil
+}
+
+func NewProposalStore(prefixActive string, prefixPassed string, prefixFailed string, prefixFinalized string, prefixFinalizeFailed string, state *storage.State) *ProposalStore {
 	return &ProposalStore{
-		state:           state,
-		szlr:            serialize.GetSerializer(serialize.PERSISTENT),
-		prefix:          []byte(prefixActive),
-		prefixActive:    []byte(prefixActive),
-		prefixPassed:    []byte(prefixPassed),
-		prefixFailed:    []byte(prefixFailed),
-		proposalOptions: &ProposalOptions{},
+		state:                state,
+		szlr:                 serialize.GetSerializer(serialize.PERSISTENT),
+		prefix:               []byte(prefixActive),
+		prefixActive:         []byte(prefixActive),
+		prefixPassed:         []byte(prefixPassed),
+		prefixFailed:         []byte(prefixFailed),
+		prefixFinalized:      []byte(prefixFinalized),
+		prefixFinalizeFailed: []byte(prefixFinalizeFailed),
+		proposalOptions:      &ProposalOptionSet{},
 	}
 }

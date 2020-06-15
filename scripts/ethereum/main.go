@@ -16,9 +16,13 @@ package main
 
 import (
 	"crypto/ecdsa"
+	"encoding/base64"
 	"fmt"
+	"io/ioutil"
 	"math/big"
 	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -49,6 +53,7 @@ var (
 	LockRedeemContractAddr      = "0xf3d95f28E6170Bd98CA995185A2E96A25dd780bc"
 	TestTokenContractAddr       = "0x0000000000000000000000000000000000000000"
 	LockRedeemERC20ContractAddr = "0x0000000000000000000000000000000000000000"
+	readDir                     = "/home/tanmay/Codebase/Test/chpk/"
 
 	cfg = config.DefaultEthConfig("rinkeby", "de5e96cbb6284d5ea1341bf6cb7fa401")
 	//cfg               = config.DefaultEthConfig("", "")
@@ -57,16 +62,16 @@ var (
 	UserprivKeyRedeem *ecdsa.PrivateKey
 	spamKey           *ecdsa.PrivateKey
 
-	client                 *ethclient.Client
-	contractAbi            abi.ABI
-	valuelock              = createValue("100") // in wei (1 eth)
-	valueredeem            = createValue("10")
-	valuelockERC20         = createValue("1000000000000000000")
-	valueredeemERC20       = createValue("100000000000000000")
-	fromAddress            common.Address
-	redeemRecipientAddress common.Address
-	spamAddress            common.Address
-
+	client                  *ethclient.Client
+	contractAbi             abi.ABI
+	valuelock               = createValue("100") // in wei (1 eth)
+	valueredeem             = createValue("10")
+	valuelockERC20          = createValue("1000000000000000000")
+	valueredeemERC20        = createValue("100000000000000000")
+	fromAddress             common.Address
+	redeemRecipientAddress  common.Address
+	spamAddress             common.Address
+	rpcClient               = "http://localhost:26602"
 	toAddress               = common.HexToAddress(LockRedeemContractAddr)
 	toAddressTestToken      = common.HexToAddress(TestTokenContractAddr)
 	toAdddressLockRedeemERC = common.HexToAddress(LockRedeemERC20ContractAddr)
@@ -123,15 +128,100 @@ func init() {
 }
 
 // Redeem locked if tracker fails . User redeems more funds than he has .
+//Redeem doesnt Expire
+//Panic        : Burned
+//Insufficient Funds  : Burned
+//InsufficientFunds(50% Validators) + Panic (50 % Validators): Burned
 
+//Redeem Expires
+//Panic        :Refund    ok
+//Insufficient Funds    :Refund   ok
+//InsufficientFunds(50% Validators) + Panic (50 % Validators): Refund
 func main() {
 	getstatus(lock())
 	//time.Sleep(time.Second * 5)
-	getstatus(redeem())
+	//getstatus(redeem())
 	//sendTrasactions(12)
 	//erc20lock()
 	///time.Sleep(10 * time.Second)
 	//erc20Redeem()
+	//takeValidatorFunds()
+}
+
+func takeValidatorFunds() {
+	for i := 0; i < 2; i++ {
+		folder := readDir + strconv.Itoa(i) + "-Node/consensus/config/"
+		ecdspkbytes, err := ioutil.ReadFile(filepath.Join(folder, "priv_validator_key_ecdsa.json"))
+		if err != nil {
+			log.Fatal(err)
+			return
+		}
+		ecdsPrivKey, err := base64.StdEncoding.DecodeString(string(ecdspkbytes))
+		if err != nil {
+			log.Fatal(err)
+			return
+		}
+		pkey, err := keys.GetPrivateKeyFromBytes(ecdsPrivKey[:], keys.SECP256K1)
+		if err != nil {
+			fmt.Println("Privatekey from String ", err)
+			return
+		}
+		privatekey := keys.ETHSECP256K1TOECDSA(pkey.Data)
+
+		publicKey := privatekey.Public()
+		publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+		if !ok {
+			log.Fatal("error casting public key to ECDSA")
+			return
+		}
+		validatorAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+		//redeemAddress := redeemRecipientAddress.Bytes()
+		nonce, err := client.PendingNonceAt(context.Background(), validatorAddress)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		gasLimit := int64(70000) // in units
+		gasPrice, err := client.SuggestGasPrice(context.Background())
+		if err != nil {
+			log.Fatal(err)
+			return
+		}
+		gasCost := gasPrice.Mul(gasPrice, big.NewInt(gasLimit))
+		////spareWei := big.NewInt(1000000000000000)
+		currentBalance, err := client.BalanceAt(context.Background(), validatorAddress, nil)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		currentBalance.Sub(currentBalance, gasCost)
+		//b2, err := client.BalanceAt(context.Background(), validatorAddress, nil)
+		////balance.Sub(balance, spareWei)
+		////g := gasCost.Add(gasCost, balance)
+		//fmt.Println("Gas Cost :", gasCost.String(), "Balance :", b2, "Ether Used :", balance)
+		g, err := client.SuggestGasPrice(context.Background())
+		if err != nil {
+			log.Fatal(err)
+			return
+		}
+		tx := types.NewTransaction(nonce, redeemRecipientAddress, currentBalance, uint64(gasLimit), g, nil)
+		chainID, err := client.ChainID(context.Background())
+		if err != nil {
+			log.Fatal(err)
+			return
+		}
+		signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), privatekey)
+		if err != nil {
+			log.Fatal(err)
+			return
+		}
+		err = client.SendTransaction(context.Background(), signedTx)
+		if err != nil {
+			log.Fatal(err, validatorAddress.String())
+			return
+		}
+		fmt.Println("Funds transferred from :", validatorAddress.Hex(), "Amount Transfered :", currentBalance)
+	}
 }
 
 func getstatus(rawTxBytes []byte) {
@@ -213,7 +303,7 @@ func lock() []byte {
 		fmt.Println(err)
 		return nil
 	}
-	rpcclient, err := rpc.NewClient("http://localhost:26602") //104.196.191.206:26604
+	rpcclient, err := rpc.NewClient(rpcClient) //104.196.191.206:26604
 	//rpcclient, err := rpc.NewClient("https://fullnode-sdk.devnet.oneledger.network/")
 	if err != nil {
 		fmt.Println("err", err)
@@ -264,7 +354,7 @@ func lock() []byte {
 		Address: acc.Address(),
 	}, signReply)
 	if err != nil {
-		fmt.Println("Errors sisgning ", err)
+		fmt.Println("Errors signing ", err)
 		return nil
 	}
 
@@ -350,7 +440,7 @@ func redeem() []byte {
 
 	//time.Sleep(time.Second * 15)
 
-	rpcclient, err := rpc.NewClient("http://localhost:26602")
+	rpcclient, err := rpc.NewClient(rpcClient)
 	if err != nil {
 		fmt.Println(err)
 		return nil

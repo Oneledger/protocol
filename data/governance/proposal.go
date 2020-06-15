@@ -3,57 +3,76 @@ package governance
 import (
 	"crypto/md5"
 	"encoding/hex"
+
+	"github.com/Oneledger/protocol/data/balance"
+
 	"github.com/Oneledger/protocol/data/keys"
-	"time"
 )
 
 const EmptyStr = ""
 
-type options struct {
-	InitialFunding  int64
-	FundingDeadline int64
-	FundingGoal     int64
-	VotingDeadline  int64
+type ProposalOption struct {
+	InitialFunding         *balance.Amount          `json:"baseDomainPrice"`
+	FundingGoal            *balance.Amount          `json:"fundingGoal"`
+	FundingDeadline        int64                    `json:"fundingDeadline"`
+	VotingDeadline         int64                    `json:"votingDeadline"`
+	PassPercentage         int                      `json:"passPercentage"`
+	PassedFundDistribution ProposalFundDistribution `json:"passedFundDistribution"`
+	FailedFundDistribution ProposalFundDistribution `json:"failedFundDistribution"`
+	ProposalExecutionCost  string                   `json:"proposalExecutionCost"`
 }
 
-type ProposalOptions struct {
-	ConfigUpdate options
-	CodeChange   options
-	General      options
+type ProposalFundDistribution struct {
+	Validators     float64 `json:"validators"`
+	FeePool        float64 `json:"feePool"`
+	Burn           float64 `json:"burn"`
+	ExecutionCost  float64 `json:"executionCost"`
+	BountyPool     float64 `json:"bountyPool"`
+	ProposerReward float64 `json:"proposerReward"`
+}
+
+type ProposalOptionSet struct {
+	ConfigUpdate      ProposalOption `json:"configUpdate"`
+	CodeChange        ProposalOption `json:"codeChange"`
+	General           ProposalOption `json:"general"`
+	BountyProgramAddr string         `json:"bountyProgramAddr"`
 }
 
 type Proposal struct {
-	ProposalID      ProposalID
-	Type            ProposalType
-	Status          ProposalStatus
-	Outcome         ProposalOutcome
-	Description     string
-	Proposer        keys.Address
-	FundingDeadline int64
-	FundingGoal     int64
-	VotingDeadline  int64
+	ProposalID      ProposalID      `json:"proposalId"`
+	Type            ProposalType    `json:"proposalType"`
+	Status          ProposalStatus  `json:"status"`
+	Outcome         ProposalOutcome `json:"outcome"`
+	Headline        string          `json:"headline"`
+	Description     string          `json:"descr"`
+	Proposer        keys.Address    `json:"proposer"`
+	FundingDeadline int64           `json:"fundingDeadline"`
+	FundingGoal     *balance.Amount `json:"fundingGoal"`
+	VotingDeadline  int64           `json:"votingDeadline"`
+	PassPercentage  int             `json:"passPercent"`
 }
 
-func NewProposal(propType ProposalType, desc string, proposer keys.Address, fundingDeadline int64, fundingGoal int64,
-	votingDeadline int64) *Proposal {
+func NewProposal(proposalID ProposalID, propType ProposalType, desc string, headline string, proposer keys.Address, fundingDeadline int64, fundingGoal *balance.Amount,
+	votingDeadline int64, passPercentage int) *Proposal {
 
 	return &Proposal{
-		ProposalID:      generateProposalID(proposer.String()),
+		ProposalID:      generateProposalID(proposalID),
 		Type:            propType,
 		Status:          ProposalStatusFunding,
 		Outcome:         ProposalOutcomeInProgress,
 		Description:     desc,
+		Headline:        headline,
 		Proposer:        proposer,
 		FundingDeadline: fundingDeadline,
 		FundingGoal:     fundingGoal,
 		VotingDeadline:  votingDeadline,
+		PassPercentage:  passPercentage,
 	}
 }
 
-func generateProposalID(key string) ProposalID {
-	uniqueKey := key + time.Now().String()
+func generateProposalID(key ProposalID) ProposalID {
 	hashHandler := md5.New()
-	_, err := hashHandler.Write([]byte(uniqueKey))
+	_, err := hashHandler.Write([]byte(key))
 	if err != nil {
 		return EmptyStr
 	}

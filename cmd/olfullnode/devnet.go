@@ -14,6 +14,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/Oneledger/protocol/data/governance"
+
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -47,6 +49,43 @@ var (
 	totalTTCSupply     = "2000000000000000000" // 2 Token
 	totalBTCSupply     = "1000000000"          // 10 BTC
 	lockBalanceAddress = "oneledgerSupplyAddress"
+
+	ethBlockConfirmation = int64(12)
+	btcBlockConfirmation = int64(6)
+
+	proposalInitialFunding, _   = balance.NewAmountFromString("1000000000", 10)
+	proposalFundingGoal, _      = balance.NewAmountFromString("10000000000", 10)
+	proposalFundingDeadline     = int64(12)
+	proposalVotingDeadline      = int64(12)
+	proposalPassPercentage      = 51
+	bountyProgramAddr           = "oneledgerBountyProgram"
+	executionCostAddrConfig     = "executionCostConfig"
+	executionCostAddrCodeChange = "executionCostCodeChange"
+	executionCostAddrGeneral    = "executionCostGeneral"
+	passedProposalDistribution  = governance.ProposalFundDistribution{
+		Validators:     18.00,
+		FeePool:        18.00,
+		Burn:           18.00,
+		ExecutionCost:  18.00,
+		BountyPool:     10.00,
+		ProposerReward: 18.00,
+	}
+	failedProposalDistribution = governance.ProposalFundDistribution{
+		Validators:     10.00,
+		FeePool:        10.00,
+		Burn:           10.00,
+		ExecutionCost:  20.00,
+		BountyPool:     50.00,
+		ProposerReward: 00.00,
+	}
+
+	testnetArgs = &testnetConfig{}
+
+	testnetCmd = &cobra.Command{
+		Use:   "devnet",
+		Short: "Initializes files for a devnet",
+		RunE:  runDevnet,
+	}
 )
 
 type testnetConfig struct {
@@ -69,17 +108,6 @@ type testnetConfig struct {
 	cloud                bool
 	loglevel             int
 	reserved_domains     string
-}
-
-var ethBlockConfirmation = int64(12)
-var btcBlockConfirmation = int64(6)
-
-var testnetArgs = &testnetConfig{}
-
-var testnetCmd = &cobra.Command{
-	Use:   "devnet",
-	Short: "Initializes files for a devnet",
-	RunE:  runDevnet,
 }
 
 func init() {
@@ -395,7 +423,41 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		btcBlockConfirmation,
 	}
 
-	states := initialState(args, nodeList, *cdo, *onsOp, btccdo, reserveDomains, initialAddrs)
+	propOpt := governance.ProposalOptionSet{
+		ConfigUpdate: governance.ProposalOption{
+			InitialFunding:         proposalInitialFunding,
+			FundingGoal:            proposalFundingGoal,
+			FundingDeadline:        proposalFundingDeadline,
+			VotingDeadline:         proposalVotingDeadline,
+			PassPercentage:         proposalPassPercentage,
+			PassedFundDistribution: passedProposalDistribution,
+			FailedFundDistribution: failedProposalDistribution,
+			ProposalExecutionCost:  executionCostAddrConfig,
+		},
+		CodeChange: governance.ProposalOption{
+			InitialFunding:         proposalInitialFunding,
+			FundingGoal:            proposalFundingGoal,
+			FundingDeadline:        proposalFundingDeadline,
+			VotingDeadline:         proposalVotingDeadline,
+			PassPercentage:         proposalPassPercentage,
+			PassedFundDistribution: passedProposalDistribution,
+			FailedFundDistribution: failedProposalDistribution,
+			ProposalExecutionCost:  executionCostAddrCodeChange,
+		},
+		General: governance.ProposalOption{
+			InitialFunding:         proposalInitialFunding,
+			FundingGoal:            proposalFundingGoal,
+			FundingDeadline:        proposalFundingDeadline,
+			VotingDeadline:         proposalVotingDeadline,
+			PassPercentage:         proposalPassPercentage,
+			PassedFundDistribution: passedProposalDistribution,
+			FailedFundDistribution: failedProposalDistribution,
+			ProposalExecutionCost:  executionCostAddrGeneral,
+		},
+		BountyProgramAddr: bountyProgramAddr,
+	}
+
+	states := initialState(args, nodeList, *cdo, *onsOp, btccdo, propOpt, reserveDomains, initialAddrs)
 
 	genesisDoc, err := consensus.NewGenesisDoc(chainID, states)
 	if err != nil {
@@ -429,7 +491,8 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 }
 
 func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDriverOption, onsOption ons.Options,
-	btcOption bitcoin.ChainDriverOption, reservedDomains []reservedDomain, initialAddrs []keys.Address) consensus.AppState {
+	btcOption bitcoin.ChainDriverOption, propOpt governance.ProposalOptionSet, reservedDomains []reservedDomain, initialAddrs []keys.Address) consensus.AppState {
+
 	olt := balance.Currency{Id: 0, Name: "OLT", Chain: chain.ONELEDGER, Decimal: 18, Unit: "nue"}
 	vt := balance.Currency{Id: 1, Name: "VT", Chain: chain.ONELEDGER, Unit: "vt"}
 	obtc := balance.Currency{Id: 2, Name: "BTC", Chain: chain.BITCOIN, Decimal: 8, Unit: "satoshi"}
@@ -576,6 +639,7 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 			ETHCDOption: option,
 			BTCCDOption: btcOption,
 			ONSOptions:  onsOption,
+			PropOptions: propOpt,
 		},
 	}
 }

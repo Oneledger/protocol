@@ -7,11 +7,14 @@ package event
 import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/eth"
+	gov_action "github.com/Oneledger/protocol/action/governance"
 	"github.com/Oneledger/protocol/app/node"
 	"github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/consensus"
 	ethereum2 "github.com/Oneledger/protocol/data/ethereum"
+	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/log"
+
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/bytes"
@@ -69,13 +72,11 @@ func (reply *BroadcastReply) FromResultBroadcastTx(result *ctypes.ResultBroadcas
 }
 
 func (svc Service) InternalBroadcast(request InternalBroadcastRequest, reply *BroadcastReply) error {
-
 	if err := svc.allowedTx(request.RawTx); err != nil {
 		return err
 	}
 
 	priKey := svc.nodeCtx.PrivVal()
-
 	h, err := priKey.GetHandler()
 	if err != nil {
 		return errors.Wrap(err, "wrong node private validator key")
@@ -91,7 +92,6 @@ func (svc Service) InternalBroadcast(request InternalBroadcastRequest, reply *Br
 			Signed: signed,
 		}},
 	}
-
 	result, err := svc.tmrpc.BroadcastTxSync(rawSignedTx.SignedBytes())
 	if err != nil {
 		return errors.Wrap(err, "error broadcast sync")
@@ -102,13 +102,21 @@ func (svc Service) InternalBroadcast(request InternalBroadcastRequest, reply *Br
 
 }
 
+//^TODO Replace error with InternalBroadcastStatus
 func BroadcastReportFinalityETHTx(ethCtx *JobsContext, trackerName ethereum.TrackerName, jobID string, success bool) error {
 
 	trackerStore := ethCtx.EthereumTrackers
-	tracker, err := trackerStore.WithPrefixType(ethereum2.PrefixOngoing).Get(trackerName)
-	index, _ := tracker.CheckIfVoted(ethCtx.ValidatorAddress)
-	if index < 0 {
-		return errors.New("validator already Voted")
+	tracker, err := trackerStore.QueryAllStores(trackerName)
+	if err != nil {
+		return err
+	}
+	if tracker.State == ethereum2.Released || tracker.State == ethereum2.Failed {
+		return nil
+	}
+	index, voted := tracker.CheckIfVoted(ethCtx.ValidatorAddress)
+	if voted {
+		//Validator has already Voted
+		return nil
 	}
 	reportFailed := &eth.ReportFinality{
 		TrackerName:      trackerName,
@@ -139,6 +147,73 @@ func BroadcastReportFinalityETHTx(ethCtx *JobsContext, trackerName ethereum.Trac
 
 	if err != nil || !rep.OK {
 		ethCtx.Logger.Error("Error while broadcasting vote to Fail transaction ", jobID, err, rep.Log)
+		return err
+	}
+	return nil
+}
+
+func BroadcastGovExpireVotesTx(jobCtx *JobsContext, proposalID governance.ProposalID, jobID string) error {
+
+	expireVotes := &gov_action.ExpireVotes{
+		ProposalID:       proposalID,
+		ValidatorAddress: jobCtx.ValidatorAddress,
+	}
+
+	txData, err := expireVotes.Marshal()
+	if err != nil {
+		jobCtx.Logger.Error("Error while preparing expire votes txn ", jobID, err)
+		return err
+	}
+
+	uuidNew, _ := uuid.NewUUID()
+	internalExpireVotesTx := action.RawTx{
+		Type: action.EXPIRE_VOTES,
+		Data: txData,
+		Fee:  action.Fee{},
+		Memo: jobID + uuidNew.String(),
+	}
+
+	req := InternalBroadcastRequest{
+		RawTx: internalExpireVotesTx,
+	}
+	rep := BroadcastReply{}
+	err = jobCtx.Service.InternalBroadcast(req, &rep)
+
+	if err != nil || !rep.OK {
+		jobCtx.Logger.Error("Error while broadcasting expire votes transaction ", jobID, err, rep.Log)
+		return err
+	}
+	return nil
+}
+
+func BroadcastGovFinalizeVotesTx(jobCtx *JobsContext, proposalID governance.ProposalID, jobID string) error {
+
+	finalizeProposal := &gov_action.FinalizeProposal{
+		ProposalID:       proposalID,
+		ValidatorAddress: jobCtx.ValidatorAddress,
+	}
+
+	txData, err := finalizeProposal.Marshal()
+	if err != nil {
+		jobCtx.Logger.Error("Error while preparing finalizing votes txn ", jobID, err)
+		return err
+	}
+
+	uuidNew, _ := uuid.NewUUID()
+	internalFinalizeTx := action.RawTx{
+		Type: action.PROPOSAL_FINALIZE,
+		Data: txData,
+		Fee:  action.Fee{},
+		Memo: jobID + uuidNew.String(),
+	}
+	req := InternalBroadcastRequest{
+		RawTx: internalFinalizeTx,
+	}
+	rep := BroadcastReply{}
+	err = jobCtx.Service.InternalBroadcast(req, &rep)
+
+	if err != nil || !rep.OK {
+		jobCtx.Logger.Error("Error while broadcasting finalizing votes transaction ", jobID, err, rep.Log)
 		return err
 	}
 	return nil

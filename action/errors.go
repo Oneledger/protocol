@@ -5,7 +5,7 @@ import (
 )
 
 var (
-	ErrMissingData        = codes.ProtocolError{codes.TxErrMisingData, "missing data in transaction"}
+	ErrMissingData        = codes.ProtocolError{codes.TxErrMissingData, "missing data in transaction"}
 	ErrUnserializable     = codes.ProtocolError{codes.TxErrUnserializable, "unserializable tx"}
 	ErrWrongTxType        = codes.ProtocolError{codes.TxErrWrongTxType, "wrong tx type"}
 	ErrInvalidAmount      = codes.ProtocolError{codes.TxErrInvalidAmount, "invalid amount"}
@@ -18,8 +18,11 @@ var (
 	ErrGasOverflow        = codes.ProtocolError{codes.TxErrGasOverflow, "gas used exceed limit"}
 	ErrInvalidExtTx       = codes.ProtocolError{codes.TxErrInvalidExtTx, "invalid external tx"}
 
-	ErrInvalidAddress = codes.ErrBadAddress
-
+	ErrInvalidAddress    = codes.ErrBadAddress
 	ErrInvalidCurrency   = codes.ProtocolError{codes.TxErrInvalidFeeCurrency, "invalid amount"}
 	ErrTokenNotSupported = codes.ProtocolError{codes.ExternalErrTokenNotSuported, "Token not supported"}
+
+	ErrGettingValidatorList = codes.ProtocolError{codes.GovErrGettingValidatorList, "fund proposal failed in getting validator list"}
+
+	ErrInvalidValidatorAddr = codes.ProtocolError{codes.GovErrInvalidValidatorAddr, "invalid validator address"}
 )

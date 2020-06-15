@@ -105,7 +105,6 @@ func VerifyRedeem(ctx interface{}) error {
 		return errors.New("error casting tracker context")
 	}
 	tracker := context.Tracker
-
 	// create verify job for the first time from the state of broadcasting
 	if tracker.State != ethereum.BusyBroadcasting {
 		err := errors.New("Cannot start Finalizing from the current state")
@@ -125,13 +124,6 @@ func VerifyRedeem(ctx interface{}) error {
 			}
 		}
 	}
-
-	y, n := tracker.GetVotes()
-
-	if y+n > 0 {
-		tracker.State = ethereum.BusyFinalizing
-	}
-
 	context.Tracker = tracker
 	return nil
 }
@@ -143,12 +135,20 @@ func RedeemConfirmed(ctx interface{}) error {
 		return errors.New("error casting tracker context")
 	}
 	tracker := context.Tracker
-
 	if tracker.State == ethereum.BusyFinalizing {
-		if tracker.Finalized() {
-			tracker.State = ethereum.Finalized
+		bjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyBroadcasting))
+		if err != nil {
+			return errors.Wrap(err, "failed to get job")
+		}
+		if bjob.IsDone() && !bjob.IsFailed() {
+			job := NewETHVerifyRedeem(tracker.TrackerName, ethereum.BusyFinalizing)
+			err := context.JobStore.SaveJob(job)
+			if err != nil {
+				return errors.Wrap(err, "Failed to save job")
+			}
 		}
 	}
+
 	context.Tracker = tracker
 	return nil
 }
@@ -174,7 +174,7 @@ func redeemCleanup(ctx interface{}) error {
 		}
 	}
 	//Delete Tracker
-	context.Logger.Debug("Setting Tracker to succeeded (ethLock):", tracker.State.String())
+	context.Logger.Debug("Setting Tracker to succeeded (ethRedeem):", tracker.State.String())
 	err := context.TrackerStore.WithPrefixType(ethereum.PrefixPassed).Set(tracker.Clean())
 	if err != nil {
 		context.Logger.Error("error saving eth tracker", err)
@@ -211,7 +211,7 @@ func redeemCleanupFailed(ctx interface{}) error {
 		}
 	}
 	//Delete Tracker
-	context.Logger.Debug("Setting Tracker to Failed (ethLock):", tracker.State.String())
+	context.Logger.Debug("Setting Tracker to Failed (ethRedeem):", tracker.State.String())
 	err := context.TrackerStore.WithPrefixType(ethereum.PrefixFailed).Set(tracker.Clean())
 	if err != nil {
 		context.Logger.Error("error saving eth tracker", err)
