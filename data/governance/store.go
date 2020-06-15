@@ -32,6 +32,7 @@ const (
 type Store struct {
 	state  *storage.State
 	prefix []byte
+	height int64
 }
 
 func NewStore(prefix string, state *storage.State) *Store {
@@ -46,14 +47,20 @@ func (st *Store) WithState(state *storage.State) *Store {
 	return st
 }
 
-func (st *Store) Get(key []byte) ([]byte, error) {
-	prefixKey := append(st.prefix, storage.StoreKey(key)...)
+func (st *Store) WithHeight(height int64) *Store {
+	st.height = height
+	return st
+}
 
+func (st *Store) Get(key string) ([]byte, error) {
+	versionedKey := storage.StoreKey(string(st.height) + storage.DB_PREFIX + key)
+	prefixKey := append(st.prefix, versionedKey...)
 	return st.state.Get(prefixKey)
 }
 
-func (st *Store) Set(key []byte, value []byte) error {
-	prefixKey := append(st.prefix, storage.StoreKey(key)...)
+func (st *Store) Set(key string, value []byte) error {
+	versionedKey := storage.StoreKey(string(st.height) + storage.DB_PREFIX + key)
+	prefixKey := append(st.prefix, versionedKey...)
 	err := st.state.Set(prefixKey, value)
 	return err
 }

@@ -114,7 +114,7 @@ func (app *App) setupState(stateBytes []byte) error {
 		return errors.Wrap(err, "Setup State")
 	}
 
-	err = app.Context.govern.SetProposalOptions(initial.Governance.PropOptions)
+	err = app.Context.govern.WithHeight(app.header.Height).SetProposalOptions(initial.Governance.PropOptions)
 	if err != nil {
 		return errors.Wrap(err, "Setup State")
 	}
@@ -351,7 +351,7 @@ func (app *App) Prepare() error {
 
 		app.Context.btcTrackers.SetConfig(btcConfig)
 
-		propOpt, err := app.Context.govern.GetProposalOptions()
+		propOpt, err := app.Context.govern.WithHeight(app.header.Height).GetProposalOptions()
 		if err != nil {
 			return err
 		}
