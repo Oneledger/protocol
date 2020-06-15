@@ -84,11 +84,11 @@ type rpcAuthHandler struct {
 }
 
 func (r rpcAuthHandler) ServeHTTP(respW http.ResponseWriter, req *http.Request) {
+	respW.Header().Set("Access-Control-Allow-Origin", "*")
+	respW.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
 	if r.Authorized(respW, req) {
 		r.rpcHandler.ServeHTTP(respW, req)
 	}
-	respW.Header().Set("Access-Control-Allow-Origin", "*")
-	respW.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 }
 
 func (r *rpcAuthHandler) Authorized(respW http.ResponseWriter, req *http.Request) bool {
