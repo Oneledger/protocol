@@ -132,7 +132,7 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 		return false, result
 	}
 
-	// 3. Check if the funder has funded this proposal, if so, get the amount of funds
+	// 3. Check if the funder has funded this proposal
 	isFundedByFunder := fundStore.IsFundedByFunder(proposal.ProposalID, withdrawProposal.Funder)
 	ctx.Logger.Detail("isFundedByFunder: ", isFundedByFunder)
 	if !isFundedByFunder {

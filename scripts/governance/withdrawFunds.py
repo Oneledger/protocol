@@ -74,7 +74,7 @@ if __name__ == "__main__":
         time.sleep(10)
 
     print bcolors.WARNING + "#### TRY TO WITHDRAW NOT FUNDED PROPOSAL, SHOULD FAIL: ####" + bcolors.ENDC
-    withdraw_fund(_encoded_pid, _funder_never_fund, _withdraw_amount_too_much, _funder_never_fund)
+    withdraw_fund(_encoded_pid, _funder_never_fund, _withdraw_amount, _funder_never_fund)
     time.sleep(5)
 
     print bcolors.WARNING + "#### TRY TO WITHDRAW MORE THAN FUNDED AMOUNT, SHOULD FAIL: ####" + bcolors.ENDC
