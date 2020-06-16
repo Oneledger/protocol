@@ -99,7 +99,8 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 		}
 		return false, result
 	}
-	currentFundsForProposal := governance.GetCurrentFunds(proposal.ProposalID, ctx.ProposalMasterStore.ProposalFund)
+	fundStore := ctx.ProposalMasterStore.ProposalFund
+	currentFundsForProposal := fundStore.GetCurrentFundsForProposal(proposal.ProposalID)
 	// if funding goal is reached or there is still time for funding
 	if currentFundsForProposal.BigInt().Cmp(proposal.FundingGoal.BigInt()) >= 0 || ctx.Header.Height <= proposal.FundingDeadline {
 		ctx.Logger.Error("Proposal does not meet withdraw requirement", withdrawProposal.ProposalID)
