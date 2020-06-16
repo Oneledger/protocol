@@ -133,12 +133,13 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 	}
 
 	// 3. Check if the funder has funded this proposal, if so, get the amount of funds
-	_, err = governance.GetCurrentFundsByFunder(proposal.ProposalID, withdrawProposal.Funder, ctx.ProposalMasterStore.ProposalFund)
-	if err != nil {
-		ctx.Logger.Error("No available funds to withdraw for this funder :", withdrawProposal.Funder)
+	isFundedByFunder := ctx.ProposalMasterStore.ProposalFund.IsFundedByFunder(proposal.ProposalID, withdrawProposal.Funder)
+	ctx.Logger.Debug("isFundedByFunder: ", isFundedByFunder)
+	if !isFundedByFunder {
+		ctx.Logger.Error("No such funder funded this proposal :", withdrawProposal.Funder)
 		result := action.Response{
-			Events: action.GetEvent(withdrawProposal.Tags(), "no_available__fund_to_withdraw_for_this_funder"),
-			Log:    governance.ErrNoSuchFunder.Wrap(err).Marshal(),
+			Events: action.GetEvent(withdrawProposal.Tags(), "no_such_funder_funded_this_proposal"),
+			Log:    governance.ErrNoSuchFunder.Marshal(),
 		}
 		return false, result
 	}
