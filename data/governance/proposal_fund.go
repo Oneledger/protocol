@@ -34,24 +34,6 @@ func GetCurrentFunds(id ProposalID, store *ProposalFundStore) *balance.Amount {
 	return totalBalance
 }
 
-func GetCurrentFundsByFunder(id ProposalID, funder keys.Address, store *ProposalFundStore) (*balance.Amount, error) {
-	funds := store.GetFundersForProposalID(id, func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund {
-		return ProposalFund{
-			id:            proposalID,
-			address:       fundingAddr,
-			fundingAmount: amt,
-		}
-	})
-	funderBalance := balance.NewAmountFromInt(0)
-	for _, fund := range funds {
-		if fund.address.Equal(funder) {
-			funderBalance = funderBalance.Plus(fund.fundingAmount)
-			return funderBalance, nil
-		}
-	}
-	return nil, ErrWithdrawCheckFundsFailed
-}
-
 func DeleteAllFunds(id ProposalID, store *ProposalFundStore) error {
 	funds := store.GetFundersForProposalID(id, func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund {
 		return ProposalFund{

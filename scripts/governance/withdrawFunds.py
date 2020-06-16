@@ -8,6 +8,7 @@ _pid = "id_30034"
 _proposer = addr_list[0]
 _initial_funding = (int("2") * 10 ** 9)
 _funder = addr_list[1]
+_funder_never_fund = addr_list[2]
 _funds_amount = (int("2") * 10 ** 9)
 _withdraw_amount = (int("2") * 10 ** 9)
 _withdraw_amount_too_much = (int("5") * 10 ** 9)
@@ -71,6 +72,10 @@ if __name__ == "__main__":
     for x in range(_wait):
         print("wait for 60s, " + str(_wait * 10 - x * 10) + "s left")
         time.sleep(10)
+
+    print bcolors.WARNING + "#### TRY TO WITHDRAW NOT FUNDED PROPOSAL, SHOULD FAIL: ####" + bcolors.ENDC
+    withdraw_fund(_encoded_pid, _funder_never_fund, _withdraw_amount_too_much, _funder_never_fund)
+    time.sleep(5)
 
     print bcolors.WARNING + "#### TRY TO WITHDRAW MORE THAN FUNDED AMOUNT, SHOULD FAIL: ####" + bcolors.ENDC
     withdraw_fund(_encoded_pid, _funder, _withdraw_amount_too_much, _funder)

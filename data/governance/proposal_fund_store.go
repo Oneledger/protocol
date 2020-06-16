@@ -115,6 +115,17 @@ func (pf *ProposalFundStore) GetProposalsForFunder(funderAddress keys.Address, f
 	return foundProposals
 }
 
+func (store *ProposalFundStore) IsFundedByFunder(id ProposalID, funder keys.Address) bool {
+	haveFunderAddress := false
+	store.GetFundersForProposalID(id, func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund {
+		if fundingAddr.Equal(funder) {
+			haveFunderAddress = true
+		}
+		return ProposalFund{}
+	})
+	return haveFunderAddress
+}
+
 func (pf *ProposalFundStore) AddFunds(proposalId ProposalID, fundingAddress keys.Address, amount *balance.Amount) error {
 	key := storage.StoreKey(string(proposalId) + storage.DB_PREFIX + fundingAddress.String())
 	amt, err := pf.get(key)
