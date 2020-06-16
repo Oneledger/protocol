@@ -116,7 +116,7 @@ func (pf *ProposalFundStore) GetProposalsForFunder(funderAddress keys.Address, f
 
 func (store *ProposalFundStore) IsFundedByFunder(id ProposalID, funder keys.Address) bool {
 	haveFunderAddress := false
-	store.GetFundersForProposalID(id, func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund {
+	store.GetFundsForProposalID(id, func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund {
 		if fundingAddr.Equal(funder) {
 			haveFunderAddress = true
 		}
