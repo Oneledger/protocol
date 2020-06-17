@@ -80,7 +80,7 @@ func (t *SignedTx) SignedBytes() []byte {
 }
 
 func ValidateBasic(data []byte, signerAddr []Address, signatures []Signature) error {
-	if len(signatures) < len(signerAddr) {
+	if len(signatures) != len(signerAddr) {
 		return ErrUnmatchSigner
 	}
 	for i, s := range signerAddr {

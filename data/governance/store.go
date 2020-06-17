@@ -164,7 +164,7 @@ func (st *Store) GetStakingOptions() (*delegation.Options, error) {
 	r := &delegation.Options{}
 	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(bytes, r)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to deserialize eth chaindriver option stored")
+		return nil, errors.Wrap(err, "failed to deserialize staking options")
 	}
 
 	return r, nil
@@ -174,12 +174,12 @@ func (st *Store) SetStakingOptions(opt delegation.Options) error {
 
 	bytes, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(opt)
 	if err != nil {
-		return errors.Wrap(err, "failed to serialize eth chaindriver option")
+		return errors.Wrap(err, "failed to serialize staking options")
 	}
 
 	err = st.Set([]byte(ADMIN_STAKING_OPTION), bytes)
 	if err != nil {
-		return errors.Wrap(err, "failed to set the eth chaindriver option")
+		return errors.Wrap(err, "failed to set the staking options")
 	}
 
 	return nil

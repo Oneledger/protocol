@@ -85,8 +85,8 @@ func (s stakeTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error)
 		return false, err
 	}
 
-	if st.ValidatorAddress == nil {
-		return false, action.ErrMissingData
+	if err := st.ValidatorAddress.Err(); err != nil {
+		return false, err
 	}
 
 	_, err = st.ValidatorPubKey.GetHandler()

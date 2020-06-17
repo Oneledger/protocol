@@ -12,7 +12,6 @@ import (
 
 type DelegationStore struct {
 	state  *storage.State
-	szlr   serialize.Serializer
 	prefix []byte
 	mux    sync.Mutex
 }
@@ -32,7 +31,6 @@ func NewDelegationStore(prefix string, state *storage.State) *DelegationStore {
 	return &DelegationStore{
 		state:  state,
 		prefix: storage.Prefix(prefix),
-		szlr:   serialize.GetSerializer(serialize.PERSISTENT),
 	}
 }
 
