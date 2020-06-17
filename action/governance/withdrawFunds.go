@@ -87,11 +87,9 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 	}
 
 	// 1. Check if Proposal already exists, if so, check the withdraw requirement:
-	//    a. if the proposal outcome is canceled or insufficient funds
+	//    a. if the proposal outcome is cancelled or insufficient funds
 	//    or
 	//    b. the funding goal is not reached and the funding height is reached
-
-
 	proposal, _, err := ctx.ProposalMasterStore.Proposal.QueryAllStores(withdrawProposal.ProposalID)
 	if err != nil {
 		ctx.Logger.Error("Proposal does not exist :", withdrawProposal.ProposalID)
@@ -104,41 +102,42 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 
 	fundStore := ctx.ProposalMasterStore.ProposalFund
 	currentFundsForProposal := fundStore.GetCurrentFundsForProposal(proposal.ProposalID)
-			// if outcome is not cancelled or insufficient funds
-			if proposal.Outcome != governance.ProposalOutcomeCancelled && proposal.Outcome != governance.ProposalOutcomeInsufficientFunds {
-				// if funding goal is reached or there is still time for funding
-				if currentFundsForProposal.BigInt().Cmp(proposal.FundingGoal.BigInt()) >= 0 || ctx.Header.Height <= proposal.FundingDeadline {
-					ctx.Logger.Error("Proposal does not meet withdraw requirement", withdrawProposal.ProposalID)
-					result := action.Response{
-						Events: action.GetEvent(withdrawProposal.Tags(), "withdraw_proposal_does_not_meet_withdraw_requirement"),
-						Log:    governance.ErrProposalWithdrawNotEligible.Marshal(),
-					}
-					return false, result
+	// if outcome is not cancelled or insufficient funds
+	ctx.Logger.Debug("outcome :", proposal.Outcome)
+	if proposal.Outcome != governance.ProposalOutcomeCancelled && proposal.Outcome != governance.ProposalOutcomeInsufficientFunds {
+		// if funding goal is reached or there is still time for funding,
+		// this will also cover InsufficientVotes and Completed
+		if currentFundsForProposal.BigInt().Cmp(proposal.FundingGoal.BigInt()) >= 0 || ctx.Header.Height <= proposal.FundingDeadline {
+			ctx.Logger.Error("Proposal does not meet withdraw requirement", withdrawProposal.ProposalID)
+			result := action.Response{
+				Events: action.GetEvent(withdrawProposal.Tags(), "withdraw_proposal_does_not_meet_withdraw_requirement"),
+				Log:    governance.ErrProposalWithdrawNotEligible.Marshal(),
+			}
+			return false, result
 		}
-	} else if proposal.Outcome == governance.ProposalOutcomeInProgress {
 		// 2. change outcome, status, state
-		// if outcome is already cancel, then no need to change
+		// when it reaches here means proposal outcome is only to be InProgress
 		proposal.Outcome = governance.ProposalOutcomeInsufficientFunds
 		proposal.Status = governance.ProposalStatusCompleted
-	}
 
-	err = ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStateFailed).Set(proposal)
-	if err != nil {
-		ctx.Logger.Error("Failed to add proposal to FAILED store :", proposal.ProposalID)
-		result := action.Response{
-			Events: action.GetEvent(withdrawProposal.Tags(), "failed_to_add_proposal_to_failed_store"),
-			Log:    governance.ErrAddingProposalToFailedStore.Wrap(err).Marshal(),
+		err = ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStateFailed).Set(proposal)
+		if err != nil {
+			ctx.Logger.Error("Failed to add proposal to FAILED store :", proposal.ProposalID)
+			result := action.Response{
+				Events: action.GetEvent(withdrawProposal.Tags(), "failed_to_add_proposal_to_failed_store"),
+				Log:    governance.ErrAddingProposalToFailedStore.Wrap(err).Marshal(),
+			}
+			return false, result
 		}
-		return false, result
-	}
-	ok, err := ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStateActive).Delete(proposal.ProposalID)
-	if err != nil || !ok {
-		ctx.Logger.Error("Failed to delete proposal from ACTIVE store :", proposal.ProposalID)
-		result := action.Response{
-			Events: action.GetEvent(withdrawProposal.Tags(), "failed_to_delete_proposal_from_active_store"),
-			Log:    governance.ErrDeletingProposalFromActiveStore.Wrap(err).Marshal(),
+		ok, err := ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStateActive).Delete(proposal.ProposalID)
+		if err != nil || !ok {
+			ctx.Logger.Error("Failed to delete proposal from ACTIVE store :", proposal.ProposalID)
+			result := action.Response{
+				Events: action.GetEvent(withdrawProposal.Tags(), "failed_to_delete_proposal_from_active_store"),
+				Log:    governance.ErrDeletingProposalFromActiveStore.Wrap(err).Marshal(),
+			}
+			return false, result
 		}
-		return false, result
 	}
 
 	// 3. Check if the funder has funded this proposal
