@@ -31,15 +31,15 @@ def test_pass_proposal_cli():
     check_proposal_state(encoded_pid, ProposalOutcomeInProgress, ProposalStatusVoting)
 
     # 2nd vote --> 25%
-    vote_proposal(encoded_pid, "NO", url_1, addr_list[0])
+    vote_proposal(encoded_pid, OPIN_NEGATIVE, url_1, addr_list[0])
     check_proposal_state(encoded_pid, ProposalOutcomeInProgress, ProposalStatusVoting)
 
     # 3rd vote --> 50%
-    vote_proposal(encoded_pid, "YES", url_2, addr_list[2])
+    vote_proposal(encoded_pid, OPIN_POSITIVE, url_2, addr_list[2])
     check_proposal_state(encoded_pid, ProposalOutcomeInProgress, ProposalStatusVoting)
 
     # 4th vote --> 75%
-    vote_proposal(encoded_pid, "YES", url_3, addr_list[2])
+    vote_proposal(encoded_pid, OPIN_POSITIVE, url_3, addr_list[2])
     check_proposal_state(encoded_pid, ProposalOutcomeCompleted, ProposalStatusCompleted)
 
     # list proposal under another node
@@ -65,11 +65,11 @@ def test_fail_proposal_cli():
     check_proposal_state(encoded_pid, ProposalOutcomeInProgress, ProposalStatusVoting)
 
     # 2nd vote --> NO--25%
-    vote_proposal(encoded_pid, "YES", url_1, addr_list[0])
+    vote_proposal(encoded_pid, OPIN_POSITIVE, url_1, addr_list[0])
     check_proposal_state(encoded_pid, ProposalOutcomeInProgress, ProposalStatusVoting)
 
     # 3rd vote --> NO--50%
-    vote_proposal(encoded_pid, "NO", url_2, addr_list[2])
+    vote_proposal(encoded_pid, OPIN_NEGATIVE, url_2, addr_list[2])
     check_proposal_state(encoded_pid, ProposalOutcomeInsufficientVotes, ProposalStatusCompleted)
 
     # list proposal
