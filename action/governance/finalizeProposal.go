@@ -14,8 +14,8 @@ import (
 )
 
 type FinalizeProposal struct {
-	ProposalID       governance.ProposalID	`json:"proposalId"`
-	ValidatorAddress action.Address			`json:"validatorAddress"`
+	ProposalID       governance.ProposalID `json:"proposalId"`
+	ValidatorAddress action.Address        `json:"validatorAddress"`
 }
 
 func (p FinalizeProposal) Signers() []action.Address {
@@ -191,8 +191,8 @@ func runFinalizeProposal(ctx *action.Context, tx action.RawTx) (bool, action.Res
 //Function to distribute funds
 func distributeFunds(ctx *action.Context, proposal *governance.Proposal, proposalDistribution *governance.ProposalFundDistribution) error {
 	// Required Perimeters for Fund Distribution
-
-	totalFunding := governance.GetCurrentFunds(proposal.ProposalID, ctx.ProposalMasterStore.ProposalFund).Float()
+	fundStore := ctx.ProposalMasterStore.ProposalFund
+	totalFunding := fundStore.GetCurrentFundsForProposal(proposal.ProposalID).Float()
 	c, ok := ctx.Currencies.GetCurrencyByName("OLT")
 	if !ok {
 		return action.ErrInvalidCurrency
@@ -251,7 +251,7 @@ func distributeFunds(ctx *action.Context, proposal *governance.Proposal, proposa
 	if fundTracker != 0 {
 		return errors.New(fmt.Sprintf("Extra Funding Amount Left %s", fundTracker))
 	}
-	err = governance.DeleteAllFunds(proposal.ProposalID, ctx.ProposalMasterStore.ProposalFund)
+	err = fundStore.DeleteAllFunds(proposal.ProposalID)
 	if err != nil {
 		return err
 	}
