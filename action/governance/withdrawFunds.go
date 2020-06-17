@@ -160,11 +160,6 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 	coin := withdrawProposal.WithdrawValue.ToCoin(ctx.Currencies)
 	err = ctx.Balances.AddToAddress(withdrawProposal.Beneficiary.Bytes(), coin)
 	if err != nil {
-		// return funds to proposal
-		err = ctx.ProposalMasterStore.ProposalFund.AddFunds(proposal.ProposalID, withdrawProposal.Funder, withdrawAmount)
-		if err != nil {
-			ctx.Logger.Error("Failed to return funds to proposal:", withdrawProposal.ProposalID)
-		}
 		result := action.Response{
 			Events: action.GetEvent(withdrawProposal.Tags(), "withdraw_proposal_addition_failed"),
 			Log:    governance.ErrAddFunding.Marshal(),
