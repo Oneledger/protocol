@@ -87,8 +87,10 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 	}
 
 	// 1. Check if Proposal already exists, if so, check the withdraw requirement:
-	//    a. the funding goal is not reached
-	//    b. the funding height is reached
+	//    a. if the proposal outcome is canceled or insufficient funds
+	//    or
+	//    b. the funding goal is not reached and the funding height is reached
+
 
 	proposal, _, err := ctx.ProposalMasterStore.Proposal.QueryAllStores(withdrawProposal.ProposalID)
 	if err != nil {
@@ -100,18 +102,24 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 		return false, result
 	}
 	currentFundsForProposal := governance.GetCurrentFunds(proposal.ProposalID, ctx.ProposalMasterStore.ProposalFund)
-	// if funding goal is reached or there is still time for funding
-	if currentFundsForProposal.BigInt().Cmp(proposal.FundingGoal.BigInt()) >= 0 || ctx.Header.Height <= proposal.FundingDeadline {
-		ctx.Logger.Error("Proposal does not meet withdraw requirement", withdrawProposal.ProposalID)
-		result := action.Response{
-			Events: action.GetEvent(withdrawProposal.Tags(), "withdraw_proposal_does_not_meet_withdraw_requirement"),
-			Log:    governance.ErrProposalWithdrawNotEligible.Marshal(),
+	// if outcome is not cancelled or insufficient funds
+	if proposal.Outcome != governance.ProposalOutcomeCancelled && proposal.Outcome != governance.ProposalOutcomeInsufficientFunds {
+		// if funding goal is reached or there is still time for funding
+		if currentFundsForProposal.BigInt().Cmp(proposal.FundingGoal.BigInt()) >= 0 || ctx.Header.Height <= proposal.FundingDeadline {
+			ctx.Logger.Error("Proposal does not meet withdraw requirement", withdrawProposal.ProposalID)
+			result := action.Response{
+				Events: action.GetEvent(withdrawProposal.Tags(), "withdraw_proposal_does_not_meet_withdraw_requirement"),
+				Log:    governance.ErrProposalWithdrawNotEligible.Marshal(),
+			}
+			return false, result
 		}
-		return false, result
+	} else if proposal.Outcome == governance.ProposalOutcomeInProgress {
+		// 2. change outcome, status, state
+		// if outcome is already cancel, then no need to change
+		proposal.Outcome = governance.ProposalOutcomeInsufficientFunds
+		proposal.Status = governance.ProposalStatusCompleted
 	}
-	// 2. change outcome, status, state
-	proposal.Outcome = governance.ProposalOutcomeInsufficientFunds
-	proposal.Status = governance.ProposalStatusCompleted
+
 	err = ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStateFailed).Set(proposal)
 	if err != nil {
 		ctx.Logger.Error("Failed to add proposal to FAILED store :", proposal.ProposalID)

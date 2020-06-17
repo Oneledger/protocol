@@ -1,10 +1,11 @@
 import time
 
-from sdk.actions import *
+from sdk import *
 
 addr_list = addresses()
 
 _pid = "id_30034"
+_pid_to_cancel = "id_30035"
 _proposer = addr_list[0]
 _initial_funding = (int("2") * 10 ** 9)
 _funder = addr_list[1]
@@ -13,7 +14,10 @@ _withdraw_amount = (int("2") * 10 ** 9)
 _withdraw_amount_too_much = (int("5") * 10 ** 9)
 
 _prop = Proposal(_pid, "general", "proposal for funds withdrawing", "proposal headline", _proposer, _initial_funding)
+_prop_to_cancel = Proposal(_pid_to_cancel, "general", "proposal for funds withdrawing(test cancelled proposal)", "proposal headline", _proposer, _initial_funding)
+
 _encoded_pid = _prop.get_encoded_pid()
+_encoded_pid_to_cancel = _prop_to_cancel.get_encoded_pid()
 
 _wait = 6
 
@@ -49,6 +53,9 @@ if __name__ == "__main__":
     # create proposal
     _prop.send_create()
 
+    # create proposal
+    _prop_to_cancel.send_create()
+
     print "#### PROPOSER'S BALANCE AFTER CREATING PROPOSAL: ####"
     query_balance(_proposer)
 
@@ -67,6 +74,15 @@ if __name__ == "__main__":
 
     print "#### FUNDER'S BALANCE AFTER FUNDING: ####"
     query_balance(_funder)
+
+    # cancel the other proposal
+    cancel_proposal(_encoded_pid_to_cancel, _proposer, "changed mind")
+
+    print bcolors.WARNING + "#### TRY TO WITHDRAW CANCELLED, SHOULD FAIL: ####" + bcolors.ENDC
+
+    # withdraw proposal funds---cancelled proposal
+    withdraw_fund(_encoded_pid, _proposer, _withdraw_amount, _proposer)
+    time.sleep(5)
 
     for x in range(_wait):
         print("wait for 60s, " + str(_wait * 10 - x * 10) + "s left")
