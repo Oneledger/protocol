@@ -40,11 +40,11 @@ type ListProposalsReply struct {
 }
 
 type VoteProposalRequest struct {
-	ProposalId string        `json:"proposalId"`
-	Opinion    string        `json:"opinion"`
-	Address    keys.Address  `json:"address"`
-	GasPrice   action.Amount `json:"gasPrice"`
-	Gas        int64         `json:"gas"`
+	ProposalId string                 `json:"proposalId"`
+	Opinion    governance.VoteOpinion `json:"opinion"`
+	Address    keys.Address           `json:"address"`
+	GasPrice   action.Amount          `json:"gasPrice"`
+	Gas        int64                  `json:"gas"`
 }
 
 type VoteProposalReply struct {

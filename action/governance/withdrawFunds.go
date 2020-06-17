@@ -101,17 +101,19 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 		}
 		return false, result
 	}
-	currentFundsForProposal := governance.GetCurrentFunds(proposal.ProposalID, ctx.ProposalMasterStore.ProposalFund)
-	// if outcome is not cancelled or insufficient funds
-	if proposal.Outcome != governance.ProposalOutcomeCancelled && proposal.Outcome != governance.ProposalOutcomeInsufficientFunds {
-		// if funding goal is reached or there is still time for funding
-		if currentFundsForProposal.BigInt().Cmp(proposal.FundingGoal.BigInt()) >= 0 || ctx.Header.Height <= proposal.FundingDeadline {
-			ctx.Logger.Error("Proposal does not meet withdraw requirement", withdrawProposal.ProposalID)
-			result := action.Response{
-				Events: action.GetEvent(withdrawProposal.Tags(), "withdraw_proposal_does_not_meet_withdraw_requirement"),
-				Log:    governance.ErrProposalWithdrawNotEligible.Marshal(),
-			}
-			return false, result
+
+	fundStore := ctx.ProposalMasterStore.ProposalFund
+	currentFundsForProposal := fundStore.GetCurrentFundsForProposal(proposal.ProposalID)
+			// if outcome is not cancelled or insufficient funds
+			if proposal.Outcome != governance.ProposalOutcomeCancelled && proposal.Outcome != governance.ProposalOutcomeInsufficientFunds {
+				// if funding goal is reached or there is still time for funding
+				if currentFundsForProposal.BigInt().Cmp(proposal.FundingGoal.BigInt()) >= 0 || ctx.Header.Height <= proposal.FundingDeadline {
+					ctx.Logger.Error("Proposal does not meet withdraw requirement", withdrawProposal.ProposalID)
+					result := action.Response{
+						Events: action.GetEvent(withdrawProposal.Tags(), "withdraw_proposal_does_not_meet_withdraw_requirement"),
+						Log:    governance.ErrProposalWithdrawNotEligible.Marshal(),
+					}
+					return false, result
 		}
 	} else if proposal.Outcome == governance.ProposalOutcomeInProgress {
 		// 2. change outcome, status, state
@@ -139,13 +141,14 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 		return false, result
 	}
 
-	// 3. Check if the funder has funded this proposal, if so, get the amount of funds
-	_, err = governance.GetCurrentFundsByFunder(proposal.ProposalID, withdrawProposal.Funder, ctx.ProposalMasterStore.ProposalFund)
-	if err != nil {
-		ctx.Logger.Error("No available funds to withdraw for this funder :", withdrawProposal.Funder)
+	// 3. Check if the funder has funded this proposal
+	isFundedByFunder := fundStore.IsFundedByFunder(proposal.ProposalID, withdrawProposal.Funder)
+	ctx.Logger.Detail("isFundedByFunder: ", isFundedByFunder)
+	if !isFundedByFunder {
+		ctx.Logger.Error("No such funder funded this proposal :", withdrawProposal.Funder)
 		result := action.Response{
-			Events: action.GetEvent(withdrawProposal.Tags(), "no_available__fund_to_withdraw_for_this_funder"),
-			Log:    governance.ErrNoSuchFunder.Wrap(err).Marshal(),
+			Events: action.GetEvent(withdrawProposal.Tags(), "no_such_funder_funded_this_proposal"),
+			Log:    governance.ErrNoSuchFunder.Marshal(),
 		}
 		return false, result
 	}
@@ -166,12 +169,6 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 	coin := withdrawProposal.WithdrawValue.ToCoin(ctx.Currencies)
 	err = ctx.Balances.AddToAddress(withdrawProposal.Beneficiary.Bytes(), coin)
 	if err != nil {
-		// return funds to proposal
-		err = ctx.ProposalMasterStore.ProposalFund.AddFunds(proposal.ProposalID, withdrawProposal.Funder, withdrawAmount)
-		if err != nil {
-			ctx.Logger.Error("Failed to return funds to proposal:", withdrawProposal.ProposalID)
-			panic("error returning funds to proposal")
-		}
 		result := action.Response{
 			Events: action.GetEvent(withdrawProposal.Tags(), "withdraw_proposal_addition_failed"),
 			Log:    governance.ErrAddFunding.Marshal(),

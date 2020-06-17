@@ -144,7 +144,8 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 	//4. Check if the Proposal has reached funding goal, when this contribution is added
 	//   Change the state of the proposal to VOTING, if funding goal is met
 	fundingAmount := balance.NewAmountFromBigInt(fundProposal.FundValue.Value.BigInt())
-	currentFundsforProposal := governance.GetCurrentFunds(proposal.ProposalID, ctx.ProposalMasterStore.ProposalFund)
+	fundStore := ctx.ProposalMasterStore.ProposalFund
+	currentFundsforProposal := fundStore.GetCurrentFundsForProposal(proposal.ProposalID)
 	newAmount := fundingAmount.Plus(currentFundsforProposal)
 	if newAmount.BigInt().Cmp(proposal.FundingGoal.BigInt()) >= 0 {
 		//5. Update status and set voting deadline
@@ -180,14 +181,9 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 	err = ctx.Balances.MinusFromAddress(fundProposal.FunderAddress.Bytes(), coin)
 	if err != nil {
 		return logAndReturnFalse(ctx.Logger, balance.ErrBalanceErrorMinusFailed, fundProposal.Tags(), err)
-
 	}
 	err = ctx.ProposalMasterStore.ProposalFund.AddFunds(proposal.ProposalID, fundProposal.FunderAddress, fundingAmount)
 	if err != nil {
-		errA := ctx.Balances.AddToAddress(fundProposal.FunderAddress.Bytes(), coin)
-		if errA != nil {
-			logAndReturnFalse(ctx.Logger, governance.ErrGovFundUnableToAdd, fundProposal.Tags(), errA)
-		}
 		return logAndReturnFalse(ctx.Logger, governance.ErrGovFundUnableToAdd, fundProposal.Tags(), err)
 	}
 

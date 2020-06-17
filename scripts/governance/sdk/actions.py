@@ -27,6 +27,12 @@ ProposalStateActive  = 0x31
 ProposalStatePassed  = 0x32
 ProposalStateFailed  = 0x33
 
+# Vote Opinions
+OPIN_POSITIVE = 0x1
+OPIN_NEGATIVE = 0x2
+OPIN_GIVEUP   = 0x3
+OpinMap = {OPIN_POSITIVE: 'YES', OPIN_NEGATIVE: 'NO', OPIN_GIVEUP: 'GIVEUP'}
+
 class bcolors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -222,7 +228,7 @@ class ProposalVote:
             if not result["ok"]:
                 sys.exit(-1)
             else:
-                print "################### proposal voted:" + self.pid + "opinion: " + self.opin
+                print "################### proposal voted:" + self.pid + "opinion: " + OpinMap[self.opin]
                 return result["txHash"]
 
 
@@ -369,6 +375,7 @@ def query_proposal(proposal_id):
     }
     resp = rpc_call('query.ListProposal', req)
     stat = resp["result"]["proposalStats"][0]
+    print json.dumps(resp, indent=4)
     return stat["proposal"], stat["funds"]
 
 def query_balance(address):
