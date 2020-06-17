@@ -177,8 +177,7 @@ func (s *Service) VoteProposal(args client.VoteProposalRequest, reply *client.Vo
 	}
 
 	// prepare Tx struct
-	opin := governance.NewVoteOpinion(args.Opinion)
-	if opin == governance.OPIN_UNKNOWN {
+	if args.Opinion == governance.OPIN_UNKNOWN {
 		return errors.New("invalid vote opinion")
 	}
 
@@ -186,7 +185,7 @@ func (s *Service) VoteProposal(args client.VoteProposalRequest, reply *client.Vo
 		ProposalID:       governance.ProposalID(args.ProposalId),
 		Address:          args.Address,
 		ValidatorAddress: address,
-		Opinion:          opin,
+		Opinion:          args.Opinion,
 	}
 
 	data, err := voteProposal.Marshal()
