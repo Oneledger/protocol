@@ -180,11 +180,6 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	initialFunding := balance.NewAmountFromBigInt(createProposal.InitialFunding.Value.BigInt())
 	err = ctx.ProposalMasterStore.ProposalFund.AddFunds(proposal.ProposalID, proposal.Proposer, initialFunding)
 	if err != nil {
-		//return Funds back to proposer.
-		err = ctx.Balances.AddToAddress(createProposal.Proposer, funds)
-		if err != nil {
-			panic("error returning funds to balance store")
-		}
 		result := action.Response{
 			Events: action.GetEvent(createProposal.Tags(), "create_proposal_funding_failed"),
 			Log:    governance.ErrAddFunding.Marshal(),
