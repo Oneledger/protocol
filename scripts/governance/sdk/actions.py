@@ -271,10 +271,30 @@ class ProposalFundsWithdraw:
         if "ok" in result:
             if not result["ok"]:
                 print bcolors.FAIL + "################### proposal funds withdraw failed:" + result["log"] + bcolors.ENDC
-                return result["txHash"]
+                sys.exit(-1)
             else:
                 print "################### proposal funds withdrawn:" + self.pid
                 return result["txHash"]
+        else:
+            print bcolors.FAIL + "################### proposal funds withdraw failed:" + result["error"]["message"] + bcolors.ENDC
+            sys.exit(-1)
+
+    def withdraw_fund_should_fail(self, contr_address):
+        # create Tx
+        raw_txn = self._withdraw_funds(contr_address)
+
+        # sign Tx
+        signed = sign(raw_txn, self.funder)
+
+        # broadcast Tx
+        result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
+
+        if "ok" in result:
+            if not result["ok"]:
+                print bcolors.FAIL + "################### proposal funds withdraw failed:" + result["log"] + bcolors.ENDC
+                return result["txHash"]
+            else:
+                sys.exit(-1)
         else:
             print bcolors.FAIL + "################### proposal funds withdraw failed:" + result["error"]["message"] + bcolors.ENDC
 
@@ -367,6 +387,7 @@ def query_proposals(prefix, proposer="", proposalType=ProposalTypeInvalid):
 
     resp = rpc_call('query.ListProposals', req)
     result = resp["result"]
+    print json.dumps(resp, indent=4)
     return result["proposalStats"]
 
 def query_proposal(proposal_id):
