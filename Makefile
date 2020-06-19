@@ -109,7 +109,7 @@ govtest: reset
 alltest: reset
 	@./scripts/testsend
 	@./scripts/getValidators
-	@./scripts/testsend
+	@./scripts/testsendpool
 	python scripts/ons/create_domain.py
 	python scripts/ons/create_sub_domain.py
 	python scripts/ons/buy_sell_domain.py

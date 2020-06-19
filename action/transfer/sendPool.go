@@ -149,7 +149,7 @@ func runSendPool(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
 func getPoolList(ctx *action.Context) map[string]action.Address {
 	poolList := map[string]action.Address{}
-	poolList["BountyProgram"] = action.Address(ctx.ProposalMasterStore.Proposal.GetOptions().BountyProgramAddr)
+	poolList["BountyPool"] = action.Address(ctx.ProposalMasterStore.Proposal.GetOptions().BountyProgramAddr)
 	poolList["FeePool"] = action.Address(fees.POOL_KEY)
 	poolList["RewardsPool"] = action.Address(ctx.RewardStore.GetOptions().RewardPoolAddress)
 	return poolList
