@@ -121,6 +121,8 @@ func runSendPool(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	}
 	// Get Pool Address
 	toPool := getPoolList(ctx)[sendPool.PoolName]
+	ctx.Logger.Debug("Adding To Pool : ", sendPool.PoolName, " | Pool Address :", toPool.String())
+	//ctx.FeePool.AddToPool(coin)
 	err = ctx.Balances.AddToAddress(toPool, coin)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, balance.ErrBalanceErrorAddFailed, sendPool.Tags(), err)
