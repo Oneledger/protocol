@@ -8,34 +8,43 @@ import (
 )
 
 type CreateProposalRequest struct {
-	ProposalID     string        `json:"proposal_id"`
-	ProposalType   string        `json:"proposal_type"`
+	ProposalID     string        `json:"proposalId"`
+	ProposalType   string        `json:"proposalType"`
+	Headline       string        `json:"headline"`
 	Description    string        `json:"description"`
 	Proposer       keys.Address  `json:"proposer"`
-	InitialFunding action.Amount `json:"initial_funding"`
+	InitialFunding action.Amount `json:"initialFunding"`
 	GasPrice       action.Amount `json:"gasPrice"`
 	Gas            int64         `json:"gas"`
 }
 
+type ListProposalRequest struct {
+	ProposalId governance.ProposalID `json:"proposalId"`
+}
+
 type ListProposalsRequest struct {
-	ProposalId governance.ProposalID `json:"proposal_id"`
-	State      string                `json:"state"`
+	State        governance.ProposalState `json:"state"`
+	Proposer     keys.Address             `json:"proposer"`
+	ProposalType governance.ProposalType  `json:"proposalType"`
+}
+
+type ProposalStat struct {
+	Proposal governance.Proposal   `json:"proposal"`
+	Funds    balance.Amount        `json:"funds"`
+	Votes    governance.VoteStatus `json:"votes"`
 }
 
 type ListProposalsReply struct {
-	Proposals     []governance.Proposal    `json:"proposals"`
-	ProposalFunds []balance.Amount         `json:"proposal_funds"`
-	ProposalVotes []governance.VoteStatus  `json:"proposal_votes"`
-	State         governance.ProposalState `json:"state"`
-	Height        int64                    `json:"height"`
+	ProposalStats []ProposalStat `json:"proposalStats"`
+	Height        int64          `json:"height"`
 }
 
 type VoteProposalRequest struct {
-	ProposalId string        `json:"proposal_id"`
-	Opinion    string        `json:"opinion"`
-	Address    keys.Address  `json:"address"`
-	GasPrice   action.Amount `json:"gasPrice"`
-	Gas        int64         `json:"gas"`
+	ProposalId string                 `json:"proposalId"`
+	Opinion    governance.VoteOpinion `json:"opinion"`
+	Address    keys.Address           `json:"address"`
+	GasPrice   action.Amount          `json:"gasPrice"`
+	Gas        int64                  `json:"gas"`
 }
 
 type VoteProposalReply struct {
@@ -44,15 +53,15 @@ type VoteProposalReply struct {
 }
 
 type FundProposalRequest struct {
-	ProposalId    governance.ProposalID `json:"proposal_id"`
-	FundValue     action.Amount         `json:"fund_value"`
-	FunderAddress action.Address        `json:"funder_address"`
+	ProposalId    governance.ProposalID `json:"proposalId"`
+	FundValue     action.Amount         `json:"fundValue"`
+	FunderAddress action.Address        `json:"funderAddress"`
 	GasPrice      action.Amount         `json:"gasPrice"`
 	Gas           int64                 `json:"gas"`
 }
 
 type CancelProposalRequest struct {
-	ProposalId governance.ProposalID `json:"proposal_id"`
+	ProposalId governance.ProposalID `json:"proposalId"`
 	Proposer   keys.Address          `json:"proposer"`
 	Reason     string                `json:"reason"`
 	GasPrice   action.Amount         `json:"gasPrice"`
@@ -60,10 +69,17 @@ type CancelProposalRequest struct {
 }
 
 type WithdrawFundsRequest struct {
-	ProposalID    governance.ProposalID `json:"proposal_id"`
-	Contributor   keys.Address          `json:"contributor_address"`
-	WithdrawValue action.Amount         `json:"withdraw_value"`
-	Beneficiary   keys.Address          `json:"beneficiary_address"`
+	ProposalID    governance.ProposalID `json:"proposalId"`
+	Funder        keys.Address          `json:"funderAddress"`
+	WithdrawValue action.Amount         `json:"withdrawValue"`
+	Beneficiary   keys.Address          `json:"beneficiaryAddress"`
 	GasPrice      action.Amount         `json:"gasPrice"`
 	Gas           int64                 `json:"gas"`
+}
+
+type FinalizeProposalRequest struct {
+	ProposalId governance.ProposalID `json:"proposalId"`
+	Proposer   action.Address        `json:"proposer"`
+	GasPrice   action.Amount         `json:"gasPrice"`
+	Gas        int64                 `json:"gas"`
 }

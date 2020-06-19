@@ -12,7 +12,7 @@ _each_funding = (int("5") * 10 ** 9)
 _funding_goal_general = (int("10") * 10 ** 9)
 
 def test_pass_proposal():
-    _prop = Proposal(_pid_pass, "general", "proposal for vote", _proposer, _initial_funding)
+    _prop = Proposal(_pid_pass, "general", "proposal for vote", "proposal headline", _proposer, _initial_funding)
 
     # create proposal
     _prop.send_create()
@@ -24,26 +24,26 @@ def test_pass_proposal():
 
     # 2nd fund
     fund_proposal(encoded_pid, _each_funding, addr_list[1])
-    check_proposal_state(encoded_pid, ProposalStateActive, ProposalStatusVoting)
+    check_proposal_state(encoded_pid, ProposalOutcomeInProgress, ProposalStatusVoting)
 
     # 1st vote --> 25%
-    vote_proposal(encoded_pid, "YES", url_0, addr_list[0])
-    check_proposal_state(encoded_pid, ProposalStateActive, ProposalStatusVoting)
+    vote_proposal(encoded_pid, OPIN_POSITIVE, url_0, addr_list[0])
+    check_proposal_state(encoded_pid, ProposalOutcomeInProgress, ProposalStatusVoting)
 
     # 2nd vote --> 25%
-    vote_proposal(encoded_pid, "NO", url_1, addr_list[1])
-    check_proposal_state(encoded_pid, ProposalStateActive, ProposalStatusVoting)
+    vote_proposal(encoded_pid, OPIN_NEGATIVE, url_1, addr_list[1])
+    check_proposal_state(encoded_pid, ProposalOutcomeInProgress, ProposalStatusVoting)
 
     # 3rd vote --> 50%
-    vote_proposal(encoded_pid, "YES", url_2, addr_list[2])
-    check_proposal_state(encoded_pid, ProposalStateActive, ProposalStatusVoting)
+    vote_proposal(encoded_pid, OPIN_POSITIVE, url_2, addr_list[2])
+    check_proposal_state(encoded_pid, ProposalOutcomeInProgress, ProposalStatusVoting)
 
     # 4th vote --> 75%
-    vote_proposal(encoded_pid, "YES", url_3, addr_list[2])
-    check_proposal_state(encoded_pid, ProposalStatePassed, ProposalStatusCompleted)
+    vote_proposal(encoded_pid, OPIN_POSITIVE, url_3, addr_list[2])
+    check_proposal_state(encoded_pid, ProposalOutcomeCompleted, ProposalStatusCompleted)
 
 def test_fail_proposal():
-    _prop = Proposal(_pid_fail, "general", "proposal for vote", _proposer, _initial_funding)
+    _prop = Proposal(_pid_fail, "general", "proposal for vote", "proposal headline", _proposer, _initial_funding)
 
     # create proposal
     _prop.send_create()
@@ -55,19 +55,19 @@ def test_fail_proposal():
 
     # 2nd fund
     fund_proposal(encoded_pid, _each_funding, addr_list[1])
-    check_proposal_state(encoded_pid, ProposalStateActive, ProposalStatusVoting)
+    check_proposal_state(encoded_pid, ProposalOutcomeInProgress, ProposalStatusVoting)
 
     # 1st vote --> NO--0%
-    vote_proposal(encoded_pid, "YES", url_0, addr_list[0])
-    check_proposal_state(encoded_pid, ProposalStateActive, ProposalStatusVoting)
+    vote_proposal(encoded_pid, OPIN_POSITIVE, url_0, addr_list[0])
+    check_proposal_state(encoded_pid, ProposalOutcomeInProgress, ProposalStatusVoting)
 
     # 2nd vote --> NO--25%
-    vote_proposal(encoded_pid, "NO", url_1, addr_list[1])
-    check_proposal_state(encoded_pid, ProposalStateActive, ProposalStatusVoting)
+    vote_proposal(encoded_pid, OPIN_NEGATIVE, url_1, addr_list[1])
+    check_proposal_state(encoded_pid, ProposalOutcomeInProgress, ProposalStatusVoting)
 
     # 3rd vote --> NO--50%
-    vote_proposal(encoded_pid, "NO", url_2, addr_list[2])
-    check_proposal_state(encoded_pid, ProposalStateFailed, ProposalStatusCompleted)
+    vote_proposal(encoded_pid, OPIN_NEGATIVE, url_2, addr_list[2])
+    check_proposal_state(encoded_pid, ProposalOutcomeInsufficientVotes, ProposalStatusCompleted)
 
 if __name__ == "__main__":
     # test pass a proposal
@@ -76,5 +76,5 @@ if __name__ == "__main__":
     # test fail a proposal
     test_fail_proposal()
 
-    print "#### Test vote proposals succeed: ####"
+    print bcolors.OKGREEN + "#### Test vote proposals succeed" + bcolors.ENDC
     print ""

@@ -17,10 +17,8 @@ var (
 	cs       *storage.State
 	address  keys.Address
 	address2 keys.Address
-	address3 keys.Address
 	ID1      ProposalID
 	ID2      ProposalID
-	ID3      ProposalID
 )
 
 func init() {
@@ -40,15 +38,12 @@ func generateAddresses() {
 	pub2, _, _ := keys.NewKeyPairFromTendermint()
 	h2, _ := pub2.GetHandler()
 	address2 = h2.Address()
-	pub3, _, _ := keys.NewKeyPairFromTendermint()
-	h3, _ := pub3.GetHandler()
-	address3 = h3.Address()
+
 }
 
 func generateIDs() {
 	ID1 = generateProposalID("Test")
 	ID2 = generateProposalID("Test1")
-	ID3 = generateProposalID("Test2")
 
 }
 func TestProposalFundStore_AddFunds(t *testing.T) {
@@ -82,7 +77,7 @@ func TestProposalFundStore_Iterate(t *testing.T) {
 	//fmt.Println("Iterating Stores")
 	IDLIST := []ProposalID{ID2, ID1}
 	ok := store.iterate(func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) bool {
-		fmt.Println("ProposalID : ", proposalID, "ProposalAddress :", fundingAddr, "Proposal Amount :", amt.BigInt())
+		//fmt.Println("ProposalID : ", proposalID, "ProposalAddress :", fundingAddr, "Proposal Amount :", amt.BigInt())
 		assert.Contains(t, IDLIST, proposalID, "")
 		return false
 	})
@@ -92,7 +87,7 @@ func TestProposalFundStore_Iterate(t *testing.T) {
 //
 func TestProposalFundStore_GetFundersForProposalID(t *testing.T) {
 	//fmt.Println("Get Funders for ID :  ", ID1)
-	funds := store.GetFundersForProposalID(ID1, func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund {
+	funds := store.GetFundsForProposalID(ID1, func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund {
 		return ProposalFund{
 			id:            proposalID,
 			address:       fundingAddr,
@@ -122,9 +117,19 @@ func TestProposalFundStore_GetProposalForFunder(t *testing.T) {
 	assert.EqualValues(t, 2, len(funds), "")
 }
 
-func TestProposalFund_getCurrentFunds(t *testing.T) {
+func TestGetCurrentFunds(t *testing.T) {
 	//fmt.Println("Getting Total fund for ProposalID")
-	currentFunds := GetCurrentFunds(ID1, store)
+	currentFunds := store.GetCurrentFundsForProposal(ID1)
 	funds := currentFunds.BigInt().Int64()
 	assert.EqualValues(t, int64(1000), funds, "")
+}
+
+func TestDeleteAllFunds(t *testing.T) {
+	err := store.DeleteAllFunds(ID1)
+	if err != nil {
+		fmt.Println("Error Deleting all funds", err)
+	}
+	currentFunds := store.GetCurrentFundsForProposal(ID1)
+	funds := currentFunds.BigInt().Int64()
+	assert.EqualValues(t, int64(0), funds, "")
 }

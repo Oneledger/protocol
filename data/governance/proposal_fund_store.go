@@ -18,19 +18,19 @@ type ProposalFundStore struct {
 	prefix []byte
 }
 
-func (st *ProposalFundStore) set(key storage.StoreKey, amt balance.Amount) error {
+func (pf *ProposalFundStore) set(key storage.StoreKey, amt balance.Amount) error {
 	dat, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(amt)
 	if err != nil {
 		return errors.Wrap(err, errorSerialization)
 	}
-	prefixed := append(st.prefix, key...)
-	err = st.State.Set(prefixed, dat)
+	prefixed := append(pf.prefix, key...)
+	err = pf.State.Set(prefixed, dat)
 	return errors.Wrap(err, errorSettingRecord)
 }
 
-func (st *ProposalFundStore) get(key storage.StoreKey) (amt *balance.Amount, err error) {
-	prefixed := append(st.prefix, storage.StoreKey(key)...)
-	dat, err := st.State.Get(prefixed)
+func (pf *ProposalFundStore) get(key storage.StoreKey) (amt *balance.Amount, err error) {
+	prefixed := append(pf.prefix, storage.StoreKey(key)...)
+	dat, err := pf.State.Get(prefixed)
 	//fmt.Println("dat :", dat, "err", err)
 	if err != nil {
 		return nil, errors.Wrap(err, errorGettingRecord)
@@ -61,19 +61,17 @@ func (pf *ProposalFundStore) iterate(fn func(proposalID ProposalID, addr keys.Ad
 		storage.Rangefix(string(pf.prefix)),
 		true,
 		func(key, value []byte) bool {
-
 			amt := balance.NewAmount(0)
 			err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(value, amt)
 			if err != nil {
-				fmt.Println("err", err)
 				return true
 			}
 			arr := strings.Split(string(key), storage.DB_PREFIX)
 			proposalID := arr[1]
-			fundingAddress:= keys.Address{}
+			fundingAddress := keys.Address(arr[len(arr)-1])
 			err = fundingAddress.UnmarshalText([]byte(arr[len(arr)-1]))
 			if err != nil {
-				fmt.Println("err", err)
+				fmt.Println("Error Unmarshalling ", err)
 				return true
 			}
 			return fn(ProposalID(proposalID), fundingAddress, amt)
@@ -94,7 +92,7 @@ func NewProposalFundStore(prefix string, state *storage.State) *ProposalFundStor
 	}
 }
 
-func (pf *ProposalFundStore) GetFundersForProposalID(id ProposalID, fn func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund) []ProposalFund {
+func (pf *ProposalFundStore) GetFundsForProposalID(id ProposalID, fn func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund) []ProposalFund {
 	var foundProposals []ProposalFund
 	pf.iterate(func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) bool {
 		if proposalID == id {
@@ -108,12 +106,23 @@ func (pf *ProposalFundStore) GetFundersForProposalID(id ProposalID, fn func(prop
 func (pf *ProposalFundStore) GetProposalsForFunder(funderAddress keys.Address, fn func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund) []ProposalFund {
 	var foundProposals []ProposalFund
 	pf.iterate(func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) bool {
-		if bytes.Equal(keys.Address(funderAddress.String()), fundingAddr) {
+		if bytes.Equal(funderAddress, fundingAddr) {
 			foundProposals = append(foundProposals, fn(proposalID, fundingAddr, amt))
 		}
 		return false
 	})
 	return foundProposals
+}
+
+func (store *ProposalFundStore) IsFundedByFunder(id ProposalID, funder keys.Address) bool {
+	haveFunderAddress := false
+	store.GetFundsForProposalID(id, func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund {
+		if fundingAddr.Equal(funder) {
+			haveFunderAddress = true
+		}
+		return ProposalFund{}
+	})
+	return haveFunderAddress
 }
 
 func (pf *ProposalFundStore) AddFunds(proposalId ProposalID, fundingAddress keys.Address, amount *balance.Amount) error {
@@ -140,8 +149,10 @@ func (pf *ProposalFundStore) DeductFunds(proposalId ProposalID, fundingAddress k
 
 func (pf *ProposalFundStore) DeleteFunds(proposalId ProposalID, fundingAddress keys.Address) (bool, error) {
 	key := storage.StoreKey(string(proposalId) + storage.DB_PREFIX + fundingAddress.String())
+
 	_, err := pf.get(key)
 	if err != nil {
+
 		return false, errors.Wrap(err, errorGettingRecord)
 	}
 	ok, err := pf.delete(key)

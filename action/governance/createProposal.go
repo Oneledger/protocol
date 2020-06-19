@@ -16,11 +16,12 @@ import (
 var _ action.Msg = &CreateProposal{}
 
 type CreateProposal struct {
-	ProposalID     governance.ProposalID
-	ProposalType   governance.ProposalType
-	Description    string
-	Proposer       keys.Address
-	InitialFunding action.Amount
+	ProposalID     governance.ProposalID   `json:"proposalId"`
+	ProposalType   governance.ProposalType `json:"proposalType"`
+	Headline       string                  `json:"proposalHeadline"`
+	Description    string                  `json:"proposalDescription"`
+	Proposer       keys.Address            `json:"proposerAddress"`
+	InitialFunding action.Amount           `json:"initialFunding"`
 	ConfigUpdate   consensus.GovernanceState
 }
 
@@ -44,7 +45,7 @@ func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) 
 
 	options := ctx.ProposalMasterStore.Proposal.GetOptionsByType(createProposal.ProposalType)
 	if options == nil {
-		return false, errors.New("failed to get proposal options")
+		return false, governance.ErrGetProposalOptions
 	}
 
 	// the currency should be OLT
@@ -58,7 +59,7 @@ func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) 
 
 	//Check if Proposal ID is valid
 	if len(createProposal.ProposalID) <= 0 {
-		return false, errors.New("invalid proposal id")
+		return false, governance.ErrInvalidProposalId
 	}
 
 	//Get Proposal options based on type.
@@ -82,29 +83,29 @@ func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) 
 	case governance.ProposalTypeCodeChange:
 	case governance.ProposalTypeConfigUpdate:
 	default:
-		return false, errors.New("invalid proposal type")
+		return false, governance.ErrInvalidProposalType
 	}
 
 	//Check if proposer address is valid oneLedger address
 	err = createProposal.Proposer.Err()
 	if err != nil {
-		return false, errors.Wrap(err, "invalid proposer address")
+		return false, errors.Wrap(action.ErrInvalidAddress, err.Error())
 	}
 
 	if len(createProposal.Description) == 0 {
-		return false, errors.New("invalid description of proposal")
+		return false, governance.ErrInvalidProposalDesc
 	}
 
 	return true, nil
 }
 
 func (c CreateProposal) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	ctx.Logger.Debug("Processing CreateProposal Transaction for CheckTx", tx)
+	ctx.Logger.Detail("Processing CreateProposal Transaction for CheckTx", tx)
 	return runTx(ctx, tx)
 }
 
 func (c CreateProposal) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	ctx.Logger.Debug("Processing CreateProposal Transaction for DeliverTx", tx)
+	ctx.Logger.Detail("Processing CreateProposal Transaction for DeliverTx", tx)
 	return runTx(ctx, tx)
 }
 
@@ -118,6 +119,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	if err != nil {
 		result := action.Response{
 			Events: action.GetEvent(createProposal.Tags(), "create_proposal_failed_deserialize"),
+			Log:    action.ErrWrongTxType.Wrap(err).Marshal(),
 		}
 		return false, result
 	}
@@ -137,6 +139,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		createProposal.ProposalID,
 		createProposal.ProposalType,
 		createProposal.Description,
+		createProposal.Headline,
 		createProposal.Proposer,
 		fundingDeadline,
 		options.FundingGoal,
@@ -147,6 +150,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	if ctx.ProposalMasterStore.Proposal.Exists(proposal.ProposalID) {
 		result := action.Response{
 			Events: action.GetEvent(createProposal.Tags(), "create_proposal_already_exists"),
+			Log:    governance.ErrProposalExists.Marshal(),
 		}
 		return false, result
 	}
@@ -157,6 +161,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	if err != nil {
 		result := action.Response{
 			Events: action.GetEvent(createProposal.Tags(), "create_proposal_failed"),
+			Log:    governance.ErrAddingProposalToActiveStore.Wrap(err).Marshal(),
 		}
 		return false, result
 	}
@@ -170,6 +175,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	if err != nil {
 		result := action.Response{
 			Events: action.GetEvent(createProposal.Tags(), "create_proposal_deduction_failed"),
+			Log:    governance.ErrDeductFunding.Wrap(err).Marshal(),
 		}
 		return false, result
 	}
@@ -178,13 +184,9 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	initialFunding := balance.NewAmountFromBigInt(createProposal.InitialFunding.Value.BigInt())
 	err = ctx.ProposalMasterStore.ProposalFund.AddFunds(proposal.ProposalID, proposal.Proposer, initialFunding)
 	if err != nil {
-		//return Funds back to proposer.
-		err = ctx.Balances.AddToAddress(createProposal.Proposer, funds)
-		if err != nil {
-			panic("error returning funds to balance store")
-		}
 		result := action.Response{
 			Events: action.GetEvent(createProposal.Tags(), "create_proposal_funding_failed"),
+			Log:    governance.ErrAddFunding.Marshal(),
 		}
 		return false, result
 	}

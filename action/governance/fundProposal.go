@@ -15,9 +15,9 @@ import (
 var _ action.Msg = &FundProposal{}
 
 type FundProposal struct {
-	ProposalId    governance.ProposalID
-	FunderAddress keys.Address
-	FundValue     action.Amount
+	ProposalId    governance.ProposalID `json:"proposalId"`
+	FunderAddress keys.Address          `json:"funderAddress"`
+	FundValue     action.Amount         `json:"fundValue"`
 }
 
 func (fp FundProposal) Signers() []action.Address {
@@ -84,7 +84,7 @@ func (fundProposalTx) Validate(ctx *action.Context, signedTx action.SignedTx) (b
 	}
 
 	// Funding currency should be OLT
-	currency, ok := ctx.Currencies.GetCurrencyById(0)
+	currency, ok := ctx.Currencies.GetCurrencyByName("OLT")
 	if !ok {
 		panic("no default currency available in the network")
 	}
@@ -95,19 +95,19 @@ func (fundProposalTx) Validate(ctx *action.Context, signedTx action.SignedTx) (b
 	//Check if Funder address is valid oneLedger address
 	err = fundProposal.FunderAddress.Err()
 	if err != nil {
-		return false, errors.Wrap(err, "invalid funder address")
+		return false, errors.Wrap(action.ErrInvalidAddress, err.Error())
 	}
 
 	return true, nil
 }
 
 func (fundProposalTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	ctx.Logger.Debug("Processing FundProposal Transaction for CheckTx", tx)
+	//ctx.Logger.Debug("Processing FundProposal Transaction for CheckTx", tx)
 	return runFundProposal(ctx, tx)
 }
 
 func (fundProposalTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	ctx.Logger.Debug("Processing FundProposal Transaction for DeliverTx", tx)
+	//ctx.Logger.Debug("Processing FundProposal Transaction for DeliverTx", tx)
 	return runFundProposal(ctx, tx)
 }
 
@@ -119,42 +119,33 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 	fundProposal := FundProposal{}
 	err := fundProposal.Unmarshal(tx.Data)
 	if err != nil {
-		return false, action.Response{}
+		return false, action.Response{
+			Log: action.ErrWrongTxType.Wrap(err).Marshal(),
+		}
 	}
 	//1. check if proposal exists
-	proposal, err := ctx.ProposalMasterStore.Proposal.Get(fundProposal.ProposalId)
+
+	proposal, err := ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStateActive).Get(fundProposal.ProposalId)
 	if err != nil {
-		ctx.Logger.Error("Proposal does not exist :", fundProposal.ProposalId)
-		result := action.Response{
-			Events: action.GetEvent(fundProposal.Tags(), "fund_proposal_does_not_exist"),
-		}
-		return false, result
+		return logAndReturnFalse(ctx.Logger, governance.ErrProposalNotExists, fundProposal.Tags(), err)
 	}
 
 	//2. Check if the Funding height is already reached
 	//  If the proposal has already passed Funding height, reject the transaction
 	if ctx.Header.Height > proposal.FundingDeadline {
-		ctx.Logger.Debug("Funding Height has already been reached")
-		result := action.Response{
-			Events: action.GetEvent(fundProposal.Tags(), "fund_proposal_height_crossed"),
-		}
-		return false, result
-
+		return logAndReturnFalse(ctx.Logger, governance.ErrFundingDeadlineCrossed, fundProposal.Tags(), err)
 	}
 	//3. Check if the Proposal is in funding stage
 	//  If the proposal is not in FUNDING state, reject the transaction
 	if proposal.Status != governance.ProposalStatusFunding {
-		ctx.Logger.Debug("Cannot fund proposal , Current proposal state : ", proposal.Status)
-		result := action.Response{
-			Events: action.GetEvent(fundProposal.Tags(), "fund_proposal_not_funding_state"),
-		}
-		return false, result
+		return logAndReturnFalse(ctx.Logger, governance.ErrStatusNotFunding, fundProposal.Tags(), err)
 	}
 
 	//4. Check if the Proposal has reached funding goal, when this contribution is added
 	//   Change the state of the proposal to VOTING, if funding goal is met
 	fundingAmount := balance.NewAmountFromBigInt(fundProposal.FundValue.Value.BigInt())
-	currentFundsforProposal := governance.GetCurrentFunds(proposal.ProposalID, ctx.ProposalMasterStore.ProposalFund)
+	fundStore := ctx.ProposalMasterStore.ProposalFund
+	currentFundsforProposal := fundStore.GetCurrentFundsForProposal(proposal.ProposalID)
 	newAmount := fundingAmount.Plus(currentFundsforProposal)
 	if newAmount.BigInt().Cmp(proposal.FundingGoal.BigInt()) >= 0 {
 		//5. Update status and set voting deadline
@@ -167,23 +158,21 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		//In the value, we will just update the Voting power. The vote / opinion field remains empty for now
 		validatorList, err := ctx.Validators.GetValidatorSet()
 		if err != nil {
-			return false, action.Response{Log: "Fund proposal failed in getting validator list"}
+			return logAndReturnFalse(ctx.Logger, action.ErrGettingValidatorList, fundProposal.Tags(), err)
 		}
 		for _, v := range validatorList {
 			vote := governance.NewProposalVote(v.Address, governance.OPIN_UNKNOWN, v.Power)
 			err = ctx.ProposalMasterStore.ProposalVote.Setup(proposal.ProposalID, vote)
 			if err != nil {
-				return false, action.Response{Log: "setup voting validator failed"}
+				return logAndReturnFalse(ctx.Logger, governance.ErrSetupVotingValidator, fundProposal.Tags(), err)
 			}
 		}
 
 		//7. Update proposal status to VOTING
 		err = ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStateActive).Set(proposal)
 		if err != nil {
-			result := action.Response{
-				Events: action.GetEvent(fundProposal.Tags(), "update_proposal_failed"),
-			}
-			return false, result
+			return logAndReturnFalse(ctx.Logger, governance.ErrStatusUnableToSetVoting, fundProposal.Tags(), err)
+
 		}
 	}
 
@@ -191,21 +180,12 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 	coin := fundProposal.FundValue.ToCoin(ctx.Currencies)
 	err = ctx.Balances.MinusFromAddress(fundProposal.FunderAddress.Bytes(), coin)
 	if err != nil {
-		result := action.Response{
-			Events: action.GetEvent(fundProposal.Tags(), "fund_proposal_deduction_failed"),
-		}
-		return false, result
+		return logAndReturnFalse(ctx.Logger, balance.ErrBalanceErrorMinusFailed, fundProposal.Tags(), err)
 	}
 	err = ctx.ProposalMasterStore.ProposalFund.AddFunds(proposal.ProposalID, fundProposal.FunderAddress, fundingAmount)
 	if err != nil {
-		ctx.Logger.Error("Failed to add funds to proposal:", fundProposal.ProposalId)
-		result := action.Response{
-			Events: action.GetEvent(fundProposal.Tags(), "fund_proposal_AddFund_failed"),
-		}
-		return false, result
+		return logAndReturnFalse(ctx.Logger, governance.ErrGovFundUnableToAdd, fundProposal.Tags(), err)
 	}
-	result := action.Response{
-		Events: action.GetEvent(fundProposal.Tags(), "fund_proposal_success"),
-	}
-	return true, result
+
+	return logAndReturnTrue(ctx.Logger, fundProposal.Tags(), "fund_proposal_success")
 }

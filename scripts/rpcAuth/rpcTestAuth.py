@@ -1,8 +1,8 @@
 import requests
 import json
 
-rpc_url = "http://127.0.0.1:26606/jsonrpc"
-token_url = "http://127.0.0.1:26606/token"
+rpc_url = "http://127.0.0.1:26605/jsonrpc"
+token_url = "http://127.0.0.1:26605/token"
 
 headers = {
     "Content-Type": "application/json",

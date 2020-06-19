@@ -17,35 +17,30 @@ func (fund *ProposalFund) Print() {
 	fmt.Printf("Proposal ID : %s | Funding Address : %s  | Funding Amount  : %s \n", fund.id, fund.address.String(), fund.fundingAmount.String())
 }
 
-func GetCurrentFunds(id ProposalID, store *ProposalFundStore) *balance.Amount {
-	funds := store.GetFundersForProposalID(id, func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund {
-		return ProposalFund{
-			id:            proposalID,
-			address:       fundingAddr,
-			fundingAmount: amt,
-		}
-	})
+func (pf *ProposalFundStore) GetCurrentFundsForProposal(id ProposalID) *balance.Amount {
 	totalBalance := balance.NewAmountFromInt(0)
-	for _, fund := range funds {
-		totalBalance = totalBalance.Plus(fund.fundingAmount)
-	}
+	pf.GetFundsForProposalID(id, func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund {
+		totalBalance = totalBalance.Plus(amt)
+		return ProposalFund{}
+	})
 	return totalBalance
 }
 
-func GetCurrentFundsByContributor(id ProposalID, contributor keys.Address, store *ProposalFundStore) (*balance.Amount, error) {
-	funds := store.GetFundersForProposalID(id, func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund {
-		return ProposalFund{
-			id:            proposalID,
-			address:       fundingAddr,
-			fundingAmount: amt,
+func (pf *ProposalFundStore) DeleteAllFunds(id ProposalID) error {
+	e := error(nil)
+	pf.GetFundsForProposalID(id, func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund {
+		ok, err := pf.DeleteFunds(proposalID, fundingAddr)
+		if err != nil {
+			e = err
+			return ProposalFund{}
 		}
+		if !ok {
+			e = ErrDeductFunding
+		}
+		return ProposalFund{}
 	})
-	contributorBalance := balance.NewAmountFromInt(0)
-	for _, fund := range funds {
-		if fund.address.Equal(contributor) {
-			contributorBalance = contributorBalance.Plus(fund.fundingAmount)
-			return contributorBalance, nil
-		}
+	if e != nil {
+		return e
 	}
-	return nil, ErrWithdrawCheckFundsFailed
+	return nil
 }

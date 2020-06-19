@@ -2,6 +2,7 @@ package governance
 
 import (
 	"encoding/binary"
+	"github.com/Oneledger/protocol/data/rewards"
 
 	"github.com/pkg/errors"
 
@@ -27,6 +28,7 @@ const (
 	ADMIN_ONS_OPTION             string = "onsopt"
 
 	ADMIN_PROPOSAL_OPTION string = "proposal"
+	ADMIN_REWARD_OPTION   string = "reward"
 )
 
 type Store struct {
@@ -270,4 +272,30 @@ func (st *Store) GetProposalOptions() (*ProposalOptionSet, error) {
 		return nil, errors.Wrap(err, "failed to deserialize proposal options")
 	}
 	return propOpt, nil
+}
+
+func (st *Store) SetRewardOptions(rewardOptions *rewards.Options) error {
+	bytes, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(rewardOptions)
+	if err != nil {
+		return errors.Wrap(err, "failed to serialize reward options")
+	}
+	err = st.Set([]byte(ADMIN_REWARD_OPTION), bytes)
+	if err != nil {
+		return errors.Wrap(err, "failed to set the reward options")
+	}
+	return nil
+}
+
+func (st *Store) GetRewardOptions() (*rewards.Options, error) {
+	bytes, err := st.Get([]byte(ADMIN_REWARD_OPTION))
+	if err != nil {
+		return nil, err
+	}
+
+	rewardOptions := &rewards.Options{}
+	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(bytes, rewardOptions)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to deserialize reward options")
+	}
+	return rewardOptions, nil
 }

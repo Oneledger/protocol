@@ -12,45 +12,47 @@ import (
 const EmptyStr = ""
 
 type ProposalOption struct {
-	InitialFunding         *balance.Amount          `json:"baseDomainPrice"`
+	InitialFunding         *balance.Amount          `json:"initialFunding"`
 	FundingGoal            *balance.Amount          `json:"fundingGoal"`
 	FundingDeadline        int64                    `json:"fundingDeadline"`
 	VotingDeadline         int64                    `json:"votingDeadline"`
 	PassPercentage         int                      `json:"passPercentage"`
-	PassedFundDistribution ProposalFundDistribution `json:"passed_fund_distribution"`
-	FailedFundDistribution ProposalFundDistribution `json:"failed_fund_distribution"`
+	PassedFundDistribution ProposalFundDistribution `json:"passedFundDistribution"`
+	FailedFundDistribution ProposalFundDistribution `json:"failedFundDistribution"`
+	ProposalExecutionCost  string                   `json:"proposalExecutionCost"`
 }
 
 type ProposalFundDistribution struct {
 	Validators     float64 `json:"validators"`
-	FeePool        float64 `json:"fee_pool"`
+	FeePool        float64 `json:"feePool"`
 	Burn           float64 `json:"burn"`
-	ExecutionFees  float64 `json:"execution_fees"`
-	BountyPool     float64 `json:"bounty_pool"`
-	ProposerReward float64 `json:"proposer_reward"`
+	ExecutionCost  float64 `json:"executionCost"`
+	BountyPool     float64 `json:"bountyPool"`
+	ProposerReward float64 `json:"proposerReward"`
 }
 
 type ProposalOptionSet struct {
-	ConfigUpdate      ProposalOption
-	CodeChange        ProposalOption
-	General           ProposalOption
-	BountyProgramAddr string
+	ConfigUpdate      ProposalOption `json:"configUpdate"`
+	CodeChange        ProposalOption `json:"codeChange"`
+	General           ProposalOption `json:"general"`
+	BountyProgramAddr string         `json:"bountyProgramAddr"`
 }
 
 type Proposal struct {
-	ProposalID      ProposalID
-	Type            ProposalType
-	Status          ProposalStatus
-	Outcome         ProposalOutcome
-	Description     string
-	Proposer        keys.Address
-	FundingDeadline int64
-	FundingGoal     *balance.Amount
-	VotingDeadline  int64
-	PassPercentage  int
+	ProposalID      ProposalID      `json:"proposalId"`
+	Type            ProposalType    `json:"proposalType"`
+	Status          ProposalStatus  `json:"status"`
+	Outcome         ProposalOutcome `json:"outcome"`
+	Headline        string          `json:"headline"`
+	Description     string          `json:"descr"`
+	Proposer        keys.Address    `json:"proposer"`
+	FundingDeadline int64           `json:"fundingDeadline"`
+	FundingGoal     *balance.Amount `json:"fundingGoal"`
+	VotingDeadline  int64           `json:"votingDeadline"`
+	PassPercentage  int             `json:"passPercent"`
 }
 
-func NewProposal(proposalID ProposalID, propType ProposalType, desc string, proposer keys.Address, fundingDeadline int64, fundingGoal *balance.Amount,
+func NewProposal(proposalID ProposalID, propType ProposalType, desc string, headline string, proposer keys.Address, fundingDeadline int64, fundingGoal *balance.Amount,
 	votingDeadline int64, passPercentage int) *Proposal {
 
 	return &Proposal{
@@ -59,6 +61,7 @@ func NewProposal(proposalID ProposalID, propType ProposalType, desc string, prop
 		Status:          ProposalStatusFunding,
 		Outcome:         ProposalOutcomeInProgress,
 		Description:     desc,
+		Headline:        headline,
 		Proposer:        proposer,
 		FundingDeadline: fundingDeadline,
 		FundingGoal:     fundingGoal,

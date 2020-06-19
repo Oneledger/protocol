@@ -15,7 +15,7 @@ func init() {
 
 const (
 	//Proposal Types
-	ProposalTypeError        ProposalType = 0xEE
+	ProposalTypeInvalid      ProposalType = 0xEE
 	ProposalTypeConfigUpdate ProposalType = 0x20
 	ProposalTypeCodeChange   ProposalType = 0x21
 	ProposalTypeGeneral      ProposalType = 0x22
@@ -33,10 +33,12 @@ const (
 	ProposalOutcomeCompleted         ProposalOutcome = 0x30
 
 	//Proposal States
-	ProposalStateError  ProposalState = 0xEE
-	ProposalStateActive ProposalState = 0x31
-	ProposalStatePassed ProposalState = 0x32
-	ProposalStateFailed ProposalState = 0x33
+	ProposalStateInvalid        ProposalState = 0xEE
+	ProposalStateActive         ProposalState = 0x31
+	ProposalStatePassed         ProposalState = 0x32
+	ProposalStateFailed         ProposalState = 0x33
+	ProposalStateFinalized      ProposalState = 0x34
+	ProposalStateFinalizeFailed ProposalState = 0x35
 
 	//Vote Opinions
 	OPIN_UNKNOWN  VoteOpinion = 0x0

@@ -35,6 +35,8 @@ type VoteArguments struct {
 type ListProposalArguments struct {
 	ProposalID string `json:"proposalID"`
 	State      string `json:"state"`
+	Proposer   []byte `json:"proposer"`
+	Type       string `json:"type"`
 }
 
 var (
@@ -69,10 +71,15 @@ func (args *VoteArguments) ClientRequest(currencies *balance.CurrencySet) (clien
 	}
 	amt := olt.NewCoinFromString(padZero(args.GasPrice)).Amount
 
+	opin := governance.NewVoteOpinion(args.Opinion)
+	if opin == governance.OPIN_UNKNOWN {
+		return client.VoteProposalRequest{}, errors.New("invalid vote opinion")
+	}
+
 	return client.VoteProposalRequest{
 		ProposalId: args.ProposalID,
 		Address:    args.Address,
-		Opinion:    args.Opinion,
+		Opinion:    opin,
 		GasPrice:   action.Amount{Currency: "OLT", Value: *amt},
 		Gas:        args.Gas,
 	}, nil
@@ -92,6 +99,8 @@ func setListArgs() {
 	// Transaction Parameters
 	listProposalCmd.Flags().StringVar(&listArgs.ProposalID, "id", "", "proposal ID")
 	listProposalCmd.Flags().StringVar(&listArgs.State, "state", "", "proposal state, active / passed / failed")
+	listProposalCmd.Flags().BytesHexVar(&listArgs.Proposer, "proposer", []byte{}, "proposer address")
+	listProposalCmd.Flags().StringVar(&listArgs.Type, "type", "", "proposal type, codechange / configupdate / general")
 }
 
 func init() {
@@ -134,7 +143,7 @@ func voteProposal(cmd *cobra.Command, args []string) error {
 	}
 	req, err := voteArgs.ClientRequest(currencies.Currencies.GetCurrencySet())
 	if err != nil {
-		ctx.logger.Error("failed to get request", err)
+		ctx.logger.Error("failed to create request", err)
 		return err
 	}
 
@@ -191,38 +200,71 @@ func listProposals(cmd *cobra.Command, args []string) error {
 	Ctx := NewContext()
 	fullnode := Ctx.clCtx.FullNodeClient()
 
-	if listArgs.ProposalID == "" && listArgs.State == "" {
-		return errors.New("input is empty")
-	}
+	// List single proposal
+	if listArgs.ProposalID != "" {
+		pID := governance.ProposalID(listArgs.ProposalID)
+		if err := pID.Err(); err != nil {
+			return err
+		}
 
-	req := client.ListProposalsRequest{
-		ProposalId: governance.ProposalID(listArgs.ProposalID),
-		State:      listArgs.State,
-	}
+		req := client.ListProposalRequest{
+			ProposalId: pID,
+		}
+		reply, err := fullnode.ListProposal(req)
+		if err != nil {
+			return errors.New("error in getting proposal")
+		}
 
-	reply, err := fullnode.ListProposals(req)
-	if err != nil {
-		return errors.New("error in getting proposals")
-	}
+		ps := reply.ProposalStats[0]
+		printProposal(ps.Proposal, ps.Funds, &ps.Votes)
+		fmt.Println("Height: ", reply.Height)
+	} else { // List multiple proposals
+		pState := governance.NewProposalState(listArgs.State)
+		pType := governance.NewProposalType(listArgs.Type)
+		proposer := keys.Address(listArgs.Proposer)
+		if listArgs.State != "" {
+			if pState == governance.ProposalStateInvalid {
+				return errors.New("invalid proposal state")
+			}
+		}
+		if listArgs.Type != "" {
+			if pType == governance.ProposalTypeInvalid {
+				return errors.New("invalid proposal type")
+			}
+		}
+		if len(listArgs.Proposer) != 0 {
+			if err := proposer.Err(); err != nil {
+				return errors.New("invalid proposer address")
+			}
+		}
+		req := client.ListProposalsRequest{
+			State:        pState,
+			Proposer:     proposer,
+			ProposalType: pType,
+		}
 
-	if len(reply.Proposals) == 0 {
-		return nil
-	}
+		reply, err := fullnode.ListProposals(req)
+		if err != nil {
+			return errors.New("error in getting proposals")
+		}
 
-	for i, p := range reply.Proposals {
-		printProposal(p, reply.ProposalFunds[i], &reply.ProposalVotes[i])
-	}
-	fmt.Println("State : ", reply.State.String())
-	fmt.Println("Height: ", reply.Height)
+		if len(reply.ProposalStats) == 0 {
+			return nil
+		}
 
+		for _, ps := range reply.ProposalStats {
+			printProposal(ps.Proposal, ps.Funds, &ps.Votes)
+		}
+		fmt.Println("Height: ", reply.Height)
+	}
 	return nil
 }
 
 func printProposal(p governance.Proposal, funds balance.Amount, stat *governance.VoteStatus) {
 	fmt.Println("ProposalID : ", p.ProposalID)
-	fmt.Println("Type       : ", p.Type)
-	fmt.Println("Status     : ", p.Status)
-	fmt.Println("Outcome    : ", p.Outcome)
+	fmt.Println("Type       : ", p.Type.String())
+	fmt.Println("Status     : ", p.Status.String())
+	fmt.Println("Outcome    : ", p.Outcome.String())
 	fmt.Println("Description: ", p.Description)
 	fmt.Println("Proposer   : ", p.Proposer.Humanize())
 	fmt.Println("Funding Deadline: ", p.FundingDeadline)

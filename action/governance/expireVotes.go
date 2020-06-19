@@ -2,6 +2,7 @@ package governance
 
 import (
 	"encoding/json"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/pkg/errors"
@@ -11,8 +12,8 @@ import (
 var _ action.Msg = &ExpireVotes{}
 
 type ExpireVotes struct {
-	ProposalID       governance.ProposalID
-	ValidatorAddress action.Address
+	ProposalID       governance.ProposalID `json:"proposalId"`
+	ValidatorAddress action.Address        `json:"validatorAddress"`
 }
 
 func (e ExpireVotes) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
@@ -30,7 +31,7 @@ func (e ExpireVotes) Validate(ctx *action.Context, signedTx action.SignedTx) (bo
 
 	//Check if proposal id is valid
 	if len(expireVotes.ProposalID) <= 0 {
-		return false, errors.New("invalid proposal id")
+		return false, governance.ErrInvalidProposalId
 	}
 
 	return true, nil
@@ -66,6 +67,7 @@ func runExpireVotes(ctx *action.Context, tx action.RawTx) (bool, action.Response
 	if err != nil {
 		result := action.Response{
 			Events: action.GetEvent(expireVotes.Tags(), "expire_votes_failed_deserialize"),
+			Log:    action.ErrWrongTxType.Wrap(err).Marshal(),
 		}
 		return false, result
 	}
@@ -75,6 +77,7 @@ func runExpireVotes(ctx *action.Context, tx action.RawTx) (bool, action.Response
 	if err != nil {
 		result := action.Response{
 			Events: action.GetEvent(expireVotes.Tags(), "expire_votes_failed"),
+			Log:    governance.ErrProposalNotExists.Wrap(err).Marshal(),
 		}
 		return false, result
 	}
@@ -88,6 +91,7 @@ func runExpireVotes(ctx *action.Context, tx action.RawTx) (bool, action.Response
 	if err != nil {
 		result := action.Response{
 			Events: action.GetEvent(expireVotes.Tags(), "expire_votes_failed"),
+			Log:    governance.ErrAddingProposalToFailedStore.Wrap(err).Marshal(),
 		}
 		return false, result
 	}
@@ -95,14 +99,9 @@ func runExpireVotes(ctx *action.Context, tx action.RawTx) (bool, action.Response
 	//Delete proposal from active prefix
 	deleted, err := ctx.ProposalMasterStore.Proposal.WithPrefixType(active).Delete(proposal.ProposalID)
 	if !deleted {
-		//Need to delete proposal from failed prefix
-		deleted, err = ctx.ProposalMasterStore.Proposal.WithPrefixType(failed).Delete(proposal.ProposalID)
-		if !deleted {
-			panic(errors.Wrap(err, "error deleting proposal from failed prefix."))
-		}
-
 		result := action.Response{
 			Events: action.GetEvent(expireVotes.Tags(), "expire_votes_failed"),
+			Log:    governance.ErrDeletingProposalFromFailedStore.Marshal(),
 		}
 		return false, result
 	}
