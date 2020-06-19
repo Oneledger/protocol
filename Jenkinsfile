@@ -40,19 +40,6 @@ pipeline {
                 }
             }
         }
-       
-       stage('validator test') {
-            steps {
-                script {
-                    try {
-                        sh 'make applytest'
-                    } catch (e) {
-                        unstable('validator test stage failed!')
-                        sh 'exit 0'
-                    }
-                }
-            }
-        }
         
        stage('ons test') {
             steps {
