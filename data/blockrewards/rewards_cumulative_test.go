@@ -48,10 +48,8 @@ func generateAddresses() {
 	amt1 = balance.NewAmount(100)
 	amt2 = balance.NewAmount(200)
 	amt3 = balance.NewAmount(377)
-	amt4 = balance.NewAmount(1300)
-	amt5 = balance.NewAmount(640)
 	withdraw1 = balance.NewAmount(163)
-	withdraw2 = balance.NewAmount(630)
+	withdraw2 = balance.NewAmount(499)
 }
 
 func TestNewRewardsCumulativeStore(t *testing.T) {
