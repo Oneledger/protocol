@@ -1,4 +1,4 @@
-package blockrewards
+package rewards
 
 import (
 	"fmt"
