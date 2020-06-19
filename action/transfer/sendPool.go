@@ -79,6 +79,15 @@ func (sendPoolTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool,
 	if !sendPool.Amount.IsValid(ctx.Currencies) {
 		return false, errors.Wrap(action.ErrInvalidAmount, sendPool.Amount.String())
 	}
+
+	currency, ok := ctx.Currencies.GetCurrencyById(0)
+	if !ok {
+		panic("no default currency available in the network")
+	}
+	// Funding Pools need to be in OLT
+	if currency.Name != sendPool.Amount.Currency {
+		return false, errors.Wrap(action.ErrInvalidAmount, sendPool.Amount.String())
+	}
 	if sendPool.From.Err() != nil {
 		return false, action.ErrInvalidAddress
 	}
@@ -121,12 +130,20 @@ func runSendPool(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	}
 	// Get Pool Address
 	toPool := getPoolList(ctx)[sendPool.PoolName]
-	ctx.Logger.Debug("Adding To Pool : ", sendPool.PoolName, " | Pool Address :", toPool.String())
-	//ctx.FeePool.AddToPool(coin)
+
+	//Calculate Updated Balance for Log
+	currencyOlt, _ := ctx.Currencies.GetCurrencyByName(sendPool.Amount.Currency)
+	oldBalance, err := ctx.Balances.GetBalance(toPool, ctx.Currencies)
+	if err != nil {
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrInvalidCurrency, sendPool.Tags(), errors.Wrap(err, "Pool is not Funded by OLT"))
+	}
+	updatedBalance := oldBalance.GetCoin(currencyOlt).Plus(coin)
+
 	err = ctx.Balances.AddToAddress(toPool, coin)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, balance.ErrBalanceErrorAddFailed, sendPool.Tags(), err)
 	}
+	ctx.Logger.Debug("Adding To Pool : ", sendPool.PoolName, "| Updated Balance :", updatedBalance.String())
 	return helpers.LogAndReturnTrue(ctx.Logger, sendPool.Tags(), "Send to Pool Success")
 }
 
@@ -134,5 +151,6 @@ func getPoolList(ctx *action.Context) map[string]action.Address {
 	poolList := map[string]action.Address{}
 	poolList["BountyProgram"] = action.Address(ctx.ProposalMasterStore.Proposal.GetOptions().BountyProgramAddr)
 	poolList["FeePool"] = action.Address(fees.POOL_KEY)
+	poolList["RewardsPool"] = action.Address(ctx.RewardStore.GetOptions().RewardPoolAddress)
 	return poolList
 }
