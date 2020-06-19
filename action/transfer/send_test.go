@@ -10,6 +10,7 @@ import (
 
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/governance"
+	"github.com/Oneledger/protocol/data/rewards"
 
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/storage"
@@ -162,6 +163,12 @@ func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, se
 		ProposalFund: nil,
 		ProposalVote: nil,
 	}
+	ctx.RewardStore = &rewards.RewardStore{}
+	rewardOptions := rewards.Options{
+		RewardInterval:    150,
+		RewardPoolAddress: "rewardspool",
+	}
+	ctx.RewardStore.SetOptions(&rewardOptions)
 	return ctx
 }
 

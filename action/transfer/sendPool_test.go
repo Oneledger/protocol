@@ -26,7 +26,7 @@ func assemblySendPoolData(replaceFrom bool) (action.SignedTx, crypto.Address) {
 	}
 	sendPool := &SendPool{
 		From:     from.Bytes(),
-		PoolName: "BountyProgram",
+		PoolName: "BountyPool",
 		Amount:   *amount,
 	}
 	fee := action.Fee{
