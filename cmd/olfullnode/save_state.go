@@ -10,6 +10,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+	"github.com/tendermint/tendermint/types"
+
 	"github.com/Oneledger/protocol/app"
 	olNode "github.com/Oneledger/protocol/app/node"
 	ethChain "github.com/Oneledger/protocol/chains/ethereum"
@@ -23,9 +27,6 @@ import (
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
-	"github.com/tendermint/tendermint/types"
 )
 
 // ConsensusParams contains consensus critical parameters that determine the
@@ -293,7 +294,7 @@ func SaveChainState(application *app.App, filename string, directory string) err
 
 	startBlock(writer, "\"app_state\"")
 	writeStructWithTag(writer, appState.Currencies, "currencies")
-	writeStructWithTag(writer, GetGovernance(ctx.Govern), "governance")
+	writeStructWithTag(writer, GetGovernance(ctx.Govern, application.Header().Height), "governance")
 	writeStructWithTag(writer, appState.Chain, "state")
 	writeListWithTag(ctx, writer, "balances")
 	writeListWithTag(ctx, writer, "staking")
@@ -463,27 +464,38 @@ func DumpTrackerToFile(ts *ethereum.TrackerStore, writer io.Writer, fn func(writ
 	}
 }
 
-func GetGovernance(gs *governance.Store) *consensus.GovernanceState {
-	btcOption, err := gs.GetBTCChainDriverOption()
+func GetGovernance(gs *governance.Store, height int64) *consensus.GovernanceState {
+	btcOption, err := gs.WithHeight(height).GetBTCChainDriverOption()
 	if err != nil {
 		fmt.Print("Error Reading BTC chain driver options: ", err)
 		return nil
 	}
 
-	ethOption, err := gs.GetETHChainDriverOption()
+	ethOption, err := gs.WithHeight(height).GetETHChainDriverOption()
 	if err != nil {
 		fmt.Print("Error Reading ETH chain driver options: ", err)
 		return nil
 	}
-	onsOption, err := gs.GetONSOptions()
+	onsOption, err := gs.WithHeight(height).GetONSOptions()
 	if err != nil {
 		fmt.Print("Error Reading ONS Domain options: ", err)
 		return nil
 	}
 
-	feeOption, err := gs.GetFeeOption()
+	feeOption, err := gs.WithHeight(height).GetFeeOption()
 	if err != nil {
 		fmt.Print("Error Reading Fee options: ", err)
+		return nil
+	}
+
+	rewardOptions, err := gs.WithHeight(height).GetRewardOptions()
+	if err != nil {
+		fmt.Print("Error Reading Reward options: ", err)
+		return nil
+	}
+	proposalOptions, err := gs.WithHeight(height).GetProposalOptions()
+	if err != nil {
+		fmt.Print("Error Reading Proposal options: ", err)
 		return nil
 	}
 

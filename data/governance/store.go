@@ -2,6 +2,7 @@ package governance
 
 import (
 	"encoding/binary"
+
 	"github.com/Oneledger/protocol/data/rewards"
 
 	"github.com/pkg/errors"
@@ -73,7 +74,7 @@ func (st *Store) Exists(key []byte) bool {
 }
 
 func (st *Store) GetCurrencies() (balance.Currencies, error) {
-	result, err := st.Get([]byte(ADMIN_CURRENCY_KEY))
+	result, err := st.Get(ADMIN_CURRENCY_KEY)
 	currencies := make(balance.Currencies, 0, 10)
 	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(result, &currencies)
 	if err != nil {
@@ -88,7 +89,7 @@ func (st *Store) SetCurrencies(currencies balance.Currencies) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to serialize currencies")
 	}
-	err = st.Set([]byte(ADMIN_CURRENCY_KEY), currenciesBytes)
+	err = st.Set(ADMIN_CURRENCY_KEY, currenciesBytes)
 	if err != nil {
 		return errors.Wrap(err, "failed to set the currencies")
 	}
@@ -97,7 +98,7 @@ func (st *Store) SetCurrencies(currencies balance.Currencies) error {
 
 func (st *Store) GetFeeOption() (*fees.FeeOption, error) {
 	feeOpt := &fees.FeeOption{}
-	bytes, err := st.Get([]byte(ADMIN_FEE_OPTION_KEY))
+	bytes, err := st.Get(ADMIN_FEE_OPTION_KEY)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get FeeOption")
 	}
@@ -115,7 +116,7 @@ func (st *Store) SetFeeOption(feeOpt fees.FeeOption) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to serialize FeeOption")
 	}
-	err = st.Set([]byte(ADMIN_FEE_OPTION_KEY), bytes)
+	err = st.Set(ADMIN_FEE_OPTION_KEY, bytes)
 	if err != nil {
 		return errors.Wrap(err, "failed to set the FeeOption")
 	}
@@ -123,12 +124,12 @@ func (st *Store) SetFeeOption(feeOpt fees.FeeOption) error {
 }
 
 func (st *Store) Initiated() bool {
-	_ = st.Set([]byte(ADMIN_INITIAL_KEY), []byte("initialed"))
+	_ = st.Set(ADMIN_INITIAL_KEY, []byte("initialed"))
 	return true
 }
 
 func (st *Store) InitialChain() bool {
-	data, err := st.Get([]byte(ADMIN_INITIAL_KEY))
+	data, err := st.Get(ADMIN_INITIAL_KEY)
 	if err != nil {
 		return true
 	}
@@ -139,7 +140,7 @@ func (st *Store) InitialChain() bool {
 }
 
 func (st *Store) GetEpoch() (int64, error) {
-	result, err := st.Get([]byte(ADMIN_EPOCH_BLOCK_INTERVAL))
+	result, err := st.Get(ADMIN_EPOCH_BLOCK_INTERVAL)
 	if err != nil {
 		return 0, err
 	}
@@ -154,7 +155,7 @@ func (st *Store) SetEpoch(epoch int64) error {
 	b := make([]byte, 8)
 	binary.LittleEndian.PutUint64(b, uint64(epoch))
 
-	err := st.Set([]byte(ADMIN_EPOCH_BLOCK_INTERVAL), b)
+	err := st.Set(ADMIN_EPOCH_BLOCK_INTERVAL, b)
 	if err != nil {
 		return errors.Wrap(err, "failed to set the currencies")
 	}
@@ -163,7 +164,7 @@ func (st *Store) SetEpoch(epoch int64) error {
 
 func (st *Store) GetETHChainDriverOption() (*ethchain.ChainDriverOption, error) {
 
-	bytes, err := st.Get([]byte(ADMIN_ETH_CHAINDRIVER_OPTION))
+	bytes, err := st.Get(ADMIN_ETH_CHAINDRIVER_OPTION)
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +185,7 @@ func (st *Store) SetETHChainDriverOption(opt ethchain.ChainDriverOption) error {
 		return errors.Wrap(err, "failed to serialize eth chaindriver option")
 	}
 
-	err = st.Set([]byte(ADMIN_ETH_CHAINDRIVER_OPTION), bytes)
+	err = st.Set(ADMIN_ETH_CHAINDRIVER_OPTION, bytes)
 	if err != nil {
 		return errors.Wrap(err, "failed to set the eth chaindriver option")
 	}
@@ -194,7 +195,7 @@ func (st *Store) SetETHChainDriverOption(opt ethchain.ChainDriverOption) error {
 
 func (st *Store) GetBTCChainDriverOption() (*bitcoin.ChainDriverOption, error) {
 
-	bytes, err := st.Get([]byte(ADMIN_BTC_CHAINDRIVER_OPTION))
+	bytes, err := st.Get(ADMIN_BTC_CHAINDRIVER_OPTION)
 	if err != nil {
 		return nil, err
 	}
@@ -215,7 +216,7 @@ func (st *Store) SetBTCChainDriverOption(opt bitcoin.ChainDriverOption) error {
 		return errors.Wrap(err, "failed to serialize btc chaindriver option")
 	}
 
-	err = st.Set([]byte(ADMIN_BTC_CHAINDRIVER_OPTION), bytes)
+	err = st.Set(ADMIN_BTC_CHAINDRIVER_OPTION, bytes)
 	if err != nil {
 		return errors.Wrap(err, "failed to set the btc chaindriver option")
 	}
@@ -228,7 +229,7 @@ func (st *Store) SetONSOptions(onsOpt ons.Options) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to serialize ons options")
 	}
-	err = st.Set([]byte(ADMIN_ONS_OPTION), bytes)
+	err = st.Set(ADMIN_ONS_OPTION, bytes)
 	if err != nil {
 		return errors.Wrap(err, "failed to set the ons options")
 	}
@@ -236,7 +237,7 @@ func (st *Store) SetONSOptions(onsOpt ons.Options) error {
 }
 
 func (st *Store) GetONSOptions() (*ons.Options, error) {
-	bytes, err := st.Get([]byte(ADMIN_ONS_OPTION))
+	bytes, err := st.Get(ADMIN_ONS_OPTION)
 	if err != nil {
 		return nil, err
 	}
@@ -254,7 +255,7 @@ func (st *Store) SetProposalOptions(propOpt ProposalOptionSet) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to serialize proposal options")
 	}
-	err = st.Set([]byte(ADMIN_PROPOSAL_OPTION), bytes)
+	err = st.Set(ADMIN_PROPOSAL_OPTION, bytes)
 	if err != nil {
 		return errors.Wrap(err, "failed to set the proposal options")
 	}
@@ -262,7 +263,7 @@ func (st *Store) SetProposalOptions(propOpt ProposalOptionSet) error {
 }
 
 func (st *Store) GetProposalOptions() (*ProposalOptionSet, error) {
-	bytes, err := st.Get([]byte(ADMIN_PROPOSAL_OPTION))
+	bytes, err := st.Get(ADMIN_PROPOSAL_OPTION)
 	if err != nil {
 		return nil, err
 	}
@@ -279,7 +280,7 @@ func (st *Store) SetRewardOptions(rewardOptions *rewards.Options) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to serialize reward options")
 	}
-	err = st.Set([]byte(ADMIN_REWARD_OPTION), bytes)
+	err = st.Set(ADMIN_REWARD_OPTION, bytes)
 	if err != nil {
 		return errors.Wrap(err, "failed to set the reward options")
 	}
@@ -287,7 +288,7 @@ func (st *Store) SetRewardOptions(rewardOptions *rewards.Options) error {
 }
 
 func (st *Store) GetRewardOptions() (*rewards.Options, error) {
-	bytes, err := st.Get([]byte(ADMIN_REWARD_OPTION))
+	bytes, err := st.Get(ADMIN_REWARD_OPTION)
 	if err != nil {
 		return nil, err
 	}

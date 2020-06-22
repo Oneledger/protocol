@@ -109,7 +109,7 @@ func (app *App) setupState(stateBytes []byte) error {
 	}
 
 	// commit the initial currencies to the governance db
-	err = app.Context.govern.SetCurrencies(initial.Currencies)
+	err = app.Context.govern.WithHeight(app.header.Height).SetCurrencies(initial.Currencies)
 	if err != nil {
 		return errors.Wrap(err, "Setup State")
 	}
@@ -119,17 +119,17 @@ func (app *App) setupState(stateBytes []byte) error {
 		return errors.Wrap(err, "Setup State")
 	}
 
-	err = app.Context.govern.SetETHChainDriverOption(initial.Governance.ETHCDOption)
+	err = app.Context.govern.WithHeight(app.header.Height).SetETHChainDriverOption(initial.Governance.ETHCDOption)
 	if err != nil {
 		return errors.Wrap(err, "Setup State")
 	}
 
-	err = app.Context.govern.SetBTCChainDriverOption(initial.Governance.BTCCDOption)
+	err = app.Context.govern.WithHeight(app.header.Height).SetBTCChainDriverOption(initial.Governance.BTCCDOption)
 	if err != nil {
 		return errors.Wrap(err, "Setup State")
 	}
 	balanceCtx := app.Context.Balances()
-	err = app.Context.govern.SetONSOptions(initial.Governance.ONSOptions)
+	err = app.Context.govern.WithHeight(app.header.Height).SetONSOptions(initial.Governance.ONSOptions)
 	if err != nil {
 		return errors.Wrap(err, "Error in setting up ONS options")
 	}
@@ -144,7 +144,7 @@ func (app *App) setupState(stateBytes []byte) error {
 	app.Context.proposalMaster.Proposal.SetOptions(&initial.Governance.PropOptions)
 
 	app.Context.ethTrackers.SetupOption(&initial.Governance.ETHCDOption)
-	err = app.Context.govern.SetFeeOption(initial.Governance.FeeOption)
+	err = app.Context.govern.WithHeight(app.header.Height).SetFeeOption(initial.Governance.FeeOption)
 	if err != nil {
 		return errors.Wrap(err, "Setup State")
 	}
@@ -314,7 +314,7 @@ func (app *App) Prepare() error {
 
 	//get currencies from governance db
 	if !app.Context.govern.InitialChain() {
-		currencies, err := app.Context.govern.GetCurrencies()
+		currencies, err := app.Context.govern.WithHeight(app.header.Height).GetCurrencies()
 		if err != nil {
 			return err
 		}
@@ -327,26 +327,26 @@ func (app *App) Prepare() error {
 
 		app.logger.Infof("Read currencies from db %#v", currencies)
 
-		feeOpt, err := app.Context.govern.GetFeeOption()
+		feeOpt, err := app.Context.govern.WithHeight(app.header.Height).GetFeeOption()
 		if err != nil {
 			return err
 		}
 
 		app.Context.feePool.SetupOpt(feeOpt)
 
-		onsOpt, err := app.Context.govern.GetONSOptions()
+		onsOpt, err := app.Context.govern.WithHeight(app.header.Height).GetONSOptions()
 		if err != nil {
 			return err
 		}
 		app.Context.domains.SetOptions(onsOpt)
 
-		cdOpt, err := app.Context.govern.GetETHChainDriverOption()
+		cdOpt, err := app.Context.govern.WithHeight(app.header.Height).GetETHChainDriverOption()
 		if err != nil {
 			return err
 		}
 		app.Context.ethTrackers.SetupOption(cdOpt)
 
-		btcOption, err := app.Context.govern.GetBTCChainDriverOption()
+		btcOption, err := app.Context.govern.WithHeight(app.header.Height).GetBTCChainDriverOption()
 		btcConfig := bitcoin.NewBTCConfig(app.Context.cfg.ChainDriver, btcOption.ChainType)
 
 		app.Context.btcTrackers.SetConfig(btcConfig)

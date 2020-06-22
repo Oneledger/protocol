@@ -16,13 +16,13 @@ import (
 var _ action.Msg = &CreateProposal{}
 
 type CreateProposal struct {
-	ProposalID     governance.ProposalID   `json:"proposalId"`
-	ProposalType   governance.ProposalType `json:"proposalType"`
-	Headline       string                  `json:"proposalHeadline"`
-	Description    string                  `json:"proposalDescription"`
-	Proposer       keys.Address            `json:"proposerAddress"`
-	InitialFunding action.Amount           `json:"initialFunding"`
-	ConfigUpdate   consensus.GovernanceState
+	ProposalID     governance.ProposalID     `json:"proposalId"`
+	ProposalType   governance.ProposalType   `json:"proposalType"`
+	Headline       string                    `json:"proposalHeadline"`
+	Description    string                    `json:"proposalDescription"`
+	Proposer       keys.Address              `json:"proposerAddress"`
+	InitialFunding action.Amount             `json:"initialFunding"`
+	ConfigUpdate   consensus.GovernanceState `json:"configUpdate"`
 }
 
 func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
@@ -127,7 +127,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	//Get Proposal options based on type.
 	options := ctx.ProposalMasterStore.Proposal.GetOptionsByType(createProposal.ProposalType)
 	if createProposal.ProposalType == governance.ProposalTypeConfigUpdate {
-		err, ok := validateConfig(ctx, createProposal)
+		validateConfig(ctx, createProposal)
 	}
 	//Calculate Deadlines
 	//Actual voting deadline will be setup in funding Tx
@@ -244,4 +244,5 @@ func (c *CreateProposal) Unmarshal(bytes []byte) error {
 
 func validateConfig(ctx *action.Context, proposal CreateProposal) (error, bool) {
 
+	return nil, true
 }
