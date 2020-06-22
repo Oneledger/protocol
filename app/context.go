@@ -106,7 +106,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.domains = ons.NewDomainStore("d", storage.NewState(ctx.chainstate))
 	ctx.feePool = fees.NewStore("f", storage.NewState(ctx.chainstate))
 	ctx.govern = governance.NewStore("g", storage.NewState(ctx.chainstate))
-	ctx.proposalMaster = NewProposalMasterStore(ctx.chainstate
+	ctx.proposalMaster = NewProposalMasterStore(ctx.chainstate)
 	ctx.delegators = delegation.NewDelegationStore("st", storage.NewState(ctx.chainstate))
 	ctx.rewards = rewards.NewRewardStore("r", storage.NewState(ctx.chainstate))
 	ctx.btcTrackers = bitcoin.NewTrackerStore("btct", storage.NewState(ctx.chainstate))

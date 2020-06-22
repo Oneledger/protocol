@@ -16,7 +16,6 @@ import (
 	"github.com/Oneledger/protocol/data/delegation"
 	ethTracker "github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/fees"
-	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"

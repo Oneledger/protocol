@@ -72,7 +72,7 @@ onstest: reset
 	@./scripts/stopNodes
 
 #
-# run ons tests
+# remove it once Jenkins side done
 #
 withdrawtest: reset
 	@./scripts/stopNodes
