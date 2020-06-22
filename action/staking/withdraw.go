@@ -64,14 +64,14 @@ type withdrawTx struct {
 }
 
 func (withdrawTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error) {
-	apply := &Withdraw{}
-	err := apply.Unmarshal(tx.Data)
+	wd := &Withdraw{}
+	err := wd.Unmarshal(tx.Data)
 	if err != nil {
 		return false, errors.Wrap(action.ErrWrongTxType, err.Error())
 	}
 
 	//validate basic signature
-	err = action.ValidateBasic(tx.RawBytes(), apply.Signers(), tx.Signatures)
+	err = action.ValidateBasic(tx.RawBytes(), wd.Signers(), tx.Signatures)
 	if err != nil {
 		return false, err
 	}
@@ -81,15 +81,15 @@ func (withdrawTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error
 		return false, err
 	}
 
-	if err := apply.StakeAddress.Err(); err != nil {
+	if err := wd.StakeAddress.Err(); err != nil {
 		return false, err
 	}
 
-	if err := apply.ValidatorAddress.Err(); err != nil {
+	if err := wd.ValidatorAddress.Err(); err != nil {
 		return false, err
 	}
 
-	coin := apply.Stake.ToCoinWithBase(ctx.Currencies)
+	coin := wd.Stake.ToCoinWithBase(ctx.Currencies)
 	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromInt(0)) {
 		return false, action.ErrInvalidAmount
 	}
