@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Oneledger/protocol/data"
+	"github.com/Oneledger/protocol/data/rewards"
 
 	"github.com/pkg/errors"
 	db "github.com/tendermint/tm-db"
@@ -70,6 +71,7 @@ type context struct {
 	internalService *event.Service
 	jobBus          *event.JobBus
 	proposalMaster  *governance.ProposalMasterStore
+	rewards         *rewards.RewardStore
 	logWriter       io.Writer
 }
 
@@ -103,6 +105,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.feePool = fees.NewStore("f", storage.NewState(ctx.chainstate))
 	ctx.govern = governance.NewStore("g", storage.NewState(ctx.chainstate))
 	ctx.proposalMaster = NewProposalMasterStore(ctx.chainstate)
+	ctx.rewards = rewards.NewRewardStore("r", storage.NewState(ctx.chainstate))
 	ctx.btcTrackers = bitcoin.NewTrackerStore("btct", storage.NewState(ctx.chainstate))
 
 	ctx.ethTrackers = ethereum.NewTrackerStore("etht", "ethfailed", "ethsuccess", storage.NewState(ctx.chainstate))
@@ -178,6 +181,7 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.lockScriptStore,
 		log.NewLoggerWithPrefix(ctx.logWriter, "action").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
 		ctx.proposalMaster.WithState(state),
+		ctx.rewards.WithState(state),
 		ctx.extStores,
 	)
 
@@ -224,6 +228,9 @@ func (ctx *context) Services() (service.Map, error) {
 
 	proposalMaster := NewProposalMasterStore(ctx.chainstate)
 	proposalMaster.Proposal.SetOptions(ctx.proposalMaster.Proposal.GetOptions())
+
+	rewardStore := rewards.NewRewardStore("r", storage.NewState(ctx.chainstate))
+	rewardStore.SetOptions(ctx.rewards.GetOptions())
 
 	svcCtx := &service.Context{
 		Balances:       balance.NewStore("b", storage.NewState(ctx.chainstate)),

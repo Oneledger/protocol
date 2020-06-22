@@ -1,4 +1,4 @@
-package governance
+package helpers
 
 import (
 	"errors"
@@ -12,7 +12,7 @@ import (
 )
 
 //Helper Function to log error
-func logAndReturnFalse(logger *log.Logger, error status_codes.ProtocolError, tags kv.Pairs, err error) (bool, action.Response) {
+func LogAndReturnFalse(logger *log.Logger, error status_codes.ProtocolError, tags kv.Pairs, err error) (bool, action.Response) {
 	if err == nil {
 		err = errors.New("No Err String")
 	}
@@ -24,7 +24,7 @@ func logAndReturnFalse(logger *log.Logger, error status_codes.ProtocolError, tag
 	return false, result
 }
 
-func logAndReturnTrue(logger *log.Logger, tags kv.Pairs, eventType string) (bool, action.Response) {
+func LogAndReturnTrue(logger *log.Logger, tags kv.Pairs, eventType string) (bool, action.Response) {
 	logger.Detail(eventType)
 	result := action.Response{
 		Events: action.GetEvent(tags, eventType),

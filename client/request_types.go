@@ -10,9 +10,10 @@
 package client
 
 import (
-	"github.com/Oneledger/protocol/data/chain"
 	"github.com/tendermint/tendermint/libs/bytes"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
+
+	"github.com/Oneledger/protocol/data/chain"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/accounts"
@@ -56,6 +57,14 @@ type SendTxRequest struct {
 	Amount   action.Amount `json:"amount"`
 	GasPrice action.Amount `json:"gasPrice"`
 	Gas      int64         `json:"gas"`
+}
+
+type SendPoolTxRequest struct {
+	From     action.Address `json:"from"`
+	PoolName string         `json:"to"`
+	Amount   action.Amount  `json:"amount"`
+	GasPrice action.Amount  `json:"gasPrice"`
+	Gas      int64          `json:"gas"`
 }
 
 type CreateTxReply struct {

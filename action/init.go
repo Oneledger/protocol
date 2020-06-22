@@ -10,7 +10,8 @@ import (
 type Type int
 
 const (
-	SEND Type = 0x01
+	SEND     Type = 0x01
+	SENDPOOL Type = 0x02
 
 	//staking related transaction
 	APPLYVALIDATOR Type = 0x11
@@ -69,6 +70,8 @@ func (t Type) String() string {
 	switch t {
 	case SEND:
 		return "SEND"
+	case SENDPOOL:
+		return "SENDPOOL"
 	case APPLYVALIDATOR:
 		return "APPLY_VALIDATOR"
 	case WITHDRAW:
