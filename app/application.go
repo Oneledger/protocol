@@ -119,6 +119,11 @@ func (app *App) setupState(stateBytes []byte) error {
 		return errors.Wrap(err, "Setup State")
 	}
 
+	err = app.Context.govern.SetRewardOptions(&initial.Governance.RewardOptions)
+	if err != nil {
+		return errors.Wrap(err, "Setup State")
+	}
+
 	err = app.Context.govern.SetETHChainDriverOption(initial.Governance.ETHCDOption)
 	if err != nil {
 		return errors.Wrap(err, "Setup State")

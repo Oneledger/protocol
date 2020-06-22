@@ -462,8 +462,8 @@ func updateProposals(proposalMaster *governance.ProposalMasterStore, jobStore *j
 func handleBlockRewards(validators *identity.ValidatorStore, rewards *rewards.RewardStore, node *consensus.Node) {
 	//Get BlockStore
 	blockStore := node.BlockStore()
-	//Get Last known contiguous block height
-	lastHeight := blockStore.Height()
+	//Get Last known contiguous block height - Backtrack by 1 since tendermint doesn't update commit db immediately
+	lastHeight := blockStore.Height() - 1
 	//Get Commit Object at "lastHeight"
 	blockCommit := blockStore.LoadBlockCommit(lastHeight)
 	//Get number of signatures in the commit
