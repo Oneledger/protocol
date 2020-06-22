@@ -59,13 +59,6 @@ coverage:
 	go tool cover -html=a.out -o cover.html
 
 #
-# run apply validator tests
-#
-applytest: reset
-	@./scripts/getValidators
-	@./scripts/stopNodes
-
-#
 # run ons tests
 #
 onstest: reset
@@ -81,9 +74,6 @@ onstest: reset
 # run ons tests
 #
 withdrawtest: reset
-	@./scripts/testsend
-	@./scripts/testsend
-	python scripts/reward/withdraw.py
 	@./scripts/stopNodes
 
 #
