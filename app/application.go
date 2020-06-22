@@ -118,21 +118,35 @@ func (app *App) setupState(stateBytes []byte) error {
 	if err != nil {
 		return errors.Wrap(err, "Setup State")
 	}
+	app.Context.proposalMaster.Proposal.SetOptions(&initial.Governance.PropOptions)
 
 	err = app.Context.govern.WithHeight(app.header.Height).SetETHChainDriverOption(initial.Governance.ETHCDOption)
 	if err != nil {
 		return errors.Wrap(err, "Setup State")
 	}
+	app.Context.ethTrackers.SetupOption(&initial.Governance.ETHCDOption)
 
 	err = app.Context.govern.WithHeight(app.header.Height).SetBTCChainDriverOption(initial.Governance.BTCCDOption)
 	if err != nil {
 		return errors.Wrap(err, "Setup State")
 	}
 	balanceCtx := app.Context.Balances()
+
+	app.Context.btcTrackers.SetConfig(bitcoin.NewBTCConfig(app.Context.cfg.ChainDriver, initial.Governance.BTCCDOption.ChainType))
+	app.Context.btcTrackers.SetOption(initial.Governance.BTCCDOption)
+
 	err = app.Context.govern.WithHeight(app.header.Height).SetONSOptions(initial.Governance.ONSOptions)
 	if err != nil {
 		return errors.Wrap(err, "Error in setting up ONS options")
 	}
+	app.Context.domains.SetOptions(&initial.Governance.ONSOptions)
+
+	err = app.Context.govern.WithHeight(app.header.Height).SetRewardOptions(initial.Governance.RewardOptions)
+	if err != nil {
+		return errors.Wrap(err, "Error in setting up Reward options")
+	}
+	app.Context.rewards.SetOptions(&initial.Governance.RewardOptions)
+
 	// (1) Register all the currencies and fee
 	for _, currency := range initial.Currencies {
 		err := balanceCtx.Currencies().Register(currency)
@@ -141,18 +155,11 @@ func (app *App) setupState(stateBytes []byte) error {
 		}
 	}
 
-	app.Context.proposalMaster.Proposal.SetOptions(&initial.Governance.PropOptions)
-
-	app.Context.ethTrackers.SetupOption(&initial.Governance.ETHCDOption)
 	err = app.Context.govern.WithHeight(app.header.Height).SetFeeOption(initial.Governance.FeeOption)
 	if err != nil {
 		return errors.Wrap(err, "Setup State")
 	}
 	app.Context.feePool.SetupOpt(&initial.Governance.FeeOption)
-	app.Context.domains.SetOptions(&initial.Governance.ONSOptions)
-	app.Context.rewards.SetOptions(&initial.Governance.RewardOptions)
-	app.Context.btcTrackers.SetConfig(bitcoin.NewBTCConfig(app.Context.cfg.ChainDriver, initial.Governance.BTCCDOption.ChainType))
-	app.Context.btcTrackers.SetOption(initial.Governance.BTCCDOption)
 
 	// (2) Set balances to all those mentioned
 	for _, bal := range initial.Balances {

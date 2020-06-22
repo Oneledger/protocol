@@ -275,7 +275,7 @@ func (st *Store) GetProposalOptions() (*ProposalOptionSet, error) {
 	return propOpt, nil
 }
 
-func (st *Store) SetRewardOptions(rewardOptions *rewards.Options) error {
+func (st *Store) SetRewardOptions(rewardOptions rewards.Options) error {
 	bytes, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(rewardOptions)
 	if err != nil {
 		return errors.Wrap(err, "failed to serialize reward options")

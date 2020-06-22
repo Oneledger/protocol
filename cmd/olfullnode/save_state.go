@@ -500,10 +500,12 @@ func GetGovernance(gs *governance.Store, height int64) *consensus.GovernanceStat
 	}
 
 	return &consensus.GovernanceState{
-		FeeOption:   *feeOption,
-		ETHCDOption: *ethOption,
-		BTCCDOption: *btcOption,
-		ONSOptions:  *onsOption,
+		FeeOption:     *feeOption,
+		ETHCDOption:   *ethOption,
+		BTCCDOption:   *btcOption,
+		ONSOptions:    *onsOption,
+		PropOptions:   *proposalOptions,
+		RewardOptions: *rewardOptions,
 	}
 }
 
