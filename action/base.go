@@ -100,6 +100,7 @@ func ValidateBasic(data []byte, signerAddr []Address, signatures []Signature) er
 
 func ValidateFee(feeOpt *fees.FeeOption, fee Fee) error {
 	if fee.Price.Currency != feeOpt.FeeCurrency.Name {
+
 		return ErrInvalidFeeCurrency
 	}
 	if feeOpt.MinFee().Amount.BigInt().Cmp(fee.Price.Value.BigInt()) > 0 {

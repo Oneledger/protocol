@@ -2,8 +2,10 @@ package consensus
 
 import (
 	"encoding/json"
-	"github.com/Oneledger/protocol/data/governance"
 	"time"
+
+	"github.com/Oneledger/protocol/data/governance"
+	"github.com/Oneledger/protocol/data/rewards"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/types"
@@ -39,11 +41,12 @@ func NewGenesisDoc(chainID string, states AppState) (*GenesisDoc, error) {
 }
 
 type GovernanceState struct {
-	FeeOption   fees.FeeOption               `json:"feeOption"`
-	ETHCDOption ethchain.ChainDriverOption   `json:"ethchaindriverOption"`
-	BTCCDOption bitcoin.ChainDriverOption    `json:"bitcoinChainDriverOption"`
-	ONSOptions  ons.Options                  `json:"onsOptions"`
-	PropOptions governance.ProposalOptionSet `json:"propOptions"`
+	FeeOption     fees.FeeOption               `json:"feeOption"`
+	ETHCDOption   ethchain.ChainDriverOption   `json:"ethchaindriverOption"`
+	BTCCDOption   bitcoin.ChainDriverOption    `json:"bitcoinChainDriverOption"`
+	ONSOptions    ons.Options                  `json:"onsOptions"`
+	PropOptions   governance.ProposalOptionSet `json:"propOptions"`
+	RewardOptions rewards.Options              `json:"rewardOptions"`
 }
 
 type BalanceState struct {
