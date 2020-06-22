@@ -59,6 +59,13 @@ coverage:
 	go tool cover -html=a.out -o cover.html
 
 #
+# run apply validator tests
+#
+applytest: reset
+	@./scripts/getValidators
+	@./scripts/stopNodes
+
+#
 # run ons tests
 #
 onstest: reset
