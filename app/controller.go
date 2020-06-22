@@ -3,6 +3,9 @@ package app
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/Oneledger/protocol/consensus"
+	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/rewards"
 	"math"
 	"runtime/debug"
 
@@ -269,6 +272,9 @@ func (app *App) blockEnder() blockEnder {
 		//Check for vote expiration on active proposals
 		updateProposals(app.Context.proposalMaster, app.Context.jobStore, app.Context.deliver)
 
+		//Distribute Block rewards to Validators
+		handleBlockRewards(app.Context.validators, app.Context.rewards.WithState(app.Context.deliver), app.Node())
+
 		app.logger.Detail("End Block: ", result, "height:", req.Height)
 
 		return result
@@ -451,6 +457,51 @@ func updateProposals(proposalMaster *governance.ProposalMasterStore, jobStore *j
 		}
 		return false
 	})
+}
+
+func handleBlockRewards(validators *identity.ValidatorStore, rewards *rewards.RewardStore, node *consensus.Node) {
+	//Get BlockStore
+	blockStore := node.BlockStore()
+	//Get Last known contiguous block height
+	lastHeight := blockStore.Height()
+	//Get Commit Object at "lastHeight"
+	blockCommit := blockStore.LoadBlockCommit(lastHeight)
+	//Get number of signatures in the commit
+	numOfSignatures := blockCommit.Size()
+
+	//Loop through all validators that participated in signing the last block
+	for index := 0; index < numOfSignatures; index++ {
+
+		//Get the validator's vote by index
+		validatorVote := blockCommit.GetVote(index)
+		if validatorVote == nil {
+			continue
+		}
+		if len(validatorVote.ValidatorAddress) == 0 {
+			continue
+		}
+		if len(validatorVote.Signature) == 0 {
+			continue
+		}
+
+		//Verify Validator Address
+		valAddress := keys.Address(validatorVote.ValidatorAddress)
+		if valAddress.Err() != nil {
+			continue
+		}
+		val, err := validators.Get(valAddress)
+		if err != nil || len(val.Bytes()) == 0 {
+			continue
+		}
+
+		//Distribute Block Reward to Validator
+		//TODO: Calculate reward to be distributed
+		amount := balance.NewAmount(10)
+		err = rewards.AddToAddress(valAddress, lastHeight, amount)
+		if err != nil {
+			continue
+		}
+	}
 }
 
 func (app *App) VerifyCache(tx []byte) bool {
