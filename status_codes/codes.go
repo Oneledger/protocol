@@ -77,6 +77,7 @@ const (
 	TxErrInvalidSignature   = 300107
 	TxErrInvalidFeeCurrency = 300108
 	TxErrInvalidFeePrice    = 300109
+	TxErrPoolDoesNotExist   = 300113
 	TxErrInsufficientFunds  = 300110
 	TxErrGasOverflow        = 300111
 	TxErrInvalidExtTx       = 300112

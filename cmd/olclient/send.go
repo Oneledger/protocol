@@ -20,11 +20,12 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/spf13/cobra"
+	ctypes "github.com/tendermint/tendermint/rpc/core/types"
+
 	accounts2 "github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
-	"github.com/spf13/cobra"
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
@@ -41,6 +42,16 @@ type SendArguments struct {
 	Password     string `json:"password"`
 }
 
+type SendPoolArguments struct {
+	Party    []byte `json:"party"`
+	PoolName string `json:"poolName"`
+	Amount   string `json:"amount"`
+	Currency string `json:"currency"`
+	Fee      string `json:"fee"`
+	Gas      int64  `json:"gas"`
+	Password string `json:"password"`
+}
+
 var (
 	sendCmd = &cobra.Command{
 		Use:   "send",
@@ -53,7 +64,13 @@ var (
 		Short: "Send funds to a given address",
 		RunE:  sendFunds,
 	}
+	sendFundsPoolCmd = &cobra.Command{
+		Use:   "sendpool",
+		Short: "Send funds to a given Pool",
+		RunE:  sendFundsPool,
+	}
 
+	sendpoolargs  = &SendPoolArguments{}
 	sendargs      = &SendArguments{}
 	sendfundsargs = &SendArguments{}
 
@@ -93,6 +110,9 @@ func init() {
 	RootCmd.AddCommand(sendCmd)
 	setArgs(sendCmd, sendargs)
 
+	RootCmd.AddCommand(sendFundsPoolCmd)
+	setSendPoolArgs(sendFundsPoolCmd, sendpoolargs)
+
 	testEnv := os.Getenv(testenv)
 	if testEnv == "1" {
 		RootCmd.AddCommand(sendFundsCmd)
@@ -104,6 +124,17 @@ func setArgs(command *cobra.Command, sendArgs *SendArguments) {
 	// Transaction Parameters
 	command.Flags().BytesHexVar(&sendArgs.Party, "party", []byte{}, "send sender")
 	command.Flags().BytesHexVar(&sendArgs.CounterParty, "counterparty", []byte{}, "send recipient")
+	command.Flags().StringVar(&sendArgs.Amount, "amount", "0", "specify an amount")
+	command.Flags().StringVar(&sendArgs.Currency, "currency", "OLT", "the currency")
+	command.Flags().StringVar(&sendArgs.Fee, "fee", "0", "include a fee in OLT")
+	command.Flags().StringVar(&sendArgs.Password, "password", "", "password to access secure wallet.")
+	command.Flags().Int64Var(&sendArgs.Gas, "gas", 20000, "gas limit")
+}
+
+func setSendPoolArgs(command *cobra.Command, sendArgs *SendPoolArguments) {
+	// Transaction Parameters
+	command.Flags().BytesHexVar(&sendArgs.Party, "party", []byte{}, "send sender")
+	command.Flags().StringVar(&sendArgs.PoolName, "poolName", "", "send recipient")
 	command.Flags().StringVar(&sendArgs.Amount, "amount", "0", "specify an amount")
 	command.Flags().StringVar(&sendArgs.Currency, "currency", "OLT", "the currency")
 	command.Flags().StringVar(&sendArgs.Fee, "fee", "0", "include a fee in OLT")

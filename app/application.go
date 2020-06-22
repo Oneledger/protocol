@@ -154,7 +154,7 @@ func (app *App) setupState(stateBytes []byte) error {
 	}
 	app.Context.feePool.SetupOpt(&initial.Governance.FeeOption)
 	app.Context.domains.SetOptions(&initial.Governance.ONSOptions)
-
+	app.Context.rewards.SetOptions(&initial.Governance.RewardOptions)
 	app.Context.btcTrackers.SetConfig(bitcoin.NewBTCConfig(app.Context.cfg.ChainDriver, initial.Governance.BTCCDOption.ChainType))
 	app.Context.btcTrackers.SetOption(initial.Governance.BTCCDOption)
 
@@ -364,6 +364,11 @@ func (app *App) Prepare() error {
 			return err
 		}
 		app.Context.proposalMaster.Proposal.SetOptions(propOpt)
+		rewardsOpt, err := app.Context.govern.GetRewardOptions()
+		if err != nil {
+			return err
+		}
+		app.Context.rewards.SetOptions(rewardsOpt)
 	}
 
 	nodecfg, err := consensus.ParseConfig(&app.Context.cfg)

@@ -5,22 +5,23 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	db "github.com/tendermint/tm-db"
+
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/governance"
-
-	db "github.com/tendermint/tm-db"
+	"github.com/Oneledger/protocol/data/rewards"
 
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/storage"
 
-	"github.com/Oneledger/protocol/data/balance"
-	"github.com/Oneledger/protocol/data/chain"
-	"github.com/stretchr/testify/assert"
-
-	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/data/keys"
 	"github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/crypto/ed25519"
+
+	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/chain"
+	"github.com/Oneledger/protocol/data/keys"
 )
 
 // global setup
@@ -104,7 +105,7 @@ func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, se
 	}
 	// logger
 	if setLogger {
-		ctx.Logger = new(log.Logger)
+		ctx.Logger = log.NewLoggerWithPrefix(os.Stdout, "Test-Logger")
 	}
 	// currencyList
 	if currencyName != "" {
@@ -122,7 +123,7 @@ func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, se
 		ctx.Currencies = currencyList
 
 		// set coin for account
-		amt, err := balance.NewAmountFromString("100", 10)
+		amt, err := balance.NewAmountFromString("100000000000000000000", 10)
 		if setCoin {
 			coin := balance.Coin{
 				Currency: currency,
@@ -147,7 +148,29 @@ func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, se
 		},
 		MinFeeDecimal: 9,
 	}
+
 	ctx.Govern = governance.NewStore("tg", cs)
+	ctx.FeePool = &fees.Store{}
+	ctx.FeePool.SetupOpt(ctx.FeeOpt)
+	proposalStore := governance.ProposalStore{}
+	pOpt := governance.ProposalOptionSet{
+		ConfigUpdate:      governance.ProposalOption{},
+		CodeChange:        governance.ProposalOption{},
+		General:           governance.ProposalOption{},
+		BountyProgramAddr: "TestAddress",
+	}
+	proposalStore.SetOptions(&pOpt)
+	ctx.ProposalMasterStore = &governance.ProposalMasterStore{
+		Proposal:     &proposalStore,
+		ProposalFund: nil,
+		ProposalVote: nil,
+	}
+	ctx.RewardStore = &rewards.RewardStore{}
+	rewardOptions := rewards.Options{
+		RewardInterval:    150,
+		RewardPoolAddress: "rewardspool",
+	}
+	ctx.RewardStore.SetOptions(&rewardOptions)
 	return ctx
 }
 
@@ -233,7 +256,7 @@ func TestSendTx_ProcessCheck(t *testing.T) {
 		defer teardown(testDB)
 
 		tx, _ := assemblySendData(false)
-		ctx = assemblyCtxData("", 0, true, true, false, nil)
+		ctx = assemblyCtxData("OLT", 18, true, true, false, nil)
 
 		ok, _ := sendtx.ProcessCheck(ctx, tx.RawTx)
 		assert.False(t, ok)
@@ -253,6 +276,7 @@ func TestSendTx_ProcessCheck(t *testing.T) {
 		defer teardown(testDB)
 
 		tx, from := assemblySendData(false)
+		tx.Data = nil
 		ctx = assemblyCtxData("OLT", 18, true, true, true, from)
 
 		ok, _ := sendtx.ProcessCheck(ctx, tx.RawTx)
@@ -287,7 +311,7 @@ func TestSendTx_ProcessDeliver(t *testing.T) {
 		testDB := setup()
 		defer teardown(testDB)
 
-		ctx = assemblyCtxData("", 0, true, true, false, nil)
+		ctx = assemblyCtxData("OLT", 18, true, true, false, nil)
 		tx, _ := assemblySendData(false)
 
 		ok, _ := sendtx.ProcessDeliver(ctx, tx.RawTx)
@@ -309,7 +333,7 @@ func TestSendTx_ProcessDeliver(t *testing.T) {
 
 		tx, from := assemblySendData(false)
 		ctx = assemblyCtxData("OLT", 18, true, true, true, from)
-
+		tx.Data = nil
 		ok, _ := sendtx.ProcessDeliver(ctx, tx.RawTx)
 		assert.False(t, ok)
 	})

@@ -14,7 +14,7 @@ type RewardStore struct {
 	szlr   serialize.Serializer
 	prefix []byte
 
-	rewardOptions Options
+	rewardOptions *Options
 }
 
 func NewRewardStore(prefix string, state *storage.State) *RewardStore {
@@ -25,8 +25,9 @@ func NewRewardStore(prefix string, state *storage.State) *RewardStore {
 	}
 }
 
-func (rs *RewardStore) WithState(state *storage.State) {
+func (rs *RewardStore) WithState(state *storage.State) *RewardStore {
 	rs.State = state
+	return rs
 }
 
 func generateKey(address keys.Address, height int64, interval int64) (Key storage.StoreKey) {
@@ -87,10 +88,10 @@ func (rs *RewardStore) Iterate(addr keys.Address, fn func(c string, amt balance.
 	)
 }
 
-func (rs *RewardStore) SetOptions(options Options) {
+func (rs *RewardStore) SetOptions(options *Options) {
 	rs.rewardOptions = options
 }
 
-func (rs *RewardStore) GetOptions() Options {
+func (rs *RewardStore) GetOptions() *Options {
 	return rs.rewardOptions
 }

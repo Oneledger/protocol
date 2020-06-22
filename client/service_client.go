@@ -72,6 +72,15 @@ func (c *ServiceClient) SendTx(req SendTxRequest) (out CreateTxReply, err error)
 	return
 }
 
+func (c *ServiceClient) SendToPoolTx(req SendPoolTxRequest) (out CreateTxReply, err error) {
+	if os.Getenv("OLTEST") == "1" {
+		err = c.Call("tx.SendPoolTx", req, &out) // Add service First
+	} else {
+		err = errors.New("SendPoolTx disabled")
+	}
+	return
+}
+
 func (c *ServiceClient) AddAccount(req AddAccountRequest) (out AddAccountReply, err error) {
 	err = c.Call("owner.AddAccount", req, &out)
 	return

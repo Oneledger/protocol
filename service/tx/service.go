@@ -110,6 +110,53 @@ func (svc *Service) SendTx(args client.SendTxRequest, reply *client.CreateTxRepl
 	return nil
 }
 
+func (svc *Service) SendPoolTx(args client.SendPoolTxRequest, reply *client.CreateTxReply) error {
+	send := transfer.SendPool{
+		From:     args.From,
+		PoolName: args.PoolName,
+		Amount:   args.Amount,
+	}
+	data, err := send.Marshal()
+	if err != nil {
+		svc.logger.Error("error in serializing sendPool object", err)
+		return codes.ErrSerialization
+	}
+
+	uuidNew, _ := uuid.NewUUID()
+	fee := action.Fee{args.GasPrice, args.Gas}
+	tx := action.RawTx{
+		Type: action.SENDPOOL,
+		Data: data,
+		Fee:  fee,
+		Memo: uuidNew.String(),
+	}
+
+	if _, err := svc.accounts.GetAccount(args.From); err != nil {
+		return accounts.ErrGetAccountByAddress
+	}
+
+	pubKey, signed, err := svc.accounts.SignWithAddress(tx.RawBytes(), send.From)
+	if err != nil {
+		return err
+	}
+	signatures := []action.Signature{{pubKey, signed}}
+	signedTx := &action.SignedTx{
+		RawTx:      tx,
+		Signatures: signatures,
+	}
+
+	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(signedTx)
+	if err != nil {
+		return codes.ErrSerialization
+	}
+
+	*reply = client.CreateTxReply{
+		RawTx: packet,
+	}
+
+	return nil
+}
+
 func (svc *Service) CreateRawSend(args client.SendTxRequest, reply *client.CreateTxReply) error {
 	send := transfer.Send{
 		From:   args.From,

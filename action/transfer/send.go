@@ -6,8 +6,9 @@ import (
 
 	"github.com/tendermint/tendermint/libs/kv"
 
-	"github.com/Oneledger/protocol/action"
 	"github.com/pkg/errors"
+
+	"github.com/Oneledger/protocol/action"
 )
 
 var _ action.Msg = &Send{}
@@ -89,13 +90,13 @@ func (sendTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error) {
 }
 
 func (s sendTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (ok bool, result action.Response) {
-	ctx.Logger.Debug("Processing Send Transaction for CheckTx", tx)
+	ctx.Logger.Detail("Processing Send Transaction for CheckTx", tx)
 	ok, result = runTx(ctx, tx)
 	return
 }
 
 func (s sendTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (ok bool, result action.Response) {
-	ctx.Logger.Debug("Processing Send Transaction for DeliverTx", tx)
+	ctx.Logger.Detail("Processing Send Transaction for DeliverTx", tx)
 	ok, result = runTx(ctx, tx)
 	return
 }

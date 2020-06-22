@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/Oneledger/protocol/data/governance"
+	"github.com/Oneledger/protocol/data/rewards"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/types"
@@ -47,6 +48,7 @@ type GovernanceState struct {
 	ONSOptions     ons.Options                  `json:"onsOptions"`
 	PropOptions    governance.ProposalOptionSet `json:"propOptions"`
 	StakingOptions delegation.Options           `json:"stakingOptions"`
+	RewardOptions  rewards.Options              `json:"rewardOptions"`
 }
 
 type BalanceState struct {

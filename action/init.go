@@ -10,7 +10,8 @@ import (
 type Type int
 
 const (
-	SEND Type = 0x01
+	SEND     Type = 0x01
+	SENDPOOL Type = 0x02
 
 	//staking related transaction
 	STAKE    Type = 0x11
@@ -73,6 +74,8 @@ func (t Type) String() string {
 		return "STAKE"
 	case UNSTAKE:
 		return "UNSTAKE"
+	case SENDPOOL:
+		return "SENDPOOL"
 	case WITHDRAW:
 		return "WITHDRAW"
 	case DOMAIN_CREATE:
