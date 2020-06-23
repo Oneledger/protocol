@@ -13,6 +13,7 @@ import (
 	"github.com/Oneledger/protocol/chains/bitcoin"
 	ethchain "github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/delegation"
 	ethData "github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/keys"
@@ -41,12 +42,13 @@ func NewGenesisDoc(chainID string, states AppState) (*GenesisDoc, error) {
 }
 
 type GovernanceState struct {
-	FeeOption     fees.FeeOption               `json:"feeOption"`
-	ETHCDOption   ethchain.ChainDriverOption   `json:"ethchaindriverOption"`
-	BTCCDOption   bitcoin.ChainDriverOption    `json:"bitcoinChainDriverOption"`
-	ONSOptions    ons.Options                  `json:"onsOptions"`
-	PropOptions   governance.ProposalOptionSet `json:"propOptions"`
-	RewardOptions rewards.Options              `json:"rewardOptions"`
+	FeeOption      fees.FeeOption               `json:"feeOption"`
+	ETHCDOption    ethchain.ChainDriverOption   `json:"ethchaindriverOption"`
+	BTCCDOption    bitcoin.ChainDriverOption    `json:"bitcoinChainDriverOption"`
+	ONSOptions     ons.Options                  `json:"onsOptions"`
+	PropOptions    governance.ProposalOptionSet `json:"propOptions"`
+	StakingOptions delegation.Options           `json:"stakingOptions"`
+	RewardOptions  rewards.Options              `json:"rewardOptions"`
 }
 
 type BalanceState struct {
