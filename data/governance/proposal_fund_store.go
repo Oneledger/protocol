@@ -125,18 +125,67 @@ func (store *ProposalFundStore) IsFundedByFunder(id ProposalID, funder keys.Addr
 	return haveFunderAddress
 }
 
+func (pf *ProposalFundStore) GetCurrentFundsForProposal(proposalID ProposalID) (*balance.Amount, error) {
+	key := totalFundsKey(proposalID)
+	funds, err := pf.getTotalFunds(key)
+	if err != nil {
+		return nil, errors.Wrap(err, errorGettingRecord)
+	}
+	return funds, nil
+}
+
+func totalFundsKey(proposalId ProposalID) storage.StoreKey {
+	key := storage.StoreKey(string(proposalId) + storage.DB_PREFIX + storage.TOTALFUNDS)
+	return key
+}
+
+func (pf *ProposalFundStore) getTotalFunds(key storage.StoreKey) (*balance.Amount, error) {
+	amt, err := pf.get(key)
+	if err != nil {
+		return nil, errors.Wrap(err, errorGettingRecord)
+	}
+	return amt, nil
+}
+
+func (pf *ProposalFundStore) setTotalFunds(key storage.StoreKey, amount balance.Amount) error {
+	err := pf.set(key, amount)
+	if err != nil {
+		return errors.Wrap(err, errorSettingRecord)
+	}
+	return nil
+}
+
 func (pf *ProposalFundStore) AddFunds(proposalId ProposalID, fundingAddress keys.Address, amount *balance.Amount) error {
 	key := storage.StoreKey(string(proposalId) + storage.DB_PREFIX + fundingAddress.String())
+	keyTotal := totalFundsKey(proposalId)
 	amt, err := pf.get(key)
 	if err != nil {
 		return errors.Wrap(err, errorGettingRecord)
 	}
-	return pf.set(key, *amt.Plus(*amount))
+	amtTotal, err := pf.getTotalFunds(keyTotal)
+	if err != nil {
+		return errors.Wrap(err, errorGettingRecord)
+	}
+
+	err = pf.set(key, *amt.Plus(*amount))
+	if err != nil {
+		return err
+	}
+	err = pf.setTotalFunds(keyTotal, *amtTotal.Plus(*amount))
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (pf *ProposalFundStore) DeductFunds(proposalId ProposalID, fundingAddress keys.Address, amount *balance.Amount) error {
 	key := storage.StoreKey(string(proposalId) + storage.DB_PREFIX + fundingAddress.String())
+	keyTotal := totalFundsKey(proposalId)
 	amt, err := pf.get(key)
+	if err != nil {
+		return errors.Wrap(err, errorGettingRecord)
+	}
+	amtTotal, err := pf.getTotalFunds(keyTotal)
 	if err != nil {
 		return errors.Wrap(err, errorGettingRecord)
 	}
@@ -144,18 +193,37 @@ func (pf *ProposalFundStore) DeductFunds(proposalId ProposalID, fundingAddress k
 	if err != nil {
 		return errors.Wrap(err, errorGettingRecord)
 	}
-	return pf.set(key, *result)
+	resultTotal, err := amtTotal.Minus(*amount)
+	if err != nil {
+		return errors.Wrap(err, errorGettingRecord)
+	}
+	err = pf.set(key, *result)
+	if err != nil {
+		return err
+	}
+	err = pf.setTotalFunds(keyTotal, *resultTotal.Plus(*amount))
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (pf *ProposalFundStore) DeleteFunds(proposalId ProposalID, fundingAddress keys.Address) (bool, error) {
 	key := storage.StoreKey(string(proposalId) + storage.DB_PREFIX + fundingAddress.String())
-
+	keyTotal := totalFundsKey(proposalId)
 	_, err := pf.get(key)
 	if err != nil {
-
+		return false, errors.Wrap(err, errorGettingRecord)
+	}
+	_, err = pf.getTotalFunds(keyTotal)
+	if err != nil {
 		return false, errors.Wrap(err, errorGettingRecord)
 	}
 	ok, err := pf.delete(key)
+	if err != nil {
+		return false, errors.Wrap(err, errorDeletingRecord)
+	}
+	ok, err = pf.delete(keyTotal)
 	if err != nil {
 		return false, errors.Wrap(err, errorDeletingRecord)
 	}

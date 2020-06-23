@@ -5,9 +5,11 @@ import (
 )
 
 var (
+	//General
+	ErrGettingCurrentFunds    = codes.ProtocolError{Code: codes.GovErrGettingCurrentFunds, Msg: "Cannot get current funds for the proposal"}
 
 	//Proposal Options
-	ErrGetProposalOptions = codes.ProtocolError{codes.GovErrGetProposalOptions, "failed to get proposal options"}
+	ErrGetProposalOptions     = codes.ProtocolError{codes.GovErrGetProposalOptions, "failed to get proposal options"}
 
 	//Proposal
 	ErrInvalidProposalId      = codes.ProtocolError{codes.GovErrInvalidProposalId, "invalid proposal id"}

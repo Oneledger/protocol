@@ -150,4 +150,5 @@ const (
 	GovFundUnableToDelete                 = 700144
 	GovFundBalanceMismatch                = 700145
 	GovErrUnableToSetFinalizeFailed       = 700146
+	GovErrGettingCurrentFunds             = 700147
 )
