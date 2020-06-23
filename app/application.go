@@ -108,6 +108,10 @@ func (app *App) setupState(stateBytes []byte) error {
 		return errors.Wrap(err, "setupState deserialization")
 	}
 
+	err = app.Context.govern.SetStakingOptions(initial.Governance.StakingOptions)
+	if err != nil {
+		return errors.Wrap(err, "Setup State")
+	}
 	// commit the initial currencies to the governance db
 	err = app.Context.govern.SetCurrencies(initial.Currencies)
 	if err != nil {
@@ -169,7 +173,11 @@ func (app *App) setupState(stateBytes []byte) error {
 	}
 
 	for _, stake := range initial.Staking {
-		err := app.Context.validators.WithState(app.Context.deliver).HandleStake(identity.Stake(stake))
+		err := app.Context.delegators.WithState(app.Context.deliver).Stake(stake.ValidatorAddress, stake.StakeAddress, identity.Stake(stake).Amount)
+		if err != nil {
+			return errors.Wrap(err, "failed to handle delegators staking")
+		}
+		err = app.Context.validators.WithState(app.Context.deliver).HandleStake(identity.Stake(stake))
 		if err != nil {
 			return errors.Wrap(err, "failed to handle initial staking")
 		}

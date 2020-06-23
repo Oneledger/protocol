@@ -24,6 +24,7 @@ import (
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/bitcoin"
+	"github.com/Oneledger/protocol/data/delegation"
 	"github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/governance"
@@ -71,6 +72,7 @@ type context struct {
 	internalService *event.Service
 	jobBus          *event.JobBus
 	proposalMaster  *governance.ProposalMasterStore
+	delegators      *delegation.DelegationStore
 	rewards         *rewards.RewardStore
 	logWriter       io.Writer
 }
@@ -105,6 +107,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.feePool = fees.NewStore("f", storage.NewState(ctx.chainstate))
 	ctx.govern = governance.NewStore("g", storage.NewState(ctx.chainstate))
 	ctx.proposalMaster = NewProposalMasterStore(ctx.chainstate)
+	ctx.delegators = delegation.NewDelegationStore("st", storage.NewState(ctx.chainstate))
 	ctx.rewards = rewards.NewRewardStore("r", storage.NewState(ctx.chainstate))
 	ctx.btcTrackers = bitcoin.NewTrackerStore("btct", storage.NewState(ctx.chainstate))
 
@@ -136,7 +139,6 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	}, ctx.jobStore)
 
 	_ = transfer.EnableSend(ctx.actionRouter)
-	_ = staking.EnableApplyValidator(ctx.actionRouter)
 	_ = action_ons.EnableONS(ctx.actionRouter)
 
 	//"btc" service temporarily disabled
@@ -147,6 +149,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 
 	_ = action_gov.EnableGovernance(ctx.actionRouter)
 	_ = action_gov.EnableInternalGovernance(ctx.internalRouter)
+	_ = staking.EnableStaking(ctx.actionRouter)
 
 	return ctx, nil
 }
@@ -175,6 +178,9 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.validators.WithState(state),
 		ctx.witnesses.WithState(state),
 		ctx.domains.WithState(state),
+		ctx.govern.WithState(state),
+		ctx.delegators.WithState(state),
+
 		ctx.btcTrackers.WithState(state),
 		ctx.ethTrackers.WithState(state),
 		ctx.jobStore,
@@ -197,6 +203,8 @@ func (ctx *context) ValidatorCtx() *identity.ValidatorContext {
 	return identity.NewValidatorContext(
 		ctx.balances.WithState(ctx.deliver),
 		ctx.feePool.WithState(ctx.deliver),
+		ctx.delegators.WithState(ctx.deliver),
+		ctx.govern.WithState(ctx.deliver),
 	)
 }
 
@@ -242,6 +250,8 @@ func (ctx *context) Services() (service.Map, error) {
 		ValidatorSet:   identity.NewValidatorStore("v", storage.NewState(ctx.chainstate)),
 		WitnessSet:     identity.NewWitnessStore("w", storage.NewState(ctx.chainstate)),
 		Domains:        ons,
+		Govern:         ctx.govern,
+		Delegators:     ctx.delegators,
 		ProposalMaster: proposalMaster,
 		ExtStores:      ctx.extStores,
 		Router:         ctx.actionRouter,

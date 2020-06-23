@@ -148,6 +148,8 @@ func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, se
 		},
 		MinFeeDecimal: 9,
 	}
+
+	ctx.Govern = governance.NewStore("tg", cs)
 	ctx.FeePool = &fees.Store{}
 	ctx.FeePool.SetupOpt(ctx.FeeOpt)
 	proposalStore := governance.ProposalStore{}

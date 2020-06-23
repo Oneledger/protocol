@@ -8,27 +8,26 @@ import (
 )
 
 func init() {
-	serialize.RegisterConcrete(new(ApplyValidator), "action_av")
+	serialize.RegisterConcrete(new(Stake), "stake")
+	serialize.RegisterConcrete(new(Unstake), "unstake")
+	serialize.RegisterConcrete(new(Withdraw), "withdraw")
 }
 
-func EnableApplyValidator(r action.Router) error {
+func EnableStaking(r action.Router) error {
 
-	err := r.AddHandler(action.APPLYVALIDATOR, applyTx{})
+	err := r.AddHandler(action.STAKE, stakeTx{})
 	if err != nil {
-		return errors.Wrap(err, "applyTx")
+		return errors.Wrap(err, "stakeTx")
+	}
+
+	err = r.AddHandler(action.UNSTAKE, unstakeTx{})
+	if err != nil {
+		return errors.Wrap(err, "unstakeTx")
 	}
 
 	err = r.AddHandler(action.WITHDRAW, withdrawTx{})
 	if err != nil {
 		return errors.Wrap(err, "withdrawTx")
-	}
-	return nil
-}
-
-func EnablePurgeValidator(r action.Router) error {
-	err := r.AddHandler(action.PURGE, purgeTx{})
-	if err != nil {
-		return errors.Wrap(err, "purgeTx")
 	}
 	return nil
 }
