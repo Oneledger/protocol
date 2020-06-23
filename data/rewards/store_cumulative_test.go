@@ -71,7 +71,7 @@ func TestRewardsCumulativeStore_AddGetMaturedBalance(t *testing.T) {
 	store.AddMaturedBalance(validator1, amt2)
 	balance, err := store.GetMaturedBalance(validator1)
 	assert.Nil(t, err)
-	expected := amt1.Plus(amt2)
+	expected := amt1.Plus(*amt2)
 	assert.Equal(t, balance, expected)
 
 	matured, err := store.GetMaturedRewards(validator1)
@@ -86,12 +86,12 @@ func TestRewardsCumulativeStore_WithdrawRewards(t *testing.T) {
 	store.WithdrawRewards(validator1, withdraw1)
 	balance, err := store.GetMaturedBalance(validator1)
 	assert.Nil(t, err)
-	expected, _ := amt1.Plus(amt2).Minus(withdraw1)
+	expected, _ := amt1.Plus(*amt2).Minus(*withdraw1)
 	assert.Equal(t, balance, expected)
 
 	matured, err := store.GetMaturedRewards(validator1)
 	assert.Nil(t, err)
-	expected = amt1.Plus(amt2)
+	expected = amt1.Plus(*amt2)
 	assert.Equal(t, matured, expected)
 }
 
@@ -107,17 +107,17 @@ func TestRewardsCumulativeStore_GetWithdrawnRewards(t *testing.T) {
 
 	balance, err := store.GetMaturedBalance(validator1)
 	assert.Nil(t, err)
-	expected, _ := amt1.Plus(amt2).Plus(amt3).Minus(withdraw1.Plus(withdraw2))
+	expected, _ := amt1.Plus(*amt2).Plus(*amt3).Minus(*withdraw1.Plus(*withdraw2))
 	assert.Equal(t, balance, expected)
 
 	matured, err := store.GetMaturedRewards(validator1)
 	assert.Nil(t, err)
-	expected = amt1.Plus(amt2).Plus(amt3)
+	expected = amt1.Plus(*amt2).Plus(*amt3)
 	assert.Equal(t, matured, expected)
 
 	withdrawn, err := store.GetWithdrawnRewards(validator1)
 	assert.Nil(t, err)
-	expected = withdraw1.Plus(withdraw2)
+	expected = withdraw1.Plus(*withdraw2)
 	assert.Equal(t, withdrawn, expected)
 }
 
@@ -130,7 +130,7 @@ func TestRewardsCumulativeStore_WithdrawOthers(t *testing.T) {
 
 	balance, err := store.GetMaturedBalance(validator1)
 	assert.Nil(t, err)
-	expected := amt1.Plus(amt2)
+	expected := amt1.Plus(*amt2)
 	assert.Equal(t, balance, expected)
 
 	matured, err := store.GetMaturedRewards(validator1)
@@ -147,7 +147,7 @@ func TestRewardsCumulativeStore_OverWithdraw(t *testing.T) {
 
 	balance, err := store.GetMaturedBalance(validator1)
 	assert.Nil(t, err)
-	expected := amt1.Plus(amt2)
+	expected := amt1.Plus(*amt2)
 	assert.Equal(t, balance, expected)
 
 	matured, err := store.GetMaturedRewards(validator1)

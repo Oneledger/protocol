@@ -1,12 +1,13 @@
 package rewards
 
 import (
+	"testing"
+
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/magiconair/properties/assert"
 	db "github.com/tendermint/tm-db"
-	"testing"
 )
 
 const (
@@ -37,7 +38,7 @@ func init() {
 	cs := storage.NewState(storage.NewChainState("chainstate", newDB))
 
 	rewardStore = NewRewardStore(rewardsPrefix, cs)
-	rewardStore.SetOptions(rewardOptions)
+	rewardStore.SetOptions(&rewardOptions)
 	rewardStore.WithState(cs)
 }
 
@@ -93,5 +94,5 @@ func TestRewardStore_Iterate(t *testing.T) {
 
 func TestRewardStore_GetOptions(t *testing.T) {
 	options := rewardStore.GetOptions()
-	assert.Equal(t, options, rewardOptions)
+	assert.Equal(t, *options, rewardOptions)
 }
