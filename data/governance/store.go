@@ -30,6 +30,7 @@ const (
 
 	ADMIN_PROPOSAL_OPTION string = "proposal"
 	ADMIN_REWARD_OPTION   string = "reward"
+	LAST_UPDATE_HEIGHT    string = "lastupdateheight"
 )
 
 type Store struct {
@@ -42,6 +43,7 @@ func NewStore(prefix string, state *storage.State) *Store {
 	return &Store{
 		state:  state,
 		prefix: storage.Prefix(prefix),
+		height: 0,
 	}
 }
 
@@ -56,7 +58,13 @@ func (st *Store) WithHeight(height int64) *Store {
 }
 
 func (st *Store) Get(key string) ([]byte, error) {
-	versionedKey := storage.StoreKey(string(st.height) + storage.DB_PREFIX + key)
+	// Get the last update height for the present height
+	luh, err := st.GetLUH()
+	if err != nil {
+		panic(errors.Wrap(err, "Unable to get Last Update Height"))
+	}
+	// Get the Options from the last update Height
+	versionedKey := storage.StoreKey(string(luh) + storage.DB_PREFIX + key)
 	prefixKey := append(st.prefix, versionedKey...)
 	return st.state.Get(prefixKey)
 }
@@ -68,9 +76,40 @@ func (st *Store) Set(key string, value []byte) error {
 	return err
 }
 
+func (st *Store) GetUnversioned(key string) ([]byte, error) {
+	prefixKey := append(st.prefix, key...)
+	return st.state.Get(prefixKey)
+}
+
+func (st *Store) SetUnversioned(key string, value []byte) error {
+	prefixKey := append(st.prefix, key...)
+	err := st.state.Set(prefixKey, value)
+	return err
+}
+
 func (st *Store) Exists(key []byte) bool {
 	prefixKey := append(st.prefix, storage.StoreKey(key)...)
 	return st.state.Exists(prefixKey)
+}
+
+func (st *Store) SetLUH() error {
+	b := make([]byte, 8)
+	binary.LittleEndian.PutUint64(b, uint64(st.height))
+	err := st.SetUnversioned(LAST_UPDATE_HEIGHT, b)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (st *Store) GetLUH() (int64, error) {
+	data, err := st.GetUnversioned(LAST_UPDATE_HEIGHT)
+	if err != nil {
+		return 0, err
+	}
+	height := int64(binary.LittleEndian.Uint64(data))
+
+	return height, nil
 }
 
 func (st *Store) GetCurrencies() (balance.Currencies, error) {
@@ -124,12 +163,12 @@ func (st *Store) SetFeeOption(feeOpt fees.FeeOption) error {
 }
 
 func (st *Store) Initiated() bool {
-	_ = st.Set(ADMIN_INITIAL_KEY, []byte("initialed"))
+	_ = st.SetUnversioned(ADMIN_INITIAL_KEY, []byte("initialed"))
 	return true
 }
 
 func (st *Store) InitialChain() bool {
-	data, err := st.Get(ADMIN_INITIAL_KEY)
+	data, err := st.GetUnversioned(ADMIN_INITIAL_KEY)
 	if err != nil {
 		return true
 	}

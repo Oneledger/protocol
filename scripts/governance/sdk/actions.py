@@ -3,35 +3,36 @@ import sys
 
 from rpc_call import *
 
-#Proposal Types
-ProposalTypeInvalid      = 0xEE
+# Proposal Types
+ProposalTypeInvalid = 0xEE
 ProposalTypeConfigUpdate = 0x20
-ProposalTypeCodeChange   = 0x21
-ProposalTypeGeneral      = 0x22
+ProposalTypeCodeChange = 0x21
+ProposalTypeGeneral = 0x22
 
-#Proposal Status
-ProposalStatusFunding    = 0x23
-ProposalStatusVoting     = 0x24
-ProposalStatusCompleted  = 0x25
+# Proposal Status
+ProposalStatusFunding = 0x23
+ProposalStatusVoting = 0x24
+ProposalStatusCompleted = 0x25
 
-#Proposal Outcome
-ProposalOutcomeInProgress         = 0x26
-ProposalOutcomeInsufficientFunds  = 0x27
-ProposalOutcomeInsufficientVotes  = 0x28
-ProposalOutcomeCancelled          = 0x29
-ProposalOutcomeCompleted          = 0x30
+# Proposal Outcome
+ProposalOutcomeInProgress = 0x26
+ProposalOutcomeInsufficientFunds = 0x27
+ProposalOutcomeInsufficientVotes = 0x28
+ProposalOutcomeCancelled = 0x29
+ProposalOutcomeCompleted = 0x30
 
-#Proposal States
+# Proposal States
 ProposalStateInvalid = 0xEE
-ProposalStateActive  = 0x31
-ProposalStatePassed  = 0x32
-ProposalStateFailed  = 0x33
+ProposalStateActive = 0x31
+ProposalStatePassed = 0x32
+ProposalStateFailed = 0x33
 
 # Vote Opinions
 OPIN_POSITIVE = 0x1
 OPIN_NEGATIVE = 0x2
-OPIN_GIVEUP   = 0x3
+OPIN_GIVEUP = 0x3
 OpinMap = {OPIN_POSITIVE: 'YES', OPIN_NEGATIVE: 'NO', OPIN_GIVEUP: 'GIVEUP'}
+
 
 class bcolors:
     HEADER = '\033[95m'
@@ -64,11 +65,131 @@ class Proposal:
                 "currency": "OLT",
                 "value": convertBigInt(self.init_fund),
             },
+            "configUpdate": {
+                "bitcoinChainDriverOption": {
+                    "TotalSupply": "1",
+                    "BlockConfirmation": 6,
+                    "ChainType": "TESTINGUPDATE",
+                    "TotalSupplyAddr": "oneledgerSupplyAddress"
+                },
+                "ethchaindriverOption": {
+                    "ERCContractAddress": "0x0000000000000000000000000000000000000000",
+                    "ContractAddress": "0x0000000000000000000000000000000000000000",
+                    "BlockConfirmation": 0,
+                    "ERCContractABI": "",
+                    "TotalSupply": "",
+                    "TokenList": [{
+                        "TokName": "string",
+                        "TokAddr": "0x0000000000000000000000000000000000000000",
+                        "TokAbi": "string",
+                        "TokTotalSupply": "string",
+                    }],
+                    "ContractABI": "",
+                    "TotalSupplyAddr": ""
+                },
+                "feeOption": {
+                    "feeCurrency": {
+                        "decimal": 18,
+                        "unit": "nue",
+                        "id": 0,
+                        "chain": 0,
+                        "name": "OLT"
+                    },
+                    "minFeeDecimal": 9
+                },
+                "rewardOptions": {
+                    "rewardPoolAddress": "rewardpool",
+                    "rewardInterval": 150
+                },
+                "propOptions": {
+                    "configUpdate": {
+                        "passedFundDistribution": {
+                            "burn": 18,
+                            "executionCost": 18,
+                            "bountyPool": 10,
+                            "validators": 18,
+                            "proposerReward": 18,
+                            "feePool": 18
+                        },
+                        "failedFundDistribution": {
+                            "burn": 10,
+                            "executionCost": 20,
+                            "bountyPool": 50,
+                            "validators": 10,
+                            "proposerReward": 0,
+                            "feePool": 10
+                        },
+                        "fundingGoal": "10000000000",
+                        "proposalExecutionCost": "executionCostConfig",
+                        "votingDeadline": 12,
+                        "initialFunding": "1000000000",
+                        "fundingDeadline": 12,
+                        "passPercentage": 51
+                    },
+                    "bountyProgramAddr": "oneledgerBountyProgram",
+                    "codeChange": {
+                        "passedFundDistribution": {
+                            "burn": 18,
+                            "executionCost": 18,
+                            "bountyPool": 10,
+                            "validators": 18,
+                            "proposerReward": 18,
+                            "feePool": 18
+                        },
+                        "failedFundDistribution": {
+                            "burn": 10,
+                            "executionCost": 20,
+                            "bountyPool": 50,
+                            "validators": 10,
+                            "proposerReward": 0,
+                            "feePool": 10
+                        },
+                        "fundingGoal": "10000000000",
+                        "proposalExecutionCost": "executionCostCodeChange",
+                        "votingDeadline": 12,
+                        "initialFunding": "1000000000",
+                        "fundingDeadline": 12,
+                        "passPercentage": 51
+                    },
+                    "general": {
+                        "passedFundDistribution": {
+                            "burn": 18,
+                            "executionCost": 18,
+                            "bountyPool": 10,
+                            "validators": 18,
+                            "proposerReward": 18,
+                            "feePool": 18
+                        },
+                        "failedFundDistribution": {
+                            "burn": 10,
+                            "executionCost": 20,
+                            "bountyPool": 50,
+                            "validators": 10,
+                            "proposerReward": 0,
+                            "feePool": 10
+                        },
+                        "fundingGoal": "10000000000",
+                        "proposalExecutionCost": "executionCostGeneral",
+                        "votingDeadline": 12,
+                        "initialFunding": "1000000000",
+                        "fundingDeadline": 12,
+                        "passPercentage": 51
+                    }
+                },
+                "onsOptions": {
+                    "currency": "OLT",
+                    "firstLevelDomains": [
+                        "ol"
+                    ],
+                    "baseDomainPrice": "1000000000000000000000",
+                    "perBlockFees": "100000000000000"
+                },
+            },
             "gasPrice": {
                 "currency": "OLT",
                 "value": "1000000000",
             },
-            "gas": 40000,
+            "gas": 400000,
         }
         resp = rpc_call('tx.CreateProposal', req)
         return resp["result"]["rawTx"]
@@ -122,7 +243,7 @@ class ProposalFund:
             },
             "gas": 40000,
         }
-    
+
         resp = rpc_call('tx.FundProposal', req)
         return resp["result"]["rawTx"]
 
@@ -143,6 +264,7 @@ class ProposalFund:
                 print "################### proposal funded: " + self.pid
                 return result["txHash"]
 
+
 class ProposalCancel:
     def __init__(self, pid, proposer, reason):
         self.pid = pid
@@ -160,7 +282,7 @@ class ProposalCancel:
             },
             "gas": 40000,
         }
-    
+
         resp = rpc_call('tx.CancelProposal', req)
         return resp["result"]["rawTx"]
 
@@ -184,6 +306,7 @@ class ProposalCancel:
         else:
             print "################### failed to cancel proposal: " + self.pid
             return False
+
 
 class ProposalVote:
     def __init__(self, pid, opinion, url, address):
@@ -270,13 +393,15 @@ class ProposalFundsWithdraw:
 
         if "ok" in result:
             if not result["ok"]:
-                print bcolors.FAIL + "################### proposal funds withdraw failed:" + result["log"] + bcolors.ENDC
+                print bcolors.FAIL + "################### proposal funds withdraw failed:" + result[
+                    "log"] + bcolors.ENDC
                 sys.exit(-1)
             else:
                 print "################### proposal funds withdrawn:" + self.pid
                 return result["txHash"]
         else:
-            print bcolors.FAIL + "################### proposal funds withdraw failed:" + result["error"]["message"] + bcolors.ENDC
+            print bcolors.FAIL + "################### proposal funds withdraw failed:" + result["error"][
+                "message"] + bcolors.ENDC
             sys.exit(-1)
 
     def withdraw_fund_should_fail(self, contr_address):
@@ -291,13 +416,14 @@ class ProposalFundsWithdraw:
 
         if "ok" in result:
             if not result["ok"]:
-                print bcolors.FAIL + "################### proposal funds withdraw failed:" + result["log"] + bcolors.ENDC
+                print bcolors.FAIL + "################### proposal funds withdraw failed:" + result[
+                    "log"] + bcolors.ENDC
                 return result["txHash"]
             else:
                 sys.exit(-1)
         else:
-            print bcolors.FAIL + "################### proposal funds withdraw failed:" + result["error"]["message"] + bcolors.ENDC
-
+            print bcolors.FAIL + "################### proposal funds withdraw failed:" + result["error"][
+                "message"] + bcolors.ENDC
 
 
 class ProposalFinalize:
@@ -358,6 +484,7 @@ def broadcast_commit(raw_tx, signature, pub_key):
     else:
         return resp
 
+
 def broadcast_commit_mtsig(raw_tx, sigs):
     resp = rpc_call('broadcast.TxCommitMtSig', {
         "rawTx": raw_tx,
@@ -378,6 +505,7 @@ def broadcast_sync(raw_tx, signature, pub_key):
     })
     return resp["result"]
 
+
 def query_proposals(prefix, proposer="", proposalType=ProposalTypeInvalid):
     req = {
         "state": prefix,
@@ -386,9 +514,11 @@ def query_proposals(prefix, proposer="", proposalType=ProposalTypeInvalid):
     }
 
     resp = rpc_call('query.ListProposals', req)
+    print resp
     result = resp["result"]
     print json.dumps(resp, indent=4)
     return result["proposalStats"]
+
 
 def query_proposal(proposal_id):
     req = {
@@ -398,6 +528,18 @@ def query_proposal(proposal_id):
     stat = resp["result"]["proposalStats"][0]
     print json.dumps(resp, indent=4)
     return stat["proposal"], stat["funds"]
+
+
+def query_governanceState(height):
+    req = {
+        "height": height,
+    }
+    resp = rpc_call('query.GetGovernanceOptionsForHeight', req)
+    result = resp["result"]
+
+    # print json.dumps(resp, indent=4)
+    return result["govOptions"]["bitcoinChainDriverOption"]["ChainType"]
+
 
 def query_balance(address):
     req = {"address": address}

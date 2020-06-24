@@ -84,3 +84,41 @@ func (svc *Service) ListProposals(req client.ListProposalsRequest, reply *client
 
 	return nil
 }
+
+func (svc *Service) GetGovernanceOptionsForHeight(req client.GovernanceOptionsRequest, reply *client.GovernanceOptionsReply) error {
+
+	feeOpt, err := svc.governance.WithHeight(req.Height).GetFeeOption()
+	if err != nil {
+		return err
+	}
+	propOpt, err := svc.governance.WithHeight(req.Height).GetProposalOptions()
+	if err != nil {
+		return err
+	}
+	rewardOpt, err := svc.governance.WithHeight(req.Height).GetRewardOptions()
+	if err != nil {
+		return err
+	}
+	ethOpt, err := svc.governance.WithHeight(req.Height).GetETHChainDriverOption()
+	if err != nil {
+		return err
+	}
+	btcOpt, err := svc.governance.WithHeight(req.Height).GetBTCChainDriverOption()
+	if err != nil {
+		return err
+	}
+	onsOpt, err := svc.governance.WithHeight(req.Height).GetONSOptions()
+	if err != nil {
+		return err
+	}
+	*reply = client.GovernanceOptionsReply{
+		GovOptions: governance.GovernanceState{
+			FeeOption:     *feeOpt,
+			ETHCDOption:   *ethOpt,
+			BTCCDOption:   *btcOpt,
+			ONSOptions:    *onsOpt,
+			PropOptions:   *propOpt,
+			RewardOptions: *rewardOpt,
+		}}
+	return nil
+}

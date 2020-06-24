@@ -2,9 +2,12 @@ package governance
 
 import (
 	"fmt"
-	"github.com/Oneledger/protocol/storage"
-	db "github.com/tendermint/tm-db"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	db "github.com/tendermint/tm-db"
+
+	"github.com/Oneledger/protocol/storage"
 )
 
 func init() {
@@ -92,4 +95,15 @@ func TestStore_SetProposalOptions(t *testing.T) {
 
 func TestStore_GetProposalOptions(t *testing.T) {
 
+}
+
+func TestStore_SetLUH(t *testing.T) {
+	err := govStore.WithHeight(1000).SetLUH()
+	assert.NoError(t, err, "No error Expected")
+}
+
+func TestStore_GetLUH(t *testing.T) {
+	height, err := govStore.GetLUH()
+	assert.NoError(t, err, "No error Expected")
+	assert.EqualValues(t, 1000, height, "Expected height is 1000 from Line 99")
 }

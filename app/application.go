@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"net/url"
 	"os"
 
@@ -109,6 +110,7 @@ func (app *App) setupState(stateBytes []byte) error {
 	}
 
 	// commit the initial currencies to the governance db
+	fmt.Println("Setting up governance options for height: ", app.header.Height)
 	err = app.Context.govern.WithHeight(app.header.Height).SetCurrencies(initial.Currencies)
 	if err != nil {
 		return errors.Wrap(err, "Setup State")
@@ -116,19 +118,19 @@ func (app *App) setupState(stateBytes []byte) error {
 
 	err = app.Context.govern.WithHeight(app.header.Height).SetProposalOptions(initial.Governance.PropOptions)
 	if err != nil {
-		return errors.Wrap(err, "Setup State")
+		return errors.Wrap(err, "Setup Proposal Options")
 	}
 	app.Context.proposalMaster.Proposal.SetOptions(&initial.Governance.PropOptions)
 
 	err = app.Context.govern.WithHeight(app.header.Height).SetETHChainDriverOption(initial.Governance.ETHCDOption)
 	if err != nil {
-		return errors.Wrap(err, "Setup State")
+		return errors.Wrap(err, "Setup Ethereum Options")
 	}
 	app.Context.ethTrackers.SetupOption(&initial.Governance.ETHCDOption)
 
 	err = app.Context.govern.WithHeight(app.header.Height).SetBTCChainDriverOption(initial.Governance.BTCCDOption)
 	if err != nil {
-		return errors.Wrap(err, "Setup State")
+		return errors.Wrap(err, "Setup BTC Options")
 	}
 	balanceCtx := app.Context.Balances()
 
@@ -157,10 +159,14 @@ func (app *App) setupState(stateBytes []byte) error {
 
 	err = app.Context.govern.WithHeight(app.header.Height).SetFeeOption(initial.Governance.FeeOption)
 	if err != nil {
-		return errors.Wrap(err, "Setup State")
+		return errors.Wrap(err, "Setup FeeOptions Options")
 	}
 	app.Context.feePool.SetupOpt(&initial.Governance.FeeOption)
 
+	err = app.Context.govern.WithHeight(app.header.Height).SetLUH()
+	if err != nil {
+		return errors.Wrap(err, "Unable to set last Update height ")
+	}
 	// (2) Set balances to all those mentioned
 	for _, bal := range initial.Balances {
 		key := storage.StoreKey(bal.Address)

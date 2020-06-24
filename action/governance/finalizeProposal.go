@@ -261,6 +261,36 @@ func distributeFunds(ctx *action.Context, proposal *governance.Proposal, proposa
 
 //Function to execute Config update to governanace
 func executeConfigUpdate(ctx *action.Context, proposal *governance.Proposal) error {
+	updatedGov := proposal.GovernanceStateUpdate
+	err := ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetProposalOptions(updatedGov.PropOptions)
+	if err != nil {
+		return errors.Wrap(err, "Setup Proposal Options")
+	}
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetRewardOptions(updatedGov.RewardOptions)
+	if err != nil {
+		return errors.Wrap(err, "Setup Reward Options")
+	}
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetBTCChainDriverOption(updatedGov.BTCCDOption)
+	if err != nil {
+		return errors.Wrap(err, "Setup BTC Options")
+	}
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetETHChainDriverOption(updatedGov.ETHCDOption)
+	if err != nil {
+		return errors.Wrap(err, "Setup ETH Options")
+	}
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetONSOptions(updatedGov.ONSOptions)
+	if err != nil {
+		return errors.Wrap(err, "Setup ONS Options")
+	}
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetFeeOption(updatedGov.FeeOption)
+	if err != nil {
+		return errors.Wrap(err, "Setup Fee Options")
+	}
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetLUH()
+	if err != nil {
+		return errors.Wrap(err, "Unable to set last Update height ")
+	}
+	fmt.Println("Governaace set at height : ", ctx.Header.Height)
 	return nil
 }
 

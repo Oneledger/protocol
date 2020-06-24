@@ -464,7 +464,7 @@ func DumpTrackerToFile(ts *ethereum.TrackerStore, writer io.Writer, fn func(writ
 	}
 }
 
-func GetGovernance(gs *governance.Store, height int64) *consensus.GovernanceState {
+func GetGovernance(gs *governance.Store, height int64) *governance.GovernanceState {
 	btcOption, err := gs.WithHeight(height).GetBTCChainDriverOption()
 	if err != nil {
 		fmt.Print("Error Reading BTC chain driver options: ", err)
@@ -499,7 +499,7 @@ func GetGovernance(gs *governance.Store, height int64) *consensus.GovernanceStat
 		return nil
 	}
 
-	return &consensus.GovernanceState{
+	return &governance.GovernanceState{
 		FeeOption:     *feeOption,
 		ETHCDOption:   *ethOption,
 		BTCCDOption:   *btcOption,

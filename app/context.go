@@ -182,6 +182,7 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		log.NewLoggerWithPrefix(ctx.logWriter, "action").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
 		ctx.proposalMaster.WithState(state),
 		ctx.rewards.WithState(state),
+		ctx.govern.WithState(state),
 		ctx.extStores,
 	)
 
@@ -249,6 +250,7 @@ func (ctx *context) Services() (service.Map, error) {
 		Services:       extSvcs,
 		EthTrackers:    ethTracker,
 		Trackers:       btcTrackers,
+		Govern:         ctx.govern,
 	}
 
 	return service.NewMap(svcCtx)

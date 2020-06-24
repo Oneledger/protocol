@@ -8,14 +8,15 @@ import (
 )
 
 type CreateProposalRequest struct {
-	ProposalID     string        `json:"proposalId"`
-	ProposalType   string        `json:"proposalType"`
-	Headline       string        `json:"headline"`
-	Description    string        `json:"description"`
-	Proposer       keys.Address  `json:"proposer"`
-	InitialFunding action.Amount `json:"initialFunding"`
-	GasPrice       action.Amount `json:"gasPrice"`
-	Gas            int64         `json:"gas"`
+	ProposalID     string                     `json:"proposalId"`
+	ProposalType   string                     `json:"proposalType"`
+	Headline       string                     `json:"headline"`
+	Description    string                     `json:"description"`
+	Proposer       keys.Address               `json:"proposer"`
+	InitialFunding action.Amount              `json:"initialFunding"`
+	ConfigUpdate   governance.GovernanceState `json:"configUpdate"`
+	GasPrice       action.Amount              `json:"gasPrice"`
+	Gas            int64                      `json:"gas"`
 }
 
 type ListProposalRequest struct {
@@ -37,6 +38,13 @@ type ProposalStat struct {
 type ListProposalsReply struct {
 	ProposalStats []ProposalStat `json:"proposalStats"`
 	Height        int64          `json:"height"`
+}
+
+type GovernanceOptionsRequest struct {
+	Height int64 `json:"height"`
+}
+type GovernanceOptionsReply struct {
+	GovOptions governance.GovernanceState `json:"govOptions"`
 }
 
 type VoteProposalRequest struct {

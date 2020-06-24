@@ -4,19 +4,14 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/Oneledger/protocol/data/governance"
-	"github.com/Oneledger/protocol/data/rewards"
-
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/types"
 
-	"github.com/Oneledger/protocol/chains/bitcoin"
 	ethchain "github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/balance"
 	ethData "github.com/Oneledger/protocol/data/ethereum"
-	"github.com/Oneledger/protocol/data/fees"
+	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
-	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/serialize"
 )
@@ -38,15 +33,6 @@ func NewGenesisDoc(chainID string, states AppState) (*GenesisDoc, error) {
 		Validators:      validators,
 		AppState:        json.RawMessage(appStateBytes),
 	}, nil
-}
-
-type GovernanceState struct {
-	FeeOption     fees.FeeOption               `json:"feeOption"`
-	ETHCDOption   ethchain.ChainDriverOption   `json:"ethchaindriverOption"`
-	BTCCDOption   bitcoin.ChainDriverOption    `json:"bitcoinChainDriverOption"`
-	ONSOptions    ons.Options                  `json:"onsOptions"`
-	PropOptions   governance.ProposalOptionSet `json:"propOptions"`
-	RewardOptions rewards.Options              `json:"rewardOptions"`
 }
 
 type BalanceState struct {
@@ -88,14 +74,14 @@ type ChainState struct {
 type Stake identity.Stake
 
 type AppState struct {
-	Currencies balance.Currencies `json:"currencies"`
-	Governance GovernanceState    `json:"governance"`
-	Chain      ChainState         `json:"state"`
-	Balances   []BalanceState     `json:"balances"`
-	Staking    []Stake            `json:"staking"`
-	Domains    []DomainState      `json:"domains"`
-	Trackers   []Tracker          `json:"trackers"`
-	Fees       []BalanceState     `json:"fees"`
+	Currencies balance.Currencies         `json:"currencies"`
+	Governance governance.GovernanceState `json:"governance"`
+	Chain      ChainState                 `json:"state"`
+	Balances   []BalanceState             `json:"balances"`
+	Staking    []Stake                    `json:"staking"`
+	Domains    []DomainState              `json:"domains"`
+	Trackers   []Tracker                  `json:"trackers"`
+	Fees       []BalanceState             `json:"fees"`
 }
 
 func NewAppState(currencies balance.Currencies,
@@ -103,7 +89,7 @@ func NewAppState(currencies balance.Currencies,
 	staking []Stake,
 	domains []DomainState,
 	fees []BalanceState,
-	governance GovernanceState,
+	governance governance.GovernanceState,
 ) *AppState {
 	return &AppState{
 		Currencies: currencies,

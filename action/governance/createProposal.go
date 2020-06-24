@@ -7,7 +7,6 @@ import (
 	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
@@ -16,13 +15,13 @@ import (
 var _ action.Msg = &CreateProposal{}
 
 type CreateProposal struct {
-	ProposalID     governance.ProposalID     `json:"proposalId"`
-	ProposalType   governance.ProposalType   `json:"proposalType"`
-	Headline       string                    `json:"proposalHeadline"`
-	Description    string                    `json:"proposalDescription"`
-	Proposer       keys.Address              `json:"proposerAddress"`
-	InitialFunding action.Amount             `json:"initialFunding"`
-	ConfigUpdate   consensus.GovernanceState `json:"configUpdate"`
+	ProposalID     governance.ProposalID      `json:"proposalId"`
+	ProposalType   governance.ProposalType    `json:"proposalType"`
+	Headline       string                     `json:"proposalHeadline"`
+	Description    string                     `json:"proposalDescription"`
+	Proposer       keys.Address               `json:"proposerAddress"`
+	InitialFunding action.Amount              `json:"initialFunding"`
+	ConfigUpdate   governance.GovernanceState `json:"configUpdate"`
 }
 
 func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
@@ -144,7 +143,9 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		fundingDeadline,
 		options.FundingGoal,
 		votingDeadline,
-		options.PassPercentage)
+		options.PassPercentage,
+		createProposal.ConfigUpdate,
+	)
 
 	//Check if Proposal already exists
 	if ctx.ProposalMasterStore.Proposal.Exists(proposal.ProposalID) {

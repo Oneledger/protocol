@@ -26,6 +26,7 @@ func (s *Service) CreateProposal(args client.CreateProposalRequest, reply *clien
 		Headline:       args.Headline,
 		Proposer:       args.Proposer,
 		InitialFunding: args.InitialFunding,
+		ConfigUpdate:   args.ConfigUpdate,
 	}
 
 	data, err := createProposal.Marshal()

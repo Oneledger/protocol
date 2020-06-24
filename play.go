@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strconv"
 
 	"github.com/Oneledger/protocol/chains/bitcoin"
 	"github.com/Oneledger/protocol/chains/ethereum"
-	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/ons"
@@ -18,27 +18,29 @@ func main() {
 	updateOptions()
 }
 
+var SomeValue = "100"
+
 func explore(s interface{}) {
 	reflectType := reflect.TypeOf(s).Elem()
 	reflectValue := reflect.ValueOf(s).Elem()
 	//fmt.Println("Exploring : ", reflectType.Name())
-
 	for i := 0; i < reflectType.NumField(); i++ {
-		typeName := reflectType.Field(i).Name
-		valueType := reflectValue.Field(i).Type()
-		valueKind := reflectValue.Field(i).Kind()
-		v := reflectValue.Field(i).Addr()
+		fieldType := reflectType.Field(i)
+		fieldVal := reflectValue.Field(i)
+		typeName := fieldType.Name
+		v := fieldVal.Addr()
 		if typeName == "ERCContractAddress" {
-			fmt.Printf("%s | %s | %s \n", typeName, valueType, valueKind)
+			fmt.Printf("%s | %s | %s \n", typeName, fieldVal.Type(), fieldVal.Kind())
 			if reflectValue.Field(i).CanSet() {
-				switch valueKind {
+				switch fieldVal.Kind() {
 				case reflect.Int:
-					fmt.Println("Int : ", v.Elem())
-					v.SetInt(1)
+					intVal, _ := strconv.Atoi(SomeValue)
+					v.SetInt(int64(intVal))
 				case reflect.Array:
-					fmt.Println("Array : ", v.Elem())
-					newaddr := []byte{0x0}
-					v.SetBytes(newaddr)
+					for i := 0; i < fieldVal.Len(); i++ {
+						fmt.Println(fieldVal.Index(i).Kind())
+					}
+
 				}
 			}
 		}
@@ -65,7 +67,7 @@ func deepFields(reflectType reflect.Type) []reflect.StructField {
 }
 func updateOptions() {
 
-	gov := consensus.GovernanceState{
+	gov := governance.GovernanceState{
 		FeeOption:   fees.FeeOption{},
 		ETHCDOption: ethereum.ChainDriverOption{},
 		BTCCDOption: bitcoin.ChainDriverOption{},
