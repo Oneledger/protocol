@@ -69,6 +69,7 @@ func (pf *ProposalFundStore) iterate(fn func(proposalID ProposalID, addr keys.Ad
 			arr := strings.Split(string(key), storage.DB_PREFIX)
 			proposalID := arr[1]
 			var fundingAddress keys.Address = nil
+			// do not unmarshal address if it's total funds record, since its funding address is nil
 			if arr[len(arr)-1] != storage.TOTALFUNDS {
 				fundingAddress = keys.Address(arr[len(arr)-1])
 				err = fundingAddress.UnmarshalText([]byte(arr[len(arr)-1]))
