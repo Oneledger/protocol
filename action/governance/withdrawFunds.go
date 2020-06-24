@@ -103,10 +103,10 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 	fundStore := ctx.ProposalMasterStore.ProposalFund
 	currentFundsForProposal, err := fundStore.GetCurrentFundsForProposal(proposal.ProposalID)
 	if err != nil {
-		ctx.Logger.Error("Proposal does not exist :", withdrawProposal.ProposalID)
+		ctx.Logger.Error("Cannot get current funds for the proposal :", withdrawProposal.ProposalID)
 		result := action.Response{
-			Events: action.GetEvent(withdrawProposal.Tags(), "withdraw_proposal_does_not_exist"),
-			Log:    governance.ErrProposalNotExists.Wrap(err).Marshal(),
+			Events: action.GetEvent(withdrawProposal.Tags(), "cannot_get_current_funds_for_the_proposal"),
+			Log:    governance.ErrGettingCurrentFunds.Wrap(err).Marshal(),
 		}
 		return false, result
 	}

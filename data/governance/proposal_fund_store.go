@@ -68,11 +68,14 @@ func (pf *ProposalFundStore) iterate(fn func(proposalID ProposalID, addr keys.Ad
 			}
 			arr := strings.Split(string(key), storage.DB_PREFIX)
 			proposalID := arr[1]
-			fundingAddress := keys.Address(arr[len(arr)-1])
-			err = fundingAddress.UnmarshalText([]byte(arr[len(arr)-1]))
-			if err != nil {
-				fmt.Println("Error Unmarshalling ", err)
-				return true
+			var fundingAddress keys.Address = nil
+			if arr[len(arr)-1] != storage.TOTALFUNDS {
+				fundingAddress = keys.Address(arr[len(arr)-1])
+				err = fundingAddress.UnmarshalText([]byte(arr[len(arr)-1]))
+				if err != nil {
+					fmt.Println("Error Unmarshalling ", err)
+					return true
+				}
 			}
 			return fn(ProposalID(proposalID), fundingAddress, amt)
 		},
@@ -95,7 +98,8 @@ func NewProposalFundStore(prefix string, state *storage.State) *ProposalFundStor
 func (pf *ProposalFundStore) GetFundsForProposalID(id ProposalID, fn func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund) []ProposalFund {
 	var foundProposals []ProposalFund
 	pf.iterate(func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) bool {
-		if proposalID == id {
+		//ignore total funds record(its fundingAddr field is nil)
+		if proposalID == id && fundingAddr != nil {
 			foundProposals = append(foundProposals, fn(proposalID, fundingAddr, amt))
 		}
 		return false
@@ -117,6 +121,8 @@ func (pf *ProposalFundStore) GetProposalsForFunder(funderAddress keys.Address, f
 func (store *ProposalFundStore) IsFundedByFunder(id ProposalID, funder keys.Address) bool {
 	haveFunderAddress := false
 	store.GetFundsForProposalID(id, func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund {
+		//fmt.Println("fundingAddr: ", fundingAddr)
+		//fmt.Println("funder: ", funder)
 		if fundingAddr.Equal(funder) {
 			haveFunderAddress = true
 		}
@@ -201,7 +207,7 @@ func (pf *ProposalFundStore) DeductFunds(proposalId ProposalID, fundingAddress k
 	if err != nil {
 		return err
 	}
-	err = pf.setTotalFunds(keyTotal, *resultTotal.Plus(*amount))
+	err = pf.setTotalFunds(keyTotal, *resultTotal)
 	if err != nil {
 		return err
 	}
@@ -211,11 +217,11 @@ func (pf *ProposalFundStore) DeductFunds(proposalId ProposalID, fundingAddress k
 func (pf *ProposalFundStore) DeleteFunds(proposalId ProposalID, fundingAddress keys.Address) (bool, error) {
 	key := storage.StoreKey(string(proposalId) + storage.DB_PREFIX + fundingAddress.String())
 	keyTotal := totalFundsKey(proposalId)
-	_, err := pf.get(key)
+	amt, err := pf.get(key)
 	if err != nil {
 		return false, errors.Wrap(err, errorGettingRecord)
 	}
-	_, err = pf.getTotalFunds(keyTotal)
+	amtTotal, err := pf.getTotalFunds(keyTotal)
 	if err != nil {
 		return false, errors.Wrap(err, errorGettingRecord)
 	}
@@ -223,9 +229,14 @@ func (pf *ProposalFundStore) DeleteFunds(proposalId ProposalID, fundingAddress k
 	if err != nil {
 		return false, errors.Wrap(err, errorDeletingRecord)
 	}
-	ok, err = pf.delete(keyTotal)
+	resultTotal, err := amtTotal.Minus(*amt)
 	if err != nil {
 		return false, errors.Wrap(err, errorDeletingRecord)
 	}
+	err = pf.setTotalFunds(keyTotal, *resultTotal)
+	if err != nil {
+		return false, err
+	}
+
 	return ok, nil
 }

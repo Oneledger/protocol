@@ -119,7 +119,8 @@ func TestProposalFundStore_GetProposalForFunder(t *testing.T) {
 
 func TestGetCurrentFunds(t *testing.T) {
 	//fmt.Println("Getting Total fund for ProposalID")
-	currentFunds := store.GetCurrentFundsForProposal(ID1)
+	currentFunds, err:= store.GetCurrentFundsForProposal(ID1)
+	assert.NoError(t, err, "")
 	funds := currentFunds.BigInt().Int64()
 	assert.EqualValues(t, int64(1000), funds, "")
 }
@@ -129,7 +130,8 @@ func TestDeleteAllFunds(t *testing.T) {
 	if err != nil {
 		fmt.Println("Error Deleting all funds", err)
 	}
-	currentFunds := store.GetCurrentFundsForProposal(ID1)
+	currentFunds,err := store.GetCurrentFundsForProposal(ID1)
+	assert.NoError(t, err, "")
 	funds := currentFunds.BigInt().Int64()
 	assert.EqualValues(t, int64(0), funds, "")
 }

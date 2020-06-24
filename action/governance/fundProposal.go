@@ -147,6 +147,7 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 	fundingAmount := balance.NewAmountFromBigInt(fundProposal.FundValue.Value.BigInt())
 	fundStore := ctx.ProposalMasterStore.ProposalFund
 	currentFundsforProposal, err := fundStore.GetCurrentFundsForProposal(proposal.ProposalID)
+	ctx.Logger.Detail("currentFundsforProposal: ", currentFundsforProposal)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrGettingCurrentFunds, fundProposal.Tags(), err)
 	}

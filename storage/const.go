@@ -35,5 +35,5 @@ const (
 
 	TOMBSTONE = "⛼"
 
-	TOTALFUNDS = "total_funds"
+	TOTALFUNDS = "totalFunds"
 )
