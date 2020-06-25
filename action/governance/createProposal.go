@@ -7,6 +7,7 @@ import (
 	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
@@ -36,14 +37,18 @@ func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) 
 	if err != nil {
 		return false, err
 	}
-
-	err = action.ValidateFee(ctx.FeePool.GetOpt(), signedTx.Fee)
+	feeOpt, err := ctx.GovernanceStore.GetFeeOption()
+	if err != nil {
+		return false, governance.ErrGetFeeOptions
+	}
+	err = action.ValidateFee(feeOpt, signedTx.Fee)
 	if err != nil {
 		return false, err
 	}
 
-	options := ctx.ProposalMasterStore.Proposal.GetOptionsByType(createProposal.ProposalType)
-	if options == nil {
+	//options := ctx.ProposalMasterStore.Proposal.GetOptionsByType(createProposal.ProposalType)
+	options, err := ctx.GovernanceStore.GetProposalOptionsByType(createProposal.ProposalType)
+	if err != nil {
 		return false, governance.ErrGetProposalOptions
 	}
 
@@ -68,12 +73,12 @@ func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) 
 
 	//Check if initial funding is not less than minimum amount based on type.
 	if coin.LessThanCoin(coinInit) {
-		return false, action.ErrInvalidAmount
+		return false, errors.Wrap(action.ErrInvalidAmount, "Funding Less than initial funding")
 	}
 
 	//Check if initial funding is more than funding goal.
 	if coinGoal.LessThanEqualCoin(coin) {
-		return false, action.ErrInvalidAmount
+		return false, errors.Wrap(action.ErrInvalidAmount, "Funding More than Funding goal")
 	}
 
 	//Check if Proposal Type is valid
@@ -124,10 +129,14 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	}
 
 	//Get Proposal options based on type.
-	options := ctx.ProposalMasterStore.Proposal.GetOptionsByType(createProposal.ProposalType)
+	options, err := ctx.GovernanceStore.GetProposalOptionsByType(createProposal.ProposalType)
+	if err != nil {
+		helpers.LogAndReturnFalse(ctx.Logger, governance.ErrGetProposalOptions, createProposal.Tags(), err)
+	}
 	if createProposal.ProposalType == governance.ProposalTypeConfigUpdate {
 		validateConfig(ctx, createProposal)
 	}
+
 	//Calculate Deadlines
 	//Actual voting deadline will be setup in funding Tx
 	fundingDeadline := ctx.Header.Height + options.FundingDeadline

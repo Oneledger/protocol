@@ -2,6 +2,7 @@ package governance
 
 import (
 	"encoding/binary"
+	"fmt"
 
 	"github.com/Oneledger/protocol/data/rewards"
 
@@ -311,7 +312,24 @@ func (st *Store) GetProposalOptions() (*ProposalOptionSet, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to deserialize proposal options")
 	}
+
 	return propOpt, nil
+}
+
+func (st *Store) GetProposalOptionsByType(ptype ProposalType) (*ProposalOption, error) {
+	pOpts, err := st.GetProposalOptions()
+	if err != nil {
+		return nil, err
+	}
+	switch ptype {
+	case ProposalTypeConfigUpdate:
+		return &pOpts.ConfigUpdate, nil
+	case ProposalTypeCodeChange:
+		return &pOpts.ConfigUpdate, nil
+	case ProposalTypeGeneral:
+		return &pOpts.ConfigUpdate, nil
+	}
+	return nil, errors.New(fmt.Sprintf("Options of Type %s not found", ptype))
 }
 
 func (st *Store) SetRewardOptions(rewardOptions rewards.Options) error {

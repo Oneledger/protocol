@@ -122,7 +122,7 @@ class Proposal:
                         "fundingGoal": "10000000000",
                         "proposalExecutionCost": "executionCostConfig",
                         "votingDeadline": 12,
-                        "initialFunding": "1000000000",
+                        "initialFunding": "100000000",
                         "fundingDeadline": 12,
                         "passPercentage": 51
                     },
@@ -206,7 +206,7 @@ class Proposal:
 
         if "ok" in result:
             if not result["ok"]:
-                sys.exit(-1)
+                print "Send Create Failed : ", result
             else:
                 self.pid = self.get_encoded_pid()
                 self.txHash = "0x" + result["txHash"]
@@ -530,15 +530,13 @@ def query_proposal(proposal_id):
     return stat["proposal"], stat["funds"]
 
 
-def query_governanceState(height):
-    req = {
-        "height": height,
-    }
+def query_governanceState():
+    req = {}
     resp = rpc_call('query.GetGovernanceOptionsForHeight', req)
     result = resp["result"]
 
     # print json.dumps(resp, indent=4)
-    return result["govOptions"]["bitcoinChainDriverOption"]["ChainType"]
+    return result["govOptions"]
 
 
 def query_balance(address):

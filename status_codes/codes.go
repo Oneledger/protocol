@@ -150,4 +150,9 @@ const (
 	GovFundUnableToDelete                 = 700144
 	GovFundBalanceMismatch                = 700145
 	GovErrUnableToSetFinalizeFailed       = 700146
+	TxErrGettingFeeOptions                = 700146
+	TxErrGettingRewardsOptions            = 700147
+	TxErrGettingBTCOptions                = 700148
+	TxErrGettingONSOptions                = 700149
+	TxErrGettingETHOptions                = 700150
 )

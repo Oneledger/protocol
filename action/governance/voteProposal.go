@@ -7,6 +7,7 @@ import (
 	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/action/helpers"
 	gov "github.com/Oneledger/protocol/data/governance"
 )
 
@@ -39,7 +40,11 @@ func (v voteProposalTx) Validate(ctx *action.Context, tx action.SignedTx) (bool,
 		return false, err
 	}
 
-	err = action.ValidateFee(ctx.FeePool.GetOpt(), tx.Fee)
+	feeOpt, err := ctx.GovernanceStore.GetFeeOption()
+	if err != nil {
+		return false, gov.ErrGetFeeOptions
+	}
+	err = action.ValidateFee(feeOpt, tx.Fee)
 	if err != nil {
 		return false, err
 	}
@@ -125,7 +130,10 @@ func runVote(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	}
 
 	// Peek vote result based on collected votes so far
-	options := pms.Proposal.GetOptionsByType(proposal.Type)
+	options, err := ctx.GovernanceStore.GetProposalOptionsByType(proposal.Type)
+	if err != nil {
+		helpers.LogAndReturnFalse(ctx.Logger, gov.ErrGetProposalOptions, vote.Tags(), err)
+	}
 	stat, err := pms.ProposalVote.ResultSoFar(vote.ProposalID, options.PassPercentage)
 	if err != nil {
 		return false, action.Response{

@@ -143,10 +143,13 @@ func runFinalizeProposal(ctx *action.Context, tx action.RawTx) (bool, action.Res
 	if voteStatus.Result == governance.VOTE_RESULT_TBD {
 		return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrVotingTBD, finalizedProposal.Tags(), err)
 	}
-
+	options, err := ctx.GovernanceStore.GetProposalOptionsByType(proposal.Type)
+	if err != nil {
+		helpers.LogAndReturnFalse(ctx.Logger, governance.ErrGetProposalOptions, finalizedProposal.Tags(), err)
+	}
 	//Handle Result Passed
 	if voteStatus.Result == governance.VOTE_RESULT_PASSED {
-		proposalDistribution := ctx.ProposalMasterStore.Proposal.GetOptionsByType(proposal.Type).PassedFundDistribution
+		proposalDistribution := options.PassedFundDistribution
 		distributeErr := distributeFunds(ctx, proposal, &proposalDistribution)
 		if distributeErr != nil {
 			err = setToFinalizeFailed(ctx, proposal)
@@ -170,7 +173,7 @@ func runFinalizeProposal(ctx *action.Context, tx action.RawTx) (bool, action.Res
 	}
 	//Handle Result Failed
 	if voteStatus.Result == governance.VOTE_RESULT_FAILED {
-		proposalDistribution := ctx.ProposalMasterStore.Proposal.GetOptionsByType(proposal.Type).FailedFundDistribution
+		proposalDistribution := options.FailedFundDistribution
 		distributeErr := distributeFunds(ctx, proposal, &proposalDistribution)
 		if distributeErr != nil {
 			err = setToFinalizeFailed(ctx, proposal)
@@ -185,7 +188,7 @@ func runFinalizeProposal(ctx *action.Context, tx action.RawTx) (bool, action.Res
 			return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrStatusUnableToSetFinalized, finalizedProposal.Tags(), err)
 		}
 	}
-	fmt.Println("Finalized Validator :", finalizedProposal.ValidatorAddress.String(), "Proposal : ", proposal.ProposalID)
+	ctx.Logger.Debug("Finalized  :", finalizedProposal.ValidatorAddress.String(), "Proposal : ", proposal.ProposalID)
 	return helpers.LogAndReturnTrue(ctx.Logger, finalizedProposal.Tags(), "finalize_proposal_success")
 }
 
@@ -230,8 +233,11 @@ func distributeFunds(ctx *action.Context, proposal *governance.Proposal, proposa
 	}
 
 	//Bounty Program
-
-	bountyAddress := action.Address(ctx.ProposalMasterStore.Proposal.GetOptions().BountyProgramAddr)
+	popt, err := ctx.GovernanceStore.GetProposalOptions()
+	if err != nil {
+		return err
+	}
+	bountyAddress := action.Address(popt.BountyProgramAddr)
 	ctx.Logger.Detailf("Transferring to Bounty Program :\"%v", bountyAddress.String())
 	err = ctx.Balances.AddToAddress(bountyAddress, getPercentageCoin(c, totalFunding, &fundTracker, proposalDistribution.BountyPool))
 	if err != nil {
@@ -286,11 +292,19 @@ func executeConfigUpdate(ctx *action.Context, proposal *governance.Proposal) err
 	if err != nil {
 		return errors.Wrap(err, "Setup Fee Options")
 	}
+	//Setup Options for individual stores
+	ctx.ProposalMasterStore.Proposal.SetOptions(&updatedGov.PropOptions)
+	ctx.RewardStore.SetOptions(&updatedGov.RewardOptions)
+	ctx.FeePool.SetupOpt(&updatedGov.FeeOption)
+	ctx.Domains.SetOptions(&updatedGov.ONSOptions)
+	ctx.ETHTrackers.SetupOption(&updatedGov.ETHCDOption)
+	ctx.BTCTrackers.SetOption(updatedGov.BTCCDOption)
+	//Set Last Update Height
 	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetLUH()
 	if err != nil {
 		return errors.Wrap(err, "Unable to set last Update height ")
 	}
-	fmt.Println("Governaace set at height : ", ctx.Header.Height)
+	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height)
 	return nil
 }
 

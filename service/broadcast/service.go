@@ -77,7 +77,6 @@ func (svc *Service) validateAndSignTx(req client.BroadcastRequest) ([]byte, erro
 	ctx := action.NewContext(svc.router, nil, nil, nil, nil, svc.currencies,
 		svc.feePool, svc.validators, nil, svc.domains, svc.trackers, nil, nil, nil, svc.logger,
 		svc.proposalMaster, svc.reward, svc.govern, svc.extStores)
-
 	_, err = handler.Validate(ctx, signedTx)
 	if err != nil {
 		err = rpc.InvalidRequestError(err.Error())
@@ -110,7 +109,6 @@ func (svc *Service) validateAndMtSignTx(req client.BroadcastMtSigRequest) ([]byt
 	ctx := action.NewContext(svc.router, nil, nil, nil, nil, svc.currencies,
 		svc.feePool, svc.validators, nil, svc.domains, svc.trackers, nil, nil, nil, svc.logger,
 		svc.proposalMaster, svc.reward, svc.govern, svc.extStores)
-
 	_, err = handler.Validate(ctx, signedTx)
 	if err != nil {
 		err = rpc.InvalidRequestError(err.Error())
