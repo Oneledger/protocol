@@ -1,5 +1,6 @@
-from rpc_call import rpc_call, converBigInt
 import json
+
+from rpc_call import rpc_call, converBigInt
 
 
 def create_domain(name, owner_hex, price):
@@ -130,7 +131,7 @@ def sign(rawTx, address):
 
 
 def broadcast_commit(rawTx, signature, pub_key):
-    resp = rpc_call('broadcast.TxCommit', {
+    resp = rpc_call('broadcast.TxSync', {
         "rawTx": rawTx,
         "signature": signature,
         "publicKey": pub_key,
