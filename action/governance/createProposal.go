@@ -2,6 +2,7 @@ package governance
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
@@ -21,11 +22,18 @@ type CreateProposal struct {
 	Description    string                  `json:"proposalDescription"`
 	Proposer       keys.Address            `json:"proposerAddress"`
 	InitialFunding action.Amount           `json:"initialFunding"`
+	// below fields are not used
+	//, leave here only to let explorer use this struct to correctly unmarshall data from tendermint
+	FundingDeadline int64           	   `json:"fundingDeadline"`
+	FundingGoal     *balance.Amount 	   `json:"fundingGoal"`
+	VotingDeadline  int64           	   `json:"votingDeadline"`
+	PassPercentage  int             	   `json:"passPercent"`
 }
 
 func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
 	createProposal := CreateProposal{}
 	err := createProposal.Unmarshal(signedTx.Data)
+	fmt.Println(createProposal.FundingGoal)
 	if err != nil {
 		return false, errors.Wrap(action.ErrWrongTxType, err.Error())
 	}
