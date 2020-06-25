@@ -2,7 +2,6 @@ package governance
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
@@ -33,7 +32,6 @@ type CreateProposal struct {
 func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
 	createProposal := CreateProposal{}
 	err := createProposal.Unmarshal(signedTx.Data)
-	fmt.Println(createProposal.FundingGoal)
 	if err != nil {
 		return false, errors.Wrap(action.ErrWrongTxType, err.Error())
 	}
@@ -64,7 +62,7 @@ func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) 
 	}
 
 	//Check if Proposal ID is valid
-	if len(createProposal.ProposalID) <= 0 {
+	if err = createProposal.ProposalID.Err(); err != nil {
 		return false, governance.ErrInvalidProposalId
 	}
 
@@ -169,9 +167,6 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		}
 		return false, result
 	}
-
-	//Set generated Proposal ID in transaction response
-	createProposal.ProposalID = proposal.ProposalID
 
 	//Deduct initial funding from proposer's address
 	funds := createProposal.InitialFunding.ToCoin(ctx.Currencies)
