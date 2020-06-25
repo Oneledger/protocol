@@ -8,6 +8,11 @@ var (
 
 	//Proposal Options
 	ErrGetProposalOptions = codes.ProtocolError{codes.GovErrGetProposalOptions, "failed to get proposal options"}
+	ErrGetFeeOptions      = codes.ProtocolError{codes.TxErrGettingFeeOptions, "failed to get fee options"}
+	ErrGetRewardOptions   = codes.ProtocolError{codes.TxErrGettingRewardsOptions, "failed to get Reward options"}
+	ErrGetONSOptions      = codes.ProtocolError{codes.TxErrGettingONSOptions, "failed to get ONS options"}
+	ErrGetEthOptions      = codes.ProtocolError{codes.TxErrGettingETHOptions, "failed to get ETH options"}
+	ErrGetBtcOptions      = codes.ProtocolError{codes.TxErrGettingBTCOptions, "failed to get BTC options"}
 
 	//Proposal
 	ErrInvalidProposalId      = codes.ProtocolError{codes.GovErrInvalidProposalId, "invalid proposal id"}
