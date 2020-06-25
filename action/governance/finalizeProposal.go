@@ -125,7 +125,10 @@ func runFinalizeProposal(ctx *action.Context, tx action.RawTx) (bool, action.Res
 	//Get Proposal
 	proposal, err := ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStatePassed).Get(finalizedProposal.ProposalID)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrProposalNotExists, finalizedProposal.Tags(), err)
+		proposal, err = ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStateFailed).Get(finalizedProposal.ProposalID)
+		if err != nil {
+			return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrProposalNotExists, finalizedProposal.Tags(), err)
+		}
 	}
 	//Check Status is Completed
 
