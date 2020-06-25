@@ -46,13 +46,13 @@ if __name__ == "__main__":
     test_pass_finalize_proposal()
 
     print "#### ACTIVE PROPOSALS: ####"
-    query_proposals("active")
+    query_proposals(0x31)
 
     print "#### PASSED PROPOSALS: ####"
-    query_proposals("passed")
+    query_proposals(0x32)
 
     print "#### FINALIZED PROPOSALS: ####"
-    query_proposals("finalized")
+    query_proposals(0x34)
 
     print "#### FINALIZEFAILED PROPOSALS: ####"
-    query_proposals("finalizeFailed")
+    query_proposals(0x35)
