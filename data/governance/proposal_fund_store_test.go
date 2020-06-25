@@ -1,6 +1,8 @@
 package governance
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"testing"
 
@@ -39,6 +41,15 @@ func generateAddresses() {
 	h2, _ := pub2.GetHandler()
 	address2 = h2.Address()
 
+}
+
+func generateProposalID(key ProposalID) ProposalID {
+	hashHandler := sha256.New()
+	_, err := hashHandler.Write([]byte(key))
+	if err != nil {
+		return EmptyStr
+	}
+	return ProposalID(hex.EncodeToString(hashHandler.Sum(nil)))
 }
 
 func generateIDs() {
