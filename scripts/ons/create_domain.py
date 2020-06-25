@@ -1,9 +1,8 @@
 
-import time
 import sys
+import time
 
 from sdk.actions import *
-
 
 if __name__ == "__main__":
     #print_all_domains("0xd72c6a5b12dcc13a542acfef023b9f86ca0c3928")
@@ -105,11 +104,11 @@ if __name__ == "__main__":
     if result["ok"] != True:
         sys.exit(-1)
 
-
+    time.sleep(5)
     print "############# get domain on sale ##########################"
     resp = get_domain_on_sale()
     print resp
-
+    time.sleep(5)
     print "############ cancel sell alice.ol ########################"
     raw_txn = cancel_sell_domain(name, addrs[0], sell_price)
     print raw_txn
