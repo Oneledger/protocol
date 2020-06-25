@@ -10,7 +10,7 @@ import (
 
 // list single proposal by id
 func (svc *Service) ListProposal(req client.ListProposalRequest, reply *client.ListProposalsReply) error {
-	proposalID := governance.ProposalID(req.ProposalId)
+	proposalID := req.ProposalId
 	proposal, _, err := svc.proposalMaster.Proposal.QueryAllStores(proposalID)
 	if err != nil {
 		svc.logger.Error("error getting proposal", err)
