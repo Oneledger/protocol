@@ -294,7 +294,7 @@ func SaveChainState(application *app.App, filename string, directory string) err
 
 	startBlock(writer, "\"app_state\"")
 	writeStructWithTag(writer, appState.Currencies, "currencies")
-	writeStructWithTag(writer, GetGovernance(ctx.Govern, application.Header().Height), "governance")
+	writeStructWithTag(writer, GetGovernance(ctx.Govern), "governance")
 	writeStructWithTag(writer, appState.Chain, "state")
 	writeListWithTag(ctx, writer, "balances")
 	writeListWithTag(ctx, writer, "staking")
@@ -464,36 +464,36 @@ func DumpTrackerToFile(ts *ethereum.TrackerStore, writer io.Writer, fn func(writ
 	}
 }
 
-func GetGovernance(gs *governance.Store, height int64) *governance.GovernanceState {
-	btcOption, err := gs.WithHeight(height).GetBTCChainDriverOption()
+func GetGovernance(gs *governance.Store) *governance.GovernanceState {
+	btcOption, err := gs.GetBTCChainDriverOption()
 	if err != nil {
 		fmt.Print("Error Reading BTC chain driver options: ", err)
 		return nil
 	}
 
-	ethOption, err := gs.WithHeight(height).GetETHChainDriverOption()
+	ethOption, err := gs.GetETHChainDriverOption()
 	if err != nil {
 		fmt.Print("Error Reading ETH chain driver options: ", err)
 		return nil
 	}
-	onsOption, err := gs.WithHeight(height).GetONSOptions()
+	onsOption, err := gs.GetONSOptions()
 	if err != nil {
 		fmt.Print("Error Reading ONS Domain options: ", err)
 		return nil
 	}
 
-	feeOption, err := gs.WithHeight(height).GetFeeOption()
+	feeOption, err := gs.GetFeeOption()
 	if err != nil {
 		fmt.Print("Error Reading Fee options: ", err)
 		return nil
 	}
 
-	rewardOptions, err := gs.WithHeight(height).GetRewardOptions()
+	rewardOptions, err := gs.GetRewardOptions()
 	if err != nil {
 		fmt.Print("Error Reading Reward options: ", err)
 		return nil
 	}
-	proposalOptions, err := gs.WithHeight(height).GetProposalOptions()
+	proposalOptions, err := gs.GetProposalOptions()
 	if err != nil {
 		fmt.Print("Error Reading Proposal options: ", err)
 		return nil

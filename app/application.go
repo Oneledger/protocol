@@ -1,7 +1,6 @@
 package app
 
 import (
-	"fmt"
 	"net/url"
 	"os"
 
@@ -110,7 +109,7 @@ func (app *App) setupState(stateBytes []byte) error {
 	}
 
 	// commit the initial currencies to the governance db
-	fmt.Println("Setting up governance options for height: ", app.header.Height)
+	app.logger.Info("Setting up governance options for height: ", app.header.Height)
 	err = app.Context.govern.WithHeight(app.header.Height).SetCurrencies(initial.Currencies)
 	if err != nil {
 		return errors.Wrap(err, "Setup State")
@@ -327,6 +326,7 @@ func (app *App) Prepare() error {
 
 	//get currencies from governance db
 	if !app.Context.govern.InitialChain() {
+		//TODO remove setting individual stores after all TX's directly use the Gov store
 		currencies, err := app.Context.govern.WithHeight(app.header.Height).GetCurrencies()
 		if err != nil {
 			return err

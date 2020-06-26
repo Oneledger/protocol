@@ -44,7 +44,7 @@ func NewStore(prefix string, state *storage.State) *Store {
 	return &Store{
 		state:  state,
 		prefix: storage.Prefix(prefix),
-		height: 0,
+		height: 0, //Not 100% on this. If some Update function is called without "WithHeight" it will cause and error
 	}
 }
 
@@ -60,6 +60,7 @@ func (st *Store) WithHeight(height int64) *Store {
 
 func (st *Store) Get(key string) ([]byte, error) {
 	// Get the last update height for the present height
+	// LUH is unversioned
 	luh, err := st.GetLUH()
 	if err != nil {
 		panic(errors.Wrap(err, "Unable to get Last Update Height"))
@@ -96,6 +97,8 @@ func (st *Store) Exists(key []byte) bool {
 func (st *Store) SetLUH() error {
 	b := make([]byte, 8)
 	binary.LittleEndian.PutUint64(b, uint64(st.height))
+	// Always gives last update Height for present block
+	// Replaying tx ,will keep updating this value at every change
 	err := st.SetUnversioned(LAST_UPDATE_HEIGHT, b)
 	if err != nil {
 		return err
