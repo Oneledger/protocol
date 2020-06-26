@@ -10,19 +10,19 @@ import (
 
 // list single proposal by id
 func (svc *Service) ListProposal(req client.ListProposalRequest, reply *client.ListProposalsReply) error {
-	proposalID := governance.ProposalID(req.ProposalId)
-	proposal, _, err := svc.proposalMaster.Proposal.QueryAllStores(proposalID)
+	proposal, _, err := svc.proposalMaster.Proposal.QueryAllStores(req.ProposalId)
 	if err != nil {
 		svc.logger.Error("error getting proposal", err)
 		return codes.ErrGetProposal
 	}
 
 	options := svc.proposalMaster.Proposal.GetOptionsByType(proposal.Type)
-	funds, err := svc.proposalMaster.ProposalFund.GetCurrentFundsForProposal(proposalID)
+	funds, err := svc.proposalMaster.ProposalFund.GetCurrentFundsForProposal(req.ProposalId)
 	if err != nil {
 		return err
 	}
-	stat, _ := svc.proposalMaster.ProposalVote.ResultSoFar(proposalID, options.PassPercentage)
+	stat, _ := svc.proposalMaster.ProposalVote.ResultSoFar(req.ProposalId, options.PassPercentage)
+
 
 	ps := client.ProposalStat{
 		Proposal: *proposal,

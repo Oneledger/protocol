@@ -9,7 +9,6 @@ require (
 	github.com/btcsuite/btcutil v0.0.0-20190207003914-4c204d697803
 	github.com/cespare/cp v1.1.1 // indirect
 	github.com/coreos/go-etcd v2.0.0+incompatible // indirect
-	github.com/cpuguy83/go-md2man v1.0.10 // indirect
 	github.com/davecgh/go-spew v1.1.1
 	github.com/deckarep/golang-set v1.7.1 // indirect
 	github.com/elastic/gosigar v0.10.5 // indirect

@@ -108,7 +108,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.govern = governance.NewStore("g", storage.NewState(ctx.chainstate))
 	ctx.proposalMaster = NewProposalMasterStore(ctx.chainstate)
 	ctx.delegators = delegation.NewDelegationStore("st", storage.NewState(ctx.chainstate))
-	ctx.rewards = rewards.NewRewardStore("r", storage.NewState(ctx.chainstate))
+	ctx.rewards = rewards.NewRewardStore("r", "ri", storage.NewState(ctx.chainstate))
 	ctx.btcTrackers = bitcoin.NewTrackerStore("btct", storage.NewState(ctx.chainstate))
 
 	ctx.ethTrackers = ethereum.NewTrackerStore("etht", "ethfailed", "ethsuccess", storage.NewState(ctx.chainstate))
@@ -237,7 +237,7 @@ func (ctx *context) Services() (service.Map, error) {
 	proposalMaster := NewProposalMasterStore(ctx.chainstate)
 	proposalMaster.Proposal.SetOptions(ctx.proposalMaster.Proposal.GetOptions())
 
-	rewardStore := rewards.NewRewardStore("r", storage.NewState(ctx.chainstate))
+	rewardStore := rewards.NewRewardStore("r", "ri", storage.NewState(ctx.chainstate))
 	rewardStore.SetOptions(ctx.rewards.GetOptions())
 
 	svcCtx := &service.Context{
@@ -253,6 +253,7 @@ func (ctx *context) Services() (service.Map, error) {
 		Govern:         ctx.govern,
 		Delegators:     ctx.delegators,
 		ProposalMaster: proposalMaster,
+		Rewards:        rewardStore,
 		ExtStores:      ctx.extStores,
 		Router:         ctx.actionRouter,
 		Logger:         log.NewLoggerWithPrefix(ctx.logWriter, "rpc").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
