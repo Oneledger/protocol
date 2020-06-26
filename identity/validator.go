@@ -5,7 +5,9 @@ import (
 	"github.com/btcsuite/btcutil"
 
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/delegation"
 	"github.com/Oneledger/protocol/data/fees"
+	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 )
@@ -18,6 +20,18 @@ type Validator struct {
 	Power        int64          `json:"power"`
 	Name         string         `json:"name"`
 	Staking      balance.Amount `json:"staking,string"`
+}
+
+func NewValidator(address keys.Address, stakeAddress keys.Address, pubKey keys.PublicKey, ecdsaPubKey keys.PublicKey, amount balance.Amount, name string) *Validator {
+	return &Validator{
+		Address:      address,
+		StakeAddress: stakeAddress,
+		PubKey:       pubKey,
+		ECDSAPubKey:  ecdsaPubKey,
+		Power:        calculatePower(amount),
+		Name:         name,
+		Staking:      amount,
+	}
 }
 
 func (v *Validator) Bytes() []byte {
@@ -68,14 +82,18 @@ type Unstake struct {
 }
 
 type ValidatorContext struct {
-	Balances *balance.Store
-	FeePool  *fees.Store
+	Balances   *balance.Store
+	FeePool    *fees.Store
+	Delegators *delegation.DelegationStore
+	Govern     *governance.Store
 	// TODO: add necessary config
 }
 
-func NewValidatorContext(balances *balance.Store, feePool *fees.Store) *ValidatorContext {
+func NewValidatorContext(balances *balance.Store, feePool *fees.Store, delegators *delegation.DelegationStore, govern *governance.Store) *ValidatorContext {
 	return &ValidatorContext{
-		Balances: balances,
-		FeePool:  feePool,
+		Balances:   balances,
+		FeePool:    feePool,
+		Delegators: delegators,
+		Govern:     govern,
 	}
 }

@@ -6,7 +6,7 @@ import (
 
 var (
 
-	//Proposal Options
+	// Options Objects from store
 	ErrGetProposalOptions = codes.ProtocolError{codes.GovErrGetProposalOptions, "failed to get proposal options"}
 	ErrGetFeeOptions      = codes.ProtocolError{codes.TxErrGettingFeeOptions, "failed to get fee options"}
 	ErrGetRewardOptions   = codes.ProtocolError{codes.TxErrGettingRewardsOptions, "failed to get Reward options"}

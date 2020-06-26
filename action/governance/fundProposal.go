@@ -103,6 +103,11 @@ func (fundProposalTx) Validate(ctx *action.Context, signedTx action.SignedTx) (b
 		return false, errors.Wrap(action.ErrInvalidAddress, err.Error())
 	}
 
+	//Check if Proposal ID is valid
+	if err = fundProposal.ProposalId.Err(); err != nil {
+		return false, governance.ErrInvalidProposalId
+	}
+
 	return true, nil
 }
 
@@ -151,7 +156,7 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 	fundingAmount := balance.NewAmountFromBigInt(fundProposal.FundValue.Value.BigInt())
 	fundStore := ctx.ProposalMasterStore.ProposalFund
 	currentFundsforProposal := fundStore.GetCurrentFundsForProposal(proposal.ProposalID)
-	newAmount := fundingAmount.Plus(currentFundsforProposal)
+	newAmount := fundingAmount.Plus(*currentFundsforProposal)
 	if newAmount.BigInt().Cmp(proposal.FundingGoal.BigInt()) >= 0 {
 		//5. Update status and set voting deadline
 		proposal.Status = governance.ProposalStatusVoting

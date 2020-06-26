@@ -38,8 +38,8 @@ func (id ProposalID) Err() error {
 	switch {
 	case len(id) == 0:
 		return errors.New("proposal id is empty")
-	case len(id) != 32:
-		return errors.New("proposal id length is incorrect: must be 32 hex characters")
+	case len(id) != SHA256LENGTH:
+		return errors.New("proposal id length is incorrect")
 	}
 	return nil
 }

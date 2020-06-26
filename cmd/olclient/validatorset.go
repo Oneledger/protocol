@@ -44,17 +44,20 @@ func ListValidator(cmd *cobra.Command, args []string) {
 	}
 
 	for _, v := range out.Validators {
-		printValidator(v)
+		printValidator(v, out.VMap)
 	}
 	fmt.Println("Height", out.Height)
 }
 
-func printValidator(v identity.Validator) {
+func printValidator(v identity.Validator, vm map[string]bool) {
+	isActive := vm[v.Address.String()]
+	fmt.Println("Active", isActive)
 	fmt.Println("Address", v.Address)
 	fmt.Println("StakeAddress", v.StakeAddress)
 	fmt.Println("Power", v.Power)
 	fmt.Println("Name", v.Name)
 	fmt.Println("Staking", v.Staking)
+
 	fmt.Println()
 
 }

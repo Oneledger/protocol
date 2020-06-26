@@ -56,7 +56,7 @@ class Proposal:
 
     def _create_proposal(self):
         req = {
-            "proposalId": self.pid,
+            "proposalId": self.get_encoded_pid(),
             "headline": self.headline,
             "description": self.des,
             "proposer": self.proposer,
@@ -213,7 +213,7 @@ class Proposal:
                 print "################### proposal created: " + self.pid
 
     def get_encoded_pid(self):
-        hash_handler = hashlib.md5()
+        hash_handler = hashlib.sha256()
         hash_handler.update(self.pid)
         hash_val = hash_handler.digest()
         return hash_val.encode('hex')

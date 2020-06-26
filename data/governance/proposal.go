@@ -1,9 +1,6 @@
 package governance
 
 import (
-	"crypto/md5"
-	"encoding/hex"
-
 	"github.com/Oneledger/protocol/data/balance"
 
 	"github.com/Oneledger/protocol/data/keys"
@@ -70,13 +67,4 @@ func NewProposal(proposalID ProposalID, propType ProposalType, desc string, head
 		PassPercentage:        passPercentage,
 		GovernanceStateUpdate: upd,
 	}
-}
-
-func generateProposalID(key ProposalID) ProposalID {
-	hashHandler := md5.New()
-	_, err := hashHandler.Write([]byte(key))
-	if err != nil {
-		return EmptyStr
-	}
-	return ProposalID(hex.EncodeToString(hashHandler.Sum(nil)))
 }

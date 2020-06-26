@@ -59,6 +59,11 @@ func (wp WithdrawFunds) Validate(ctx *action.Context, signedTx action.SignedTx) 
 		return false, errors.Wrap(governance.ErrInvalidFunderAddr, err.Error())
 	}
 
+	//Check if Proposal ID is valid
+	if err = withdrawFunds.ProposalID.Err(); err != nil {
+		return false, governance.ErrInvalidProposalId
+	}
+
 	//Check if withdraw beneficiary address is valid oneLedger address
 	err = withdrawFunds.Beneficiary.Err()
 	if err != nil {

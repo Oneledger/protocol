@@ -4,7 +4,6 @@ import (
 	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/rewards"
-
 	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/action"
@@ -14,6 +13,7 @@ import (
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/bitcoin"
+	"github.com/Oneledger/protocol/data/delegation"
 	ethTracker "github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/ons"
@@ -34,6 +34,8 @@ type Context struct {
 	Accounts     accounts.Wallet
 	Balances     *balance.Store
 	Domains      *ons.DomainStore
+	Govern       *governance.Store
+	Delegators   *delegation.DelegationStore
 	FeePool      *fees.Store
 	ValidatorSet *identity.ValidatorStore
 	WitnessSet   *identity.WitnessStore
@@ -62,13 +64,13 @@ type Map map[string]interface{}
 func NewMap(ctx *Context) (Map, error) {
 
 	defaultMap := Map{
-		broadcast.Name(): broadcast.NewService(ctx.Services, ctx.Router, ctx.Currencies, ctx.FeePool, ctx.Domains, ctx.ValidatorSet, ctx.Logger, ctx.Trackers, ctx.ProposalMaster, ctx.Rewards, ctx.Govern, ctx.ExtStores),
+		broadcast.Name(): broadcast.NewService(ctx.Services, ctx.Router, ctx.Currencies, ctx.FeePool, ctx.Domains, ctx.Govern, ctx.Delegators, ctx.ValidatorSet, ctx.Logger, ctx.Trackers, ctx.ProposalMaster, ctx.Rewards, ctx.ExtStores),
 		nodesvc.Name():   nodesvc.NewService(ctx.NodeContext, &ctx.Cfg, ctx.Logger),
 		owner.Name():     owner.NewService(ctx.Accounts, ctx.Logger),
-		query.Name(): query.NewService(ctx.Services, ctx.Balances, ctx.Currencies, ctx.ValidatorSet, ctx.WitnessSet, ctx.Domains,
-			ctx.FeePool, ctx.ProposalMaster, ctx.Logger, ctx.TxTypes, ctx.Govern),
+		query.Name(): query.NewService(ctx.Services, ctx.Balances, ctx.Currencies, ctx.ValidatorSet, ctx.WitnessSet, ctx.Domains, ctx.Delegators, ctx.Govern,
+			ctx.FeePool, ctx.ProposalMaster, ctx.Rewards, ctx.Logger, ctx.TxTypes),
 
-		tx.Name():       tx.NewService(ctx.Balances, ctx.Router, ctx.Accounts, ctx.FeePool.GetOpt(), ctx.NodeContext, ctx.Logger),
+		tx.Name():       tx.NewService(ctx.Balances, ctx.Router, ctx.Accounts, ctx.ValidatorSet, ctx.Govern, ctx.Delegators, ctx.FeePool.GetOpt(), ctx.NodeContext, ctx.Logger),
 		btc.Name():      btc.NewService(ctx.Balances, ctx.Accounts, ctx.NodeContext, ctx.ValidatorSet, ctx.Trackers, ctx.Logger),
 		ethereum.Name(): ethereum.NewService(ctx.Cfg.EthChainDriver, ctx.Router, ctx.Accounts, ctx.NodeContext, ctx.ValidatorSet, ctx.EthTrackers, ctx.Logger),
 	}

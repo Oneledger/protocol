@@ -64,7 +64,7 @@ func (rs *RewardStore) AddToAddress(address keys.Address, height int64, amount *
 	if err != nil {
 		return err
 	}
-	newAmount := prevAmount.Plus(amount)
+	newAmount := prevAmount.Plus(*amount)
 	return rs.Set(address, height, newAmount)
 }
 
