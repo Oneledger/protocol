@@ -104,11 +104,10 @@ if __name__ == "__main__":
     if result["ok"] != True:
         sys.exit(-1)
 
-    time.sleep(5)
     print "############# get domain on sale ##########################"
     resp = get_domain_on_sale()
     print resp
-    time.sleep(5)
+
     print "############ cancel sell alice.ol ########################"
     raw_txn = cancel_sell_domain(name, addrs[0], sell_price)
     print raw_txn

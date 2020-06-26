@@ -131,7 +131,7 @@ def sign(rawTx, address):
 
 
 def broadcast_commit(rawTx, signature, pub_key):
-    resp = rpc_call('broadcast.TxSync', {
+    resp = rpc_call('broadcast.TxCommit', {
         "rawTx": rawTx,
         "signature": signature,
         "publicKey": pub_key,
