@@ -54,7 +54,7 @@ func NewProposal(proposalID ProposalID, propType ProposalType, desc string, head
 	votingDeadline int64, passPercentage int, upd GovernanceState) *Proposal {
 
 	return &Proposal{
-		ProposalID:            generateProposalID(proposalID),
+		ProposalID:            proposalID,
 		Type:                  propType,
 		Status:                ProposalStatusFunding,
 		Outcome:               ProposalOutcomeInProgress,

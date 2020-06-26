@@ -178,9 +178,7 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.validators.WithState(state),
 		ctx.witnesses.WithState(state),
 		ctx.domains.WithState(state),
-		ctx.govern.WithState(state),
 		ctx.delegators.WithState(state),
-
 		ctx.btcTrackers.WithState(state),
 		ctx.ethTrackers.WithState(state),
 		ctx.jobStore,
@@ -251,7 +249,6 @@ func (ctx *context) Services() (service.Map, error) {
 		ValidatorSet:   identity.NewValidatorStore("v", storage.NewState(ctx.chainstate)),
 		WitnessSet:     identity.NewWitnessStore("w", storage.NewState(ctx.chainstate)),
 		Domains:        ons,
-		Govern:         ctx.govern,
 		Delegators:     ctx.delegators,
 		ProposalMaster: proposalMaster,
 		Rewards:        rewardStore,

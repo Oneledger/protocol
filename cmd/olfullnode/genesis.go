@@ -483,7 +483,7 @@ func getInitialState(args *genesisArgument, nodeList []node, option ethchain.Cha
 		Staking:    staking,
 		Domains:    domains,
 		Fees:       fees_db,
-		Governance: consensus.GovernanceState{
+		Governance: governance.GovernanceState{
 			FeeOption:      feeOpt,
 			ETHCDOption:    option,
 			BTCCDOption:    btcOption,

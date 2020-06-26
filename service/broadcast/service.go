@@ -27,7 +27,6 @@ type Service struct {
 	trackers       *bitcoin.TrackerStore
 	feePool        *fees.Store
 	domains        *ons.DomainStore
-	govern         *governance.Store
 	delegators     *delegation.DelegationStore
 	validators     *identity.ValidatorStore
 	proposalMaster *governance.ProposalMasterStore
@@ -48,7 +47,6 @@ func NewService(ctx client.ExtServiceContext, router action.Router, currencies *
 		trackers:       trackers,
 		feePool:        feePool,
 		domains:        domains,
-		govern:         govern,
 		delegators:     delegators,
 		validators:     validators,
 		proposalMaster: proposalMaster,
@@ -80,8 +78,8 @@ func (svc *Service) validateAndSignTx(req client.BroadcastRequest) ([]byte, erro
 
 	handler := svc.router.Handler(tx.Type)
 	ctx := action.NewContext(svc.router, nil, nil, nil, nil, svc.currencies,
-		svc.feePool, svc.validators, nil, svc.domains, svc.govern, svc.delegators, svc.trackers, nil, nil, nil, svc.logger,
-		svc.proposalMaster, svc.reward, svc.extStores)
+		svc.feePool, svc.validators, nil, svc.domains, svc.delegators, svc.trackers, nil, nil, nil, svc.logger,
+		svc.proposalMaster, svc.reward, svc.govern, svc.extStores)
 
 	_, err = handler.Validate(ctx, signedTx)
 	if err != nil {
@@ -113,8 +111,8 @@ func (svc *Service) validateAndMtSignTx(req client.BroadcastMtSigRequest) ([]byt
 
 	handler := svc.router.Handler(tx.Type)
 	ctx := action.NewContext(svc.router, nil, nil, nil, nil, svc.currencies,
-		svc.feePool, svc.validators, nil, svc.domains, svc.govern, svc.delegators, svc.trackers, nil, nil, nil, svc.logger,
-		svc.proposalMaster, svc.reward, svc.extStores)
+		svc.feePool, svc.validators, nil, svc.domains, svc.delegators, svc.trackers, nil, nil, nil, svc.logger,
+		svc.proposalMaster, svc.reward, svc.govern, svc.extStores)
 
 	_, err = handler.Validate(ctx, signedTx)
 	if err != nil {

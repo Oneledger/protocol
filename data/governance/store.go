@@ -35,8 +35,7 @@ const (
 	ADMIN_STAKING_OPTION string = "stakingopt"
 
 	ADMIN_REWARD_OPTION string = "reward"
-	ADMIN_REWARD_OPTION   string = "reward"
-	LAST_UPDATE_HEIGHT    string = "lastupdateheight"
+	LAST_UPDATE_HEIGHT  string = "lastupdateheight"
 )
 
 type Store struct {
@@ -212,7 +211,7 @@ func (st *Store) SetEpoch(epoch int64) error {
 
 func (st *Store) GetStakingOptions() (*delegation.Options, error) {
 
-	bytes, err := st.Get([]byte(ADMIN_STAKING_OPTION))
+	bytes, err := st.Get(ADMIN_STAKING_OPTION)
 	if err != nil {
 		return nil, err
 	}
@@ -233,7 +232,7 @@ func (st *Store) SetStakingOptions(opt delegation.Options) error {
 		return errors.Wrap(err, "failed to serialize staking options")
 	}
 
-	err = st.Set([]byte(ADMIN_STAKING_OPTION), bytes)
+	err = st.Set(ADMIN_STAKING_OPTION, bytes)
 	if err != nil {
 		return errors.Wrap(err, "failed to set the staking options")
 	}

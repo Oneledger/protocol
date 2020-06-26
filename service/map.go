@@ -1,10 +1,11 @@
 package service
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/rewards"
-	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/app/node"
@@ -34,7 +35,6 @@ type Context struct {
 	Accounts     accounts.Wallet
 	Balances     *balance.Store
 	Domains      *ons.DomainStore
-	Govern       *governance.Store
 	Delegators   *delegation.DelegationStore
 	FeePool      *fees.Store
 	ValidatorSet *identity.ValidatorStore

@@ -2,8 +2,9 @@ package query
 
 import (
 	"encoding/hex"
-	"github.com/Oneledger/protocol/data/rewards"
 	"strings"
+
+	"github.com/Oneledger/protocol/data/rewards"
 
 	"github.com/Oneledger/protocol/data/governance"
 
@@ -12,7 +13,6 @@ import (
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/delegation"
 	"github.com/Oneledger/protocol/data/fees"
-	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/identity"
@@ -60,7 +60,7 @@ func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencie
 		rewardStore:    rewardStore,
 		logger:         logger,
 		txTypes:        txTypes,
-		governance:     gov,
+		governance:     govern,
 	}
 }
 
