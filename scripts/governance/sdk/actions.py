@@ -404,3 +404,11 @@ def query_balance(address):
     resp = rpc_call('query.Balance', req)
     print json.dumps(resp, indent=4)
     return resp["result"]
+
+def query_proposal_options():
+    req = {}
+
+    resp = rpc_call('query.GetProposalOptions', req)
+    if "result" not in resp:
+        sys.exit(-1)
+    print json.dumps(resp, indent=4)

@@ -21,8 +21,6 @@ type CreateProposal struct {
 	Description    string                  `json:"proposalDescription"`
 	Proposer       keys.Address            `json:"proposerAddress"`
 	InitialFunding action.Amount           `json:"initialFunding"`
-	// below fields are not used
-	//, leave here only to let explorer use this struct to correctly unmarshall data from tendermint
 	FundingDeadline int64           	   `json:"fundingDeadline"`
 	FundingGoal     *balance.Amount 	   `json:"fundingGoal"`
 	VotingDeadline  int64           	   `json:"votingDeadline"`

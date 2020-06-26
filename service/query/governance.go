@@ -1,8 +1,9 @@
 package query
 
 import (
+	"encoding/json"
 	"errors"
-
+	"strconv"
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/data/governance"
 	codes "github.com/Oneledger/protocol/status_codes"
@@ -81,5 +82,25 @@ func (svc *Service) ListProposals(req client.ListProposalsRequest, reply *client
 		Height:        pms.Proposal.GetState().Version(),
 	}
 
+	return nil
+}
+
+func (svc *Service) GetProposalOptions(_ client.ListTxTypesRequest, reply *client.GetProposalOptionsReply) error {
+	options := svc.proposalMaster.Proposal.GetOptions()
+	height := svc.proposalMaster.Proposal.GetState().Version()
+	optionJson, err := json.Marshal(options)
+	if err != nil {
+		svc.logger.Error("error getting proposal options", err)
+		return codes.ErrGetProposalOptions
+	}
+
+	result := map[string]string{
+		"options": string(optionJson),
+		"height": strconv.FormatInt(height, 10),
+	}
+	resultJson, _:= json.Marshal(result)
+	*reply = client.GetProposalOptionsReply{
+		Result: string(resultJson),
+	}
 	return nil
 }
