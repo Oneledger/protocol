@@ -3,13 +3,20 @@ package app
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/Oneledger/protocol/consensus"
+	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/rewards"
+	"github.com/tendermint/tendermint/libs/kv"
+
 	"math"
 	"runtime/debug"
+	"strconv"
 
 	"github.com/Oneledger/protocol/data/governance"
 
 	"github.com/pkg/errors"
 
+	abciTypes "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/types"
 
 	"github.com/Oneledger/protocol/action"
@@ -257,18 +264,24 @@ func (app *App) blockEnder() blockEnder {
 
 		fee, err := app.Context.feePool.WithState(app.Context.deliver).Get([]byte(fees.POOL_KEY))
 		app.logger.Detail("endblock fee", fee, err)
+
 		updates := app.Context.validators.GetEndBlockUpdate(app.Context.ValidatorCtx(), req)
 		app.logger.Detailf("Sending updates with nodes to tendermint: %+v\n", updates)
-		result := ResponseEndBlock{
-			ValidatorUpdates: updates,
-			//Tags:             []kv.Pair(nil),
-		}
+
 		ethTrackerlog := log.NewLoggerWithPrefix(app.Context.logWriter, "ethtracker").WithLevel(log.Level(app.Context.cfg.Node.LogLevel))
 		doTransitions(app.Context.jobStore, app.Context.btcTrackers.WithState(app.Context.deliver), app.Context.validators)
 		doEthTransitions(app.Context.jobStore, app.Context.ethTrackers, app.Context.node.ValidatorAddress(), ethTrackerlog, app.Context.witnesses, app.Context.deliver)
 
 		//Check for vote expiration on active proposals
 		updateProposals(app.Context.proposalMaster, app.Context.jobStore, app.Context.deliver)
+
+		//Distribute Block rewards to Validators
+		blockRewardEvent := handleBlockRewards(app.Context.validators, app.Context.rewards.WithState(app.Context.deliver), app.Node())
+
+		result := ResponseEndBlock{
+			ValidatorUpdates: updates,
+			Events:           []abciTypes.Event{blockRewardEvent},
+		}
 
 		app.logger.Detail("End Block: ", result, "height:", req.Height)
 
@@ -439,7 +452,7 @@ func updateProposals(proposalMaster *governance.ProposalMasterStore, jobStore *j
 
 	passedProposals := proposals.WithPrefixType(governance.ProposalStatePassed)
 	passedProposals.Iterate(func(id governance.ProposalID, proposal *governance.Proposal) bool {
-		if proposal.Status == governance.ProposalStatusCompleted {
+		if proposal.Status == governance.ProposalStatusCompleted && proposal.Outcome == governance.ProposalOutcomeCompleted {
 			finalizeJob := event.NewGovFinalizeProposalJob(proposal.ProposalID, proposal.Status)
 
 			exists, _ := jobStore.WithChain(chain.ONELEDGER).JobExists(finalizeJob.JobID)
@@ -452,6 +465,100 @@ func updateProposals(proposalMaster *governance.ProposalMasterStore, jobStore *j
 		}
 		return false
 	})
+	failedProposals := proposals.WithPrefixType(governance.ProposalStateFailed)
+	failedProposals.Iterate(func(id governance.ProposalID, proposal *governance.Proposal) bool {
+		if proposal.Status == governance.ProposalStatusCompleted && proposal.Outcome == governance.ProposalOutcomeInsufficientVotes {
+			finalizeJob := event.NewGovFinalizeProposalJob(proposal.ProposalID, proposal.Status)
+
+			exists, _ := jobStore.WithChain(chain.ONELEDGER).JobExists(finalizeJob.JobID)
+			if !exists {
+				err := jobStore.WithChain(chain.ONELEDGER).SaveJob(finalizeJob)
+				if err != nil {
+					return true
+				}
+			}
+		}
+		return false
+	})
+}
+
+func handleBlockRewards(validators *identity.ValidatorStore, rewards *rewards.RewardStore, node *consensus.Node) abciTypes.Event {
+	//Get BlockStore
+	blockStore := node.BlockStore()
+	//Get Last known contiguous block height - Backtrack by 1 since block for current height is not committed
+	lastHeight := blockStore.Height() - 1
+	//Get Commit Object at "lastHeight"
+	blockCommit := blockStore.LoadBlockCommit(lastHeight)
+	//Get number of signatures in the commit
+	numOfSignatures := blockCommit.Size()
+
+	heightKey := "height"
+
+	//Initialize Event for Block Response
+	result := abciTypes.Event{}
+	kvMap := make(map[string]kv.Pair)
+
+	kvMap[heightKey] = kv.Pair{
+		Key:   []byte(heightKey),
+		Value: []byte(strconv.FormatInt(lastHeight, 10)),
+	}
+
+	//Initialize kvMap with validators containing 0 rewards
+	validators.Iterate(func(addr keys.Address, validator *identity.Validator) bool {
+		kvMap[addr.String()] = kv.Pair{
+			Key:   []byte(addr.String()),
+			Value: []byte(balance.NewAmount(0).String()),
+		}
+		return false
+	})
+
+	//Loop through all validators that participated in signing the last block
+	for index := 0; index < numOfSignatures; index++ {
+
+		//Get the validator's vote by index
+		validatorVote := blockCommit.GetVote(index)
+		if validatorVote == nil {
+			continue
+		}
+		if len(validatorVote.ValidatorAddress) == 0 {
+			continue
+		}
+		if len(validatorVote.Signature) == 0 {
+			continue
+		}
+
+		//Verify Validator Address
+		valAddress := keys.Address(validatorVote.ValidatorAddress)
+		if valAddress.Err() != nil {
+			continue
+		}
+		val, err := validators.Get(valAddress)
+		if err != nil || len(val.Bytes()) == 0 {
+			continue
+		}
+
+		//Distribute Block Reward to Validator
+		//TODO: Calculate reward to be distributed
+		amount := balance.NewAmount(10)
+		err = rewards.AddToAddress(valAddress, lastHeight, amount)
+		if err != nil {
+			continue
+		}
+
+		//Record Amount in kvMap
+		kvMap[valAddress.String()] = kv.Pair{
+			Key:   []byte(valAddress.String()),
+			Value: []byte(amount.String()),
+		}
+	}
+
+	//Populate Event with validator rewards
+	result.Type = "block_rewards"
+	for _, value := range kvMap {
+		result.Attributes = append(result.Attributes, value)
+	}
+
+	return result
 }
 
 func (app *App) VerifyCache(tx []byte) bool {
