@@ -99,6 +99,11 @@ func (fundProposalTx) Validate(ctx *action.Context, signedTx action.SignedTx) (b
 		return false, errors.Wrap(action.ErrInvalidAddress, err.Error())
 	}
 
+	//Check if Proposal ID is valid
+	if err = fundProposal.ProposalId.Err(); err != nil {
+		return false, governance.ErrInvalidProposalId
+	}
+
 	return true, nil
 }
 

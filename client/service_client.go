@@ -175,6 +175,11 @@ func (c *ServiceClient) ListProposals(req ListProposalsRequest) (out *ListPropos
 	return
 }
 
+func (c *ServiceClient) ListRewards(req ListRewardsRequest) (out *ListRewardsReply, err error) {
+	err = c.Call("query.ListRewardsForValidator", req, &out)
+	return
+}
+
 /* Broadcast */
 func (c *ServiceClient) TxAsync(req BroadcastRequest) (out BroadcastReply, err error) {
 	err = c.Call("broadcast.TxAsync", req, &out)

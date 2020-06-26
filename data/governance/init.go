@@ -57,6 +57,9 @@ const (
 	errorSettingRecord   = "323"
 	errorGettingRecord   = "324"
 	errorDeletingRecord  = "325"
+
+	//Proposal ID length based on hash algorithm
+	SHA256LENGTH int = 0x40
 )
 
 type ProposalMasterStore struct {
