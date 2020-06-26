@@ -1,15 +1,17 @@
 package data
 
 import (
+	"testing"
+
+	"github.com/magiconair/properties/assert"
+	db2 "github.com/tendermint/tm-db"
+
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/storage"
-	"github.com/magiconair/properties/assert"
-	db2 "github.com/tendermint/tm-db"
-	"testing"
 )
 
 const (
@@ -65,8 +67,8 @@ func TestStorageRouter_Add(t *testing.T) {
 	db, _ = stores.Get(governType)
 	governanceDB := db.(*governance.Store)
 
-	_ = governanceDB.SetEpoch(1024)
-
+	_ = governanceDB.WithHeight(0).SetEpoch(1024)
+	governanceDB.WithHeight(0).SetLUH()
 	db, _ = stores.Get(feeType)
 	feeDB := db.(*fees.Store)
 

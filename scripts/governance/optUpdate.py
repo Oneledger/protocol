@@ -17,13 +17,6 @@ def test_change_gov_options():
     time.sleep(3)
     encoded_pid = _prop.pid
 
-    _prop = Proposal(_pid_pass, "configUpdate", "proposal for vote", "Headline", _proposer, _initial_funding)
-
-    # create proposal
-    _prop.send_create()
-    time.sleep(3)
-    encoded_pid = _prop.pid
-
     # 1st fund
     fund_proposal(encoded_pid, _funding_goal_general, addr_list[0])
 
