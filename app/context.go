@@ -253,6 +253,7 @@ func (ctx *context) Services() (service.Map, error) {
 		Govern:         ctx.govern,
 		Delegators:     ctx.delegators,
 		ProposalMaster: proposalMaster,
+		Rewards:        rewardStore,
 		ExtStores:      ctx.extStores,
 		Router:         ctx.actionRouter,
 		Logger:         log.NewLoggerWithPrefix(ctx.logWriter, "rpc").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
