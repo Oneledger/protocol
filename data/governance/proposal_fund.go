@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
+	"github.com/pkg/errors"
 )
 
 type ProposalFund struct {
@@ -35,11 +36,11 @@ func (pf *ProposalFundStore) DeleteAllFunds(id ProposalID) error {
 	}
 
 	// set total funds record to 0
-	keyTotal := totalFundsKey(id)
+	keyTotal := assembleTotalFundsKey(id)
 	zeroFunds := balance.NewAmount(0)
-	err := pf.setTotalFunds(keyTotal, *zeroFunds)
+	err := pf.set(keyTotal, *zeroFunds)
 	if err != nil {
-		return err
+		return errors.Wrap(err, errorSettingRecord)
 	}
 	return nil
 }

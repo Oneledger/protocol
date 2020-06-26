@@ -34,6 +34,4 @@ const (
 	DB_RANGEFIX = "~"
 
 	TOMBSTONE = "⛼"
-
-	TOTALFUNDS = "totalFunds"
 )

@@ -34,6 +34,10 @@ const (
 	ADMIN_STAKING_OPTION string = "stakingopt"
 
 	ADMIN_REWARD_OPTION string = "reward"
+
+	TOTAL_FUNDS_PREFIX string = "t"
+
+	INDIVIDUAL_FUNDS_PREFIX string = "i"
 )
 
 type Store struct {
