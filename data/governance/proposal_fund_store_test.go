@@ -96,7 +96,7 @@ func TestProposalFundStore_Iterate(t *testing.T) {
 }
 
 //
-func TestProposalFundStore_GetFundersForProposalID(t *testing.T) {
+func TestProposalFundStore_GetFundsForProposalID(t *testing.T) {
 	//fmt.Println("Get Funders for ID :  ", ID1)
 	funds := store.GetFundsForProposalID(ID1, func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund {
 		return ProposalFund{

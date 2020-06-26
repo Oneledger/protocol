@@ -82,7 +82,7 @@ func (pf *ProposalFundStore) iterate(fn func(proposalID ProposalID, addr keys.Ad
 }
 
 func (pf *ProposalFundStore) assembleIndivFundsPrefix() []byte {
-	prefix := string(pf.prefix) + INDIVIDUAL_FUNDS_PREFIX + storage.DB_PREFIX
+	prefix := string(pf.prefix) + INDIVIDUAL_FUNDS_PREFIX
 
 	return storage.Prefix(prefix)
 }
@@ -103,8 +103,9 @@ func NewProposalFundStore(prefix string, state *storage.State) *ProposalFundStor
 func (pf *ProposalFundStore) GetFundsForProposalID(id ProposalID, fn func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund) []ProposalFund {
 	var foundProposals []ProposalFund
 	pf.iterate(func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) bool {
-		//ignore total funds record(its fundingAddr field is nil)
-		if proposalID == id && fundingAddr != nil {
+		fmt.Println("proposalID: ", proposalID)
+		fmt.Println("fundingAddr: ", fundingAddr)
+		if proposalID == id {
 			foundProposals = append(foundProposals, fn(proposalID, fundingAddr, amt))
 		}
 		return false
@@ -123,11 +124,9 @@ func (pf *ProposalFundStore) GetProposalsForFunder(funderAddress keys.Address, f
 	return foundProposals
 }
 
-func (store *ProposalFundStore) IsFundedByFunder(id ProposalID, funder keys.Address) bool {
+func (pf *ProposalFundStore) IsFundedByFunder(id ProposalID, funder keys.Address) bool {
 	haveFunderAddress := false
-	store.GetFundsForProposalID(id, func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund {
-		//fmt.Println("fundingAddr: ", fundingAddr)
-		//fmt.Println("funder: ", funder)
+	pf.GetFundsForProposalID(id, func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund {
 		if fundingAddr.Equal(funder) {
 			haveFunderAddress = true
 		}
