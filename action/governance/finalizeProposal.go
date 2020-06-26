@@ -292,6 +292,10 @@ func executeConfigUpdate(ctx *action.Context, proposal *governance.Proposal) err
 	if err != nil {
 		return errors.Wrap(err, "Setup Fee Options")
 	}
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetStakingOptions(updatedGov.StakingOptions)
+	if err != nil {
+		return errors.Wrap(err, "Setup Fee Options")
+	}
 	//Setup Options for individual stores
 	// TODO remove these after all TX have been modified to use Gov store
 	ctx.ProposalMasterStore.Proposal.SetOptions(&updatedGov.PropOptions)
