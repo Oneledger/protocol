@@ -67,7 +67,7 @@ func NewMap(ctx *Context) (Map, error) {
 		nodesvc.Name():   nodesvc.NewService(ctx.NodeContext, &ctx.Cfg, ctx.Logger),
 		owner.Name():     owner.NewService(ctx.Accounts, ctx.Logger),
 		query.Name(): query.NewService(ctx.Services, ctx.Balances, ctx.Currencies, ctx.ValidatorSet, ctx.WitnessSet, ctx.Domains, ctx.Delegators, ctx.Govern,
-			ctx.FeePool, ctx.ProposalMaster, ctx.Logger, ctx.TxTypes),
+			ctx.FeePool, ctx.ProposalMaster, ctx.Rewards, ctx.Logger, ctx.TxTypes),
 
 		tx.Name():       tx.NewService(ctx.Balances, ctx.Router, ctx.Accounts, ctx.ValidatorSet, ctx.Govern, ctx.Delegators, ctx.FeePool.GetOpt(), ctx.NodeContext, ctx.Logger),
 		btc.Name():      btc.NewService(ctx.Balances, ctx.Accounts, ctx.NodeContext, ctx.ValidatorSet, ctx.Trackers, ctx.Logger),

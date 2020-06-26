@@ -72,9 +72,9 @@ func (finalizeProposalTx) Validate(ctx *action.Context, signedTx action.SignedTx
 	if err != nil {
 		return false, err
 	}
-	//Validate proposal ID
-	if len(finalizedProposal.ProposalID) <= 0 {
-		return false, errors.New("invalid proposal id")
+	//Check if Proposal ID is valid
+	if err = finalizedProposal.ProposalID.Err(); err != nil {
+		return false, governance.ErrInvalidProposalId
 	}
 	return true, nil
 }
