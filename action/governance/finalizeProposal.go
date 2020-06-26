@@ -250,12 +250,11 @@ func distributeFunds(ctx *action.Context, proposal *governance.Proposal, proposa
 	}
 
 	//Burn
-	ctx.Logger.Detailf("Transferring to Burn Address ")
+	ctx.Logger.Detailf("Burning Funds  ")
 	getPercentageCoin(c, totalFunding, &fundTracker, proposalDistribution.Burn)
 	if fundTracker != 0 {
 		return errors.New(fmt.Sprintf("Extra Funding Amount Left %s", fundTracker))
 	}
-	fmt.Println("Deleting all funds")
 	err = fundStore.DeleteAllFunds(proposal.ProposalID)
 	if err != nil {
 		return err
