@@ -67,7 +67,8 @@ func (pf *ProposalFundStore) iterate(fn func(proposalID ProposalID, addr keys.Ad
 				return true
 			}
 			arr := strings.Split(string(key), storage.DB_PREFIX)
-			proposalID := arr[1]
+			// key example: propFunds_i_proposalID_fundingAddress
+			proposalID := arr[2]
 			var fundingAddress keys.Address = nil
 			fundingAddress = keys.Address(arr[len(arr)-1])
 			err = fundingAddress.UnmarshalText([]byte(arr[len(arr)-1]))
