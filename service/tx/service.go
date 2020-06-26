@@ -261,7 +261,7 @@ func (svc *Service) Unstake(args client.UnstakeRequest, reply *client.UnstakeRep
 	handler, _ := pubkey.GetHandler()
 	address := handler.Address()
 
-	svc.logger.Infof("Validator - %s, delegator - %s, stake amount - %+v\n",
+	svc.logger.Infof("Validator - %s, delegator - %s, unstake amount - %+v\n",
 		address, args.Address, args.Amount,
 	)
 
@@ -317,7 +317,7 @@ func (svc *Service) Withdraw(args client.WithdrawRequest, reply *client.Withdraw
 	handler, _ := pubkey.GetHandler()
 	address := handler.Address()
 
-	svc.logger.Infof("Validator - %s, delegator - %s, stake amount - %+v\n",
+	svc.logger.Infof("Validator - %s, delegator - %s, withdraw amount - %+v\n",
 		address, args.Address, args.Amount,
 	)
 
