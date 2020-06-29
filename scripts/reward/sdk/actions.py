@@ -19,9 +19,27 @@ def query_rewards(validator):
     return result
 
 
+def withdraw_rewards(validator):
+    req = {
+        "validator": validator,
+        "gasPrice": {
+            "currency": "OLT",
+            "value": "1000000000",
+        },
+        "gas": 40000,
+    }
+    resp = rpc_call('tx.WithdrawRewards', req)
+    if "result" in resp:
+        result = resp["result"]
+    else:
+        result = ""
+    return result
+
+
 def list_validators():
     resp = rpc_call('query.ListValidators', {})
     result = resp["result"]
+
     # print json.dumps(resp, indent=4)
     return result
 

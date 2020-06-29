@@ -8,11 +8,11 @@ var (
 
 	// Options Objects from store
 	ErrGetProposalOptions = codes.ProtocolError{codes.GovErrGetProposalOptions, "failed to get proposal options"}
-	ErrGetFeeOptions      = codes.ProtocolError{codes.TxErrGettingFeeOptions, "failed to get Fee options"}
-	ErrGetRewardsOptions  = codes.ProtocolError{codes.TxErrGettingRewardsOptions, "failed to get rewards options"}
-	ErrGetONSOptions      = codes.ProtocolError{codes.TxErrGettingONSOptions, "failed to get Ons options"}
-	ErrGetETHOptions      = codes.ProtocolError{codes.TxErrGettingETHOptions, "failed to get Eth  options"}
-	ErrGetBTCOptions      = codes.ProtocolError{codes.TxErrGettingBTCOptions, "failed to get BTC options"}
+	//ErrGetFeeOptions      = codes.ProtocolError{codes.TxErrGettingFeeOptions, "failed to get Fee options"}
+	//ErrGetRewardsOptions  = codes.ProtocolError{codes.TxErrGettingRewardsOptions, "failed to get rewards options"}
+	//ErrGetONSOptions      = codes.ProtocolError{codes.TxErrGettingONSOptions, "failed to get Ons options"}
+	//ErrGetETHOptions      = codes.ProtocolError{codes.TxErrGettingETHOptions, "failed to get Eth  options"}
+	//ErrGetBTCOptions      = codes.ProtocolError{codes.TxErrGettingBTCOptions, "failed to get BTC options"}
 
 	//Proposal
 	ErrInvalidProposalId      = codes.ProtocolError{codes.GovErrInvalidProposalId, "invalid proposal id"}
