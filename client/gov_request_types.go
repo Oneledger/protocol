@@ -83,3 +83,10 @@ type FinalizeProposalRequest struct {
 	GasPrice   action.Amount         `json:"gasPrice"`
 	Gas        int64                 `json:"gas"`
 }
+
+type GetProposalOptionsRequest struct {}
+
+type GetProposalOptionsReply struct {
+	ProposalOptions governance.ProposalOptionSet    `json:"proposalOptions"`
+	Height        int64          					`json:"height"`
+}

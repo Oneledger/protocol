@@ -336,9 +336,3 @@ type TxRequest struct {
 type TxResponse struct {
 	Result ctypes.ResultTx `json:"result"`
 }
-
-type GetProposalOptionsRequest struct {}
-
-type GetProposalOptionsReply struct {
-	Result string `json:"result"`
-}
