@@ -126,6 +126,43 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false, result
 	}
 
+	//Get Proposal options based on type.
+	options := ctx.ProposalMasterStore.Proposal.GetOptionsByType(createProposal.ProposalType)
+
+	//Validate funding goal and pass percentage
+	if createProposal.FundingGoal != options.FundingGoal {
+		result := action.Response{
+			Events: action.GetEvent(createProposal.Tags(), "create_proposal_wrong_funding_goal"),
+			Log:    governance.ErrWrongFundingGoal.Marshal(),
+		}
+		return false, result
+	}
+
+	if createProposal.PassPercentage != options.PassPercentage {
+		result := action.Response{
+			Events: action.GetEvent(createProposal.Tags(), "create_proposal_wrong_pass_percentage"),
+			Log:    governance.ErrWrongPassPercentage.Marshal(),
+		}
+		return false, result
+	}
+
+	//Validate funding and voting height
+	if createProposal.FundingDeadline <= ctx.Header.Height {
+		result := action.Response{
+			Events: action.GetEvent(createProposal.Tags(), "create_proposal_invalid_funding_deadline"),
+			Log:    governance.ErrInvalidFundingDeadline.Marshal(),
+		}
+		return false, result
+	}
+	if createProposal.VotingDeadline - createProposal.FundingDeadline != options.VotingDeadline {
+		result := action.Response{
+			Events: action.GetEvent(createProposal.Tags(), "create_proposal_invalid_voting_deadline"),
+			Log:    governance.ErrInvalidVotingDeadline.Marshal(),
+		}
+		return false, result
+	}
+
+
 	//Create Proposal and save to Proposal Store
 	proposal := governance.NewProposal(
 		createProposal.ProposalID,
