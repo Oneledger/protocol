@@ -38,7 +38,6 @@ const (
 	InternalErrorTrackerInsufficientBalance = 100609
 	InternalErrorListWitnesses              = 100610
 	InternalErrorGettingProposal            = 100611
-	InternalErrMarshalProposalOptions		= 100612
 
 	ONSError                        = 1007
 	ONSErrDomainMissing             = 100701

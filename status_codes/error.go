@@ -80,7 +80,6 @@ var (
 	ErrGetProposal     = ProtocolError{InternalErrorGettingProposal, "error getting proposal"}
 	ErrFindingCurrency = ProtocolError{CurrencyNotFound, "error finding currency"}
 	ErrGetTx           = ProtocolError{TxNotFound, "error get tx from tendermint"}
-	ErrMarshalProposalOptions = ProtocolError{InternalErrMarshalProposalOptions, "error marshal proposal options"}
 
 	// ONS errors
 	ErrBadName                   = ProtocolError{ONSErrDomainMissing, "domain name not provided"}
