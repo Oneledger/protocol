@@ -293,7 +293,7 @@ func (vs *ValidatorStore) HandleUnstake(unstake Unstake) error {
 
 func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.RequestEndBlock) []types.ValidatorUpdate {
 	height := req.GetHeight()
-	logger.Infof("GetEndBlockUpdate started at block: %d\n", height)
+	logger.Detailf("GetEndBlockUpdate started at block: %d\n", height)
 	validatorUpdates := make([]types.ValidatorUpdate, 0)
 	distribute := false
 	total, err := ctx.FeePool.Get([]byte(fees.POOL_KEY))
@@ -345,13 +345,13 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 				updateTendermint = true
 			}
 			if updateTendermint {
-				logger.Infof("Validator for update ready: %s - with power: %d\n", validator.Address.Humanize(), validator.Power)
+				logger.Detailf("Validator for update ready: %s - with power: %d\n", validator.Address.Humanize(), validator.Power)
 				validatorUpdates = append(validatorUpdates, types.ValidatorUpdate{
 					PubKey: validator.PubKey.GetABCIPubKey(),
 					Power:  validator.Power,
 				})
 			} else {
-				logger.Infof("Validator for update not ready: %s - with power: %d and will be skipped for tendermint update\n", validator.Address.Humanize(), validator.Power)
+				logger.Detailf("Validator for update not ready: %s - with power: %d and will be skipped for tendermint update\n", validator.Address.Humanize(), validator.Power)
 			}
 			//distribute the fee for validators
 			if distribute {
@@ -369,7 +369,7 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 		// delegation
 		ctx.Delegators.UpdateWithdrawReward(height)
 	}
-	logger.Infof("GetEndBlockUpdate end at block: %d\n", height)
+	logger.Detailf("GetEndBlockUpdate end at block: %d\n", height)
 
 	// TODO : get the final updates from vs.cached
 	return validatorUpdates

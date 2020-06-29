@@ -199,6 +199,7 @@ func distributeFunds(ctx *action.Context, proposal *governance.Proposal, proposa
 		return action.ErrInvalidCurrency
 	}
 	fundTracker, _ := totalFunding.Float64()
+
 	//Starting Fund Distribution
 	//Validators
 	validatorList, err := ctx.Validators.GetValidatorSet()
@@ -222,6 +223,7 @@ func distributeFunds(ctx *action.Context, proposal *governance.Proposal, proposa
 	if err != nil {
 		return err
 	}
+
 	//Reward for Proposer
 	ctx.Logger.Detailf("Transferring to Proposer :\"%v\"", proposal.Proposer.String())
 	err = ctx.Balances.AddToAddress(proposal.Proposer, getPercentageCoin(c, totalFunding, &fundTracker, proposalDistribution.ProposerReward))
