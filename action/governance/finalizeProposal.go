@@ -307,6 +307,16 @@ func executeConfigUpdate(ctx *action.Context, proposal *governance.Proposal) err
 	ctx.Domains.SetOptions(&updatedGov.ONSOptions)
 	ctx.ETHTrackers.SetupOption(&updatedGov.ETHCDOption)
 	ctx.BTCTrackers.SetOption(updatedGov.BTCCDOption)
+
+	//Old rewards interval
+	oldInterval := ctx.RewardStore.GetOptions().RewardInterval
+	newInterval := updatedGov.RewardOptions.RewardInterval
+	if oldInterval != newInterval {
+		err := ctx.RewardStore.SetInterval(newInterval)
+		if err != nil {
+			return errors.Wrap(err, "Unable to set new interval ")
+		}
+	}
 	//Set Last Update Height
 	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetLUH()
 	if err != nil {
