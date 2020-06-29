@@ -4,7 +4,9 @@ import (
 	"errors"
 
 	"github.com/Oneledger/protocol/data"
+	"github.com/Oneledger/protocol/data/delegation"
 	"github.com/Oneledger/protocol/data/governance"
+	"github.com/Oneledger/protocol/data/rewards"
 	"github.com/Oneledger/protocol/identity"
 
 	"github.com/Oneledger/protocol/action"
@@ -25,15 +27,18 @@ type Service struct {
 	trackers       *bitcoin.TrackerStore
 	feePool        *fees.Store
 	domains        *ons.DomainStore
+	govern         *governance.Store
+	delegators     *delegation.DelegationStore
 	validators     *identity.ValidatorStore
 	proposalMaster *governance.ProposalMasterStore
+	reward         *rewards.RewardStore
 	extStores      data.Router
 	ext            client.ExtServiceContext
 }
 
 func NewService(ctx client.ExtServiceContext, router action.Router, currencies *balance.CurrencySet,
-	feePool *fees.Store, domains *ons.DomainStore, validators *identity.ValidatorStore,
-	logger *log.Logger, trackers *bitcoin.TrackerStore, proposalMaster *governance.ProposalMasterStore, extStores data.Router,
+	feePool *fees.Store, domains *ons.DomainStore, govern *governance.Store, delegators *delegation.DelegationStore, validators *identity.ValidatorStore,
+	logger *log.Logger, trackers *bitcoin.TrackerStore, proposalMaster *governance.ProposalMasterStore, rewards *rewards.RewardStore, extStores data.Router,
 ) *Service {
 	return &Service{
 		ext:            ctx,
@@ -42,8 +47,11 @@ func NewService(ctx client.ExtServiceContext, router action.Router, currencies *
 		trackers:       trackers,
 		feePool:        feePool,
 		domains:        domains,
+		govern:         govern,
+		delegators:     delegators,
 		validators:     validators,
 		proposalMaster: proposalMaster,
+		reward:         rewards,
 		extStores:      extStores,
 		logger:         logger,
 	}
@@ -70,8 +78,8 @@ func (svc *Service) validateAndSignTx(req client.BroadcastRequest) ([]byte, erro
 
 	handler := svc.router.Handler(tx.Type)
 	ctx := action.NewContext(svc.router, nil, nil, nil, nil, svc.currencies,
-		svc.feePool, svc.validators, nil, svc.domains, svc.trackers, nil, nil, nil, svc.logger,
-		svc.proposalMaster, svc.extStores)
+		svc.feePool, svc.validators, nil, svc.domains, svc.govern, svc.delegators, svc.trackers, nil, nil, nil, svc.logger,
+		svc.proposalMaster, svc.reward, svc.extStores)
 
 	_, err = handler.Validate(ctx, signedTx)
 	if err != nil {
@@ -103,8 +111,8 @@ func (svc *Service) validateAndMtSignTx(req client.BroadcastMtSigRequest) ([]byt
 
 	handler := svc.router.Handler(tx.Type)
 	ctx := action.NewContext(svc.router, nil, nil, nil, nil, svc.currencies,
-		svc.feePool, svc.validators, nil, svc.domains, svc.trackers, nil, nil, nil, svc.logger,
-		svc.proposalMaster, svc.extStores)
+		svc.feePool, svc.validators, nil, svc.domains, svc.govern, svc.delegators, svc.trackers, nil, nil, nil, svc.logger,
+		svc.proposalMaster, svc.reward, svc.extStores)
 
 	_, err = handler.Validate(ctx, signedTx)
 	if err != nil {

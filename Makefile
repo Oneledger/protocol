@@ -47,27 +47,18 @@ utest:
 		github.com/Oneledger/protocol/data/balance \
 		github.com/Oneledger/protocol/data/keys \
 		github.com/Oneledger/protocol/data/governance \
+		github.com/Oneledger/protocol/data/rewards \
+		github.com/Oneledger/protocol/action/transfer \
 		github.com/Oneledger/protocol/serialize \
 		github.com/Oneledger/protocol/utils \
 		github.com/Oneledger/protocol/rpc \
 		github.com/Oneledger/protocol/identity \
 		github.com/Oneledger/protocol/app \
+		github.com/Oneledger/protocol/action/staking \
 		-coverprofile a.out
 
 coverage:
 	go tool cover -html=a.out -o cover.html
-
-#
-# run apply validator tests
-#
-applytest: reset
-	@./scripts/testapply
-	@./scripts/getValidators
-	@./scripts/stopNodes
-
-purgetest: reset
-	@./scripts/testpurgevalidator
-	@./scripts/stopDev
 
 #
 # run ons tests
@@ -82,12 +73,9 @@ onstest: reset
 	@./scripts/stopNodes
 
 #
-# run ons tests
+# remove it once Jenkins side done
 #
 withdrawtest: reset
-	@./scripts/testsend
-	@./scripts/testsend
-	python scripts/reward/withdraw.py
 	@./scripts/stopNodes
 
 #
@@ -109,14 +97,13 @@ govtest: reset
 alltest: reset
 	@./scripts/testsend
 	@./scripts/getValidators
-	@./scripts/testsend
+	@./scripts/testsendpool
 	python scripts/ons/create_domain.py
 	python scripts/ons/create_sub_domain.py
 	python scripts/ons/buy_sell_domain.py
 	python scripts/ons/purchase_expired.py
 	python scripts/ons/create_delete_subdomain.py
 	python scripts/ons/renew_domain.py
-	python scripts/reward/withdraw.py
 	python scripts/txTypes/listTxTypes.py
 	@./scripts/stopNodes
 

@@ -41,7 +41,7 @@ func (rws *RewardsCumulativeStore) AddMaturedBalance(validator keys.Address, amo
 		return err
 	}
 
-	err = rws.set(key, amt.Plus(amount))
+	err = rws.set(key, amt.Plus(*amount))
 	return err
 }
 
@@ -59,7 +59,7 @@ func (rws *RewardsCumulativeStore) GetMaturedRewards(validator keys.Address) (am
 		return
 	}
 
-	amt = amtBalance.Plus(amtWithdrawn)
+	amt = amtBalance.Plus(*amtWithdrawn)
 	return
 }
 
@@ -131,7 +131,7 @@ func (rws *RewardsCumulativeStore) minusRewardsBalance(validator keys.Address, a
 		return err
 	}
 
-	result, err := amt.Minus(amount)
+	result, err := amt.Minus(*amount)
 	if err != nil {
 		return err
 	}
@@ -148,6 +148,6 @@ func (rws *RewardsCumulativeStore) addWithdrawnRewards(validator keys.Address, a
 		return err
 	}
 
-	err = rws.set(key, amt.Plus(amount))
+	err = rws.set(key, amt.Plus(*amount))
 	return err
 }

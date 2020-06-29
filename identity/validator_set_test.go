@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/tendermint/tm-db"
+	db "github.com/tendermint/tm-db"
 
 	"github.com/Oneledger/protocol/storage"
 
@@ -123,7 +123,7 @@ func TestValidatorStore_Init(t *testing.T) {
 	})
 	t.Run("run with invalid pubkey type, should return invalid key algorithm error", func(t *testing.T) {
 		vs := setup()
-		req, currencies := setupForInit("ed25520", []byte(""), "VT", 0)
+		req, currencies := setupForInit("ed25520", []byte(""), "OLT", 0)
 		_, err := vs.Init(req, currencies)
 		assert.EqualError(t, err, "invalid pubkey type: provided invalid key algorithm")
 	})

@@ -1,18 +1,20 @@
 package rewards
 
 import (
+	"testing"
+
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/magiconair/properties/assert"
 	db "github.com/tendermint/tm-db"
-	"testing"
 )
 
 const (
-	rewardsPrefix  = "rew"
-	numPrivateKeys = 3
-	rewardInterval = 15
+	rewardsPrefix         = "rew"
+	rewardsIntervalPrefix = "rewInt"
+	numPrivateKeys        = 4
+	rewardInterval        = 15
 )
 
 var (
@@ -36,8 +38,8 @@ func init() {
 	newDB := db.NewDB("test", db.MemDBBackend, "")
 	cs := storage.NewState(storage.NewChainState("chainstate", newDB))
 
-	rewardStore = NewRewardStore(rewardsPrefix, cs)
-	rewardStore.SetOptions(rewardOptions)
+	rewardStore = NewRewardStore(rewardsPrefix, rewardsIntervalPrefix, cs)
+	rewardStore.SetOptions(&rewardOptions)
 	rewardStore.WithState(cs)
 }
 
@@ -93,5 +95,74 @@ func TestRewardStore_Iterate(t *testing.T) {
 
 func TestRewardStore_GetOptions(t *testing.T) {
 	options := rewardStore.GetOptions()
-	assert.Equal(t, options, rewardOptions)
+	assert.Equal(t, *options, rewardOptions)
+}
+
+func TestRewardStore_Interval(t *testing.T) {
+	//Loop through different heights and add rewards
+	for i := 0; i < 100; i++ {
+
+		_ = rewardStore.AddToAddress(validatorList[3], int64(i), balance.NewAmount(10))
+
+		switch i {
+		case 30:
+			_ = rewardStore.SetInterval(30)
+			rewardStore.SetOptions(&Options{
+				RewardInterval:    10,
+				RewardPoolAddress: "",
+			})
+
+		case 60:
+			_ = rewardStore.SetInterval(60)
+			rewardStore.SetOptions(&Options{
+				RewardInterval:    5,
+				RewardPoolAddress: "",
+			})
+		case 90:
+			_ = rewardStore.SetInterval(90)
+			rewardStore.SetOptions(&Options{
+				RewardInterval:    1,
+				RewardPoolAddress: "",
+			})
+		}
+
+		rewardStore.State.Commit()
+	}
+
+	//Reset Interval back to 15 for validation.
+	rewardStore.SetOptions(&Options{
+		RewardInterval:    15,
+		RewardPoolAddress: "",
+	})
+	//Validate whether the different intervals are being followed
+	for i := 0; i < 100; i++ {
+		if i < 30 {
+			reward, _ := rewardStore.Get(validatorList[3], int64(i))
+			assert.Equal(t, reward, balance.NewAmount(150))
+		}
+		if i < 60 && i >= 30 {
+			rewardStore.SetOptions(&Options{
+				RewardInterval:    10,
+				RewardPoolAddress: "",
+			})
+			reward, _ := rewardStore.Get(validatorList[3], int64(i))
+			assert.Equal(t, reward, balance.NewAmount(100))
+		}
+		if i >= 60 && i < 90 {
+			rewardStore.SetOptions(&Options{
+				RewardInterval:    5,
+				RewardPoolAddress: "",
+			})
+			reward, _ := rewardStore.Get(validatorList[3], int64(i))
+			assert.Equal(t, reward, balance.NewAmount(50))
+		}
+		if i >= 90 {
+			rewardStore.SetOptions(&Options{
+				RewardInterval:    1,
+				RewardPoolAddress: "",
+			})
+			reward, _ := rewardStore.Get(validatorList[3], int64(i))
+			assert.Equal(t, reward, balance.NewAmount(10))
+		}
+	}
 }
