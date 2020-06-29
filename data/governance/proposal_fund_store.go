@@ -103,8 +103,6 @@ func NewProposalFundStore(prefix string, state *storage.State) *ProposalFundStor
 func (pf *ProposalFundStore) GetFundsForProposalID(id ProposalID, fn func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund) []ProposalFund {
 	var foundProposals []ProposalFund
 	pf.iterate(func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) bool {
-		fmt.Println("proposalID: ", proposalID)
-		fmt.Println("fundingAddr: ", fundingAddr)
 		if proposalID == id {
 			foundProposals = append(foundProposals, fn(proposalID, fundingAddr, amt))
 		}
