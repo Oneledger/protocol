@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+
 	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/btcsuite/btcd/btcec"

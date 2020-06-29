@@ -13,6 +13,7 @@ import (
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/Oneledger/protocol/utils"
 )
@@ -63,6 +64,10 @@ func (vs *ValidatorStore) Exists(addr keys.Address) bool {
 	return vs.store.Exists(key)
 }
 
+func (vs *ValidatorStore) Set(validator Validator) error {
+	return vs.set(validator)
+}
+
 func (vs *ValidatorStore) set(validator Validator) error {
 	value := (validator).Bytes()
 	vkey := append(vs.prefix, validator.Address.Bytes()...)
@@ -91,7 +96,7 @@ func (vs *ValidatorStore) Iterate(fn func(addr keys.Address, validator *Validato
 }
 
 func (vs *ValidatorStore) Init(req types.RequestInitChain, currencies *balance.CurrencySet) (types.ValidatorUpdates, error) {
-	_, ok := currencies.GetCurrencyByName("VT")
+	_, ok := currencies.GetCurrencyByName("OLT")
 	if !ok {
 		return req.Validators, errors.New("stake token not registered")
 	}
@@ -137,13 +142,31 @@ func (vs *ValidatorStore) Setup(req types.RequestBeginBlock, nodeValidatorAddres
 		}
 	}
 
+	vs.InitValidatorQueue(nodeValidatorAddress, req.GetHeader().Height)
+
+	return def
+}
+
+func (vs *ValidatorStore) InitValidatorQueue(nodeValidatorAddress keys.Address, height int64) {
 	// initialize the queue for validators
 	vs.queue.PriorityQueue = make(utils.PriorityQueue, 0, 100)
 	i := 0
 	vs.totalPower = 0
 	vs.Iterate(func(addr keys.Address, validator *Validator) bool {
+		key := append(vs.prefix, addr...)
+		data := vs.store.GetVersioned(height-1, key)
+		if len(data) == 0 {
+			logger.Errorf("Previous state data not found for address: %s", keys.Address(addr).Humanize())
+			return false
+		}
+		validator = &Validator{}
+		if err := serialize.GetSerializer(serialize.JSON).Deserialize(data, validator); err != nil {
+			logger.Errorf("Validator: %s not found", keys.Address(addr).Humanize())
+			return false
+		}
+
 		queued := utils.NewQueued(addr, validator.Power, i)
-		vs.queue.append(queued)
+		vs.queue.Push(queued)
 		vs.totalPower += validator.Power
 		if bytes.Equal(addr, nodeValidatorAddress) {
 			vs.isValidator = true
@@ -152,8 +175,6 @@ func (vs *ValidatorStore) Setup(req types.RequestBeginBlock, nodeValidatorAddres
 		return false
 	})
 	vs.queue.Init()
-
-	return def
 }
 
 // get validators set
@@ -197,16 +218,14 @@ func (vs *ValidatorStore) IsValidatorAddress(addr keys.Address) bool {
 func (vs *ValidatorStore) HandleStake(apply Stake) error {
 	validator := &Validator{}
 	if !vs.Exists(apply.ValidatorAddress) {
-
-		validator = &Validator{
-			Address:      apply.ValidatorAddress,
-			StakeAddress: apply.StakeAddress,
-			PubKey:       apply.Pubkey,
-			ECDSAPubKey:  apply.ECDSAPubKey,
-			Power:        calculatePower(apply.Amount),
-			Name:         apply.Name,
-			Staking:      apply.Amount,
-		}
+		validator = NewValidator(
+			apply.ValidatorAddress,
+			apply.StakeAddress,
+			apply.Pubkey,
+			apply.ECDSAPubKey,
+			apply.Amount,
+			apply.Name,
+		)
 		// push the new validator to queue
 	} else {
 		v, err := vs.Get(apply.ValidatorAddress)
@@ -214,16 +233,12 @@ func (vs *ValidatorStore) HandleStake(apply Stake) error {
 			return errors.Wrap(err, "error deserialize validator")
 		}
 		validator = v
-
 		amt := big.NewInt(0).Add(validator.Staking.BigInt(), apply.Amount.BigInt())
 
 		validator.Staking = *balance.NewAmountFromBigInt(amt)
 		validator.Power = calculatePower(validator.Staking)
-		validator = validator
 	}
-	value := (validator).Bytes()
-	vkey := append(vs.prefix, validator.Address.Bytes()...)
-	err := vs.store.Set(vkey, value)
+	err := vs.set(*validator)
 	if err != nil {
 		return errors.Wrap(err, "failed to set validator for stake")
 	}
@@ -277,7 +292,8 @@ func (vs *ValidatorStore) HandleUnstake(unstake Unstake) error {
 }
 
 func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.RequestEndBlock) []types.ValidatorUpdate {
-
+	height := req.GetHeight()
+	logger.Infof("GetEndBlockUpdate started at block: %d\n", height)
 	validatorUpdates := make([]types.ValidatorUpdate, 0)
 	distribute := false
 	total, err := ctx.FeePool.Get([]byte(fees.POOL_KEY))
@@ -286,17 +302,38 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 	} else if ctx.FeePool.GetOpt().MinFee().LessThanCoin(total) {
 		distribute = true
 	}
-	if req.Height > 1 || (len(vs.byzantine) > 0) {
-		cnt := 0
-		for vs.queue.Len() > 0 && cnt < 64 {
+	stakingOptions, err := ctx.Govern.GetStakingOptions()
+	if err != nil {
+		logger.Fatal("failed to get the staking options")
+	}
+
+	minSelfDelegationAmount := stakingOptions.MinSelfDelegationAmount.BigInt().Int64()
+
+	if height > 1 || (len(vs.byzantine) > 0) {
+		cnt := int64(0)
+		for vs.queue.Len() > 0 {
+			// pop element to test
 			queued := vs.queue.Pop()
 			addr := queued.Value()
-
-			validator, err := vs.Get(addr)
-			if err != nil {
-				logger.Error(err, "error deserialize validator")
+			key := append(vs.prefix, addr...)
+			data := vs.store.GetVersioned(height-1, key)
+			if len(data) == 0 {
+				logger.Errorf("Previous state data not found for address: %s", keys.Address(addr).Humanize())
 				continue
 			}
+			validator := &Validator{}
+			if err := serialize.GetSerializer(serialize.JSON).Deserialize(data, validator); err != nil {
+				logger.Errorf("Validator: %s not found", keys.Address(addr).Humanize())
+				continue
+			}
+
+			updateTendermint := false
+
+			if validator.Power >= minSelfDelegationAmount && cnt < stakingOptions.TopValidatorCount {
+				updateTendermint = true
+				cnt++
+			}
+
 			// purge validator who's power is 0
 			if validator.Power <= 0 {
 				vKey := append(vs.prefix, validator.Address.Bytes()...)
@@ -305,11 +342,17 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 				if !ok {
 					logger.Error(err.Error())
 				}
+				updateTendermint = true
 			}
-			validatorUpdates = append(validatorUpdates, types.ValidatorUpdate{
-				PubKey: validator.PubKey.GetABCIPubKey(),
-				Power:  validator.Power,
-			})
+			if updateTendermint {
+				logger.Infof("Validator for update ready: %s - with power: %d\n", validator.Address.Humanize(), validator.Power)
+				validatorUpdates = append(validatorUpdates, types.ValidatorUpdate{
+					PubKey: validator.PubKey.GetABCIPubKey(),
+					Power:  validator.Power,
+				})
+			} else {
+				logger.Infof("Validator for update not ready: %s - with power: %d and will be skipped for tendermint update\n", validator.Address.Humanize(), validator.Power)
+			}
 			//distribute the fee for validators
 			if distribute {
 				feeShare := total.MultiplyInt64(queued.Priority()).DivideInt64(vs.totalPower)
@@ -322,9 +365,11 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 					logger.Fatal("failed to distribute fee")
 				}
 			}
-			cnt++
 		}
+		// delegation
+		ctx.Delegators.UpdateWithdrawReward(height)
 	}
+	logger.Infof("GetEndBlockUpdate end at block: %d\n", height)
 
 	// TODO : get the final updates from vs.cached
 	return validatorUpdates

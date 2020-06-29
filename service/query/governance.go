@@ -10,16 +10,15 @@ import (
 
 // list single proposal by id
 func (svc *Service) ListProposal(req client.ListProposalRequest, reply *client.ListProposalsReply) error {
-	proposalID := governance.ProposalID(req.ProposalId)
-	proposal, _, err := svc.proposalMaster.Proposal.QueryAllStores(proposalID)
+	proposal, _, err := svc.proposalMaster.Proposal.QueryAllStores(req.ProposalId)
 	if err != nil {
 		svc.logger.Error("error getting proposal", err)
 		return codes.ErrGetProposal
 	}
 
 	options := svc.proposalMaster.Proposal.GetOptionsByType(proposal.Type)
-	funds := governance.GetCurrentFunds(proposalID, svc.proposalMaster.ProposalFund)
-	stat, _ := svc.proposalMaster.ProposalVote.ResultSoFar(proposalID, options.PassPercentage)
+	funds := svc.proposalMaster.ProposalFund.GetCurrentFundsForProposal(req.ProposalId)
+	stat, _ := svc.proposalMaster.ProposalVote.ResultSoFar(req.ProposalId, options.PassPercentage)
 
 	ps := client.ProposalStat{
 		Proposal: *proposal,
@@ -67,7 +66,7 @@ func (svc *Service) ListProposals(req client.ListProposalsRequest, reply *client
 	proposalStats := make([]client.ProposalStat, len(proposals))
 	for i, prop := range proposals {
 		options := pms.Proposal.GetOptionsByType(prop.Type)
-		funds := governance.GetCurrentFunds(prop.ProposalID, pms.ProposalFund)
+		funds := pms.ProposalFund.GetCurrentFundsForProposal(prop.ProposalID)
 		stat, _ := pms.ProposalVote.ResultSoFar(prop.ProposalID, options.PassPercentage)
 		ps := client.ProposalStat{
 			Proposal: prop,

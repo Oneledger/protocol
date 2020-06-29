@@ -71,10 +71,15 @@ func (args *VoteArguments) ClientRequest(currencies *balance.CurrencySet) (clien
 	}
 	amt := olt.NewCoinFromString(padZero(args.GasPrice)).Amount
 
+	opin := governance.NewVoteOpinion(args.Opinion)
+	if opin == governance.OPIN_UNKNOWN {
+		return client.VoteProposalRequest{}, errors.New("invalid vote opinion")
+	}
+
 	return client.VoteProposalRequest{
 		ProposalId: args.ProposalID,
 		Address:    args.Address,
-		Opinion:    args.Opinion,
+		Opinion:    opin,
 		GasPrice:   action.Amount{Currency: "OLT", Value: *amt},
 		Gas:        args.Gas,
 	}, nil
@@ -138,7 +143,7 @@ func voteProposal(cmd *cobra.Command, args []string) error {
 	}
 	req, err := voteArgs.ClientRequest(currencies.Currencies.GetCurrencySet())
 	if err != nil {
-		ctx.logger.Error("failed to get request", err)
+		ctx.logger.Error("failed to create request", err)
 		return err
 	}
 

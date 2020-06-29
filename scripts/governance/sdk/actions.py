@@ -27,6 +27,12 @@ ProposalStateActive  = 0x31
 ProposalStatePassed  = 0x32
 ProposalStateFailed  = 0x33
 
+# Vote Opinions
+OPIN_POSITIVE = 0x1
+OPIN_NEGATIVE = 0x2
+OPIN_GIVEUP   = 0x3
+OpinMap = {OPIN_POSITIVE: 'YES', OPIN_NEGATIVE: 'NO', OPIN_GIVEUP: 'GIVEUP'}
+
 class bcolors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -49,7 +55,7 @@ class Proposal:
 
     def _create_proposal(self):
         req = {
-            "proposalId": self.pid,
+            "proposalId": self.get_encoded_pid(),
             "headline": self.headline,
             "description": self.des,
             "proposer": self.proposer,
@@ -86,7 +92,7 @@ class Proposal:
                 print "################### proposal created: " + self.pid
 
     def get_encoded_pid(self):
-        hash_handler = hashlib.md5()
+        hash_handler = hashlib.sha256()
         hash_handler.update(self.pid)
         hash_val = hash_handler.digest()
         return hash_val.encode('hex')
@@ -222,7 +228,7 @@ class ProposalVote:
             if not result["ok"]:
                 sys.exit(-1)
             else:
-                print "################### proposal voted:" + self.pid + "opinion: " + self.opin
+                print "################### proposal voted:" + self.pid + "opinion: " + OpinMap[self.opin]
                 return result["txHash"]
 
 
@@ -265,10 +271,30 @@ class ProposalFundsWithdraw:
         if "ok" in result:
             if not result["ok"]:
                 print bcolors.FAIL + "################### proposal funds withdraw failed:" + result["log"] + bcolors.ENDC
-                return result["txHash"]
+                sys.exit(-1)
             else:
                 print "################### proposal funds withdrawn:" + self.pid
                 return result["txHash"]
+        else:
+            print bcolors.FAIL + "################### proposal funds withdraw failed:" + result["error"]["message"] + bcolors.ENDC
+            sys.exit(-1)
+
+    def withdraw_fund_should_fail(self, contr_address):
+        # create Tx
+        raw_txn = self._withdraw_funds(contr_address)
+
+        # sign Tx
+        signed = sign(raw_txn, self.funder)
+
+        # broadcast Tx
+        result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
+
+        if "ok" in result:
+            if not result["ok"]:
+                print bcolors.FAIL + "################### proposal funds withdraw failed:" + result["log"] + bcolors.ENDC
+                return result["txHash"]
+            else:
+                sys.exit(-1)
         else:
             print bcolors.FAIL + "################### proposal funds withdraw failed:" + result["error"]["message"] + bcolors.ENDC
 
@@ -361,6 +387,7 @@ def query_proposals(prefix, proposer="", proposalType=ProposalTypeInvalid):
 
     resp = rpc_call('query.ListProposals', req)
     result = resp["result"]
+    print json.dumps(resp, indent=4)
     return result["proposalStats"]
 
 def query_proposal(proposal_id):
@@ -369,6 +396,7 @@ def query_proposal(proposal_id):
     }
     resp = rpc_call('query.ListProposal', req)
     stat = resp["result"]["proposalStats"][0]
+    print json.dumps(resp, indent=4)
     return stat["proposal"], stat["funds"]
 
 def query_balance(address):

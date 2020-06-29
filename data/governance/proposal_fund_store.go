@@ -18,19 +18,19 @@ type ProposalFundStore struct {
 	prefix []byte
 }
 
-func (st *ProposalFundStore) set(key storage.StoreKey, amt balance.Amount) error {
+func (pf *ProposalFundStore) set(key storage.StoreKey, amt balance.Amount) error {
 	dat, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(amt)
 	if err != nil {
 		return errors.Wrap(err, errorSerialization)
 	}
-	prefixed := append(st.prefix, key...)
-	err = st.State.Set(prefixed, dat)
+	prefixed := append(pf.prefix, key...)
+	err = pf.State.Set(prefixed, dat)
 	return errors.Wrap(err, errorSettingRecord)
 }
 
-func (st *ProposalFundStore) get(key storage.StoreKey) (amt *balance.Amount, err error) {
-	prefixed := append(st.prefix, storage.StoreKey(key)...)
-	dat, err := st.State.Get(prefixed)
+func (pf *ProposalFundStore) get(key storage.StoreKey) (amt *balance.Amount, err error) {
+	prefixed := append(pf.prefix, storage.StoreKey(key)...)
+	dat, err := pf.State.Get(prefixed)
 	//fmt.Println("dat :", dat, "err", err)
 	if err != nil {
 		return nil, errors.Wrap(err, errorGettingRecord)
@@ -48,7 +48,6 @@ func (st *ProposalFundStore) get(key storage.StoreKey) (amt *balance.Amount, err
 
 func (pf *ProposalFundStore) delete(key storage.StoreKey) (bool, error) {
 	prefixed := append(pf.prefix, key...)
-
 	res, err := pf.State.Delete(prefixed)
 	if err != nil {
 		return false, errors.Wrap(err, errorDeletingRecord)
@@ -93,7 +92,7 @@ func NewProposalFundStore(prefix string, state *storage.State) *ProposalFundStor
 	}
 }
 
-func (pf *ProposalFundStore) GetFundersForProposalID(id ProposalID, fn func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund) []ProposalFund {
+func (pf *ProposalFundStore) GetFundsForProposalID(id ProposalID, fn func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund) []ProposalFund {
 	var foundProposals []ProposalFund
 	pf.iterate(func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) bool {
 		if proposalID == id {
@@ -115,13 +114,24 @@ func (pf *ProposalFundStore) GetProposalsForFunder(funderAddress keys.Address, f
 	return foundProposals
 }
 
+func (store *ProposalFundStore) IsFundedByFunder(id ProposalID, funder keys.Address) bool {
+	haveFunderAddress := false
+	store.GetFundsForProposalID(id, func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund {
+		if fundingAddr.Equal(funder) {
+			haveFunderAddress = true
+		}
+		return ProposalFund{}
+	})
+	return haveFunderAddress
+}
+
 func (pf *ProposalFundStore) AddFunds(proposalId ProposalID, fundingAddress keys.Address, amount *balance.Amount) error {
 	key := storage.StoreKey(string(proposalId) + storage.DB_PREFIX + fundingAddress.String())
 	amt, err := pf.get(key)
 	if err != nil {
 		return errors.Wrap(err, errorGettingRecord)
 	}
-	return pf.set(key, *amt.Plus(amount))
+	return pf.set(key, *amt.Plus(*amount))
 }
 
 func (pf *ProposalFundStore) DeductFunds(proposalId ProposalID, fundingAddress keys.Address, amount *balance.Amount) error {
@@ -130,7 +140,7 @@ func (pf *ProposalFundStore) DeductFunds(proposalId ProposalID, fundingAddress k
 	if err != nil {
 		return errors.Wrap(err, errorGettingRecord)
 	}
-	result, err := amt.Minus(amount)
+	result, err := amt.Minus(*amount)
 	if err != nil {
 		return errors.Wrap(err, errorGettingRecord)
 	}

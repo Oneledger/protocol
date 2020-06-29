@@ -9,13 +9,14 @@ import (
 	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/governance"
 )
 
 type FinalizeProposal struct {
-	ProposalID       governance.ProposalID	`json:"proposalId"`
-	ValidatorAddress action.Address			`json:"validatorAddress"`
+	ProposalID       governance.ProposalID `json:"proposalId"`
+	ValidatorAddress action.Address        `json:"validatorAddress"`
 }
 
 func (p FinalizeProposal) Signers() []action.Address {
@@ -71,9 +72,9 @@ func (finalizeProposalTx) Validate(ctx *action.Context, signedTx action.SignedTx
 	if err != nil {
 		return false, err
 	}
-	//Validate proposal ID
-	if len(finalizedProposal.ProposalID) <= 0 {
-		return false, errors.New("invalid proposal id")
+	//Check if Proposal ID is valid
+	if err = finalizedProposal.ProposalID.Err(); err != nil {
+		return false, governance.ErrInvalidProposalId
 	}
 	return true, nil
 }
@@ -124,23 +125,26 @@ func runFinalizeProposal(ctx *action.Context, tx action.RawTx) (bool, action.Res
 	//Get Proposal
 	proposal, err := ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStatePassed).Get(finalizedProposal.ProposalID)
 	if err != nil {
-		return logAndReturnFalse(ctx.Logger, governance.ErrProposalNotExists, finalizedProposal.Tags(), err)
+		proposal, err = ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStateFailed).Get(finalizedProposal.ProposalID)
+		if err != nil {
+			return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrProposalNotExists, finalizedProposal.Tags(), err)
+		}
 	}
 	//Check Status is Completed
 
 	if proposal.Status != governance.ProposalStatusCompleted {
-		return logAndReturnFalse(ctx.Logger, governance.ErrStatusNotCompleted, finalizedProposal.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrStatusNotCompleted, finalizedProposal.Tags(), err)
 	}
 
 	//Get Vote Result
 	voteStatus, err := ctx.ProposalMasterStore.ProposalVote.ResultSoFar(proposal.ProposalID, proposal.PassPercentage)
 	if err != nil {
-		return logAndReturnFalse(ctx.Logger, governance.ErrUnabletoQueryVoteResult, finalizedProposal.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrUnabletoQueryVoteResult, finalizedProposal.Tags(), err)
 	}
 
 	//Handle Result TBD
 	if voteStatus.Result == governance.VOTE_RESULT_TBD {
-		return logAndReturnFalse(ctx.Logger, governance.ErrVotingTBD, finalizedProposal.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrVotingTBD, finalizedProposal.Tags(), err)
 	}
 
 	//Handle Result Passed
@@ -150,21 +154,21 @@ func runFinalizeProposal(ctx *action.Context, tx action.RawTx) (bool, action.Res
 		if distributeErr != nil {
 			err = setToFinalizeFailed(ctx, proposal)
 			if err != nil {
-				return logAndReturnFalse(ctx.Logger, governance.ErrStatusUnableToSetFinalizeFailed, finalizedProposal.Tags(), err)
+				return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrStatusUnableToSetFinalizeFailed, finalizedProposal.Tags(), err)
 			}
 			ctx.Logger.Error("Distribuition of Funds failed , Set Proposal to Finalize Failed")
-			return logAndReturnTrue(ctx.Logger, finalizedProposal.Tags(), governance.ErrFinalizeDistributtionFailed.Wrap(distributeErr).Marshal())
+			return helpers.LogAndReturnTrue(ctx.Logger, finalizedProposal.Tags(), governance.ErrFinalizeDistributtionFailed.Wrap(distributeErr).Marshal())
 		}
 
 		if proposal.Type == governance.ProposalTypeConfigUpdate {
 			err := executeConfigUpdate(ctx, proposal)
 			if err != nil {
-				return logAndReturnFalse(ctx.Logger, governance.ErrFinalizeConfigUpdateFailed, finalizedProposal.Tags(), err)
+				return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrFinalizeConfigUpdateFailed, finalizedProposal.Tags(), err)
 			}
 		}
-		err = setToFinalize(ctx, proposal)
+		err = setToFinalizeFromPassed(ctx, proposal)
 		if err != nil {
-			return logAndReturnFalse(ctx.Logger, governance.ErrStatusUnableToSetFinalized, finalizedProposal.Tags(), err)
+			return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrStatusUnableToSetFinalized, finalizedProposal.Tags(), err)
 		}
 	}
 	//Handle Result Failed
@@ -174,25 +178,25 @@ func runFinalizeProposal(ctx *action.Context, tx action.RawTx) (bool, action.Res
 		if distributeErr != nil {
 			err = setToFinalizeFailed(ctx, proposal)
 			if err != nil {
-				return logAndReturnFalse(ctx.Logger, governance.ErrStatusUnableToSetFinalizeFailed, finalizedProposal.Tags(), err)
+				return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrStatusUnableToSetFinalizeFailed, finalizedProposal.Tags(), err)
 			}
 			ctx.Logger.Error("Distribution of Funds failed , Set Proposal to Finalize Failed")
-			return logAndReturnTrue(ctx.Logger, finalizedProposal.Tags(), governance.ErrFinalizeDistributtionFailed.Wrap(distributeErr).Marshal())
+			return helpers.LogAndReturnTrue(ctx.Logger, finalizedProposal.Tags(), governance.ErrFinalizeDistributtionFailed.Wrap(distributeErr).Marshal())
 		}
-		err = setToFinalize(ctx, proposal)
+		err = setToFinalizeFromFailed(ctx, proposal)
 		if err != nil {
-			return logAndReturnFalse(ctx.Logger, governance.ErrStatusUnableToSetFinalized, finalizedProposal.Tags(), err)
+			return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrStatusUnableToSetFinalized, finalizedProposal.Tags(), err)
 		}
 	}
 	fmt.Println("Finalized Validator :", finalizedProposal.ValidatorAddress.String(), "Proposal : ", proposal.ProposalID)
-	return logAndReturnTrue(ctx.Logger, finalizedProposal.Tags(), "finalize_proposal_success")
+	return helpers.LogAndReturnTrue(ctx.Logger, finalizedProposal.Tags(), "finalize_proposal_success")
 }
 
 //Function to distribute funds
 func distributeFunds(ctx *action.Context, proposal *governance.Proposal, proposalDistribution *governance.ProposalFundDistribution) error {
 	// Required Perimeters for Fund Distribution
-
-	totalFunding := governance.GetCurrentFunds(proposal.ProposalID, ctx.ProposalMasterStore.ProposalFund).Float()
+	fundStore := ctx.ProposalMasterStore.ProposalFund
+	totalFunding := fundStore.GetCurrentFundsForProposal(proposal.ProposalID).Float()
 	c, ok := ctx.Currencies.GetCurrencyByName("OLT")
 	if !ok {
 		return action.ErrInvalidCurrency
@@ -246,12 +250,12 @@ func distributeFunds(ctx *action.Context, proposal *governance.Proposal, proposa
 	}
 
 	//Burn
-	ctx.Logger.Detailf("Transferring to Burn Address ")
+	ctx.Logger.Detailf("Burning Funds  ")
 	getPercentageCoin(c, totalFunding, &fundTracker, proposalDistribution.Burn)
 	if fundTracker != 0 {
 		return errors.New(fmt.Sprintf("Extra Funding Amount Left %s", fundTracker))
 	}
-	err = governance.DeleteAllFunds(proposal.ProposalID, ctx.ProposalMasterStore.ProposalFund)
+	err = fundStore.DeleteAllFunds(proposal.ProposalID)
 	if err != nil {
 		return err
 	}
@@ -273,12 +277,28 @@ func getPercentageCoin(c balance.Currency, totalFunding *big.Float, fundTracker 
 }
 
 //Helper to set Proposal to Finalized
-func setToFinalize(ctx *action.Context, proposal *governance.Proposal) error {
+func setToFinalizeFromPassed(ctx *action.Context, proposal *governance.Proposal) error {
 	err := ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStateFinalized).Set(proposal)
 	if err != nil {
 		return err
 	}
 	ok, err := ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStatePassed).Delete(proposal.ProposalID)
+	if !ok {
+		ok, err = ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStateFinalized).Delete(proposal.ProposalID)
+		if !ok {
+			return errors.Wrap(err, "error deleting proposal from finalize prefix")
+		}
+		return err
+	}
+	return nil
+}
+
+func setToFinalizeFromFailed(ctx *action.Context, proposal *governance.Proposal) error {
+	err := ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStateFinalized).Set(proposal)
+	if err != nil {
+		return err
+	}
+	ok, err := ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStateFailed).Delete(proposal.ProposalID)
 	if !ok {
 		ok, err = ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStateFinalized).Delete(proposal.ProposalID)
 		if !ok {

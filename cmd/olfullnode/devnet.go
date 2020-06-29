@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/Oneledger/protocol/data/governance"
+	"github.com/Oneledger/protocol/data/rewards"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -34,6 +35,7 @@ import (
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/chain"
+	"github.com/Oneledger/protocol/data/delegation"
 	"github.com/Oneledger/protocol/data/ons"
 
 	"github.com/Oneledger/protocol/data/fees"
@@ -456,8 +458,11 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		},
 		BountyProgramAddr: bountyProgramAddr,
 	}
-
-	states := initialState(args, nodeList, *cdo, *onsOp, btccdo, propOpt, reserveDomains, initialAddrs)
+	rewadOpt := rewards.Options{
+		RewardInterval:    150,
+		RewardPoolAddress: "rewardpool",
+	}
+	states := initialState(args, nodeList, *cdo, *onsOp, btccdo, propOpt, reserveDomains, initialAddrs, rewadOpt)
 
 	genesisDoc, err := consensus.NewGenesisDoc(chainID, states)
 	if err != nil {
@@ -491,7 +496,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 }
 
 func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDriverOption, onsOption ons.Options,
-	btcOption bitcoin.ChainDriverOption, propOpt governance.ProposalOptionSet, reservedDomains []reservedDomain, initialAddrs []keys.Address) consensus.AppState {
+	btcOption bitcoin.ChainDriverOption, propOpt governance.ProposalOptionSet, reservedDomains []reservedDomain, initialAddrs []keys.Address, rewardOpt rewards.Options) consensus.AppState {
 
 	olt := balance.Currency{Id: 0, Name: "OLT", Chain: chain.ONELEDGER, Decimal: 18, Unit: "nue"}
 	vt := balance.Currency{Id: 1, Name: "VT", Chain: chain.ONELEDGER, Unit: "vt"}
@@ -509,6 +514,14 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 	domains := make([]consensus.DomainState, 0, len(nodeList))
 	fees_db := make([]consensus.BalanceState, 0, len(nodeList))
 	total := olt.NewCoinFromInt(args.totalFunds)
+
+	// staking
+	stakingOption := delegation.Options{
+		MinSelfDelegationAmount: *balance.NewAmount(5),
+		MinDelegationAmount:     *balance.NewAmount(5),
+		TopValidatorCount:       3,
+		MaturityTime:            10,
+	}
 
 	//var initialAddrs []keys.Address
 	initAddrIndex := 0
@@ -635,11 +648,13 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 		Domains:    domains,
 		Fees:       fees_db,
 		Governance: consensus.GovernanceState{
-			FeeOption:   feeOpt,
-			ETHCDOption: option,
-			BTCCDOption: btcOption,
-			ONSOptions:  onsOption,
-			PropOptions: propOpt,
+			FeeOption:      feeOpt,
+			ETHCDOption:    option,
+			BTCCDOption:    btcOption,
+			ONSOptions:     onsOption,
+			PropOptions:    propOpt,
+			StakingOptions: stakingOption,
+			RewardOptions:  rewardOpt,
 		},
 	}
 }

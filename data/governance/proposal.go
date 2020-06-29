@@ -1,9 +1,6 @@
 package governance
 
 import (
-	"crypto/md5"
-	"encoding/hex"
-
 	"github.com/Oneledger/protocol/data/balance"
 
 	"github.com/Oneledger/protocol/data/keys"
@@ -12,7 +9,7 @@ import (
 const EmptyStr = ""
 
 type ProposalOption struct {
-	InitialFunding         *balance.Amount          `json:"baseDomainPrice"`
+	InitialFunding         *balance.Amount          `json:"initialFunding"`
 	FundingGoal            *balance.Amount          `json:"fundingGoal"`
 	FundingDeadline        int64                    `json:"fundingDeadline"`
 	VotingDeadline         int64                    `json:"votingDeadline"`
@@ -56,7 +53,7 @@ func NewProposal(proposalID ProposalID, propType ProposalType, desc string, head
 	votingDeadline int64, passPercentage int) *Proposal {
 
 	return &Proposal{
-		ProposalID:      generateProposalID(proposalID),
+		ProposalID:      proposalID,
 		Type:            propType,
 		Status:          ProposalStatusFunding,
 		Outcome:         ProposalOutcomeInProgress,
@@ -68,13 +65,4 @@ func NewProposal(proposalID ProposalID, propType ProposalType, desc string, head
 		VotingDeadline:  votingDeadline,
 		PassPercentage:  passPercentage,
 	}
-}
-
-func generateProposalID(key ProposalID) ProposalID {
-	hashHandler := md5.New()
-	_, err := hashHandler.Write([]byte(key))
-	if err != nil {
-		return EmptyStr
-	}
-	return ProposalID(hex.EncodeToString(hashHandler.Sum(nil)))
 }

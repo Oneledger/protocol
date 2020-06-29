@@ -3,11 +3,10 @@ package governance
 import (
 	"encoding/json"
 
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/kv"
-
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/governance"
+	"github.com/pkg/errors"
+	"github.com/tendermint/tendermint/libs/kv"
 )
 
 var _ action.Msg = &ExpireVotes{}
@@ -30,8 +29,8 @@ func (e ExpireVotes) Validate(ctx *action.Context, signedTx action.SignedTx) (bo
 		return false, err
 	}
 
-	//Check if proposal id is valid
-	if len(expireVotes.ProposalID) <= 0 {
+	//Check if Proposal ID is valid
+	if err = expireVotes.ProposalID.Err(); err != nil {
 		return false, governance.ErrInvalidProposalId
 	}
 
@@ -100,12 +99,6 @@ func runExpireVotes(ctx *action.Context, tx action.RawTx) (bool, action.Response
 	//Delete proposal from active prefix
 	deleted, err := ctx.ProposalMasterStore.Proposal.WithPrefixType(active).Delete(proposal.ProposalID)
 	if !deleted {
-		//Need to delete proposal from failed prefix
-		deleted, err = ctx.ProposalMasterStore.Proposal.WithPrefixType(failed).Delete(proposal.ProposalID)
-		if !deleted {
-			panic(errors.Wrap(err, "error deleting proposal from failed prefix."))
-		}
-
 		result := action.Response{
 			Events: action.GetEvent(expireVotes.Tags(), "expire_votes_failed"),
 			Log:    governance.ErrDeletingProposalFromFailedStore.Marshal(),

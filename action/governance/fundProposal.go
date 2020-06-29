@@ -7,6 +7,7 @@ import (
 	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
@@ -98,6 +99,11 @@ func (fundProposalTx) Validate(ctx *action.Context, signedTx action.SignedTx) (b
 		return false, errors.Wrap(action.ErrInvalidAddress, err.Error())
 	}
 
+	//Check if Proposal ID is valid
+	if err = fundProposal.ProposalId.Err(); err != nil {
+		return false, governance.ErrInvalidProposalId
+	}
+
 	return true, nil
 }
 
@@ -127,25 +133,26 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 
 	proposal, err := ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStateActive).Get(fundProposal.ProposalId)
 	if err != nil {
-		return logAndReturnFalse(ctx.Logger, governance.ErrProposalNotExists, fundProposal.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrProposalNotExists, fundProposal.Tags(), err)
 	}
 
 	//2. Check if the Funding height is already reached
 	//  If the proposal has already passed Funding height, reject the transaction
 	if ctx.Header.Height > proposal.FundingDeadline {
-		return logAndReturnFalse(ctx.Logger, governance.ErrFundingDeadlineCrossed, fundProposal.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrFundingDeadlineCrossed, fundProposal.Tags(), err)
 	}
 	//3. Check if the Proposal is in funding stage
 	//  If the proposal is not in FUNDING state, reject the transaction
 	if proposal.Status != governance.ProposalStatusFunding {
-		return logAndReturnFalse(ctx.Logger, governance.ErrStatusNotFunding, fundProposal.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrStatusNotFunding, fundProposal.Tags(), err)
 	}
 
 	//4. Check if the Proposal has reached funding goal, when this contribution is added
 	//   Change the state of the proposal to VOTING, if funding goal is met
 	fundingAmount := balance.NewAmountFromBigInt(fundProposal.FundValue.Value.BigInt())
-	currentFundsforProposal := governance.GetCurrentFunds(proposal.ProposalID, ctx.ProposalMasterStore.ProposalFund)
-	newAmount := fundingAmount.Plus(currentFundsforProposal)
+	fundStore := ctx.ProposalMasterStore.ProposalFund
+	currentFundsforProposal := fundStore.GetCurrentFundsForProposal(proposal.ProposalID)
+	newAmount := fundingAmount.Plus(*currentFundsforProposal)
 	if newAmount.BigInt().Cmp(proposal.FundingGoal.BigInt()) >= 0 {
 		//5. Update status and set voting deadline
 		proposal.Status = governance.ProposalStatusVoting
@@ -157,20 +164,20 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		//In the value, we will just update the Voting power. The vote / opinion field remains empty for now
 		validatorList, err := ctx.Validators.GetValidatorSet()
 		if err != nil {
-			return logAndReturnFalse(ctx.Logger, action.ErrGettingValidatorList, fundProposal.Tags(), err)
+			return helpers.LogAndReturnFalse(ctx.Logger, action.ErrGettingValidatorList, fundProposal.Tags(), err)
 		}
 		for _, v := range validatorList {
 			vote := governance.NewProposalVote(v.Address, governance.OPIN_UNKNOWN, v.Power)
 			err = ctx.ProposalMasterStore.ProposalVote.Setup(proposal.ProposalID, vote)
 			if err != nil {
-				return logAndReturnFalse(ctx.Logger, governance.ErrSetupVotingValidator, fundProposal.Tags(), err)
+				return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrSetupVotingValidator, fundProposal.Tags(), err)
 			}
 		}
 
 		//7. Update proposal status to VOTING
 		err = ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStateActive).Set(proposal)
 		if err != nil {
-			return logAndReturnFalse(ctx.Logger, governance.ErrStatusUnableToSetVoting, fundProposal.Tags(), err)
+			return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrStatusUnableToSetVoting, fundProposal.Tags(), err)
 
 		}
 	}
@@ -179,17 +186,12 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 	coin := fundProposal.FundValue.ToCoin(ctx.Currencies)
 	err = ctx.Balances.MinusFromAddress(fundProposal.FunderAddress.Bytes(), coin)
 	if err != nil {
-		return logAndReturnFalse(ctx.Logger, balance.ErrBalanceErrorMinusFailed, fundProposal.Tags(), err)
-
+		return helpers.LogAndReturnFalse(ctx.Logger, balance.ErrBalanceErrorMinusFailed, fundProposal.Tags(), err)
 	}
 	err = ctx.ProposalMasterStore.ProposalFund.AddFunds(proposal.ProposalID, fundProposal.FunderAddress, fundingAmount)
 	if err != nil {
-		errA := ctx.Balances.AddToAddress(fundProposal.FunderAddress.Bytes(), coin)
-		if errA != nil {
-			logAndReturnFalse(ctx.Logger, governance.ErrGovFundUnableToAdd, fundProposal.Tags(), errA)
-		}
-		return logAndReturnFalse(ctx.Logger, governance.ErrGovFundUnableToAdd, fundProposal.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrGovFundUnableToAdd, fundProposal.Tags(), err)
 	}
 
-	return logAndReturnTrue(ctx.Logger, fundProposal.Tags(), "fund_proposal_success")
+	return helpers.LogAndReturnTrue(ctx.Logger, fundProposal.Tags(), "fund_proposal_success")
 }

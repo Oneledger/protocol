@@ -108,6 +108,10 @@ func (app *App) setupState(stateBytes []byte) error {
 		return errors.Wrap(err, "setupState deserialization")
 	}
 
+	err = app.Context.govern.SetStakingOptions(initial.Governance.StakingOptions)
+	if err != nil {
+		return errors.Wrap(err, "Setup State")
+	}
 	// commit the initial currencies to the governance db
 	err = app.Context.govern.SetCurrencies(initial.Currencies)
 	if err != nil {
@@ -115,6 +119,11 @@ func (app *App) setupState(stateBytes []byte) error {
 	}
 
 	err = app.Context.govern.SetProposalOptions(initial.Governance.PropOptions)
+	if err != nil {
+		return errors.Wrap(err, "Setup State")
+	}
+
+	err = app.Context.govern.SetRewardOptions(&initial.Governance.RewardOptions)
 	if err != nil {
 		return errors.Wrap(err, "Setup State")
 	}
@@ -150,7 +159,7 @@ func (app *App) setupState(stateBytes []byte) error {
 	}
 	app.Context.feePool.SetupOpt(&initial.Governance.FeeOption)
 	app.Context.domains.SetOptions(&initial.Governance.ONSOptions)
-
+	app.Context.rewards.SetOptions(&initial.Governance.RewardOptions)
 	app.Context.btcTrackers.SetConfig(bitcoin.NewBTCConfig(app.Context.cfg.ChainDriver, initial.Governance.BTCCDOption.ChainType))
 	app.Context.btcTrackers.SetOption(initial.Governance.BTCCDOption)
 
@@ -169,7 +178,11 @@ func (app *App) setupState(stateBytes []byte) error {
 	}
 
 	for _, stake := range initial.Staking {
-		err := app.Context.validators.WithState(app.Context.deliver).HandleStake(identity.Stake(stake))
+		err := app.Context.delegators.WithState(app.Context.deliver).Stake(stake.ValidatorAddress, stake.StakeAddress, identity.Stake(stake).Amount)
+		if err != nil {
+			return errors.Wrap(err, "failed to handle delegators staking")
+		}
+		err = app.Context.validators.WithState(app.Context.deliver).HandleStake(identity.Stake(stake))
 		if err != nil {
 			return errors.Wrap(err, "failed to handle initial staking")
 		}
@@ -359,6 +372,11 @@ func (app *App) Prepare() error {
 			return err
 		}
 		app.Context.proposalMaster.Proposal.SetOptions(propOpt)
+		rewardsOpt, err := app.Context.govern.GetRewardOptions()
+		if err != nil {
+			return err
+		}
+		app.Context.rewards.SetOptions(rewardsOpt)
 	}
 
 	nodecfg, err := consensus.ParseConfig(&app.Context.cfg)

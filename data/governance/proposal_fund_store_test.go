@@ -1,6 +1,8 @@
 package governance
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"testing"
 
@@ -41,6 +43,15 @@ func generateAddresses() {
 
 }
 
+func generateProposalID(key ProposalID) ProposalID {
+	hashHandler := sha256.New()
+	_, err := hashHandler.Write([]byte(key))
+	if err != nil {
+		return EmptyStr
+	}
+	return ProposalID(hex.EncodeToString(hashHandler.Sum(nil)))
+}
+
 func generateIDs() {
 	ID1 = generateProposalID("Test")
 	ID2 = generateProposalID("Test1")
@@ -77,7 +88,7 @@ func TestProposalFundStore_Iterate(t *testing.T) {
 	//fmt.Println("Iterating Stores")
 	IDLIST := []ProposalID{ID2, ID1}
 	ok := store.iterate(func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) bool {
-		fmt.Println("ProposalID : ", proposalID, "ProposalAddress :", fundingAddr, "Proposal Amount :", amt.BigInt())
+		//fmt.Println("ProposalID : ", proposalID, "ProposalAddress :", fundingAddr, "Proposal Amount :", amt.BigInt())
 		assert.Contains(t, IDLIST, proposalID, "")
 		return false
 	})
@@ -87,7 +98,7 @@ func TestProposalFundStore_Iterate(t *testing.T) {
 //
 func TestProposalFundStore_GetFundersForProposalID(t *testing.T) {
 	//fmt.Println("Get Funders for ID :  ", ID1)
-	funds := store.GetFundersForProposalID(ID1, func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund {
+	funds := store.GetFundsForProposalID(ID1, func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund {
 		return ProposalFund{
 			id:            proposalID,
 			address:       fundingAddr,
@@ -119,17 +130,17 @@ func TestProposalFundStore_GetProposalForFunder(t *testing.T) {
 
 func TestGetCurrentFunds(t *testing.T) {
 	//fmt.Println("Getting Total fund for ProposalID")
-	currentFunds := GetCurrentFunds(ID1, store)
+	currentFunds := store.GetCurrentFundsForProposal(ID1)
 	funds := currentFunds.BigInt().Int64()
 	assert.EqualValues(t, int64(1000), funds, "")
 }
 
 func TestDeleteAllFunds(t *testing.T) {
-	err := DeleteAllFunds(ID1, store)
+	err := store.DeleteAllFunds(ID1)
 	if err != nil {
 		fmt.Println("Error Deleting all funds", err)
 	}
-	currentFunds := GetCurrentFunds(ID1, store)
+	currentFunds := store.GetCurrentFundsForProposal(ID1)
 	funds := currentFunds.BigInt().Int64()
 	assert.EqualValues(t, int64(0), funds, "")
 }

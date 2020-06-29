@@ -2,7 +2,6 @@ package governance
 
 import (
 	"encoding/json"
-
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
 
@@ -56,7 +55,7 @@ func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) 
 	}
 
 	//Check if Proposal ID is valid
-	if len(createProposal.ProposalID) <= 0 {
+	if err = createProposal.ProposalID.Err(); err != nil {
 		return false, governance.ErrInvalidProposalId
 	}
 
@@ -162,9 +161,6 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false, result
 	}
 
-	//Set generated Proposal ID in transaction response
-	createProposal.ProposalID = proposal.ProposalID
-
 	//Deduct initial funding from proposer's address
 	funds := createProposal.InitialFunding.ToCoin(ctx.Currencies)
 	err = ctx.Balances.MinusFromAddress(createProposal.Proposer.Bytes(), funds)
@@ -180,11 +176,6 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	initialFunding := balance.NewAmountFromBigInt(createProposal.InitialFunding.Value.BigInt())
 	err = ctx.ProposalMasterStore.ProposalFund.AddFunds(proposal.ProposalID, proposal.Proposer, initialFunding)
 	if err != nil {
-		//return Funds back to proposer.
-		err = ctx.Balances.AddToAddress(createProposal.Proposer, funds)
-		if err != nil {
-			panic("error returning funds to balance store")
-		}
 		result := action.Response{
 			Events: action.GetEvent(createProposal.Tags(), "create_proposal_funding_failed"),
 			Log:    governance.ErrAddFunding.Marshal(),

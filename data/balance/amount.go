@@ -79,17 +79,26 @@ func (a Amount) String() string {
 	return a.BigInt().String()
 }
 
-func (a Amount) Plus(add *Amount) *Amount {
+func (a *Amount) Plus(value Amount) *Amount {
 	base := big.NewInt(0)
-	return (*Amount)(base.Add(a.BigInt(), add.BigInt()))
+	base = base.Add(a.BigInt(), value.BigInt())
+	return NewAmountFromBigInt(base)
 }
 
-func (a Amount) Minus(minus *Amount) (*Amount, error) {
+func (a *Amount) Minus(value Amount) (*Amount, error) {
 	base := big.NewInt(0)
-	if base.Sub(a.BigInt(), minus.BigInt()).Cmp(big.NewInt(0)) == -1 {
-		return nil, ErrInsufficientBalance
+	base = base.Sub(a.BigInt(), value.BigInt())
+	if base.Cmp(big.NewInt(0)) == -1 {
+		return NewAmountFromBigInt(base), ErrInsufficientBalance
 	}
-	return (*Amount)(base.Sub(a.BigInt(), minus.BigInt())), nil
+	return NewAmountFromBigInt(base), nil
+}
+
+func (a *Amount) Equals(value Amount) bool {
+	if a.BigInt().Cmp(value.BigInt()) == 0 {
+		return true
+	}
+	return false
 }
 
 func (a Amount) Float() *big.Float {

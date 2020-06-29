@@ -3,11 +3,14 @@ package governance
 import (
 	"encoding/binary"
 
+	"github.com/Oneledger/protocol/data/rewards"
+
 	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/chains/bitcoin"
 	ethchain "github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/delegation"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/serialize"
@@ -27,6 +30,10 @@ const (
 	ADMIN_ONS_OPTION             string = "onsopt"
 
 	ADMIN_PROPOSAL_OPTION string = "proposal"
+
+	ADMIN_STAKING_OPTION string = "stakingopt"
+
+	ADMIN_REWARD_OPTION string = "reward"
 )
 
 type Store struct {
@@ -152,6 +159,37 @@ func (st *Store) SetEpoch(epoch int64) error {
 	return nil
 }
 
+func (st *Store) GetStakingOptions() (*delegation.Options, error) {
+
+	bytes, err := st.Get([]byte(ADMIN_STAKING_OPTION))
+	if err != nil {
+		return nil, err
+	}
+
+	r := &delegation.Options{}
+	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(bytes, r)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to deserialize staking options")
+	}
+
+	return r, nil
+}
+
+func (st *Store) SetStakingOptions(opt delegation.Options) error {
+
+	bytes, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(opt)
+	if err != nil {
+		return errors.Wrap(err, "failed to serialize staking options")
+	}
+
+	err = st.Set([]byte(ADMIN_STAKING_OPTION), bytes)
+	if err != nil {
+		return errors.Wrap(err, "failed to set the staking options")
+	}
+
+	return nil
+}
+
 func (st *Store) GetETHChainDriverOption() (*ethchain.ChainDriverOption, error) {
 
 	bytes, err := st.Get([]byte(ADMIN_ETH_CHAINDRIVER_OPTION))
@@ -263,4 +301,30 @@ func (st *Store) GetProposalOptions() (*ProposalOptionSet, error) {
 		return nil, errors.Wrap(err, "failed to deserialize proposal options")
 	}
 	return propOpt, nil
+}
+
+func (st *Store) SetRewardOptions(rewardOptions *rewards.Options) error {
+	bytes, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(rewardOptions)
+	if err != nil {
+		return errors.Wrap(err, "failed to serialize reward options")
+	}
+	err = st.Set([]byte(ADMIN_REWARD_OPTION), bytes)
+	if err != nil {
+		return errors.Wrap(err, "failed to set the reward options")
+	}
+	return nil
+}
+
+func (st *Store) GetRewardOptions() (*rewards.Options, error) {
+	bytes, err := st.Get([]byte(ADMIN_REWARD_OPTION))
+	if err != nil {
+		return nil, err
+	}
+
+	rewardOptions := &rewards.Options{}
+	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(bytes, rewardOptions)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to deserialize reward options")
+	}
+	return rewardOptions, nil
 }
