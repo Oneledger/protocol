@@ -16,12 +16,6 @@ type ListRewardsReply struct {
 }
 
 type WithdrawRewardsRequest struct {
-	Validator keys.Address  `json:"validator"`
-	GasPrice  action.Amount `json:"gasPrice"`
-	Gas       int64         `json:"gas"`
-}
-
-type WithdrawRewardsRequest struct {
 	GasPrice action.Amount `json:"gasPrice"`
 	Gas      int64         `json:"gas"`
 }
