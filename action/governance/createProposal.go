@@ -106,10 +106,7 @@ func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) 
 		return false, governance.ErrInvalidPassPercentage
 	}
 
-	//Validate funding and voting height
-	if createProposal.FundingDeadline <= ctx.Header.Height {
-		return false, governance.ErrInvalidFundingDeadline
-	}
+	//Validate voting height
 	if createProposal.VotingDeadline - createProposal.FundingDeadline != options.VotingDeadline {
 		return false, governance.ErrInvalidVotingDeadline
 	}
@@ -138,6 +135,15 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		result := action.Response{
 			Events: action.GetEvent(createProposal.Tags(), "create_proposal_failed_deserialize"),
 			Log:    action.ErrWrongTxType.Wrap(err).Marshal(),
+		}
+		return false, result
+	}
+
+	//Validate funding height, this one is put here because in validate() we cannot always get valid ctx.Header
+	if createProposal.FundingDeadline <= ctx.Header.Height {
+		result := action.Response{
+			Events: action.GetEvent(createProposal.Tags(), "create_proposal_invalid_funding_deadline"),
+			Log:    governance.ErrInvalidFundingDeadline.Marshal(),
 		}
 		return false, result
 	}
