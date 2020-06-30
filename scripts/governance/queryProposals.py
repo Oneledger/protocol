@@ -35,7 +35,7 @@ def create_some_proposals():
     result_by_type[ProposalTypeGeneral].append(prop_0.pid)
 
     # create a proposal that passed VOTING
-    prop_1 = gen_prop(_proposer_1, "codechange")
+    prop_1 = gen_prop(_proposer_1, "codeChange")
     prop_1.send_create()
     time.sleep(1)
     fund_proposal(prop_1.pid, _big_funding, addr_list[0])
@@ -48,7 +48,7 @@ def create_some_proposals():
     result_by_type[ProposalTypeCodeChange].append(prop_1.pid)
 
     # create a proposal that canceled
-    prop_2 = gen_prop(_proposer_1, "codechange")
+    prop_2 = gen_prop(_proposer_1, "codeChange")
     prop_2.send_create()
     time.sleep(1)
     cancel_proposal(prop_2.pid, _proposer_1, "changed mind")
@@ -66,7 +66,7 @@ def create_some_proposals():
     result_by_type[ProposalTypeGeneral].append(prop_3.pid)
 
     # create a proposal that in FUNDING
-    prop_4 = gen_prop(_proposer_2, "configupdate")
+    prop_4 = gen_prop(_proposer_2, "configUpdate")
     prop_4.send_create()
     time.sleep(1)
     result_by_id[prop_4.pid] = (ProposalTypeConfigUpdate, ProposalOutcomeInProgress, ProposalStatusFunding, _initial_funding)

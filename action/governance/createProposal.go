@@ -2,7 +2,6 @@ package governance
 
 import (
 	"encoding/json"
-
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
 
@@ -24,7 +23,7 @@ type CreateProposal struct {
 	FundingDeadline int64           	   `json:"fundingDeadline"`
 	FundingGoal     *balance.Amount 	   `json:"fundingGoal"`
 	VotingDeadline  int64           	   `json:"votingDeadline"`
-	PassPercentage  int             	   `json:"passPercent"`
+	PassPercentage  int             	   `json:"passPercentage"`
 }
 
 func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
@@ -130,7 +129,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	options := ctx.ProposalMasterStore.Proposal.GetOptionsByType(createProposal.ProposalType)
 
 	//Validate funding goal and pass percentage
-	if createProposal.FundingGoal != options.FundingGoal {
+	if !createProposal.FundingGoal.Equals(*options.FundingGoal) {
 		result := action.Response{
 			Events: action.GetEvent(createProposal.Tags(), "create_proposal_wrong_funding_goal"),
 			Log:    governance.ErrWrongFundingGoal.Marshal(),

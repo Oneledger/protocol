@@ -2,7 +2,6 @@ package query
 
 import (
 	"errors"
-	"fmt"
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/data/governance"
 	codes "github.com/Oneledger/protocol/status_codes"
@@ -87,9 +86,7 @@ func (svc *Service) ListProposals(req client.ListProposalsRequest, reply *client
 func (svc *Service) GetProposalOptions(_ client.ListTxTypesRequest, reply *client.GetProposalOptionsReply) error {
 
 	options := *svc.proposalMaster.Proposal.GetOptions()
-	fmt.Println("options: ", options)
 	height := svc.proposalMaster.Proposal.GetState().Version()
-	fmt.Println("height: ", height)
 
 	*reply = client.GetProposalOptionsReply{
 		ProposalOptions: options,

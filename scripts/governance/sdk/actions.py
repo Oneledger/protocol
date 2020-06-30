@@ -53,7 +53,33 @@ class Proposal:
         self.proposer = proposer
         self.init_fund = init_fund
 
+    def _calculate_proposal_info(self):
+        query_options = query_proposal_options()
+        options = query_options["proposalOptions"]
+        height = query_options["height"]
+
+        if self.pty == "configUpdate":
+            funding_goal = options["configUpdate"]["fundingGoal"]
+            funding_deadline = height + options["configUpdate"]["fundingDeadline"]
+            voting_deadline = funding_deadline + options["configUpdate"]["votingDeadline"]
+            pass_percentage = options["configUpdate"]["passPercentage"]
+        elif self.pty == "codeChange":
+            funding_goal = options["codeChange"]["fundingGoal"]
+            funding_deadline = height + options["codeChange"]["fundingDeadline"]
+            voting_deadline = funding_deadline + options["codeChange"]["votingDeadline"]
+            pass_percentage = options["codeChange"]["passPercentage"]
+        elif self.pty == "general":
+            funding_goal = options["general"]["fundingGoal"]
+            funding_deadline = height + options["general"]["fundingDeadline"]
+            voting_deadline = funding_deadline + options["general"]["votingDeadline"]
+            pass_percentage = options["general"]["passPercentage"]
+        else:
+            sys.exit(-1)
+
+        return ProposalInfo(funding_goal, funding_deadline, voting_deadline, pass_percentage)
+
     def _create_proposal(self):
+        _proposal_info = self._calculate_proposal_info()
         req = {
             "proposalId": self.get_encoded_pid(),
             "headline": self.headline,
@@ -64,6 +90,10 @@ class Proposal:
                 "currency": "OLT",
                 "value": convertBigInt(self.init_fund),
             },
+            "fundingGoal": _proposal_info.funding_goal,
+            "fundingDeadline": _proposal_info.funding_deadline,
+            "votingDeadline": _proposal_info.voting_deadline,
+            "passPercentage": _proposal_info.pass_percentage,
             "gasPrice": {
                 "currency": "OLT",
                 "value": "1000000000",
@@ -102,6 +132,14 @@ class Proposal:
         return resp["result"]["tx_result"]
 
 
+class ProposalInfo:
+    def __init__(self, funding_goal, funding_deadline, voting_deadline, pass_percentage):
+        self.funding_goal = funding_goal
+        self.funding_deadline = funding_deadline
+        self.voting_deadline = voting_deadline
+        self.pass_percentage = pass_percentage
+
+
 class ProposalFund:
     def __init__(self, pid, value, address):
         self.pid = pid
@@ -122,7 +160,7 @@ class ProposalFund:
             },
             "gas": 40000,
         }
-    
+
         resp = rpc_call('tx.FundProposal', req)
         return resp["result"]["rawTx"]
 
@@ -160,7 +198,7 @@ class ProposalCancel:
             },
             "gas": 40000,
         }
-    
+
         resp = rpc_call('tx.CancelProposal', req)
         return resp["result"]["rawTx"]
 
@@ -405,10 +443,15 @@ def query_balance(address):
     print json.dumps(resp, indent=4)
     return resp["result"]
 
+
 def query_proposal_options():
     req = {}
-
     resp = rpc_call('query.GetProposalOptions', req)
     if "result" not in resp:
         sys.exit(-1)
-    print json.dumps(resp, indent=4)
+    if "proposalOptions" not in resp["result"]:
+        sys.exit(-1)
+    if "height" not in resp["result"]:
+        sys.exit(-1)
+    # print json.dumps(resp, indent=4)
+    return resp["result"]
