@@ -519,6 +519,21 @@ func handleBlockRewards(validators *identity.ValidatorStore, rewards *rewards.Re
 				Key:   []byte(valAddress.String()),
 				Value: []byte(amount.String()),
 			}
+
+			//Update Matured Amount
+			options := rewards.GetOptions()
+			matured := lastHeight % (2 * options.RewardInterval)
+			if matured == 0 {
+				//Add rewards at chunk n - 2 to cumulative store
+				/*maturedAmount, err := rewards.GetMaturedAmount(valAddress, lastHeight)
+				if err != nil {
+					continue
+				}
+				err = maturedRewards.AddMaturedBalance(valAddress, maturedAmount)
+				if err != nil {
+					continue
+				}*/
+			}
 		}
 	}
 
