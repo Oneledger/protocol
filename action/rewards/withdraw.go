@@ -94,8 +94,9 @@ func runWithdraw(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	fmt.Println("Validator :", withdraw.ValidatorAddress)
 
 	//1. Check the cumulative rewards DB
-
+	_ = ctx.RewardMasterStore.RewardCm
 	//2. Get the difference of amount earned vs amount withdrawn for the validator issuing this transaction
+
 	//3. Check how much he is eligible to withdraw (which is calculated in step2)
 	//4. If the amount withdrawn is less than or equal to amount eligible to be withdrawn, make the transaction success.
 	//5. In case of no failure, add this amount the person withdrew, to total withdrawn amount in cumulative rewards db

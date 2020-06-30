@@ -102,7 +102,7 @@ func (rws *RewardCumulativeStore) GetOptions() *Options {
 	return rws.rewardOptions
 }
 
-//-----------------------------helpper functions defined below
+//-----------------------------helper functions defined below
 //
 // Set cumulative amount by key
 func (rws *RewardCumulativeStore) set(key storage.StoreKey, amt *balance.Amount) error {
