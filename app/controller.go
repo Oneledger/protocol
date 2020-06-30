@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/rewards"
 	"github.com/tendermint/tendermint/libs/kv"
@@ -130,7 +129,7 @@ func (app *App) blockBeginner() blockBeginner {
 		}
 
 		// update Block Rewards
-		blockRewardEvent := handleBlockRewards(app.Context.validators, app.Context.rewards.WithState(app.Context.deliver), req)
+		blockRewardEvent := handleBlockRewards(app.Context.validators, app.Context.rewardMaster.WithState(app.Context.deliver), req)
 
 		result := ResponseBeginBlock{
 			Events: []abciTypes.Event{blockRewardEvent},
@@ -473,7 +472,7 @@ func updateProposals(proposalMaster *governance.ProposalMasterStore, jobStore *j
 	})
 }
 
-func handleBlockRewards(validators *identity.ValidatorStore, rewards *rewards.RewardStore, block RequestBeginBlock) abciTypes.Event {
+func handleBlockRewards(validators *identity.ValidatorStore, rewardMaster *rewards.RewardMasterStore, block RequestBeginBlock) abciTypes.Event {
 	votes := block.LastCommitInfo.Votes
 	lastHeight := block.GetHeader().Height
 	heightKey := "height"
@@ -512,7 +511,7 @@ func handleBlockRewards(validators *identity.ValidatorStore, rewards *rewards.Re
 			//Distribute Block Reward to Validator
 			//TODO: Calculate reward to be distributed
 			amount := balance.NewAmount(10)
-			err = rewards.AddToAddress(valAddress, lastHeight, amount)
+			err = rewardMaster.Reward.AddToAddress(valAddress, lastHeight, amount)
 			if err != nil {
 				continue
 			}
@@ -524,18 +523,18 @@ func handleBlockRewards(validators *identity.ValidatorStore, rewards *rewards.Re
 			}
 
 			//Update Matured Amount
-			options := rewards.GetOptions()
+			options := rewardMaster.Reward.GetOptions()
 			matured := lastHeight % (2 * options.RewardInterval)
 			if matured == 0 {
 				//Add rewards at chunk n - 2 to cumulative store
-				/*maturedAmount, err := rewards.GetMaturedAmount(valAddress, lastHeight)
+				maturedAmount, err := rewardMaster.Reward.GetMaturedAmount(valAddress, lastHeight)
 				if err != nil {
 					continue
 				}
-				err = maturedRewards.AddMaturedBalance(valAddress, maturedAmount)
+				err = rewardMaster.RewardCumula.AddMaturedBalance(valAddress, maturedAmount)
 				if err != nil {
 					continue
-				}*/
+				}
 			}
 		}
 	}
