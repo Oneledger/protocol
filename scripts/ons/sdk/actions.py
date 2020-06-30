@@ -1,5 +1,6 @@
-from rpc_call import rpc_call, converBigInt
 import json
+
+from rpc_call import rpc_call, converBigInt
 
 
 def create_domain(name, owner_hex, price):

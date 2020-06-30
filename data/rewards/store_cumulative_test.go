@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	store      *RewardsCumulativeStore
+	store      *RewardCumulativeStore
 	cs         *storage.State
 	validator1 keys.Address
 	validator2 keys.Address
@@ -31,7 +31,7 @@ func setup() {
 	fmt.Println("####### Testing  rewards cumulative store #######")
 	memDb := db.NewDB("test", db.MemDBBackend, "")
 	cs = storage.NewState(storage.NewChainState("rewards", memDb))
-	store = NewRewardsCumulativeStore("rws", cs)
+	store = NewRewardCumulativeStore("rws", cs)
 	generateAddresses()
 }
 

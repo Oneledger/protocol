@@ -81,6 +81,10 @@ var (
 		ProposerReward: 00.00,
 	}
 
+	blockRewardsCalcInterval    = int64(1000)
+	annualBlockRewardsSupply, _ = balance.NewAmountFromString("50000000000000000000000000", 10)
+	yearsOfBlockRewardsSupply   = int64(5)
+
 	testnetArgs = &testnetConfig{}
 
 	testnetCmd = &cobra.Command{
@@ -445,11 +449,16 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		},
 		BountyProgramAddr: bountyProgramAddr,
 	}
-	rewadOpt := rewards.Options{
+
+	rewzOpt := rewards.Options{
 		RewardInterval:    150,
 		RewardPoolAddress: "rewardpool",
+		RewardCurrency:    "OLT",
+		CalculateInterval: blockRewardsCalcInterval,
+		AnnualSupply:      *annualBlockRewardsSupply,
+		YearsOfSupply:     yearsOfBlockRewardsSupply,
 	}
-	states := initialState(args, nodeList, *cdo, *onsOp, btccdo, propOpt, reserveDomains, initialAddrs, rewadOpt)
+	states := initialState(args, nodeList, *cdo, *onsOp, btccdo, propOpt, reserveDomains, initialAddrs, rewzOpt)
 
 	genesisDoc, err := consensus.NewGenesisDoc(chainID, states)
 	if err != nil {
