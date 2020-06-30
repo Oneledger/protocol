@@ -612,7 +612,7 @@ def query_proposal(proposal_id):
     }
     resp = rpc_call('query.ListProposal', req)
     stat = resp["result"]["proposalStats"][0]
-    print json.dumps(resp, indent=4)
+    # print json.dumps(resp, indent=4)
     return stat["proposal"], stat["funds"]
 
 

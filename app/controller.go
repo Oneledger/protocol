@@ -3,15 +3,15 @@ package app
 import (
 	"encoding/hex"
 	"fmt"
+	"math"
+	"runtime/debug"
+	"strconv"
+
+	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/rewards"
-	"github.com/tendermint/tendermint/libs/kv"
-
-	"math"
-	"runtime/debug"
-	"strconv"
 
 	"github.com/Oneledger/protocol/data/governance"
 
@@ -451,7 +451,7 @@ func updateProposals(proposalMaster *governance.ProposalMasterStore, jobStore *j
 
 	passedProposals := proposals.WithPrefixType(governance.ProposalStatePassed)
 	passedProposals.Iterate(func(id governance.ProposalID, proposal *governance.Proposal) bool {
-		if proposal.Status == governance.ProposalStatusCompleted && proposal.Outcome == governance.ProposalOutcomeCompleted {
+		if proposal.Status == governance.ProposalStatusCompleted && proposal.Outcome == governance.ProposalOutcomeCompletedYes {
 			finalizeJob := event.NewGovFinalizeProposalJob(proposal.ProposalID, proposal.Status)
 
 			exists, _ := jobStore.WithChain(chain.ONELEDGER).JobExists(finalizeJob.JobID)
@@ -466,7 +466,7 @@ func updateProposals(proposalMaster *governance.ProposalMasterStore, jobStore *j
 	})
 	failedProposals := proposals.WithPrefixType(governance.ProposalStateFailed)
 	failedProposals.Iterate(func(id governance.ProposalID, proposal *governance.Proposal) bool {
-		if proposal.Status == governance.ProposalStatusCompleted && proposal.Outcome == governance.ProposalOutcomeInsufficientVotes {
+		if proposal.Status == governance.ProposalStatusCompleted && proposal.Outcome == governance.ProposalOutcomeCompletedNo {
 			finalizeJob := event.NewGovFinalizeProposalJob(proposal.ProposalID, proposal.Status)
 
 			exists, _ := jobStore.WithChain(chain.ONELEDGER).JobExists(finalizeJob.JobID)

@@ -144,7 +144,7 @@ func runVote(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	// Pass or fail this proposal if possible
 	if stat.Result == gov.VOTE_RESULT_PASSED {
 		proposal.Status = gov.ProposalStatusCompleted
-		proposal.Outcome = gov.ProposalOutcomeCompleted
+		proposal.Outcome = gov.ProposalOutcomeCompletedYes
 		err = pms.Proposal.WithPrefixType(gov.ProposalStatePassed).Set(proposal)
 		if err != nil {
 			return false, action.Response{
@@ -153,7 +153,7 @@ func runVote(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		}
 	} else if stat.Result == gov.VOTE_RESULT_FAILED {
 		proposal.Status = gov.ProposalStatusCompleted
-		proposal.Outcome = gov.ProposalOutcomeInsufficientVotes
+		proposal.Outcome = gov.ProposalOutcomeCompletedNo
 		err = pms.Proposal.WithPrefixType(gov.ProposalStateFailed).Set(proposal)
 		if err != nil {
 			return false, action.Response{
