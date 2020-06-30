@@ -125,7 +125,10 @@ func runFinalizeProposal(ctx *action.Context, tx action.RawTx) (bool, action.Res
 	//Get Proposal
 	proposal, err := ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStatePassed).Get(finalizedProposal.ProposalID)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrProposalNotExists, finalizedProposal.Tags(), err)
+		proposal, err = ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStateFailed).Get(finalizedProposal.ProposalID)
+		if err != nil {
+			return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrProposalNotExists, finalizedProposal.Tags(), err)
+		}
 	}
 	//Check Status is Completed
 
@@ -163,7 +166,7 @@ func runFinalizeProposal(ctx *action.Context, tx action.RawTx) (bool, action.Res
 				return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrFinalizeConfigUpdateFailed, finalizedProposal.Tags(), err)
 			}
 		}
-		err = setToFinalize(ctx, proposal)
+		err = setToFinalizeFromPassed(ctx, proposal)
 		if err != nil {
 			return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrStatusUnableToSetFinalized, finalizedProposal.Tags(), err)
 		}
@@ -180,7 +183,7 @@ func runFinalizeProposal(ctx *action.Context, tx action.RawTx) (bool, action.Res
 			ctx.Logger.Error("Distribution of Funds failed , Set Proposal to Finalize Failed")
 			return helpers.LogAndReturnTrue(ctx.Logger, finalizedProposal.Tags(), governance.ErrFinalizeDistributtionFailed.Wrap(distributeErr).Marshal())
 		}
-		err = setToFinalize(ctx, proposal)
+		err = setToFinalizeFromFailed(ctx, proposal)
 		if err != nil {
 			return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrStatusUnableToSetFinalized, finalizedProposal.Tags(), err)
 		}
@@ -249,7 +252,7 @@ func distributeFunds(ctx *action.Context, proposal *governance.Proposal, proposa
 	}
 
 	//Burn
-	ctx.Logger.Detailf("Transferring to Burn Address ")
+	ctx.Logger.Detailf("Burning Funds  ")
 	getPercentageCoin(c, totalFunding, &fundTracker, proposalDistribution.Burn)
 	if fundTracker != 0 {
 		return errors.New(fmt.Sprintf("Extra Funding Amount Left %s", fundTracker))
@@ -276,12 +279,28 @@ func getPercentageCoin(c balance.Currency, totalFunding *big.Float, fundTracker 
 }
 
 //Helper to set Proposal to Finalized
-func setToFinalize(ctx *action.Context, proposal *governance.Proposal) error {
+func setToFinalizeFromPassed(ctx *action.Context, proposal *governance.Proposal) error {
 	err := ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStateFinalized).Set(proposal)
 	if err != nil {
 		return err
 	}
 	ok, err := ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStatePassed).Delete(proposal.ProposalID)
+	if !ok {
+		ok, err = ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStateFinalized).Delete(proposal.ProposalID)
+		if !ok {
+			return errors.Wrap(err, "error deleting proposal from finalize prefix")
+		}
+		return err
+	}
+	return nil
+}
+
+func setToFinalizeFromFailed(ctx *action.Context, proposal *governance.Proposal) error {
+	err := ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStateFinalized).Set(proposal)
+	if err != nil {
+		return err
+	}
+	ok, err := ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStateFailed).Delete(proposal.ProposalID)
 	if !ok {
 		ok, err = ctx.ProposalMasterStore.Proposal.WithPrefixType(governance.ProposalStateFinalized).Delete(proposal.ProposalID)
 		if !ok {

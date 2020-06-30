@@ -74,7 +74,7 @@ type context struct {
 	jobBus          *event.JobBus
 	proposalMaster  *governance.ProposalMasterStore
 	delegators      *delegation.DelegationStore
-	rewards         *rewards.RewardStore
+	rewardMaster    *rewards.RewardMasterStore
 	logWriter       io.Writer
 }
 
@@ -109,7 +109,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.govern = governance.NewStore("g", storage.NewState(ctx.chainstate))
 	ctx.proposalMaster = NewProposalMasterStore(ctx.chainstate)
 	ctx.delegators = delegation.NewDelegationStore("st", storage.NewState(ctx.chainstate))
-	ctx.rewards = rewards.NewRewardStore("r", "ri", storage.NewState(ctx.chainstate))
+	ctx.rewardMaster = NewRewardMasterStore(ctx.chainstate)
 	ctx.btcTrackers = bitcoin.NewTrackerStore("btct", storage.NewState(ctx.chainstate))
 
 	ctx.ethTrackers = ethereum.NewTrackerStore("etht", "ethfailed", "ethsuccess", storage.NewState(ctx.chainstate))
@@ -164,6 +164,12 @@ func NewProposalMasterStore(chainstate *storage.ChainState) *governance.Proposal
 	return governance.NewProposalMasterStore(proposals, proposalFunds, proposalVotes)
 }
 
+func NewRewardMasterStore(chainstate *storage.ChainState) *rewards.RewardMasterStore {
+	reward := rewards.NewRewardStore("rwz", "ri", storage.NewState(chainstate))
+	rewardCumula := rewards.NewRewardCumulativeStore("rwzc", storage.NewState(chainstate))
+	return rewards.NewRewardMasterStore(reward, rewardCumula)
+}
+
 func (ctx context) dbDir() string {
 	return filepath.Join(ctx.cfg.RootDir(), ctx.cfg.Node.DBDir)
 }
@@ -190,7 +196,7 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.lockScriptStore,
 		log.NewLoggerWithPrefix(ctx.logWriter, "action").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
 		ctx.proposalMaster.WithState(state),
-		ctx.rewards.WithState(state),
+		ctx.rewardMaster.WithState(state),
 		ctx.extStores,
 	)
 
@@ -240,8 +246,8 @@ func (ctx *context) Services() (service.Map, error) {
 	proposalMaster := NewProposalMasterStore(ctx.chainstate)
 	proposalMaster.Proposal.SetOptions(ctx.proposalMaster.Proposal.GetOptions())
 
-	rewardStore := rewards.NewRewardStore("r", "ri", storage.NewState(ctx.chainstate))
-	rewardStore.SetOptions(ctx.rewards.GetOptions())
+	rewardMaster := NewRewardMasterStore(ctx.chainstate)
+	rewardMaster.SetOptions(ctx.rewardMaster.GetOptions())
 
 	svcCtx := &service.Context{
 		Balances:       balance.NewStore("b", storage.NewState(ctx.chainstate)),
@@ -256,7 +262,7 @@ func (ctx *context) Services() (service.Map, error) {
 		Govern:         ctx.govern,
 		Delegators:     ctx.delegators,
 		ProposalMaster: proposalMaster,
-		Rewards:        rewardStore,
+		RewardMaster:   rewardMaster,
 		ExtStores:      ctx.extStores,
 		Router:         ctx.actionRouter,
 		Logger:         log.NewLoggerWithPrefix(ctx.logWriter, "rpc").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),

@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/hex"
 	"fmt"
+
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/rewards"
@@ -276,7 +277,7 @@ func (app *App) blockEnder() blockEnder {
 		updateProposals(app.Context.proposalMaster, app.Context.jobStore, app.Context.deliver)
 
 		//Distribute Block rewards to Validators
-		blockRewardEvent := handleBlockRewards(app.Context.validators, app.Context.rewards.WithState(app.Context.deliver), app.Node())
+		blockRewardEvent := handleBlockRewards(app.Context.validators, app.Context.rewardMaster.Reward.WithState(app.Context.deliver), app.Node())
 
 		result := ResponseEndBlock{
 			ValidatorUpdates: updates,
@@ -452,7 +453,22 @@ func updateProposals(proposalMaster *governance.ProposalMasterStore, jobStore *j
 
 	passedProposals := proposals.WithPrefixType(governance.ProposalStatePassed)
 	passedProposals.Iterate(func(id governance.ProposalID, proposal *governance.Proposal) bool {
-		if proposal.Status == governance.ProposalStatusCompleted {
+		if proposal.Status == governance.ProposalStatusCompleted && proposal.Outcome == governance.ProposalOutcomeCompleted {
+			finalizeJob := event.NewGovFinalizeProposalJob(proposal.ProposalID, proposal.Status)
+
+			exists, _ := jobStore.WithChain(chain.ONELEDGER).JobExists(finalizeJob.JobID)
+			if !exists {
+				err := jobStore.WithChain(chain.ONELEDGER).SaveJob(finalizeJob)
+				if err != nil {
+					return true
+				}
+			}
+		}
+		return false
+	})
+	failedProposals := proposals.WithPrefixType(governance.ProposalStateFailed)
+	failedProposals.Iterate(func(id governance.ProposalID, proposal *governance.Proposal) bool {
+		if proposal.Status == governance.ProposalStatusCompleted && proposal.Outcome == governance.ProposalOutcomeInsufficientVotes {
 			finalizeJob := event.NewGovFinalizeProposalJob(proposal.ProposalID, proposal.Status)
 
 			exists, _ := jobStore.WithChain(chain.ONELEDGER).JobExists(finalizeJob.JobID)
