@@ -150,7 +150,7 @@ func (app *App) setupState(stateBytes []byte) error {
 	if err != nil {
 		return errors.Wrap(err, "Error in setting up Reward options")
 	}
-	app.Context.rewards.SetOptions(&initial.Governance.RewardOptions)
+	app.Context.rewardMaster.SetOptions(&initial.Governance.RewardOptions)
 
 	// (1) Register all the currencies and fee
 	for _, currency := range initial.Currencies {

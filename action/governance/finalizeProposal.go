@@ -302,7 +302,7 @@ func executeConfigUpdate(ctx *action.Context, proposal *governance.Proposal) err
 	//Setup Options for individual stores
 	// TODO remove these after all TX have been modified to use Gov store
 	ctx.ProposalMasterStore.Proposal.SetOptions(&updatedGov.PropOptions)
-	ctx.RewardStore.SetOptions(&updatedGov.RewardOptions)
+	ctx.RewardMasterStore.RewardCumula.SetOptions(&updatedGov.RewardOptions)
 	ctx.FeePool.SetupOpt(&updatedGov.FeeOption)
 	ctx.Domains.SetOptions(&updatedGov.ONSOptions)
 	ctx.ETHTrackers.SetupOption(&updatedGov.ETHCDOption)
@@ -310,7 +310,7 @@ func executeConfigUpdate(ctx *action.Context, proposal *governance.Proposal) err
 
 	//Old rewards interval
 
-	err = ctx.RewardStore.UpdateOptions(ctx.Header.Height, &updatedGov.RewardOptions)
+	err = ctx.RewardMasterStore.Reward.UpdateOptions(ctx.Header.Height, &updatedGov.RewardOptions)
 	if err != nil {
 		return errors.Wrap(err, "Unable to set new interval ")
 	}
