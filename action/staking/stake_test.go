@@ -6,6 +6,12 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/tendermint/tendermint/crypto"
+	"github.com/tendermint/tendermint/crypto/ed25519"
+	"github.com/tendermint/tendermint/libs/bytes"
+	db "github.com/tendermint/tm-db"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/chain"
@@ -16,11 +22,6 @@ import (
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/storage"
-	"github.com/stretchr/testify/assert"
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	"github.com/tendermint/tendermint/libs/bytes"
-	db "github.com/tendermint/tm-db"
 )
 
 // global setup
@@ -113,7 +114,8 @@ func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, se
 	delop := delegation.Options{
 		MinSelfDelegationAmount: *balance.NewAmountFromInt(1),
 	}
-	ctx.Govern.SetStakingOptions(delop)
+	ctx.Govern.WithHeight(0).SetStakingOptions(delop)
+	ctx.Govern.WithHeight(0).SetLUH()
 	return ctx
 }
 

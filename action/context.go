@@ -41,6 +41,7 @@ type Context struct {
 	LockScriptStore     *bitcoin.LockScriptStore
 	ProposalMasterStore *governance.ProposalMasterStore
 	RewardMasterStore   *rewards.RewardMasterStore
+	GovernanceStore     *governance.Store
 	ExtStores           data.Router
 }
 
@@ -48,9 +49,9 @@ func NewContext(r Router, header *abci.Header, state *storage.State,
 	wallet accounts.Wallet, balances *balance.Store,
 	currencies *balance.CurrencySet, feePool *fees.Store,
 	validators *identity.ValidatorStore, witnesses *identity.WitnessStore,
-	domains *ons.DomainStore, govern *governance.Store, delegators *delegation.DelegationStore, btcTrackers *bitcoin.TrackerStore,
+	domains *ons.DomainStore, delegators *delegation.DelegationStore, btcTrackers *bitcoin.TrackerStore,
 	ethTrackers *ethereum.TrackerStore, jobStore *jobs.JobStore,
-	lockScriptStore *bitcoin.LockScriptStore, logger *log.Logger, proposalmaster *governance.ProposalMasterStore, rewardmaster *rewards.RewardMasterStore,
+	lockScriptStore *bitcoin.LockScriptStore, logger *log.Logger, proposalmaster *governance.ProposalMasterStore, rewardmaster *rewards.RewardMasterStore, govern *governance.Store,
 	extStores data.Router) *Context {
 
 	return &Context{
@@ -60,7 +61,6 @@ func NewContext(r Router, header *abci.Header, state *storage.State,
 		Accounts:            wallet,
 		Balances:            balances,
 		Domains:             domains,
-		Govern:              govern,
 		Delegators:          delegators,
 		FeePool:             feePool,
 		Currencies:          currencies,
@@ -73,6 +73,7 @@ func NewContext(r Router, header *abci.Header, state *storage.State,
 		LockScriptStore:     lockScriptStore,
 		ProposalMasterStore: proposalmaster,
 		RewardMasterStore:   rewardmaster,
+		GovernanceStore:     govern,
 		ExtStores:           extStores,
 	}
 }

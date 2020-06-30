@@ -10,6 +10,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+	"github.com/tendermint/tendermint/types"
+
 	"github.com/Oneledger/protocol/app"
 	olNode "github.com/Oneledger/protocol/app/node"
 	ethChain "github.com/Oneledger/protocol/chains/ethereum"
@@ -23,9 +27,6 @@ import (
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
-	"github.com/tendermint/tendermint/types"
 )
 
 // ConsensusParams contains consensus critical parameters that determine the
@@ -463,7 +464,7 @@ func DumpTrackerToFile(ts *ethereum.TrackerStore, writer io.Writer, fn func(writ
 	}
 }
 
-func GetGovernance(gs *governance.Store) *consensus.GovernanceState {
+func GetGovernance(gs *governance.Store) *governance.GovernanceState {
 	btcOption, err := gs.GetBTCChainDriverOption()
 	if err != nil {
 		fmt.Print("Error Reading BTC chain driver options: ", err)
@@ -487,11 +488,24 @@ func GetGovernance(gs *governance.Store) *consensus.GovernanceState {
 		return nil
 	}
 
-	return &consensus.GovernanceState{
-		FeeOption:   *feeOption,
-		ETHCDOption: *ethOption,
-		BTCCDOption: *btcOption,
-		ONSOptions:  *onsOption,
+	rewardOptions, err := gs.GetRewardOptions()
+	if err != nil {
+		fmt.Print("Error Reading Reward options: ", err)
+		return nil
+	}
+	proposalOptions, err := gs.GetProposalOptions()
+	if err != nil {
+		fmt.Print("Error Reading Proposal options: ", err)
+		return nil
+	}
+
+	return &governance.GovernanceState{
+		FeeOption:     *feeOption,
+		ETHCDOption:   *ethOption,
+		BTCCDOption:   *btcOption,
+		ONSOptions:    *onsOption,
+		PropOptions:   *proposalOptions,
+		RewardOptions: *rewardOptions,
 	}
 }
 

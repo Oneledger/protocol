@@ -6,8 +6,8 @@ import (
 	codes "github.com/Oneledger/protocol/status_codes"
 )
 
-func (sv *Service) ONS_GetDomainByName(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsReply) error {
-	domains := sv.ons
+func (svc *Service) ONS_GetDomainByName(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsReply) error {
+	domains := svc.ons
 	if len(req.Name) <= 0 {
 		return codes.ErrBadName
 	}
@@ -23,14 +23,14 @@ func (sv *Service) ONS_GetDomainByName(req client.ONSGetDomainsRequest, reply *c
 
 	*reply = client.ONSGetDomainsReply{
 		Domains: ds,
-		Height:  sv.ons.State.Version(),
+		Height:  svc.ons.State.Version(),
 	}
 
 	return nil
 }
 
-func (sv *Service) ONS_GetDomainByOwner(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsReply) error {
-	domains := sv.ons
+func (svc *Service) ONS_GetDomainByOwner(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsReply) error {
+	domains := svc.ons
 	if req.Owner == nil {
 		return codes.ErrBadOwner
 	}
@@ -49,14 +49,14 @@ func (sv *Service) ONS_GetDomainByOwner(req client.ONSGetDomainsRequest, reply *
 
 	*reply = client.ONSGetDomainsReply{
 		Domains: ds,
-		Height:  sv.ons.State.Version(),
+		Height:  svc.ons.State.Version(),
 	}
 
 	return nil
 }
 
-func (sv *Service) ONS_GetParentDomainByOwner(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsReply) error {
-	domains := sv.ons
+func (svc *Service) ONS_GetParentDomainByOwner(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsReply) error {
+	domains := svc.ons
 	if req.Owner == nil {
 		return codes.ErrBadOwner
 	}
@@ -78,14 +78,14 @@ func (sv *Service) ONS_GetParentDomainByOwner(req client.ONSGetDomainsRequest, r
 
 	*reply = client.ONSGetDomainsReply{
 		Domains: ds,
-		Height:  sv.ons.State.Version(),
+		Height:  svc.ons.State.Version(),
 	}
 
 	return nil
 }
 
-func (sv *Service) ONS_GetSubDomainByName(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsReply) error {
-	domains := sv.ons
+func (svc *Service) ONS_GetSubDomainByName(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsReply) error {
+	domains := svc.ons
 	if len(req.Name) <= 0 {
 		return codes.ErrBadName
 	}
@@ -113,14 +113,14 @@ func (sv *Service) ONS_GetSubDomainByName(req client.ONSGetDomainsRequest, reply
 
 	*reply = client.ONSGetDomainsReply{
 		Domains: ds,
-		Height:  sv.ons.State.Version(),
+		Height:  svc.ons.State.Version(),
 	}
 
 	return nil
 }
 
-func (sv *Service) ONS_GetDomainOnSale(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsReply) error {
-	domains := sv.ons
+func (svc *Service) ONS_GetDomainOnSale(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsReply) error {
+	domains := svc.ons
 	if req.OnSale == false {
 		return codes.ErrFlagNotSet
 	}
@@ -135,13 +135,13 @@ func (sv *Service) ONS_GetDomainOnSale(req client.ONSGetDomainsRequest, reply *c
 
 	*reply = client.ONSGetDomainsReply{
 		Domains: ds,
-		Height:  sv.ons.State.Version(),
+		Height:  svc.ons.State.Version(),
 	}
 	return nil
 }
 
-func (sv *Service) ONS_GetDomainByBeneficiary(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsReply) error {
-	domains := sv.ons
+func (svc *Service) ONS_GetDomainByBeneficiary(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsReply) error {
+	domains := svc.ons
 	if req.Beneficiary == nil {
 		return codes.ErrBadAddress
 	}
@@ -156,7 +156,7 @@ func (sv *Service) ONS_GetDomainByBeneficiary(req client.ONSGetDomainsRequest, r
 
 	*reply = client.ONSGetDomainsReply{
 		Domains: ds,
-		Height:  sv.ons.State.Version(),
+		Height:  svc.ons.State.Version(),
 	}
 	return nil
 }

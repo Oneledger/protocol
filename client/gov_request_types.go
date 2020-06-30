@@ -7,19 +7,20 @@ import (
 	"github.com/Oneledger/protocol/data/keys"
 )
 
-type CreateProposalRequest struct    {
-	ProposalID      string           `json:"proposalId"`
-	ProposalType    string           `json:"proposalType"`
-	Headline        string           `json:"headline"`
-	Description     string           `json:"description"`
-	Proposer        keys.Address     `json:"proposer"`
-	InitialFunding  action.Amount    `json:"initialFunding"`
-	GasPrice        action.Amount    `json:"gasPrice"`
-	Gas             int64            `json:"gas"`
-	FundingDeadline int64            `json:"fundingDeadline"`
-	FundingGoal     *balance.Amount  `json:"fundingGoal"`
-	VotingDeadline  int64            `json:"votingDeadline"`
-	PassPercentage  int              `json:"passPercentage"`
+type CreateProposalRequest struct {
+	ProposalID      string                     `json:"proposalId"`
+	ProposalType    string                     `json:"proposalType"`
+	Headline        string                     `json:"headline"`
+	Description     string                     `json:"description"`
+	Proposer        keys.Address               `json:"proposer"`
+	InitialFunding  action.Amount              `json:"initialFunding"`
+	GasPrice        action.Amount              `json:"gasPrice"`
+	Gas             int64                      `json:"gas"`
+	FundingDeadline int64                      `json:"fundingDeadline"`
+	FundingGoal     *balance.Amount            `json:"fundingGoal"`
+	VotingDeadline  int64                      `json:"votingDeadline"`
+	PassPercentage  int                        `json:"passPercentage"`
+	ConfigUpdate    governance.GovernanceState `json:"configUpdate"`
 }
 
 type ListProposalRequest struct {
@@ -41,6 +42,12 @@ type ProposalStat struct {
 type ListProposalsReply struct {
 	ProposalStats []ProposalStat `json:"proposalStats"`
 	Height        int64          `json:"height"`
+}
+
+type GovernanceOptionsRequest struct {
+}
+type GovernanceOptionsReply struct {
+	GovOptions governance.GovernanceState `json:"govOptions"`
 }
 
 type VoteProposalRequest struct {
@@ -88,9 +95,9 @@ type FinalizeProposalRequest struct {
 	Gas        int64                 `json:"gas"`
 }
 
-type GetProposalOptionsRequest struct {}
+type GetProposalOptionsRequest struct{}
 
 type GetProposalOptionsReply struct {
-	ProposalOptions governance.ProposalOptionSet    `json:"proposalOptions"`
-	Height        int64          					`json:"height"`
+	ProposalOptions governance.ProposalOptionSet `json:"proposalOptions"`
+	Height          int64                        `json:"height"`
 }

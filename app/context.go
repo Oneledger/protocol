@@ -184,9 +184,7 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.validators.WithState(state),
 		ctx.witnesses.WithState(state),
 		ctx.domains.WithState(state),
-		ctx.govern.WithState(state),
 		ctx.delegators.WithState(state),
-
 		ctx.btcTrackers.WithState(state),
 		ctx.ethTrackers.WithState(state),
 		ctx.jobStore,
@@ -194,6 +192,7 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		log.NewLoggerWithPrefix(ctx.logWriter, "action").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
 		ctx.proposalMaster.WithState(state),
 		ctx.rewardMaster.WithState(state),
+		ctx.govern.WithState(state),
 		ctx.extStores,
 	)
 
@@ -256,7 +255,6 @@ func (ctx *context) Services() (service.Map, error) {
 		ValidatorSet:   identity.NewValidatorStore("v", storage.NewState(ctx.chainstate)),
 		WitnessSet:     identity.NewWitnessStore("w", storage.NewState(ctx.chainstate)),
 		Domains:        ons,
-		Govern:         ctx.govern,
 		Delegators:     ctx.delegators,
 		ProposalMaster: proposalMaster,
 		RewardMaster:   rewardMaster,
@@ -266,6 +264,7 @@ func (ctx *context) Services() (service.Map, error) {
 		Services:       extSvcs,
 		EthTrackers:    ethTracker,
 		Trackers:       btcTrackers,
+		Govern:         ctx.govern,
 	}
 
 	return service.NewMap(svcCtx)

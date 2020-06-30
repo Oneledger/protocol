@@ -30,6 +30,7 @@ func (s *Service) CreateProposal(args client.CreateProposalRequest, reply *clien
 		FundingDeadline:args.FundingDeadline,
 		VotingDeadline: args.VotingDeadline,
 		PassPercentage: args.PassPercentage,
+		ConfigUpdate:   args.ConfigUpdate,
 	}
 
 	data, err := createProposal.Marshal()

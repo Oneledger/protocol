@@ -80,7 +80,11 @@ func (c cancelProposalTx) Validate(ctx *action.Context, tx action.SignedTx) (boo
 		return false, err
 	}
 
-	err = action.ValidateFee(ctx.FeePool.GetOpt(), tx.Fee)
+	feeOpt, err := ctx.GovernanceStore.GetFeeOption()
+	if err != nil {
+		return false, gov.ErrGetFeeOptions
+	}
+	err = action.ValidateFee(feeOpt, tx.Fee)
 	if err != nil {
 		return false, err
 	}

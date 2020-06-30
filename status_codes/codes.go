@@ -94,6 +94,7 @@ const (
 	//ERC20
 	ExternalErrUnableToCreateErc20OLTLockTX = 500100
 	ExternalErrTokenNotSuported             = 500101
+	ExternalTransactionNotSupported         = 500102
 
 	//ValidatorStore
 	ValidatorsUnableGetList = 410100
@@ -154,4 +155,9 @@ const (
 	GovErrInvalidPassPercentage       = 700148
 	GovErrInvalidFundingDeadline      = 700149
 	GovErrInvalidVotingDeadline       = 700150
+	TxErrGettingETHOptions                = 700150
+	TxErrGettingONSOptions                = 700149
+	TxErrGettingBTCOptions                = 700148
+	TxErrGettingRewardsOptions            = 700147
+	TxErrGettingFeeOptions                = 700146
 )

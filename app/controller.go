@@ -161,12 +161,10 @@ func (app *App) txChecker() txChecker {
 		if err != nil {
 			app.logger.Errorf("checkTx failed to deserialize msg: %v, error: %s ", msg, err)
 		}
-
 		txCtx := app.Context.Action(&app.header, app.Context.check)
 		handler := txCtx.Router.Handler(tx.Type)
 
 		gas := txCtx.State.ConsumedGas()
-
 		ok, err := handler.Validate(txCtx, *tx)
 		if err != nil {
 			app.logger.Debug("Check Tx invalid: ", err.Error())

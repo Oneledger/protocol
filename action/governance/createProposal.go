@@ -2,6 +2,7 @@ package governance
 
 import (
 	"encoding/json"
+
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
 
@@ -14,16 +15,17 @@ import (
 var _ action.Msg = &CreateProposal{}
 
 type CreateProposal struct {
-	ProposalID     governance.ProposalID   `json:"proposalId"`
-	ProposalType   governance.ProposalType `json:"proposalType"`
-	Headline       string                  `json:"proposalHeadline"`
-	Description    string                  `json:"proposalDescription"`
-	Proposer       keys.Address            `json:"proposerAddress"`
-	InitialFunding action.Amount           `json:"initialFunding"`
-	FundingDeadline int64           	   `json:"fundingDeadline"`
-	FundingGoal     *balance.Amount 	   `json:"fundingGoal"`
-	VotingDeadline  int64           	   `json:"votingDeadline"`
-	PassPercentage  int             	   `json:"passPercentage"`
+	ProposalID      governance.ProposalID      `json:"proposalId"`
+	ProposalType    governance.ProposalType    `json:"proposalType"`
+	Headline        string                     `json:"proposalHeadline"`
+	Description     string                     `json:"proposalDescription"`
+	Proposer        keys.Address               `json:"proposerAddress"`
+	InitialFunding  action.Amount              `json:"initialFunding"`
+	FundingDeadline int64                      `json:"fundingDeadline"`
+	FundingGoal     *balance.Amount            `json:"fundingGoal"`
+	VotingDeadline  int64                      `json:"votingDeadline"`
+	PassPercentage  int                        `json:"passPercentage"`
+	ConfigUpdate    governance.GovernanceState `json:"configUpdate"`
 }
 
 func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
@@ -38,14 +40,18 @@ func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) 
 	if err != nil {
 		return false, err
 	}
-
-	err = action.ValidateFee(ctx.FeePool.GetOpt(), signedTx.Fee)
+	feeOpt, err := ctx.GovernanceStore.GetFeeOption()
+	if err != nil {
+		return false, governance.ErrGetFeeOptions
+	}
+	err = action.ValidateFee(feeOpt, signedTx.Fee)
 	if err != nil {
 		return false, err
 	}
 
-	options := ctx.ProposalMasterStore.Proposal.GetOptionsByType(createProposal.ProposalType)
-	if options == nil {
+	//options := ctx.ProposalMasterStore.Proposal.GetOptionsByType(createProposal.ProposalType)
+	options, err := ctx.GovernanceStore.GetProposalOptionsByType(createProposal.ProposalType)
+	if err != nil {
 		return false, governance.ErrGetProposalOptions
 	}
 
@@ -70,12 +76,12 @@ func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) 
 
 	//Check if initial funding is not less than minimum amount based on type.
 	if coin.LessThanCoin(coinInit) {
-		return false, action.ErrInvalidAmount
+		return false, errors.Wrap(action.ErrInvalidAmount, "Funding Less than initial funding")
 	}
 
 	//Check if initial funding is more than funding goal.
 	if coinGoal.LessThanEqualCoin(coin) {
-		return false, action.ErrInvalidAmount
+		return false, errors.Wrap(action.ErrInvalidAmount, "Funding More than Funding goal")
 	}
 
 	//Check if Proposal Type is valid
@@ -107,7 +113,7 @@ func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) 
 	}
 
 	//Validate voting height
-	if createProposal.VotingDeadline - createProposal.FundingDeadline != options.VotingDeadline {
+	if createProposal.VotingDeadline-createProposal.FundingDeadline != options.VotingDeadline {
 		return false, governance.ErrInvalidVotingDeadline
 	}
 
@@ -147,6 +153,15 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		}
 		return false, result
 	}
+	//Get Proposal options based on type.
+	//options, err := ctx.GovernanceStore.GetProposalOptionsByType(createProposal.ProposalType)
+	//if err != nil {
+	//	helpers.LogAndReturnFalse(ctx.Logger, governance.ErrGetProposalOptions, createProposal.Tags(), err)
+	//}
+	//TODO implement validattions for all stores
+	if createProposal.ProposalType == governance.ProposalTypeConfigUpdate {
+		validateConfig(ctx, createProposal)
+	}
 
 	//Create Proposal and save to Proposal Store
 	proposal := governance.NewProposal(
@@ -158,7 +173,8 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		createProposal.FundingDeadline,
 		createProposal.FundingGoal,
 		createProposal.VotingDeadline,
-		createProposal.PassPercentage)
+		createProposal.PassPercentage,
+		createProposal.ConfigUpdate)
 
 	//Check if Proposal already exists
 	if ctx.ProposalMasterStore.Proposal.Exists(proposal.ProposalID) {
@@ -251,4 +267,9 @@ func (c CreateProposal) Marshal() ([]byte, error) {
 
 func (c *CreateProposal) Unmarshal(bytes []byte) error {
 	return json.Unmarshal(bytes, c)
+}
+
+func validateConfig(ctx *action.Context, proposal CreateProposal) (error, bool) {
+
+	return nil, true
 }
