@@ -7,16 +7,8 @@ import (
 	"github.com/Oneledger/protocol/data/keys"
 )
 
-type CreateProposalRequest struct {
-	ProposalID     string                     `json:"proposalId"`
-	ProposalType   string                     `json:"proposalType"`
-	Headline       string                     `json:"headline"`
-	Description    string                     `json:"description"`
-	Proposer       keys.Address               `json:"proposer"`
-	InitialFunding action.Amount              `json:"initialFunding"`
+	InitialFunding  action.Amount    `json:"initialFunding"`
 	ConfigUpdate   governance.GovernanceState `json:"configUpdate"`
-	GasPrice       action.Amount              `json:"gasPrice"`
-	Gas            int64                      `json:"gas"`
 }
 
 type ListProposalRequest struct {
@@ -89,4 +81,11 @@ type FinalizeProposalRequest struct {
 	Proposer   action.Address        `json:"proposer"`
 	GasPrice   action.Amount         `json:"gasPrice"`
 	Gas        int64                 `json:"gas"`
+}
+
+type GetProposalOptionsRequest struct {}
+
+type GetProposalOptionsReply struct {
+	ProposalOptions governance.ProposalOptionSet    `json:"proposalOptions"`
+	Height        int64          					`json:"height"`
 }

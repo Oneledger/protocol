@@ -26,6 +26,10 @@ func (s *Service) CreateProposal(args client.CreateProposalRequest, reply *clien
 		Headline:       args.Headline,
 		Proposer:       args.Proposer,
 		InitialFunding: args.InitialFunding,
+		FundingGoal:	args.FundingGoal,
+		FundingDeadline:args.FundingDeadline,
+		VotingDeadline: args.VotingDeadline,
+		PassPercentage: args.PassPercentage,
 		ConfigUpdate:   args.ConfigUpdate,
 	}
 

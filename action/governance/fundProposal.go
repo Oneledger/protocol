@@ -158,7 +158,7 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 	currentFundsforProposal := fundStore.GetCurrentFundsForProposal(proposal.ProposalID)
 	newAmount := fundingAmount.Plus(*currentFundsforProposal)
 	if newAmount.BigInt().Cmp(proposal.FundingGoal.BigInt()) >= 0 {
-		//5. Update status and set voting deadline
+		//5. Update status
 		proposal.Status = governance.ProposalStatusVoting
 		options, err := ctx.GovernanceStore.GetProposalOptionsByType(proposal.Type)
 		if err != nil {
