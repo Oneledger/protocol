@@ -103,6 +103,40 @@ class Proposal:
         resp = rpc_call('tx.CreateProposal', req)
         return resp["result"]["rawTx"]
 
+    def _create_proposal_invalid_info(self, invalid_field):
+        _proposal_info = self._calculate_proposal_info()
+        req = {
+            "proposalId": self.get_encoded_pid(),
+            "headline": self.headline,
+            "description": self.des,
+            "proposer": self.proposer,
+            "proposalType": self.pty,
+            "initialFunding": {
+                "currency": "OLT",
+                "value": convertBigInt(self.init_fund),
+            },
+            "fundingGoal": _proposal_info.funding_goal,
+            "fundingDeadline": _proposal_info.funding_deadline,
+            "votingDeadline": _proposal_info.voting_deadline,
+            "passPercentage": _proposal_info.pass_percentage,
+            "gasPrice": {
+                "currency": "OLT",
+                "value": "1000000000",
+            },
+            "gas": 40000,
+        }
+        if invalid_field == 0:
+            req["fundingGoal"] = "123"
+        elif invalid_field == 1:
+            req["fundingDeadline"] = 0
+        elif invalid_field == 2:
+            req["votingDeadline"] = 0
+        elif invalid_field == 3:
+            req["passPercentage"] = 1
+
+        resp = rpc_call('tx.CreateProposal', req)
+        return resp["result"]["rawTx"]
+
     def send_create(self):
         # createTx
         raw_txn = self._create_proposal()
@@ -120,6 +154,20 @@ class Proposal:
                 self.pid = self.get_encoded_pid()
                 self.txHash = "0x" + result["txHash"]
                 print "################### proposal created: " + self.pid
+
+    def send_create_invalid_info(self, invalid_field):
+        # createTx
+        raw_txn = self._create_proposal_invalid_info(invalid_field)
+
+        # sign Tx
+        signed = sign(raw_txn, self.proposer)
+
+        # broadcast Tx
+        result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
+
+        if "ok" in result:
+            if result["ok"]:
+                sys.exit(-1)
 
     def get_encoded_pid(self):
         hash_handler = hashlib.sha256()

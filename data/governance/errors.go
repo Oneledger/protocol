@@ -16,8 +16,8 @@ var (
 	ErrProposalExists         = codes.ProtocolError{codes.GovErrProposalExists, "proposal already exists"}
 	ErrProposalNotExists      = codes.ProtocolError{codes.GovErrProposalNotExists, "proposal not exists"}
 	ErrInvalidBeneficiaryAddr = codes.ProtocolError{codes.GovErrInvalidBeneficiaryAddr, "invalid withdraw beneficiary address"}
-	ErrWrongFundingGoal 	  = codes.ProtocolError{codes.GovErrWrongFundingGoal, "wrong funding goal"}
-	ErrWrongPassPercentage    = codes.ProtocolError{codes.GovErrWrongPassPercentage, "wrong pass percentage"}
+	ErrInvalidFundingGoal     = codes.ProtocolError{codes.GovErrInvalidFundingGoal, "wrong funding goal"}
+	ErrInvalidPassPercentage  = codes.ProtocolError{codes.GovErrInvalidPassPercentage, "wrong pass percentage"}
 	ErrInvalidFundingDeadline = codes.ProtocolError{codes.GovErrInvalidFundingDeadline, "invalid funding deadline"}
 	ErrInvalidVotingDeadline  = codes.ProtocolError{codes.GovErrInvalidVotingDeadline, "invalid voting deadline"}
 

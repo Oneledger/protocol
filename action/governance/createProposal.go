@@ -132,7 +132,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	if !createProposal.FundingGoal.Equals(*options.FundingGoal) {
 		result := action.Response{
 			Events: action.GetEvent(createProposal.Tags(), "create_proposal_wrong_funding_goal"),
-			Log:    governance.ErrWrongFundingGoal.Marshal(),
+			Log:    governance.ErrInvalidFundingGoal.Marshal(),
 		}
 		return false, result
 	}
@@ -140,7 +140,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	if createProposal.PassPercentage != options.PassPercentage {
 		result := action.Response{
 			Events: action.GetEvent(createProposal.Tags(), "create_proposal_wrong_pass_percentage"),
-			Log:    governance.ErrWrongPassPercentage.Marshal(),
+			Log:    governance.ErrInvalidPassPercentage.Marshal(),
 		}
 		return false, result
 	}
