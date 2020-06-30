@@ -1,5 +1,3 @@
-import sys
-import time
 from sdk import *
 
 addr_list = addresses()
@@ -40,7 +38,7 @@ def test_pass_proposal_cli():
 
     # 4th vote --> 75%
     vote_proposal(encoded_pid, OPIN_POSITIVE, url_3, addr_list[2])
-    check_proposal_state(encoded_pid, ProposalOutcomeCompleted, ProposalStatusCompleted)
+    check_proposal_state(encoded_pid, ProposalOutcomeCompletedYes, ProposalStatusCompleted)
 
     # list proposal under another node
     list_proposal_cli(encoded_pid, node_1)
@@ -70,7 +68,7 @@ def test_fail_proposal_cli():
 
     # 3rd vote --> NO--50%
     vote_proposal(encoded_pid, OPIN_NEGATIVE, url_2, addr_list[2])
-    check_proposal_state(encoded_pid, ProposalOutcomeInsufficientVotes, ProposalStatusCompleted)
+    check_proposal_state(encoded_pid, ProposalOutcomeCompletedNo, ProposalStatusCompleted)
 
     # list proposal
     list_proposal_cli(encoded_pid, node_2)

@@ -32,7 +32,7 @@ def test_pass_finalize_proposal():
 
     # 4th vote --> 75%
     vote_proposal(encoded_pid, OPIN_POSITIVE, url_3, addr_list[0])
-    # check_proposal_state(encoded_pid, ProposalStatePassed, ProposalStatusCompleted)
+
 
     time.sleep(3)
     return encoded_pid
@@ -45,14 +45,8 @@ if __name__ == "__main__":
     if prop["outcome"] != 49:
         print "Exiting Outcome is not ProposalOutcomeCompletedYes"
         sys.exit(1)
-    # print "#### ACTIVE PROPOSALS: ####"
-    # query_proposals(0x31)
-    #
-    # print "#### PASSED PROPOSALS: ####"
-    # query_proposals(0x32)
-    #
-    # print "#### FINALIZED PROPOSALS: ####"
-    # query_proposals(0x35)
-    #
-    # print "#### FINALIZEFAILED PROPOSALS: ####"
-    # query_proposals(0x36)
+
+    pList = query_proposals(ProposalStateFinalized)
+    if len(pList) == 0:
+        print "Exiting Proposal was not finalized"
+        sys.exit(1)
