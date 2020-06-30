@@ -20,7 +20,8 @@ func (s *Service) WithdrawRewards(args client.WithdrawRewardsRequest, reply *cli
 	address := hPub.Address()
 	// create Withdrawal request for Validator
 	withdrawRewards := rewards.Withdraw{
-		ValidatorAddress: address,
+		ValidatorAddress:        address,
+		ValidatorSigningAddress: args.ValidatorSigningAddress,
 	}
 
 	data, err := withdrawRewards.Marshal()

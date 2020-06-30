@@ -73,6 +73,7 @@ class Withdraw:
 
     def _withdraw_reward(self):
         req = {
+            "validatorSigningAddress": self.address,
             "gasPrice": {
                 "currency": "OLT",
                 "value": "1000000000",
