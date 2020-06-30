@@ -2,11 +2,11 @@ package governance
 
 import (
 	"encoding/json"
+
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
@@ -15,17 +15,17 @@ import (
 var _ action.Msg = &CreateProposal{}
 
 type CreateProposal struct {
-	ProposalID     governance.ProposalID   `json:"proposalId"`
-	ProposalType   governance.ProposalType `json:"proposalType"`
-	Headline       string                  `json:"proposalHeadline"`
-	Description    string                  `json:"proposalDescription"`
-	Proposer       keys.Address            `json:"proposerAddress"`
-	InitialFunding action.Amount           `json:"initialFunding"`
-	FundingDeadline int64           	   `json:"fundingDeadline"`
-	FundingGoal     *balance.Amount 	   `json:"fundingGoal"`
-	VotingDeadline  int64           	   `json:"votingDeadline"`
-	PassPercentage  int             	   `json:"passPercentage"`
-	ConfigUpdate   governance.GovernanceState `json:"configUpdate"`
+	ProposalID      governance.ProposalID      `json:"proposalId"`
+	ProposalType    governance.ProposalType    `json:"proposalType"`
+	Headline        string                     `json:"proposalHeadline"`
+	Description     string                     `json:"proposalDescription"`
+	Proposer        keys.Address               `json:"proposerAddress"`
+	InitialFunding  action.Amount              `json:"initialFunding"`
+	FundingDeadline int64                      `json:"fundingDeadline"`
+	FundingGoal     *balance.Amount            `json:"fundingGoal"`
+	VotingDeadline  int64                      `json:"votingDeadline"`
+	PassPercentage  int                        `json:"passPercentage"`
+	ConfigUpdate    governance.GovernanceState `json:"configUpdate"`
 }
 
 func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
@@ -113,7 +113,7 @@ func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) 
 	}
 
 	//Validate voting height
-	if createProposal.VotingDeadline - createProposal.FundingDeadline != options.VotingDeadline {
+	if createProposal.VotingDeadline-createProposal.FundingDeadline != options.VotingDeadline {
 		return false, governance.ErrInvalidVotingDeadline
 	}
 
@@ -154,10 +154,10 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false, result
 	}
 	//Get Proposal options based on type.
-	options, err := ctx.GovernanceStore.GetProposalOptionsByType(createProposal.ProposalType)
-	if err != nil {
-		helpers.LogAndReturnFalse(ctx.Logger, governance.ErrGetProposalOptions, createProposal.Tags(), err)
-	}
+	//options, err := ctx.GovernanceStore.GetProposalOptionsByType(createProposal.ProposalType)
+	//if err != nil {
+	//	helpers.LogAndReturnFalse(ctx.Logger, governance.ErrGetProposalOptions, createProposal.Tags(), err)
+	//}
 	//TODO implement validattions for all stores
 	if createProposal.ProposalType == governance.ProposalTypeConfigUpdate {
 		validateConfig(ctx, createProposal)
@@ -173,7 +173,8 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		createProposal.FundingDeadline,
 		createProposal.FundingGoal,
 		createProposal.VotingDeadline,
-		createProposal.PassPercentage)
+		createProposal.PassPercentage,
+		createProposal.ConfigUpdate)
 
 	//Check if Proposal already exists
 	if ctx.ProposalMasterStore.Proposal.Exists(proposal.ProposalID) {
