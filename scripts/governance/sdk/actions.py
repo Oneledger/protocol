@@ -53,7 +53,33 @@ class Proposal:
         self.proposer = proposer
         self.init_fund = init_fund
 
+    def _calculate_proposal_info(self):
+        query_options = query_proposal_options()
+        options = query_options["proposalOptions"]
+        height = query_options["height"]
+
+        if self.pty == "configUpdate":
+            funding_goal = options["configUpdate"]["fundingGoal"]
+            funding_deadline = height + options["configUpdate"]["fundingDeadline"]
+            voting_deadline = funding_deadline + options["configUpdate"]["votingDeadline"]
+            pass_percentage = options["configUpdate"]["passPercentage"]
+        elif self.pty == "codeChange":
+            funding_goal = options["codeChange"]["fundingGoal"]
+            funding_deadline = height + options["codeChange"]["fundingDeadline"]
+            voting_deadline = funding_deadline + options["codeChange"]["votingDeadline"]
+            pass_percentage = options["codeChange"]["passPercentage"]
+        elif self.pty == "general":
+            funding_goal = options["general"]["fundingGoal"]
+            funding_deadline = height + options["general"]["fundingDeadline"]
+            voting_deadline = funding_deadline + options["general"]["votingDeadline"]
+            pass_percentage = options["general"]["passPercentage"]
+        else:
+            sys.exit(-1)
+
+        return ProposalInfo(funding_goal, funding_deadline, voting_deadline, pass_percentage)
+
     def _create_proposal(self):
+        _proposal_info = self._calculate_proposal_info()
         req = {
             "proposalId": self.get_encoded_pid(),
             "headline": self.headline,
@@ -64,12 +90,50 @@ class Proposal:
                 "currency": "OLT",
                 "value": convertBigInt(self.init_fund),
             },
+            "fundingGoal": _proposal_info.funding_goal,
+            "fundingDeadline": _proposal_info.funding_deadline,
+            "votingDeadline": _proposal_info.voting_deadline,
+            "passPercentage": _proposal_info.pass_percentage,
             "gasPrice": {
                 "currency": "OLT",
                 "value": "1000000000",
             },
             "gas": 40000,
         }
+        resp = rpc_call('tx.CreateProposal', req)
+        return resp["result"]["rawTx"]
+
+    def _create_proposal_invalid_info(self, invalid_field):
+        _proposal_info = self._calculate_proposal_info()
+        req = {
+            "proposalId": self.get_encoded_pid(),
+            "headline": self.headline,
+            "description": self.des,
+            "proposer": self.proposer,
+            "proposalType": self.pty,
+            "initialFunding": {
+                "currency": "OLT",
+                "value": convertBigInt(self.init_fund),
+            },
+            "fundingGoal": _proposal_info.funding_goal,
+            "fundingDeadline": _proposal_info.funding_deadline,
+            "votingDeadline": _proposal_info.voting_deadline,
+            "passPercentage": _proposal_info.pass_percentage,
+            "gasPrice": {
+                "currency": "OLT",
+                "value": "1000000000",
+            },
+            "gas": 40000,
+        }
+        if invalid_field == 0:
+            req["fundingGoal"] = "123"
+        elif invalid_field == 1:
+            req["fundingDeadline"] = 0
+        elif invalid_field == 2:
+            req["votingDeadline"] = 0
+        elif invalid_field == 3:
+            req["passPercentage"] = 1
+
         resp = rpc_call('tx.CreateProposal', req)
         return resp["result"]["rawTx"]
 
@@ -91,6 +155,20 @@ class Proposal:
                 self.txHash = "0x" + result["txHash"]
                 print "################### proposal created: " + self.pid
 
+    def send_create_invalid_info(self, invalid_field):
+        # createTx
+        raw_txn = self._create_proposal_invalid_info(invalid_field)
+
+        # sign Tx
+        signed = sign(raw_txn, self.proposer)
+
+        # broadcast Tx
+        result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
+
+        if "ok" in result:
+            if result["ok"]:
+                sys.exit(-1)
+
     def get_encoded_pid(self):
         hash_handler = hashlib.sha256()
         hash_handler.update(self.pid)
@@ -100,6 +178,14 @@ class Proposal:
     def tx_created(self):
         resp = tx_by_hash(self.txHash)
         return resp["result"]["tx_result"]
+
+
+class ProposalInfo:
+    def __init__(self, funding_goal, funding_deadline, voting_deadline, pass_percentage):
+        self.funding_goal = funding_goal
+        self.funding_deadline = funding_deadline
+        self.voting_deadline = voting_deadline
+        self.pass_percentage = pass_percentage
 
 
 class ProposalFund:
@@ -122,7 +208,7 @@ class ProposalFund:
             },
             "gas": 40000,
         }
-    
+
         resp = rpc_call('tx.FundProposal', req)
         return resp["result"]["rawTx"]
 
@@ -160,7 +246,7 @@ class ProposalCancel:
             },
             "gas": 40000,
         }
-    
+
         resp = rpc_call('tx.CancelProposal', req)
         return resp["result"]["rawTx"]
 
@@ -403,4 +489,17 @@ def query_balance(address):
     req = {"address": address}
     resp = rpc_call('query.Balance', req)
     print json.dumps(resp, indent=4)
+    return resp["result"]
+
+
+def query_proposal_options():
+    req = {}
+    resp = rpc_call('query.GetProposalOptions', req)
+    if "result" not in resp:
+        sys.exit(-1)
+    if "proposalOptions" not in resp["result"]:
+        sys.exit(-1)
+    if "height" not in resp["result"]:
+        sys.exit(-1)
+    # print json.dumps(resp, indent=4)
     return resp["result"]

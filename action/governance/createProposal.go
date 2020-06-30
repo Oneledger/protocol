@@ -20,6 +20,10 @@ type CreateProposal struct {
 	Description    string                  `json:"proposalDescription"`
 	Proposer       keys.Address            `json:"proposerAddress"`
 	InitialFunding action.Amount           `json:"initialFunding"`
+	FundingDeadline int64           	   `json:"fundingDeadline"`
+	FundingGoal     *balance.Amount 	   `json:"fundingGoal"`
+	VotingDeadline  int64           	   `json:"votingDeadline"`
+	PassPercentage  int             	   `json:"passPercentage"`
 }
 
 func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
@@ -93,6 +97,20 @@ func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) 
 		return false, governance.ErrInvalidProposalDesc
 	}
 
+	//Validate funding goal and pass percentage
+	if !createProposal.FundingGoal.Equals(*options.FundingGoal) {
+		return false, governance.ErrInvalidFundingGoal
+	}
+
+	if createProposal.PassPercentage != options.PassPercentage {
+		return false, governance.ErrInvalidPassPercentage
+	}
+
+	//Validate voting height
+	if createProposal.VotingDeadline - createProposal.FundingDeadline != options.VotingDeadline {
+		return false, governance.ErrInvalidVotingDeadline
+	}
+
 	return true, nil
 }
 
@@ -121,13 +139,14 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false, result
 	}
 
-	//Get Proposal options based on type.
-	options := ctx.ProposalMasterStore.Proposal.GetOptionsByType(createProposal.ProposalType)
-
-	//Calculate Deadlines
-	//Actual voting deadline will be setup in funding Tx
-	fundingDeadline := ctx.Header.Height + options.FundingDeadline
-	votingDeadline := fundingDeadline + options.VotingDeadline
+	//Validate funding height, this one is put here because in validate() we cannot always get valid ctx.Header
+	if createProposal.FundingDeadline <= ctx.Header.Height {
+		result := action.Response{
+			Events: action.GetEvent(createProposal.Tags(), "create_proposal_invalid_funding_deadline"),
+			Log:    governance.ErrInvalidFundingDeadline.Marshal(),
+		}
+		return false, result
+	}
 
 	//Create Proposal and save to Proposal Store
 	proposal := governance.NewProposal(
@@ -136,10 +155,10 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		createProposal.Description,
 		createProposal.Headline,
 		createProposal.Proposer,
-		fundingDeadline,
-		options.FundingGoal,
-		votingDeadline,
-		options.PassPercentage)
+		createProposal.FundingDeadline,
+		createProposal.FundingGoal,
+		createProposal.VotingDeadline,
+		createProposal.PassPercentage)
 
 	//Check if Proposal already exists
 	if ctx.ProposalMasterStore.Proposal.Exists(proposal.ProposalID) {
