@@ -3,9 +3,12 @@ package app
 import (
 	"encoding/hex"
 	"fmt"
+
+	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/rewards"
 	"github.com/tendermint/tendermint/libs/kv"
+
 	"math"
 	"runtime/debug"
 	"strconv"
