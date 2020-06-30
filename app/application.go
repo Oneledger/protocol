@@ -165,6 +165,7 @@ func (app *App) setupState(stateBytes []byte) error {
 		return errors.Wrap(err, "Setup FeeOptions Options")
 	}
 	app.Context.feePool.SetupOpt(&initial.Governance.FeeOption)
+	app.Context.rewardMaster.SetOptions(&initial.Governance.RewardOptions)
 
 	err = app.Context.govern.WithHeight(app.header.Height).SetLUH()
 	if err != nil {
@@ -381,7 +382,7 @@ func (app *App) Prepare() error {
 		if err != nil {
 			return err
 		}
-		app.Context.rewards.SetOptions(rewardsOpt)
+		app.Context.rewardMaster.SetOptions(rewardsOpt)
 	}
 
 	nodecfg, err := consensus.ParseConfig(&app.Context.cfg)

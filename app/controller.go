@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/hex"
 	"fmt"
+
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/rewards"
@@ -274,7 +275,7 @@ func (app *App) blockEnder() blockEnder {
 		updateProposals(app.Context.proposalMaster, app.Context.jobStore, app.Context.deliver)
 
 		//Distribute Block rewards to Validators
-		blockRewardEvent := handleBlockRewards(app.Context.validators, app.Context.rewards.WithState(app.Context.deliver), app.Node())
+		blockRewardEvent := handleBlockRewards(app.Context.validators, app.Context.rewardMaster.Reward.WithState(app.Context.deliver), app.Node())
 
 		result := ResponseEndBlock{
 			ValidatorUpdates: updates,
