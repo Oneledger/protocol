@@ -149,3 +149,13 @@ func (rs *RewardStore) SetOptions(options *Options) {
 func (rs *RewardStore) GetOptions() *Options {
 	return rs.rewardOptions
 }
+func (rs *RewardStore) UpdateOptions(height int64, options *Options) error {
+	if rs.rewardOptions.RewardInterval != options.RewardInterval {
+		err := rs.SetInterval(height)
+		if err != nil {
+			return err
+		}
+	}
+	rs.SetOptions(options)
+	return nil
+}
