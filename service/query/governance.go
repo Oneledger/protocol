@@ -17,10 +17,7 @@ func (svc *Service) ListProposal(req client.ListProposalRequest, reply *client.L
 	}
 
 	options := svc.proposalMaster.Proposal.GetOptionsByType(proposal.Type)
-	funds, err := svc.proposalMaster.ProposalFund.GetCurrentFundsForProposal(req.ProposalId)
-	if err != nil {
-		return err
-	}
+	funds:= svc.proposalMaster.ProposalFund.GetCurrentFundsForProposal(req.ProposalId)
 	stat, _ := svc.proposalMaster.ProposalVote.ResultSoFar(req.ProposalId, options.PassPercentage)
 
 
@@ -70,10 +67,7 @@ func (svc *Service) ListProposals(req client.ListProposalsRequest, reply *client
 	proposalStats := make([]client.ProposalStat, len(proposals))
 	for i, prop := range proposals {
 		options := pms.Proposal.GetOptionsByType(prop.Type)
-		funds, err := pms.ProposalFund.GetCurrentFundsForProposal(prop.ProposalID)
-		if err != nil {
-			return err
-		}
+		funds:= pms.ProposalFund.GetCurrentFundsForProposal(prop.ProposalID)
 		stat, _ := pms.ProposalVote.ResultSoFar(prop.ProposalID, options.PassPercentage)
 		ps := client.ProposalStat{
 			Proposal: prop,

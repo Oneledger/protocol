@@ -57,8 +57,8 @@ func (pf *ProposalFundStore) delete(key storage.StoreKey) (bool, error) {
 
 func (pf *ProposalFundStore) iterate(fn func(proposalID ProposalID, addr keys.Address, amt *balance.Amount) bool) bool {
 	return pf.State.IterateRange(
-		pf.assembleIndivFundsPrefix(),
-		storage.Rangefix(string(pf.assembleIndivFundsPrefix())),
+		assembleIndivFundsPrefix(pf.prefix),
+		storage.Rangefix(string(assembleIndivFundsPrefix(pf.prefix))),
 		true,
 		func(key, value []byte) bool {
 			amt := balance.NewAmount(0)
@@ -81,10 +81,9 @@ func (pf *ProposalFundStore) iterate(fn func(proposalID ProposalID, addr keys.Ad
 	)
 }
 
-func (pf *ProposalFundStore) assembleIndivFundsPrefix() []byte {
-	prefix := string(pf.prefix) + INDIVIDUAL_FUNDS_PREFIX
-
-	return storage.Prefix(prefix)
+func assembleIndivFundsPrefix(prefix []byte) []byte {
+	prefixString := string(prefix) + INDIVIDUAL_FUNDS_PREFIX
+	return storage.Prefix(prefixString)
 }
 
 func (pf *ProposalFundStore) WithState(state *storage.State) *ProposalFundStore {
@@ -133,13 +132,13 @@ func (pf *ProposalFundStore) IsFundedByFunder(id ProposalID, funder keys.Address
 	return haveFunderAddress
 }
 
-func (pf *ProposalFundStore) GetCurrentFundsForProposal(proposalID ProposalID) (*balance.Amount, error) {
+func (pf *ProposalFundStore) GetCurrentFundsForProposal(proposalID ProposalID) *balance.Amount {
 	keyTotal := assembleTotalFundsKey(proposalID)
 	funds, err := pf.get(keyTotal)
 	if err != nil {
-		return nil, errors.Wrap(err, errorGettingRecord)
+		funds = balance.NewAmount(0)
 	}
-	return funds, nil
+	return funds
 }
 
 func assembleTotalFundsKey(proposalId ProposalID) storage.StoreKey {
