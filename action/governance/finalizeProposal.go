@@ -2,9 +2,6 @@ package governance
 
 import (
 	"encoding/json"
-	"fmt"
-	"math/big"
-
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
 
@@ -332,7 +329,7 @@ func executeConfigUpdate(ctx *action.Context, proposal *governance.Proposal) err
 
 //Helper function to get percentage
 func getPercentageCoin(c balance.Currency, totalFunds *balance.Amount, fundTracker *balance.Amount, percentage float64) balance.Coin {
-	percentageInt64, _ := big.Float.Int64(percentage * 10000)
+	percentageInt64 := int64(percentage * 10000)
 	amount := c.NewCoinFromAmount(*totalFunds).MultiplyInt64(percentageInt64).DivideInt64(1000000)
 	fundTracker, _ = fundTracker.Minus(*amount.Amount)
 	return amount
