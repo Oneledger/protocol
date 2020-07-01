@@ -19,6 +19,7 @@ proposals = [Proposal("proposal description A", "codeChange", "10001", "headline
              ]
 proposal_littleInitFund = Proposal("proposal description D", "configUpdate", "10004", "headline D", _proposer, _initial_funding_insufficient)
 proposal_hugeInitFund = Proposal("proposal description G", "general", "10007", "headline G", _proposer, _initial_funding_too_much)
+proposal_invalid_info = Proposal("proposal description H", "codeChange", "10008", "headline A", _proposer, _initial_funding)
 
 if __name__ == "__main__":
     # create normal proposals
@@ -31,6 +32,18 @@ if __name__ == "__main__":
 
     # create proposal with huge initial fund
     proposal_hugeInitFund.send_create()
+
+    # create proposal with invalid funding goal
+    proposal_invalid_info.send_create_invalid_info(0)
+
+    # create proposal with invalid funding deadline
+    proposal_invalid_info.send_create_invalid_info(1)
+
+    # create proposal with invalid voting deadline
+    proposal_invalid_info.send_create_invalid_info(2)
+
+    # create proposal with invalid passpercentage
+    proposal_invalid_info.send_create_invalid_info(3)
 
     time.sleep(5)
 

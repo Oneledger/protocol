@@ -6,12 +6,12 @@ import (
 
 	"github.com/Oneledger/protocol/data/rewards"
 
+	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/delegation"
 	"github.com/Oneledger/protocol/data/fees"
-	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/identity"
@@ -33,6 +33,7 @@ type Service struct {
 	feePool        *fees.Store
 	proposalMaster *governance.ProposalMasterStore
 	rewardMaster   *rewards.RewardMasterStore
+	governance     *governance.Store
 	logger         *log.Logger
 	txTypes        *[]action.TxTypeDescribe
 }
@@ -58,6 +59,7 @@ func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencie
 		rewardMaster:   rewardMaster,
 		logger:         logger,
 		txTypes:        txTypes,
+		governance:     govern,
 	}
 }
 

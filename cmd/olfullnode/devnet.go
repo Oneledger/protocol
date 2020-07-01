@@ -627,7 +627,7 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 		Staking:    staking,
 		Domains:    domains,
 		Fees:       fees_db,
-		Governance: consensus.GovernanceState{
+		Governance: governance.GovernanceState{
 			FeeOption:      feeOpt,
 			ETHCDOption:    option,
 			BTCCDOption:    btcOption,

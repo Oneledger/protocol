@@ -5,11 +5,13 @@ import (
 )
 
 var (
-	//General
-	ErrGettingCurrentFunds    = codes.ProtocolError{Code: codes.GovErrGettingCurrentFunds, Msg: "Cannot get current funds for the proposal"}
-
-	//Proposal Options
-	ErrGetProposalOptions     = codes.ProtocolError{codes.GovErrGetProposalOptions, "failed to get proposal options"}
+	// Options Objects from store
+	ErrGetProposalOptions = codes.ProtocolError{codes.GovErrGetProposalOptions, "failed to get proposal options"}
+	ErrGetFeeOptions      = codes.ProtocolError{codes.TxErrGettingFeeOptions, "failed to get fee options"}
+	ErrGetRewardOptions   = codes.ProtocolError{codes.TxErrGettingRewardsOptions, "failed to get Reward options"}
+	ErrGetONSOptions      = codes.ProtocolError{codes.TxErrGettingONSOptions, "failed to get ONS options"}
+	ErrGetEthOptions      = codes.ProtocolError{codes.TxErrGettingETHOptions, "failed to get ETH options"}
+	ErrGetBtcOptions      = codes.ProtocolError{codes.TxErrGettingBTCOptions, "failed to get BTC options"}
 
 	//Proposal
 	ErrInvalidProposalId      = codes.ProtocolError{codes.GovErrInvalidProposalId, "invalid proposal id"}
@@ -18,6 +20,11 @@ var (
 	ErrProposalExists         = codes.ProtocolError{codes.GovErrProposalExists, "proposal already exists"}
 	ErrProposalNotExists      = codes.ProtocolError{codes.GovErrProposalNotExists, "proposal not exists"}
 	ErrInvalidBeneficiaryAddr = codes.ProtocolError{codes.GovErrInvalidBeneficiaryAddr, "invalid withdraw beneficiary address"}
+	ErrInvalidFundingGoal     = codes.ProtocolError{codes.GovErrInvalidFundingGoal, "invalid funding goal"}
+	ErrInvalidPassPercentage  = codes.ProtocolError{codes.GovErrInvalidPassPercentage, "invalid pass percentage"}
+	ErrInvalidFundingDeadline = codes.ProtocolError{codes.GovErrInvalidFundingDeadline, "invalid funding deadline"}
+	ErrInvalidVotingDeadline  = codes.ProtocolError{codes.GovErrInvalidVotingDeadline, "invalid voting deadline"}
+
 
 	//Funding
 	ErrDeductFunding          = codes.ProtocolError{codes.GovErrDeductFunding, "failed to deduct funds from address"}
