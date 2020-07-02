@@ -86,3 +86,12 @@ func TestTransactionStore_Iterate(t *testing.T) {
 	})
 	assert.Equal(t, count, 4)
 }
+
+func TestTransactionStore_IterateFinalized(t *testing.T) {
+	count := 0
+	transactionStore.IterateFinalized(func(key string, tx *abci.RequestDeliverTx) bool {
+		count++
+		return false
+	})
+	assert.Equal(t, count, 4)
+}

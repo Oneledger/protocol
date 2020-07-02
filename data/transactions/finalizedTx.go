@@ -2,6 +2,7 @@ package transactions
 
 import (
 	abci "github.com/tendermint/tendermint/abci/types"
+	"strings"
 
 	"github.com/Oneledger/protocol/storage"
 )
@@ -30,4 +31,22 @@ func (ts *TransactionStore) GetFinalized(id string) (*abci.RequestDeliverTx, err
 		return &abci.RequestDeliverTx{}, err
 	}
 	return tx, nil
+}
+
+func (ts *TransactionStore) IterateFinalized(fn func(key string, tx *abci.RequestDeliverTx) bool) bool {
+	return ts.State.IterateRange(
+		append(ts.prefix, FINALIZE_KEY...),
+		storage.Rangefix(string(ts.prefix)+FINALIZE_KEY),
+		true,
+		func(key, value []byte) bool {
+			tx := &abci.RequestDeliverTx{}
+
+			err := ts.szlr.Deserialize(value, tx)
+			if err != nil {
+				return true
+			}
+			arr := strings.Split(string(key), storage.DB_PREFIX)
+			return fn(arr[len(arr)-1], tx)
+		},
+	)
 }
