@@ -90,7 +90,6 @@ func (ts *TransactionStore) Iterate(fn func(key string, tx *abci.RequestDeliverT
 			if err != nil {
 				return true
 			}
-
 			arr := strings.Split(string(key), storage.DB_PREFIX)
 			return fn(arr[len(arr)-1], tx)
 		},
@@ -105,30 +104,4 @@ func (ts *TransactionStore) Delete(key storage.StoreKey) (bool, error) {
 func (ts *TransactionStore) Exists(key storage.StoreKey) bool {
 	storeKey := append(ts.prefix, key...)
 	return ts.State.Exists(storeKey)
-}
-
-func (ts *TransactionStore) ExistsFinalized(id string) bool {
-	key := storage.StoreKey(string(id) + storage.DB_PREFIX + FINALIZE_KEY)
-	return ts.State.Exists(key)
-}
-func (ts *TransactionStore) DeleteFinalized(id string) (bool, error) {
-	key := storage.StoreKey(string(id) + storage.DB_PREFIX + FINALIZE_KEY)
-	return ts.Delete(key)
-}
-
-func (ts *TransactionStore) AddFinalized(id string, tx *abci.RequestDeliverTx) error {
-	key := storage.StoreKey(string(id) + storage.DB_PREFIX + FINALIZE_KEY)
-	err := ts.Set(tx, key)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-func (ts *TransactionStore) GetFinalized(id string) (*abci.RequestDeliverTx, error) {
-	key := storage.StoreKey(string(id) + storage.DB_PREFIX + FINALIZE_KEY)
-	tx, err := ts.Get(key)
-	if err != nil {
-		return &abci.RequestDeliverTx{}, err
-	}
-	return tx, nil
 }

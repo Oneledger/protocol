@@ -15,9 +15,7 @@ import (
 // Functions for block Beginner
 func AddInternalTX(proposalMasterStore *governance.ProposalMasterStore, validator keys.Address, height int64) {
 	proposals := proposalMasterStore.Proposal
-
 	activeProposals := proposals.WithPrefixType(governance.ProposalStateActive)
-
 	activeProposals.Iterate(func(id governance.ProposalID, proposal *governance.Proposal) bool {
 		//If the proposal is in Voting state and voting period expired, trigger internal tx to handle expiry
 		if proposal.Status == governance.ProposalStatusVoting && proposal.VotingDeadline < height {
@@ -76,12 +74,12 @@ func GetFinalizeTX(proposalId governance.ProposalID, validatorAddress keys.Addre
 }
 
 func GetExpireTX(proposalId governance.ProposalID, validatorAddress keys.Address) (abciTypes.RequestDeliverTx, error) {
-	finalizeProposal := &gov_action.ExpireVotes{
+	expireVote := &gov_action.ExpireVotes{
 		ProposalID:       proposalId,
 		ValidatorAddress: validatorAddress,
 	}
 
-	txData, err := finalizeProposal.Marshal()
+	txData, err := expireVote.Marshal()
 	if err != nil {
 		return RequestDeliverTx{}, err
 	}
