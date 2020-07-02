@@ -270,12 +270,16 @@ func (app *App) blockEnder() blockEnder {
 		ethTrackerlog := log.NewLoggerWithPrefix(app.Context.logWriter, "ethtracker").WithLevel(log.Level(app.Context.cfg.Node.LogLevel))
 		doTransitions(app.Context.jobStore, app.Context.btcTrackers.WithState(app.Context.deliver), app.Context.validators)
 		doEthTransitions(app.Context.jobStore, app.Context.ethTrackers, app.Context.node.ValidatorAddress(), ethTrackerlog, app.Context.witnesses, app.Context.deliver)
-
+		app.Context.deliver.BeginTxSession()
 		//updateProposals(app.Context.proposalMaster, app.Context.jobStore, app.Context.deliver)
-		ExpireProposals(&app.header, &app.Context)
-		FinalizeProposals(&app.header, &app.Context)
+		//ExpireProposals(&app.header, &app.Context)
+		ok := FinalizeProposals(&app.header, &app.Context)
 		//Check for vote expiration on active proposals
-
+		if !ok {
+			app.Context.deliver.DiscardTxSession()
+		} else {
+			app.Context.deliver.CommitTxSession()
+		}
 		//Distribute Block rewards to Validators
 		blockRewardEvent := handleBlockRewards(app.Context.validators, app.Context.rewardMaster.Reward.WithState(app.Context.deliver), app.Node())
 

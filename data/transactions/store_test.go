@@ -59,7 +59,7 @@ func TestTransactionStore_AddFinalized(t *testing.T) {
 
 		newTx, _ := transactionStore.GetFinalized(hashStr)
 		result := bytes.Compare(tx.Tx, newTx.Tx)
-
+		transactionStore.State.Commit()
 		assert.Equal(t, result, 0)
 	}
 }

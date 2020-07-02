@@ -94,7 +94,7 @@ func GetExpireTX(proposalId governance.ProposalID, validatorAddress keys.Address
 }
 
 // Functions for block Ender
-func FinalizeProposals(header *Header, ctx *context) error {
+func FinalizeProposals(header *Header, ctx *context) bool {
 	var finalizePropossals []abciTypes.RequestDeliverTx // Get this from the store
 	for _, proposal := range finalizePropossals {
 		ctx := ctx.Action(header, ctx.check)
@@ -102,7 +102,8 @@ func FinalizeProposals(header *Header, ctx *context) error {
 		newFinalize := gov_action.FinalizeProposal{}
 		err := newFinalize.Unmarshal(txData)
 		if err != nil {
-			return err
+			ctx.Logger.Error("Unable to UnMarshal TX")
+			return false
 		}
 		uuidNew, _ := uuid.NewUUID()
 		rawTx := action.RawTx{
@@ -111,9 +112,12 @@ func FinalizeProposals(header *Header, ctx *context) error {
 			Fee:  action.Fee{},
 			Memo: uuidNew.String(),
 		}
-		newFinalize.ProcessDeliver(ctx, rawTx)
+		ok, _ := newFinalize.ProcessDeliver(ctx, rawTx)
+		if !ok {
+			return false
+		}
 	}
-	return nil
+	return true
 }
 
 func ExpireProposals(header *Header, ctx *context) error {
