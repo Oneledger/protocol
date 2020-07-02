@@ -20,39 +20,25 @@ def test_pass_finalize_proposal():
     # 1st fund
     fund_proposal(encoded_pid, _funding_goal_general, addr_list[0])
 
-    # 2nd fund
-    # fund_proposal(encoded_pid, _each_funding, addr_list[1])
-    # check_proposal_state(encoded_pid, ProposalStateActive, ProposalStatusVoting)
 
     # 1st vote --> 25%
     vote_proposal(encoded_pid, OPIN_NEGATIVE, url_0, addr_list[0])
-    query_proposal(encoded_pid)
+
     # # 2nd vote --> 25%
     vote_proposal(encoded_pid, OPIN_NEGATIVE, url_1, addr_list[0])
-    query_proposal(encoded_pid)
-
-    # 3rd vote --> 50%
-    # vote_proposal(encoded_pid, OPIN_POSITIVE, url_2, addr_list[0])
-    #
-    # # 4th vote --> 75%
-    # vote_proposal(encoded_pid, OPIN_NEGATIVE, url_3, addr_list[0])
-    # check_proposal_state(encoded_pid, ProposalStatePassed, ProposalStatusCompleted)
 
     time.sleep(3)
+    return encoded_pid
 
 
 if __name__ == "__main__":
     # test pass a proposal
-    test_pass_finalize_proposal()
-
-    print "#### ACTIVE PROPOSALS: ####"
-    query_proposals(0x31)
-
-    print "#### FAILED PROPOSALS: ####"
-    query_proposals(0x33)
-
-    print "#### FINALIZED PROPOSALS: ####"
-    query_proposals(0x34)
-
-    print "#### FINALIZEFAILED PROPOSALS: ####"
-    query_proposals(0x35)
+    pid = test_pass_finalize_proposal()
+    prop, funds = query_proposal(pid)
+    if prop["outcome"] != 41:
+        print "Exiting Outcome is not ProposalOutcomeCompletedNo"
+        sys.exit(1)
+    pList = query_proposals(ProposalStateFinalized)
+    if len(pList) == 0:
+        print "Exiting Proposal was not finalized"
+        sys.exit(1)

@@ -198,7 +198,7 @@ func (pvs *ProposalVoteStore) GetVotesByID(proposalID ProposalID) ([]keys.Addres
 	// Caused by invalid/deleted proposalID
 	if len(votes) == 0 {
 		errMsg := fmt.Sprintf("%v, no votes records found", info)
-		logger.Error(errMsg)
+		//logger.Error(errMsg)
 		return nil, nil, errors.New(errMsg)
 	}
 

@@ -133,8 +133,10 @@ func (outCome ProposalOutcome) String() string {
 		return "Failed [insufficient votes]"
 	case ProposalOutcomeCancelled:
 		return "Failed [cancelled]"
-	case ProposalOutcomeCompleted:
-		return "Passed"
+	case ProposalOutcomeCompletedYes:
+		return "PassedYes"
+	case ProposalOutcomeCompletedNo:
+		return "PassedNo"
 	default:
 		return "Invalid outcome"
 	}
