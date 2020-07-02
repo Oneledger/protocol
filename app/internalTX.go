@@ -36,7 +36,6 @@ func AddInternalTX(proposalMasterStore *governance.ProposalMasterStore, validato
 			if err != nil {
 				return true
 			}
-			fmt.Println("Adding to queue Finalize")
 			transaction.AddFinalized(string(proposal.ProposalID), &tx)
 			transaction.State.Commit()
 		}
@@ -104,7 +103,6 @@ func FinalizeProposals(header *Header, ctx *context) bool {
 		return false
 	})
 	for _, proposal := range finalizeProposals {
-		fmt.Println("Finalizing the proposal")
 		actionctx := ctx.Action(header, ctx.deliver)
 		txData := proposal.Tx
 		newFinalize := gov_action.FinalizeProposal{}
@@ -137,7 +135,7 @@ func FinalizeProposals(header *Header, ctx *context) bool {
 func ExpireProposals(header *Header, ctx *context) error {
 	var finalizePropossals []abciTypes.RequestDeliverTx // Get this from the store
 	for _, proposal := range finalizePropossals {
-		ctx := ctx.Action(header, ctx.check)
+		ctx := ctx.Action(header, ctx.deliver)
 		txData := proposal.Tx
 		newExpire := gov_action.ExpireVotes{}
 		err := newExpire.Unmarshal(txData)

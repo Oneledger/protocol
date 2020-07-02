@@ -274,9 +274,9 @@ func (app *App) blockEnder() blockEnder {
 
 		//updateProposals(app.Context.proposalMaster, app.Context.jobStore, app.Context.deliver)
 		//ExpireProposals(&app.header, &app.Context)
-		app.Context.deliver.BeginTxSession()
+
 		FinalizeProposals(&app.header, &app.Context)
-		app.Context.deliver.CommitTxSession()
+
 		//Check for vote expiration on active proposals
 		//Distribute Block rewards to Validators
 		blockRewardEvent := handleBlockRewards(app.Context.validators, app.Context.rewardMaster.Reward.WithState(app.Context.deliver), app.Node())
