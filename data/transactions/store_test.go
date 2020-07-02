@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
 	actionGov "github.com/Oneledger/protocol/action/governance"
 	"github.com/Oneledger/protocol/app"
 	"github.com/Oneledger/protocol/data/governance"
@@ -12,6 +11,7 @@ import (
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/magiconair/properties/assert"
+	abci "github.com/tendermint/tendermint/abci/types"
 	db "github.com/tendermint/tm-db"
 	"strconv"
 	"testing"
@@ -71,6 +71,16 @@ func TestTransactionStore_Delete(t *testing.T) {
 	res, _ := transactionStore.Delete(hashStr)
 	assert.Equal(t, res, true)
 
+	transactionStore.State.Commit()
 	res = transactionStore.Exists(hashStr)
 	assert.Equal(t, res, false)
+}
+
+func TestTransactionStore_Iterate(t *testing.T) {
+	count := 0
+	transactionStore.Iterate(func(key string, tx *abci.RequestDeliverTx) bool {
+		count++
+		return false
+	})
+	assert.Equal(t, count, 4)
 }
