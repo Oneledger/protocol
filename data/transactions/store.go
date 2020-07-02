@@ -29,11 +29,6 @@ import (
 	"github.com/Oneledger/protocol/storage"
 )
 
-const (
-	FINALIZE_KEY = "FINALIZE"
-	EXPIRE_KEY   = "EXPIRE"
-)
-
 type TransactionStore struct {
 	State  *storage.State
 	szlr   serialize.Serializer

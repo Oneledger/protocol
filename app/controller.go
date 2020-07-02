@@ -13,8 +13,6 @@ import (
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/rewards"
 
-	"github.com/Oneledger/protocol/data/governance"
-
 	"github.com/pkg/errors"
 
 	abciTypes "github.com/tendermint/tendermint/abci/types"
@@ -133,7 +131,7 @@ func (app *App) blockBeginner() blockBeginner {
 
 		//update the header to current block
 		app.header = req.Header
-		AddInternalTX(app.Context.proposalMaster, app.Context.node.ValidatorAddress(), app.header.Height, app.Context.transaction)
+		AddInternalTX(app.Context.proposalMaster, app.Context.node.ValidatorAddress(), app.header.Height, app.Context.transaction, app.logger)
 
 		app.logger.Detail("Begin Block:", result, "height:", req.Header.Height, "AppHash:", hex.EncodeToString(req.Header.AppHash))
 		return result
@@ -273,9 +271,9 @@ func (app *App) blockEnder() blockEnder {
 		doEthTransitions(app.Context.jobStore, app.Context.ethTrackers, app.Context.node.ValidatorAddress(), ethTrackerlog, app.Context.witnesses, app.Context.deliver)
 
 		//updateProposals(app.Context.proposalMaster, app.Context.jobStore, app.Context.deliver)
-		//ExpireProposals(&app.header, &app.Context)
+		ExpireProposals(&app.header, &app.Context, app.logger)
 
-		FinalizeProposals(&app.header, &app.Context)
+		FinalizeProposals(&app.header, &app.Context, app.logger)
 
 		//Check for vote expiration on active proposals
 		//Distribute Block rewards to Validators
@@ -422,36 +420,6 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 		}
 		deliver.CommitTxSession()
 	}
-
-}
-
-func updateProposals(proposalMaster *governance.ProposalMasterStore, jobStore *jobs.JobStore, deliver *storage.State) {
-	//Iterate through all active proposals
-	proposals := proposalMaster.Proposal.WithState(deliver)
-	activeProposals := proposals.WithPrefixType(governance.ProposalStateActive)
-
-	activeProposals.Iterate(func(id governance.ProposalID, proposal *governance.Proposal) bool {
-		height := deliver.Version()
-		//If the proposal is in Voting state and voting period expired, trigger internal tx to handle expiry
-		if proposal.Status == governance.ProposalStatusVoting && proposal.VotingDeadline < height {
-
-			//Create New Job to Expire the votes for current proposal
-			checkVotesJob := event.NewGovCheckVotesJob(proposal.ProposalID, proposal.Status)
-
-			//Check if the Job already exists
-			exists, _ := jobStore.WithChain(chain.ONELEDGER).JobExists(checkVotesJob.JobID)
-			if !exists {
-
-				//Save Job to OneLedger Job Store
-				err := jobStore.WithChain(chain.ONELEDGER).SaveJob(checkVotesJob)
-				if err != nil {
-					return true
-				}
-			}
-		}
-
-		return false
-	})
 
 }
 

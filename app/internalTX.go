@@ -11,20 +11,30 @@ import (
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/data/transactions"
+	"github.com/Oneledger/protocol/log"
 )
 
 // Functions for block Beginner
-func AddInternalTX(proposalMasterStore *governance.ProposalMasterStore, validator keys.Address, height int64, transaction *transactions.TransactionStore) {
+func AddInternalTX(proposalMasterStore *governance.ProposalMasterStore, validator keys.Address, height int64, transaction *transactions.TransactionStore, logger *log.Logger) {
 	proposals := proposalMasterStore.Proposal
 	activeProposals := proposals.WithPrefixType(governance.ProposalStateActive)
 	activeProposals.Iterate(func(id governance.ProposalID, proposal *governance.Proposal) bool {
 		//If the proposal is in Voting state and voting period expired, trigger internal tx to handle expiry
 		if proposal.Status == governance.ProposalStatusVoting && proposal.VotingDeadline < height {
+			// Create tx of type requestdeliverTx
 			tx, err := GetExpireTX(proposal.ProposalID, validator)
 			if err != nil {
+				logger.Error(err)
 				return true
 			}
-			fmt.Println(tx.String()) // Add tx to store (KEY EXPIRE)
+			// Add it to expired prefix
+			err = transaction.AddExpired(string(proposal.ProposalID), &tx)
+			if err != nil {
+				logger.Error(err)
+				return true
+			}
+			// Commit the state
+			transaction.State.Commit()
 		}
 		return false
 	})
@@ -34,9 +44,14 @@ func AddInternalTX(proposalMasterStore *governance.ProposalMasterStore, validato
 		if proposal.Status == governance.ProposalStatusCompleted && proposal.Outcome == governance.ProposalOutcomeCompletedYes {
 			tx, err := GetFinalizeTX(proposal.ProposalID, validator)
 			if err != nil {
+				logger.Error(err)
 				return true
 			}
-			transaction.AddFinalized(string(proposal.ProposalID), &tx)
+			err = transaction.AddFinalized(string(proposal.ProposalID), &tx)
+			if err != nil {
+				logger.Error(err)
+				return true
+			}
 			transaction.State.Commit()
 		}
 		return false
@@ -47,9 +62,15 @@ func AddInternalTX(proposalMasterStore *governance.ProposalMasterStore, validato
 		if proposal.Status == governance.ProposalStatusCompleted && proposal.Outcome == governance.ProposalOutcomeCompletedNo {
 			tx, err := GetFinalizeTX(proposal.ProposalID, validator)
 			if err != nil {
+				logger.Error(err)
 				return true
 			}
-			transaction.AddFinalized(string(proposal.ProposalID), &tx)
+			err = transaction.AddFinalized(string(proposal.ProposalID), &tx)
+			if err != nil {
+				logger.Error(err)
+				return true
+			}
+			transaction.State.Commit()
 		}
 		return false
 	})
@@ -96,20 +117,21 @@ func GetExpireTX(proposalId governance.ProposalID, validatorAddress keys.Address
 }
 
 // Functions for block Ender
-func FinalizeProposals(header *Header, ctx *context) bool {
+func FinalizeProposals(header *Header, ctx *context, logger *log.Logger) {
 	var finalizeProposals []abciTypes.RequestDeliverTx // Get this from the store
 	ctx.transaction.IterateFinalized(func(key string, tx *abciTypes.RequestDeliverTx) bool {
 		finalizeProposals = append(finalizeProposals, *tx)
 		return false
 	})
 	for _, proposal := range finalizeProposals {
+		fmt.Println("Finalizing transactions")
 		actionctx := ctx.Action(header, ctx.deliver)
 		txData := proposal.Tx
 		newFinalize := gov_action.FinalizeProposal{}
 		err := newFinalize.Unmarshal(txData)
 		if err != nil {
 			fmt.Println("Unable to UnMarshal TX")
-			return false
+			return
 		}
 		uuidNew, _ := uuid.NewUUID()
 		rawTx := action.RawTx{
@@ -120,27 +142,36 @@ func FinalizeProposals(header *Header, ctx *context) bool {
 		}
 		ok, _ := newFinalize.ProcessDeliver(actionctx, rawTx)
 		if !ok {
-			return false
+			return
 		}
 		ctx.deliver.Commit()
 	}
 	//Delete all proposals
 	ctx.transaction.IterateFinalized(func(key string, tx *abciTypes.RequestDeliverTx) bool {
-		ctx.transaction.DeleteFinalized(key)
+		ok, err := ctx.transaction.DeleteFinalized(key)
+		if !ok {
+			logger.Error(err)
+			return true
+		}
 		return false
 	})
-	return true
+	ctx.transaction.State.Commit()
 }
 
-func ExpireProposals(header *Header, ctx *context) error {
-	var finalizePropossals []abciTypes.RequestDeliverTx // Get this from the store
-	for _, proposal := range finalizePropossals {
-		ctx := ctx.Action(header, ctx.deliver)
+func ExpireProposals(header *Header, ctx *context, logger *log.Logger) {
+	var expiredProposals []abciTypes.RequestDeliverTx
+	ctx.transaction.IterateExpired(func(key string, tx *abciTypes.RequestDeliverTx) bool {
+		expiredProposals = append(expiredProposals, *tx)
+		return false
+	})
+	for _, proposal := range expiredProposals {
+		fmt.Println("Expiring transactions")
+		actionctx := ctx.Action(header, ctx.deliver)
 		txData := proposal.Tx
 		newExpire := gov_action.ExpireVotes{}
 		err := newExpire.Unmarshal(txData)
 		if err != nil {
-			return err
+			return
 		}
 		uuidNew, _ := uuid.NewUUID()
 		rawTx := action.RawTx{
@@ -149,7 +180,19 @@ func ExpireProposals(header *Header, ctx *context) error {
 			Fee:  action.Fee{},
 			Memo: uuidNew.String(),
 		}
-		newExpire.ProcessDeliver(ctx, rawTx)
+		ok, _ := newExpire.ProcessDeliver(actionctx, rawTx)
+		if !ok {
+			return
+		}
+		ctx.deliver.Commit()
 	}
-	return nil
+	ctx.transaction.IterateExpired(func(key string, tx *abciTypes.RequestDeliverTx) bool {
+		ok, err := ctx.transaction.DeleteExpired(key)
+		if !ok {
+			logger.Error(err)
+			return true
+		}
+		return false
+	})
+	ctx.transaction.State.Commit()
 }
