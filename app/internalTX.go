@@ -165,7 +165,6 @@ func ExpireProposals(header *Header, ctx *context, logger *log.Logger) {
 		return false
 	})
 	for _, proposal := range expiredProposals {
-		fmt.Println("Expiring transactions")
 		actionctx := ctx.Action(header, ctx.deliver)
 		txData := proposal.Tx
 		newExpire := gov_action.ExpireVotes{}
