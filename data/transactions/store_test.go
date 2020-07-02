@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
 	actionGov "github.com/Oneledger/protocol/action/governance"
 	"github.com/Oneledger/protocol/app"
 	"github.com/Oneledger/protocol/data/governance"
@@ -71,6 +70,7 @@ func TestTransactionStore_Delete(t *testing.T) {
 	res, _ := transactionStore.Delete(hashStr)
 	assert.Equal(t, res, true)
 
+	transactionStore.State.Commit()
 	res = transactionStore.Exists(hashStr)
 	assert.Equal(t, res, false)
 }
