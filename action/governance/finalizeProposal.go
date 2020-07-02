@@ -202,7 +202,9 @@ func distributeFunds(ctx *action.Context, proposal *governance.Proposal, proposa
 	if !ok {
 		return action.ErrInvalidCurrency
 	}
-	fundTracker := totalFunds
+	totalFundsCoin := c.NewCoinFromAmount(*totalFunds)
+	fundTracker := c.NewCoinFromAmount(*totalFunds)
+	ctx.Logger.Detailf("totalFundsCoin: ", totalFundsCoin)
 	//Starting Fund Distribution
 	//Validators
 	validatorList, err := ctx.Validators.GetValidatorSet()
@@ -210,8 +212,7 @@ func distributeFunds(ctx *action.Context, proposal *governance.Proposal, proposa
 		return action.ErrGettingValidatorList
 	}
 	ctx.Logger.Detailf("Transferring to Validators ")
-	validatorEarningOLT := getPercentageCoin(c, totalFunds, fundTracker, proposalDistribution.Validators).Divide(len(validatorList))
-
+	validatorEarningOLT := getPercentageCoin(&totalFundsCoin, &fundTracker, proposalDistribution.Validators).Divide(len(validatorList))
 	for _, v := range validatorList {
 		ctx.Logger.Detailf("Validator : \"%v\" : \"%v", v.Address.String(), validatorEarningOLT)
 		err = ctx.Balances.AddToAddress(v.Address, validatorEarningOLT)
@@ -219,19 +220,15 @@ func distributeFunds(ctx *action.Context, proposal *governance.Proposal, proposa
 			return err
 		}
 	}
+	ctx.Logger.Detailf("fundTracker: ", fundTracker)
 
-	//Fee Pool
-	ctx.Logger.Detailf("Transferring to Fee Pool")
-	err = ctx.FeePool.AddToPool(getPercentageCoin(c, totalFunds, fundTracker, proposalDistribution.FeePool))
-	if err != nil {
-		return err
-	}
 	//Reward for Proposer
 	ctx.Logger.Detailf("Transferring to Proposer :\"%v\"", proposal.Proposer.String())
-	err = ctx.Balances.AddToAddress(proposal.Proposer, getPercentageCoin(c, totalFunds, fundTracker, proposalDistribution.ProposerReward))
+	err = ctx.Balances.AddToAddress(proposal.Proposer, getPercentageCoin(&totalFundsCoin, &fundTracker, proposalDistribution.ProposerReward))
 	if err != nil {
 		return err
 	}
+	ctx.Logger.Detailf("fundTracker: ", fundTracker)
 
 	//Bounty Program
 	popt, err := ctx.GovernanceStore.GetProposalOptions()
@@ -240,31 +237,35 @@ func distributeFunds(ctx *action.Context, proposal *governance.Proposal, proposa
 	}
 	bountyAddress := action.Address(popt.BountyProgramAddr)
 	ctx.Logger.Detailf("Transferring to Bounty Program :\"%v", bountyAddress.String())
-	err = ctx.Balances.AddToAddress(bountyAddress, getPercentageCoin(c, totalFunds, fundTracker, proposalDistribution.BountyPool))
+	err = ctx.Balances.AddToAddress(bountyAddress, getPercentageCoin(&totalFundsCoin, &fundTracker, proposalDistribution.BountyPool))
 	if err != nil {
 		return err
 	}
+	ctx.Logger.Detailf("fundTracker: ", fundTracker)
 
 	//ExecutionCost
 	executionAddress := action.Address(ctx.ProposalMasterStore.Proposal.GetOptionsByType(proposal.Type).ProposalExecutionCost)
 	ctx.Logger.Detailf("Transferring to Execution Cost :\"%v", executionAddress.String())
-	err = ctx.Balances.AddToAddress(executionAddress, getPercentageCoin(c, totalFunds, fundTracker, proposalDistribution.ExecutionCost))
+	err = ctx.Balances.AddToAddress(executionAddress, getPercentageCoin(&totalFundsCoin, &fundTracker, proposalDistribution.ExecutionCost))
+	if err != nil {
+		return err
+	}
+	ctx.Logger.Detailf("fundTracker: ", fundTracker)
+
+	//Subtract Burning Amount From Fund Tracker
+	ctx.Logger.Detailf("Subtract Burning Amount From Fund Tracker")
+	getPercentageCoin(&totalFundsCoin, &fundTracker, proposalDistribution.Burn)
+	ctx.Logger.Detailf("fundTracker: ", fundTracker)
+
+	//Add What's Left in Fund Tracker to Fee Pool(Including Amount Left Due to Inaccuracy)
+	ctx.Logger.Detailf("Transferring to Fee Pool")
+	err = ctx.FeePool.AddToPool(fundTracker)
 	if err != nil {
 		return err
 	}
 
-	//Burn
+	// Burn
 	ctx.Logger.Detailf("Burning Funds  ")
-	getPercentageCoin(c, totalFunds, fundTracker, proposalDistribution.Burn)
-	if !fundTracker.Equals(*balance.NewAmount(0)) {
-		//Put what's left (if there is any, due to inaccuracy) to feepool
-		remainFunds := c.NewCoinFromAmount(*totalFunds)
-		err = ctx.FeePool.AddToPool(remainFunds)
-		if err != nil {
-			return err
-		}
-	}
-
 	err = fundStore.DeleteAllFunds(proposal.ProposalID)
 	if err != nil {
 		return err
@@ -329,10 +330,10 @@ func executeConfigUpdate(ctx *action.Context, proposal *governance.Proposal) err
 }
 
 //Helper function to get percentage
-func getPercentageCoin(c balance.Currency, totalFunds *balance.Amount, fundTracker *balance.Amount, percentage float64) balance.Coin {
+func getPercentageCoin(totalFunds *balance.Coin, fundTracker *balance.Coin, percentage float64) balance.Coin {
 	percentageInt64 := int64(percentage * 10000)
-	amount := c.NewCoinFromAmount(*totalFunds).MultiplyInt64(percentageInt64).DivideInt64(1000000)
-	fundTracker, _ = fundTracker.Minus(*amount.Amount)
+	amount := totalFunds.MultiplyInt64(percentageInt64).DivideInt64(1000000)
+	*fundTracker, _ = fundTracker.Minus(amount)
 	return amount
 }
 
