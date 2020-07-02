@@ -121,6 +121,7 @@ func FinalizeProposals(header *Header, ctx *context) bool {
 			Memo: uuidNew.String(),
 		}
 		ok, _ := newFinalize.ProcessDeliver(actionctx, rawTx)
+		ctx.deliver.Commit()
 		if !ok {
 			return false
 		}
