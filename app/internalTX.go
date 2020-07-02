@@ -105,7 +105,7 @@ func FinalizeProposals(header *Header, ctx *context) bool {
 	})
 	for _, proposal := range finalizeProposals {
 		fmt.Println("Finalizing the proposal")
-		actionctx := ctx.Action(header, ctx.check)
+		actionctx := ctx.Action(header, ctx.deliver)
 		txData := proposal.Tx
 		newFinalize := gov_action.FinalizeProposal{}
 		err := newFinalize.Unmarshal(txData)
@@ -121,10 +121,10 @@ func FinalizeProposals(header *Header, ctx *context) bool {
 			Memo: uuidNew.String(),
 		}
 		ok, _ := newFinalize.ProcessDeliver(actionctx, rawTx)
-		ctx.deliver.Commit()
 		if !ok {
 			return false
 		}
+		ctx.deliver.Commit()
 	}
 	//Delete all proposals
 	ctx.transaction.IterateFinalized(func(key string, tx *abciTypes.RequestDeliverTx) bool {
