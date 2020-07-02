@@ -161,10 +161,11 @@ func runFinalizeProposal(ctx *action.Context, tx action.RawTx) (bool, action.Res
 		}
 
 		if proposal.Type == governance.ProposalTypeConfigUpdate {
-			err := executeConfigUpdate(ctx, proposal)
-			if err != nil {
-				return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrFinalizeConfigUpdateFailed, finalizedProposal.Tags(), err)
-			}
+			ctx.Logger.Info("Auto Update of Governance State is presently not suported")
+			//err := executeConfigUpdate(ctx, proposal)
+			//if err != nil {
+			//	return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrFinalizeConfigUpdateFailed, finalizedProposal.Tags(), err)
+			//}
 		}
 		err = setToFinalizeFromPassed(ctx, proposal)
 		if err != nil {
