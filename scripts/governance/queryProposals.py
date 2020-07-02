@@ -30,7 +30,7 @@ def create_some_proposals():
     fund_proposal(prop_0.pid, _big_funding, addr_list[1])
     vote_proposal(prop_0.pid, OPIN_NEGATIVE, url_0, addr_list[0])
     vote_proposal(prop_0.pid, OPIN_NEGATIVE, url_1, addr_list[1])
-    result_by_id[prop_0.pid] = (ProposalTypeGeneral, ProposalOutcomeInsufficientVotes, ProposalStatusCompleted, 0)
+    result_by_id[prop_0.pid] = (ProposalTypeGeneral, ProposalOutcomeCompletedNo, ProposalStatusCompleted, 0)
     result_by_proposer[_proposer_0].append(prop_0.pid)
     result_by_type[ProposalTypeGeneral].append(prop_0.pid)
 
@@ -43,7 +43,7 @@ def create_some_proposals():
     vote_proposal(prop_1.pid, OPIN_POSITIVE, url_1, addr_list[1])
     vote_proposal(prop_1.pid, OPIN_POSITIVE, url_2, addr_list[2])
     # Passed proposal's fund drops to 0 due to fund distribution
-    result_by_id[prop_1.pid] = (ProposalTypeCodeChange, ProposalOutcomeCompleted, ProposalStatusCompleted, 0)
+    result_by_id[prop_1.pid] = (ProposalTypeCodeChange, ProposalOutcomeCompletedYes, ProposalStatusCompleted, 0)
     result_by_proposer[_proposer_1].append(prop_1.pid)
     result_by_type[ProposalTypeCodeChange].append(prop_1.pid)
 

@@ -18,14 +18,18 @@ ProposalStatusCompleted = 0x25
 ProposalOutcomeInProgress = 0x26
 ProposalOutcomeInsufficientFunds = 0x27
 ProposalOutcomeInsufficientVotes = 0x28
-ProposalOutcomeCancelled = 0x29
-ProposalOutcomeCompleted = 0x30
+ProposalOutcomeCompletedNo = 0x29
+ProposalOutcomeCancelled = 0x30
+ProposalOutcomeCompletedYes = 0x31
 
 # Proposal States
+
 ProposalStateInvalid = 0xEE
-ProposalStateActive = 0x31
-ProposalStatePassed = 0x32
-ProposalStateFailed = 0x33
+ProposalStateActive = 0x32
+ProposalStatePassed = 0x33
+ProposalStateFailed = 0x34
+ProposalStateFinalized = 0x35
+ProposalStateFinalizeFailed = 0x36
 
 # Vote Opinions
 OPIN_POSITIVE = 0x1
@@ -600,9 +604,9 @@ def query_proposals(prefix, proposer="", proposalType=ProposalTypeInvalid):
     }
 
     resp = rpc_call('query.ListProposals', req)
-    print resp
+    # print resp
     result = resp["result"]
-    print json.dumps(resp, indent=4)
+    # print json.dumps(resp, indent=4)
     return result["proposalStats"]
 
 
@@ -612,7 +616,7 @@ def query_proposal(proposal_id):
     }
     resp = rpc_call('query.ListProposal', req)
     stat = resp["result"]["proposalStats"][0]
-    print json.dumps(resp, indent=4)
+    # print json.dumps(resp, indent=4)
     return stat["proposal"], stat["funds"]
 
 

@@ -1,5 +1,3 @@
-import sys
-import time
 from sdk import *
 
 addr_list = addresses()
@@ -40,7 +38,7 @@ def test_pass_proposal():
 
     # 4th vote --> 75%
     vote_proposal(encoded_pid, OPIN_POSITIVE, url_3, addr_list[2])
-    check_proposal_state(encoded_pid, ProposalOutcomeCompleted, ProposalStatusCompleted)
+    check_proposal_state(encoded_pid, ProposalOutcomeCompletedYes, ProposalStatusCompleted)
 
 def test_fail_proposal():
     _prop = Proposal(_pid_fail, "general", "proposal for vote", "proposal headline", _proposer, _initial_funding)
@@ -67,7 +65,7 @@ def test_fail_proposal():
 
     # 3rd vote --> NO--50%
     vote_proposal(encoded_pid, OPIN_NEGATIVE, url_2, addr_list[2])
-    check_proposal_state(encoded_pid, ProposalOutcomeInsufficientVotes, ProposalStatusCompleted)
+    check_proposal_state(encoded_pid, ProposalOutcomeCompletedNo, ProposalStatusCompleted)
 
 if __name__ == "__main__":
     # test pass a proposal
