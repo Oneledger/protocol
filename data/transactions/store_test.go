@@ -4,17 +4,19 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
+	"strconv"
+	"testing"
+
+	"github.com/magiconair/properties/assert"
+	abci "github.com/tendermint/tendermint/abci/types"
+	db "github.com/tendermint/tm-db"
+
 	actionGov "github.com/Oneledger/protocol/action/governance"
 	"github.com/Oneledger/protocol/app"
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
-	"github.com/magiconair/properties/assert"
-	abci "github.com/tendermint/tendermint/abci/types"
-	db "github.com/tendermint/tm-db"
-	"strconv"
-	"testing"
 )
 
 const (
@@ -53,9 +55,9 @@ func TestTransactionStore_Set(t *testing.T) {
 		hash.Write(tx.Tx)
 		hashData := hash.Sum(nil)
 		hashStr := hex.EncodeToString(hashData)
-		_ = transactionStore.Set(tx, hashStr)
+		_ = transactionStore.AddFinalized(hashStr, tx)
 
-		newTx, _ := transactionStore.Get(hashStr)
+		newTx, _ := transactionStore.GetFinalized(hashStr)
 		result := bytes.Compare(tx.Tx, newTx.Tx)
 
 		assert.Equal(t, result, 0)
@@ -68,11 +70,11 @@ func TestTransactionStore_Delete(t *testing.T) {
 	hashData := hash.Sum(nil)
 	hashStr := hex.EncodeToString(hashData)
 
-	res, _ := transactionStore.Delete(hashStr)
+	res, _ := transactionStore.DeleteFinalized(hashStr)
 	assert.Equal(t, res, true)
 
 	transactionStore.State.Commit()
-	res = transactionStore.Exists(hashStr)
+	res = transactionStore.ExistsFinalized(hashStr)
 	assert.Equal(t, res, false)
 }
 

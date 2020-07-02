@@ -21,7 +21,6 @@ package transactions
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -54,8 +53,8 @@ func (ts *TransactionStore) WithState(state *storage.State) *TransactionStore {
 	return ts
 }
 
-func (ts *TransactionStore) Set(tx *abci.RequestDeliverTx, key string) error {
-	storeKey := append(ts.prefix, storage.StoreKey(storage.DB_PREFIX+key)...)
+func (ts *TransactionStore) Set(tx *abci.RequestDeliverTx, key storage.StoreKey) error {
+	storeKey := append(ts.prefix, key...)
 	data, err := ts.szlr.Serialize(tx)
 	if err != nil {
 		return err
@@ -66,8 +65,8 @@ func (ts *TransactionStore) Set(tx *abci.RequestDeliverTx, key string) error {
 	return ts.State.Set(storeKey, data)
 }
 
-func (ts *TransactionStore) Get(key string) (tx *abci.RequestDeliverTx, err error) {
-	storeKey := append(ts.prefix, storage.StoreKey(storage.DB_PREFIX+key)...)
+func (ts *TransactionStore) Get(key storage.StoreKey) (tx *abci.RequestDeliverTx, err error) {
+	storeKey := append(ts.prefix, key...)
 	data, err := ts.State.Get(storeKey)
 	tx = &abci.RequestDeliverTx{}
 	if len(data) == 0 {
@@ -98,12 +97,38 @@ func (ts *TransactionStore) Iterate(fn func(key string, tx *abci.RequestDeliverT
 	)
 }
 
-func (ts *TransactionStore) Delete(key string) (bool, error) {
-	storeKey := append(ts.prefix, storage.StoreKey(storage.DB_PREFIX+key)...)
+func (ts *TransactionStore) Delete(key storage.StoreKey) (bool, error) {
+	storeKey := append(ts.prefix, key...)
 	return ts.State.Delete(storeKey)
 }
 
-func (ts *TransactionStore) Exists(key string) bool {
-	storeKey := append(ts.prefix, storage.StoreKey(storage.DB_PREFIX+key)...)
+func (ts *TransactionStore) Exists(key storage.StoreKey) bool {
+	storeKey := append(ts.prefix, key...)
 	return ts.State.Exists(storeKey)
+}
+
+func (ts *TransactionStore) ExistsFinalized(id string) bool {
+	key := storage.StoreKey(string(id) + storage.DB_PREFIX + FINALIZE_KEY)
+	return ts.State.Exists(key)
+}
+func (ts *TransactionStore) DeleteFinalized(id string) (bool, error) {
+	key := storage.StoreKey(string(id) + storage.DB_PREFIX + FINALIZE_KEY)
+	return ts.Delete(key)
+}
+
+func (ts *TransactionStore) AddFinalized(id string, tx *abci.RequestDeliverTx) error {
+	key := storage.StoreKey(string(id) + storage.DB_PREFIX + FINALIZE_KEY)
+	err := ts.Set(tx, key)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+func (ts *TransactionStore) GetFinalized(id string) (*abci.RequestDeliverTx, error) {
+	key := storage.StoreKey(string(id) + storage.DB_PREFIX + FINALIZE_KEY)
+	tx, err := ts.Get(key)
+	if err != nil {
+		return &abci.RequestDeliverTx{}, err
+	}
+	return tx, nil
 }
