@@ -55,12 +55,7 @@ func (p *FinalizeProposal) Unmarshal(bytes []byte) error {
 	return json.Unmarshal(bytes, p)
 }
 
-type finalizeProposalTx struct {
-}
-
-var _ action.Tx = finalizeProposalTx{}
-
-func (finalizeProposalTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
+func (FinalizeProposal) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
 	finalizedProposal := FinalizeProposal{}
 	err := finalizedProposal.Unmarshal(signedTx.Data)
 	if err != nil {
@@ -79,15 +74,15 @@ func (finalizeProposalTx) Validate(ctx *action.Context, signedTx action.SignedTx
 	return true, nil
 }
 
-func (finalizeProposalTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+func (FinalizeProposal) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	return runFinalizeProposal(ctx, tx)
 }
 
-func (finalizeProposalTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+func (FinalizeProposal) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	return runFinalizeProposal(ctx, tx)
 }
 
-func (finalizeProposalTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (FinalizeProposal) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
 	ctx.State.ConsumeVerifySigGas(1)
 	ctx.State.ConsumeStorageGas(size)
 

@@ -133,30 +133,10 @@ func (app *App) blockBeginner() blockBeginner {
 
 		//update the header to current block
 		app.header = req.Header
-		addInternalTX()
+		AddInternalTX(app.Context.proposalMaster, app.Context.node.ValidatorAddress(), app.header.Height)
 		app.logger.Detail("Begin Block:", result, "height:", req.Header.Height, "AppHash:", hex.EncodeToString(req.Header.AppHash))
 		return result
 	}
-}
-
-func addInternalTX(app App) {
-	proposalMasterStore := app.Context.proposalMaster
-	proposals := proposalMasterStore.Proposal
-	passedProposals := proposals.WithPrefixType(governance.ProposalStatePassed)
-	passedProposals.Iterate(func(id governance.ProposalID, proposal *governance.Proposal) bool {
-		if proposal.Status == governance.ProposalStatusCompleted && proposal.Outcome == governance.ProposalOutcomeCompleted {
-			//Add to internalTX Data store
-		}
-		return false
-	})
-
-	failedProposals := proposals.WithPrefixType(governance.ProposalStateFailed)
-	failedProposals.Iterate(func(id governance.ProposalID, proposal *governance.Proposal) bool {
-		if proposal.Status == governance.ProposalStatusCompleted && proposal.Outcome == governance.ProposalOutcomeCompleted {
-			//Add to internalTX Data store
-		}
-		return false
-	})
 }
 
 // mempool connection: for checking if transactions should be relayed before they are committed
@@ -291,8 +271,9 @@ func (app *App) blockEnder() blockEnder {
 		doTransitions(app.Context.jobStore, app.Context.btcTrackers.WithState(app.Context.deliver), app.Context.validators)
 		doEthTransitions(app.Context.jobStore, app.Context.ethTrackers, app.Context.node.ValidatorAddress(), ethTrackerlog, app.Context.witnesses, app.Context.deliver)
 
-		updateProposals(app.Context.proposalMaster, app.Context.jobStore, app.Context.deliver)
-
+		//updateProposals(app.Context.proposalMaster, app.Context.jobStore, app.Context.deliver)
+		ExpireProposals(&app.header, &app.Context)
+		FinalizeProposals(&app.header, &app.Context)
 		//Check for vote expiration on active proposals
 
 		//Distribute Block rewards to Validators
@@ -470,36 +451,6 @@ func updateProposals(proposalMaster *governance.ProposalMasterStore, jobStore *j
 		return false
 	})
 
-	passedProposals := proposals.WithPrefixType(governance.ProposalStatePassed)
-	passedProposals.Iterate(func(id governance.ProposalID, proposal *governance.Proposal) bool {
-		if proposal.Status == governance.ProposalStatusCompleted && proposal.Outcome == governance.ProposalOutcomeCompletedYes {
-			finalizeJob := event.NewGovFinalizeProposalJob(proposal.ProposalID, proposal.Status)
-
-			exists, _ := jobStore.WithChain(chain.ONELEDGER).JobExists(finalizeJob.JobID)
-			if !exists {
-				err := jobStore.WithChain(chain.ONELEDGER).SaveJob(finalizeJob)
-				if err != nil {
-					return true
-				}
-			}
-		}
-		return false
-	})
-	failedProposals := proposals.WithPrefixType(governance.ProposalStateFailed)
-	failedProposals.Iterate(func(id governance.ProposalID, proposal *governance.Proposal) bool {
-		if proposal.Status == governance.ProposalStatusCompleted && proposal.Outcome == governance.ProposalOutcomeCompletedNo {
-			finalizeJob := event.NewGovFinalizeProposalJob(proposal.ProposalID, proposal.Status)
-
-			exists, _ := jobStore.WithChain(chain.ONELEDGER).JobExists(finalizeJob.JobID)
-			if !exists {
-				err := jobStore.WithChain(chain.ONELEDGER).SaveJob(finalizeJob)
-				if err != nil {
-					return true
-				}
-			}
-		}
-		return false
-	})
 }
 
 func handleBlockRewards(validators *identity.ValidatorStore, rewards *rewards.RewardStore, node *consensus.Node) abciTypes.Event {
