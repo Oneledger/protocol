@@ -22,10 +22,17 @@ package transactions
 import (
 	"errors"
 	"fmt"
+	"strings"
+
+	abci "github.com/tendermint/tendermint/abci/types"
+
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
-	abci "github.com/tendermint/tendermint/abci/types"
-	"strings"
+)
+
+const (
+	FINALIZE_KEY = "FINALIZE"
+	EXPIRE_KEY   = "EXPIRE"
 )
 
 type TransactionStore struct {
@@ -47,8 +54,8 @@ func (ts *TransactionStore) WithState(state *storage.State) *TransactionStore {
 	return ts
 }
 
-func (ts *TransactionStore) Set(tx *abci.RequestDeliverTx, key string) error {
-	storeKey := storage.StoreKey(string(ts.prefix) + storage.DB_PREFIX + key)
+func (ts *TransactionStore) Set(tx *abci.RequestDeliverTx, key string, txType string) error {
+	storeKey := storage.StoreKey(string(ts.prefix) + storage.DB_PREFIX + key + storage.DB_PREFIX + txType)
 	data, err := ts.szlr.Serialize(tx)
 	if err != nil {
 		return err
