@@ -3,15 +3,15 @@ package app
 import (
 	"encoding/hex"
 	"fmt"
+	"math"
+	"runtime/debug"
+	"strconv"
+
+	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/rewards"
-	"github.com/tendermint/tendermint/libs/kv"
-
-	"math"
-	"runtime/debug"
-	"strconv"
 
 	"github.com/Oneledger/protocol/data/governance"
 
@@ -133,10 +133,30 @@ func (app *App) blockBeginner() blockBeginner {
 
 		//update the header to current block
 		app.header = req.Header
-
+		addInternalTX()
 		app.logger.Detail("Begin Block:", result, "height:", req.Header.Height, "AppHash:", hex.EncodeToString(req.Header.AppHash))
 		return result
 	}
+}
+
+func addInternalTX(app App) {
+	proposalMasterStore := app.Context.proposalMaster
+	proposals := proposalMasterStore.Proposal
+	passedProposals := proposals.WithPrefixType(governance.ProposalStatePassed)
+	passedProposals.Iterate(func(id governance.ProposalID, proposal *governance.Proposal) bool {
+		if proposal.Status == governance.ProposalStatusCompleted && proposal.Outcome == governance.ProposalOutcomeCompleted {
+			//Add to internalTX Data store
+		}
+		return false
+	})
+
+	failedProposals := proposals.WithPrefixType(governance.ProposalStateFailed)
+	failedProposals.Iterate(func(id governance.ProposalID, proposal *governance.Proposal) bool {
+		if proposal.Status == governance.ProposalStatusCompleted && proposal.Outcome == governance.ProposalOutcomeCompleted {
+			//Add to internalTX Data store
+		}
+		return false
+	})
 }
 
 // mempool connection: for checking if transactions should be relayed before they are committed
@@ -271,8 +291,9 @@ func (app *App) blockEnder() blockEnder {
 		doTransitions(app.Context.jobStore, app.Context.btcTrackers.WithState(app.Context.deliver), app.Context.validators)
 		doEthTransitions(app.Context.jobStore, app.Context.ethTrackers, app.Context.node.ValidatorAddress(), ethTrackerlog, app.Context.witnesses, app.Context.deliver)
 
-		//Check for vote expiration on active proposals
 		updateProposals(app.Context.proposalMaster, app.Context.jobStore, app.Context.deliver)
+
+		//Check for vote expiration on active proposals
 
 		//Distribute Block rewards to Validators
 		blockRewardEvent := handleBlockRewards(app.Context.validators, app.Context.rewardMaster.Reward.WithState(app.Context.deliver), app.Node())
