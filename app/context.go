@@ -114,9 +114,9 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.rewardMaster = NewRewardMasterStore(ctx.chainstate)
 	ctx.btcTrackers = bitcoin.NewTrackerStore("btct", storage.NewState(ctx.chainstate))
 	//Separate DB and chainstate
-	newDB := tmdb.NewDB("test", tmdb.MemDBBackend, "")
+	newDB := tmdb.NewDB("internaltxdb", tmdb.MemDBBackend, "")
 	cs := storage.NewState(storage.NewChainState("chainstateTX", newDB))
-	ctx.transaction = transactions.NewTransactionStore("tran", cs)
+	ctx.transaction = transactions.NewTransactionStore("intx", cs)
 
 	ctx.ethTrackers = ethereum.NewTrackerStore("etht", "ethfailed", "ethsuccess", storage.NewState(ctx.chainstate))
 	ctx.accounts = accounts.NewWallet(cfg, ctx.dbDir())
@@ -243,8 +243,8 @@ func (ctx *context) Services() (service.Map, error) {
 	ethTracker := ethereum.NewTrackerStore("etht", "ethfailed", "ethsuccess", storage.NewState(ctx.chainstate))
 	ethTracker.SetupOption(ctx.ethTrackers.GetOption())
 
-	ons := ons.NewDomainStore("d", storage.NewState(ctx.chainstate))
-	ons.SetOptions(ctx.domains.GetOptions())
+	onsStore := ons.NewDomainStore("d", storage.NewState(ctx.chainstate))
+	onsStore.SetOptions(ctx.domains.GetOptions())
 
 	proposalMaster := NewProposalMasterStore(ctx.chainstate)
 	proposalMaster.Proposal.SetOptions(ctx.proposalMaster.Proposal.GetOptions())
@@ -261,7 +261,7 @@ func (ctx *context) Services() (service.Map, error) {
 		NodeContext:    ctx.node,
 		ValidatorSet:   identity.NewValidatorStore("v", storage.NewState(ctx.chainstate)),
 		WitnessSet:     identity.NewWitnessStore("w", storage.NewState(ctx.chainstate)),
-		Domains:        ons,
+		Domains:        onsStore,
 		Delegators:     ctx.delegators,
 		ProposalMaster: proposalMaster,
 		RewardMaster:   rewardMaster,
@@ -336,7 +336,10 @@ func (ctx *context) Storage() StorageCtx {
 func (ctx *context) Close() {
 	closers := []closer{ctx.db, ctx.accounts, ctx.rpc, ctx.jobBus}
 	for _, closer := range closers {
-		closer.Close()
+		err := closer.Close()
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
