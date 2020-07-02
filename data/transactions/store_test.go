@@ -49,7 +49,7 @@ func init() {
 	transactionStore = NewTransactionStore("tran", cs)
 }
 
-func TestTransactionStore_Set(t *testing.T) {
+func TestTransactionStore_AddFinalized(t *testing.T) {
 	for _, tx := range txList {
 		hash := sha256.New()
 		hash.Write(tx.Tx)
@@ -64,7 +64,7 @@ func TestTransactionStore_Set(t *testing.T) {
 	}
 }
 
-func TestTransactionStore_Delete(t *testing.T) {
+func TestTransactionStore_DeleteFinalized(t *testing.T) {
 	hash := sha256.New()
 	hash.Write(txList[0].Tx)
 	hashData := hash.Sum(nil)
