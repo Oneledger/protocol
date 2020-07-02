@@ -11,6 +11,7 @@ import (
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/magiconair/properties/assert"
+	abci "github.com/tendermint/tendermint/abci/types"
 	db "github.com/tendermint/tm-db"
 	"strconv"
 	"testing"
@@ -73,4 +74,13 @@ func TestTransactionStore_Delete(t *testing.T) {
 	transactionStore.State.Commit()
 	res = transactionStore.Exists(hashStr)
 	assert.Equal(t, res, false)
+}
+
+func TestTransactionStore_Iterate(t *testing.T) {
+	count := 0
+	transactionStore.Iterate(func(key string, tx *abci.RequestDeliverTx) bool {
+		count++
+		return false
+	})
+	assert.Equal(t, count, 4)
 }
