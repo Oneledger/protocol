@@ -10,10 +10,11 @@ import (
 	gov_action "github.com/Oneledger/protocol/action/governance"
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/data/transactions"
 )
 
 // Functions for block Beginner
-func AddInternalTX(proposalMasterStore *governance.ProposalMasterStore, validator keys.Address, height int64) {
+func AddInternalTX(proposalMasterStore *governance.ProposalMasterStore, validator keys.Address, height int64, transaction *transactions.TransactionStore) {
 	proposals := proposalMasterStore.Proposal
 	activeProposals := proposals.WithPrefixType(governance.ProposalStateActive)
 	activeProposals.Iterate(func(id governance.ProposalID, proposal *governance.Proposal) bool {
@@ -35,7 +36,9 @@ func AddInternalTX(proposalMasterStore *governance.ProposalMasterStore, validato
 			if err != nil {
 				return true
 			}
-			fmt.Println(tx.String()) // Add tx to store (KEY FINALIZE)
+			fmt.Println("Adding to queue Finalize")
+			transaction.AddFinalized(string(proposal.ProposalID), &tx)
+			transaction.State.Commit()
 		}
 		return false
 	})
@@ -47,7 +50,7 @@ func AddInternalTX(proposalMasterStore *governance.ProposalMasterStore, validato
 			if err != nil {
 				return true
 			}
-			fmt.Println(tx) // Add tx to store (KEY FINALIZE)
+			transaction.AddFinalized(string(proposal.ProposalID), &tx)
 		}
 		return false
 	})
@@ -95,14 +98,19 @@ func GetExpireTX(proposalId governance.ProposalID, validatorAddress keys.Address
 
 // Functions for block Ender
 func FinalizeProposals(header *Header, ctx *context) bool {
-	var finalizePropossals []abciTypes.RequestDeliverTx // Get this from the store
-	for _, proposal := range finalizePropossals {
-		ctx := ctx.Action(header, ctx.check)
+	var finalizeProposals []abciTypes.RequestDeliverTx // Get this from the store
+	ctx.transaction.IterateFinalized(func(key string, tx *abciTypes.RequestDeliverTx) bool {
+		finalizeProposals = append(finalizeProposals, *tx)
+		return false
+	})
+	for _, proposal := range finalizeProposals {
+		fmt.Println("Finalizing the proposal")
+		actionctx := ctx.Action(header, ctx.check)
 		txData := proposal.Tx
 		newFinalize := gov_action.FinalizeProposal{}
 		err := newFinalize.Unmarshal(txData)
 		if err != nil {
-			ctx.Logger.Error("Unable to UnMarshal TX")
+			fmt.Println("Unable to UnMarshal TX")
 			return false
 		}
 		uuidNew, _ := uuid.NewUUID()
@@ -112,11 +120,16 @@ func FinalizeProposals(header *Header, ctx *context) bool {
 			Fee:  action.Fee{},
 			Memo: uuidNew.String(),
 		}
-		ok, _ := newFinalize.ProcessDeliver(ctx, rawTx)
+		ok, _ := newFinalize.ProcessDeliver(actionctx, rawTx)
 		if !ok {
 			return false
 		}
 	}
+	//Delete all proposals
+	ctx.transaction.IterateFinalized(func(key string, tx *abciTypes.RequestDeliverTx) bool {
+		ctx.transaction.DeleteFinalized(key)
+		return false
+	})
 	return true
 }
 

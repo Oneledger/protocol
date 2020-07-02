@@ -6,11 +6,13 @@ import (
 	"path/filepath"
 	"time"
 
+	tmdb "github.com/tendermint/tm-db"
+
 	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/data/rewards"
+	"github.com/Oneledger/protocol/data/transactions"
 
 	"github.com/pkg/errors"
-	db "github.com/tendermint/tm-db"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/eth"
@@ -48,7 +50,7 @@ type context struct {
 	actionRouter action.Router
 
 	//db for chain state storage
-	db         db.DB
+	db         tmdb.DB
 	chainstate *storage.ChainState
 	check      *storage.State
 	deliver    *storage.State
@@ -74,6 +76,7 @@ type context struct {
 	proposalMaster  *governance.ProposalMasterStore
 	delegators      *delegation.DelegationStore
 	rewardMaster    *rewards.RewardMasterStore
+	transaction     *transactions.TransactionStore
 	logWriter       io.Writer
 }
 
@@ -110,6 +113,10 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.delegators = delegation.NewDelegationStore("st", storage.NewState(ctx.chainstate))
 	ctx.rewardMaster = NewRewardMasterStore(ctx.chainstate)
 	ctx.btcTrackers = bitcoin.NewTrackerStore("btct", storage.NewState(ctx.chainstate))
+	//Separate DB and chainstate
+	newDB := tmdb.NewDB("test", tmdb.MemDBBackend, "")
+	cs := storage.NewState(storage.NewChainState("chainstateTX", newDB))
+	ctx.transaction = transactions.NewTransactionStore("tran", cs)
 
 	ctx.ethTrackers = ethereum.NewTrackerStore("etht", "ethfailed", "ethsuccess", storage.NewState(ctx.chainstate))
 	ctx.accounts = accounts.NewWallet(cfg, ctx.dbDir())
