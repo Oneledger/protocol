@@ -128,7 +128,7 @@ func FinalizeProposals(header *Header, ctx *context, logger *log.Logger) {
 		err := newFinalize.Unmarshal(txData)
 		if err != nil {
 			logger.Error("Unable to UnMarshal TX(Finalize) :", txData)
-			return
+			continue
 		}
 		uuidNew, _ := uuid.NewUUID()
 		rawTx := action.RawTx{
@@ -169,7 +169,7 @@ func ExpireProposals(header *Header, ctx *context, logger *log.Logger) {
 		err := newExpire.Unmarshal(txData)
 		if err != nil {
 			logger.Error("Unable to UnMarshal TX(Expire) :", txData)
-			return
+			continue
 		}
 		uuidNew, _ := uuid.NewUUID()
 		rawTx := action.RawTx{
