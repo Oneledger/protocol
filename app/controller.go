@@ -131,6 +131,8 @@ func (app *App) blockBeginner() blockBeginner {
 
 		//update the header to current block
 		app.header = req.Header
+		//Adds proposals that meet the requirements to either Expired or Finalizing Keys from transaction store
+		//Transaction store is not part of chainstate ,it just maintains a list of proposals from BlockBeginner to BlockEnder .Gets cleared at each Block Ender
 		AddInternalTX(app.Context.proposalMaster, app.Context.node.ValidatorAddress(), app.header.Height, app.Context.transaction, app.logger)
 
 		app.logger.Detail("Begin Block:", result, "height:", req.Header.Height, "AppHash:", hex.EncodeToString(req.Header.AppHash))
@@ -269,13 +271,13 @@ func (app *App) blockEnder() blockEnder {
 		ethTrackerlog := log.NewLoggerWithPrefix(app.Context.logWriter, "ethtracker").WithLevel(log.Level(app.Context.cfg.Node.LogLevel))
 		doTransitions(app.Context.jobStore, app.Context.btcTrackers.WithState(app.Context.deliver), app.Context.validators)
 		doEthTransitions(app.Context.jobStore, app.Context.ethTrackers, app.Context.node.ValidatorAddress(), ethTrackerlog, app.Context.witnesses, app.Context.deliver)
-
-		//updateProposals(app.Context.proposalMaster, app.Context.jobStore, app.Context.deliver)
+		// Proposals currently in store are cleared if deliver is successful
+		// If Expire or Finalize TX returns false,they will added to the proposals queue in the next block
+		// Errors are logged at the function level
+		// These functions iterate the transactions store
 		ExpireProposals(&app.header, &app.Context, app.logger)
-
 		FinalizeProposals(&app.header, &app.Context, app.logger)
 
-		//Check for vote expiration on active proposals
 		//Distribute Block rewards to Validators
 		blockRewardEvent := handleBlockRewards(app.Context.validators, app.Context.rewardMaster.Reward.WithState(app.Context.deliver), app.Node())
 

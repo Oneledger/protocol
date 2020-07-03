@@ -1,8 +1,6 @@
 package app
 
 import (
-	"fmt"
-
 	"github.com/google/uuid"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
 
@@ -24,13 +22,13 @@ func AddInternalTX(proposalMasterStore *governance.ProposalMasterStore, validato
 			// Create tx of type requestdeliverTx
 			tx, err := GetExpireTX(proposal.ProposalID, validator)
 			if err != nil {
-				logger.Error(err)
+				logger.Error("Error in building TX of type RequestDeliverTx(expire)", err)
 				return true
 			}
 			// Add it to expired prefix
 			err = transaction.AddExpired(string(proposal.ProposalID), &tx)
 			if err != nil {
-				logger.Error(err)
+				logger.Error("Error in adding to Expired Queue :", err)
 				return true
 			}
 			// Commit the state
@@ -44,12 +42,12 @@ func AddInternalTX(proposalMasterStore *governance.ProposalMasterStore, validato
 		if proposal.Status == governance.ProposalStatusCompleted && proposal.Outcome == governance.ProposalOutcomeCompletedYes {
 			tx, err := GetFinalizeTX(proposal.ProposalID, validator)
 			if err != nil {
-				logger.Error(err)
+				logger.Error("Error in building TX of type RequestDeliverTx(finalize)", err)
 				return true
 			}
 			err = transaction.AddFinalized(string(proposal.ProposalID), &tx)
 			if err != nil {
-				logger.Error(err)
+				logger.Error("Error in adding to Finalized Queue :", err)
 				return true
 			}
 			transaction.State.Commit()
@@ -62,12 +60,12 @@ func AddInternalTX(proposalMasterStore *governance.ProposalMasterStore, validato
 		if proposal.Status == governance.ProposalStatusCompleted && proposal.Outcome == governance.ProposalOutcomeCompletedNo {
 			tx, err := GetFinalizeTX(proposal.ProposalID, validator)
 			if err != nil {
-				logger.Error(err)
+				logger.Error("Error in building TX of type RequestDeliverTx(finalize)", err)
 				return true
 			}
 			err = transaction.AddFinalized(string(proposal.ProposalID), &tx)
 			if err != nil {
-				logger.Error(err)
+				logger.Error("Error in adding to Finalized Queue :", err)
 				return true
 			}
 			transaction.State.Commit()
@@ -124,13 +122,12 @@ func FinalizeProposals(header *Header, ctx *context, logger *log.Logger) {
 		return false
 	})
 	for _, proposal := range finalizeProposals {
-		fmt.Println("Finalizing transactions")
 		actionctx := ctx.Action(header, ctx.deliver)
 		txData := proposal.Tx
 		newFinalize := gov_action.FinalizeProposal{}
 		err := newFinalize.Unmarshal(txData)
 		if err != nil {
-			fmt.Println("Unable to UnMarshal TX")
+			logger.Error("Unable to UnMarshal TX(Finalize) :", txData)
 			return
 		}
 		uuidNew, _ := uuid.NewUUID()
@@ -142,6 +139,7 @@ func FinalizeProposals(header *Header, ctx *context, logger *log.Logger) {
 		}
 		ok, _ := newFinalize.ProcessDeliver(actionctx, rawTx)
 		if !ok {
+			logger.Error("Failed to Finalize : ", txData, "Error : ", err)
 			return
 		}
 		ctx.deliver.Commit()
@@ -150,7 +148,7 @@ func FinalizeProposals(header *Header, ctx *context, logger *log.Logger) {
 	ctx.transaction.IterateFinalized(func(key string, tx *abciTypes.RequestDeliverTx) bool {
 		ok, err := ctx.transaction.DeleteFinalized(key)
 		if !ok {
-			logger.Error(err)
+			logger.Error("Failed to clear finalized proposals queue :", err)
 			return true
 		}
 		return false
@@ -170,6 +168,7 @@ func ExpireProposals(header *Header, ctx *context, logger *log.Logger) {
 		newExpire := gov_action.ExpireVotes{}
 		err := newExpire.Unmarshal(txData)
 		if err != nil {
+			logger.Error("Unable to UnMarshal TX(Expire) :", txData)
 			return
 		}
 		uuidNew, _ := uuid.NewUUID()
@@ -181,6 +180,7 @@ func ExpireProposals(header *Header, ctx *context, logger *log.Logger) {
 		}
 		ok, _ := newExpire.ProcessDeliver(actionctx, rawTx)
 		if !ok {
+			logger.Error("Failed to Expire : ", txData, "Error : ", err)
 			return
 		}
 		ctx.deliver.Commit()
@@ -188,7 +188,7 @@ func ExpireProposals(header *Header, ctx *context, logger *log.Logger) {
 	ctx.transaction.IterateExpired(func(key string, tx *abciTypes.RequestDeliverTx) bool {
 		ok, err := ctx.transaction.DeleteExpired(key)
 		if !ok {
-			logger.Error(err)
+			logger.Error("Failed to clear expired proposals queue :", err)
 			return true
 		}
 		return false
