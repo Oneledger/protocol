@@ -280,12 +280,8 @@ func (app *App) blockEnder() blockEnder {
 		//Check for vote expiration on active proposals
 		updateProposals(app.Context.proposalMaster, app.Context.jobStore, app.Context.deliver)
 
-		//Distribute Block rewards to Validators
-		//blockRewardEvent := handleBlockRewards(app.Context.validators, app.Context.rewards.WithState(app.Context.deliver), app.Node())
-
 		result := ResponseEndBlock{
 			ValidatorUpdates: updates,
-			//	Events:           []abciTypes.Event{blockRewardEvent},
 		}
 
 		app.logger.Detail("End Block: ", result, "height:", req.Height)
