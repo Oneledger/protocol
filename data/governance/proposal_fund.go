@@ -2,9 +2,9 @@ package governance
 
 import (
 	"fmt"
-
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
+	"github.com/pkg/errors"
 )
 
 type ProposalFund struct {
@@ -17,14 +17,6 @@ func (fund *ProposalFund) Print() {
 	fmt.Printf("Proposal ID : %s | Funding Address : %s  | Funding Amount  : %s \n", fund.id, fund.address.String(), fund.fundingAmount.String())
 }
 
-func (pf *ProposalFundStore) GetCurrentFundsForProposal(id ProposalID) *balance.Amount {
-	totalBalance := balance.NewAmountFromInt(0)
-	pf.GetFundsForProposalID(id, func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund {
-		totalBalance = totalBalance.Plus(*amt)
-		return ProposalFund{}
-	})
-	return totalBalance
-}
 
 func (pf *ProposalFundStore) DeleteAllFunds(id ProposalID) error {
 	e := error(nil)
@@ -41,6 +33,14 @@ func (pf *ProposalFundStore) DeleteAllFunds(id ProposalID) error {
 	})
 	if e != nil {
 		return e
+	}
+
+	// set total funds record to 0
+	keyTotal := assembleTotalFundsKey(id)
+	zeroFunds := balance.NewAmount(0)
+	err := pf.set(keyTotal, *zeroFunds)
+	if err != nil {
+		return errors.Wrap(err, errorSettingRecord)
 	}
 	return nil
 }
