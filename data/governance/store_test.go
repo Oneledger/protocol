@@ -2,13 +2,17 @@ package governance
 
 import (
 	"fmt"
+	"math/rand"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	db "github.com/tendermint/tm-db"
 
 	"github.com/Oneledger/protocol/storage"
 )
+
+var govStore *Store
 
 func init() {
 	fmt.Println("####### TESTING GOVERNANCE STORE #######")
@@ -106,4 +110,20 @@ func TestStore_GetLUH(t *testing.T) {
 	height, err := govStore.GetLUH()
 	assert.NoError(t, err, "No error Expected")
 	assert.EqualValues(t, 1000, height, "Expected height is 1000 from Line 99")
+}
+
+func TestStoreGetAndSet(t *testing.T) {
+	rand.Seed(time.Now().UnixNano())
+	min := 0
+	max := 300000
+	for i := 0; i < 30; i++ {
+		h := rand.Intn(max-min+1) + min
+		err := govStore.WithHeight(int64(h)).SetLUH()
+		assert.NoError(t, err, "No error Expected")
+		height, err := govStore.GetLUH()
+		assert.NoError(t, err, "No error Expected")
+		assert.EqualValues(t, h, height, "")
+		fmt.Println("Testing passed for height : ", h)
+	}
+
 }
