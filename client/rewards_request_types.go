@@ -14,7 +14,7 @@ type ListRewardsReply struct {
 	Rewards   []balance.Amount `json:"rewards"`
 }
 
-type MatureRewardsReply struct {
-	Validator     keys.Address   `json:"validator"`
-	MatureRewards balance.Amount `json:"matureRewards"`
+type RewardsReply struct {
+	Validator keys.Address   `json:"validator"`
+	Amount    balance.Amount `json:"amount"`
 }
