@@ -9,7 +9,6 @@ import (
 
 	"github.com/tendermint/tendermint/libs/kv"
 
-	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/rewards"
 
@@ -129,7 +128,12 @@ func (app *App) blockBeginner() blockBeginner {
 			app.logger.Error("validator set with error", err)
 		}
 
-		result := ResponseBeginBlock{}
+		// update Block Rewards
+		blockRewardEvent := handleBlockRewards(app.Context.validators, app.Context.rewardMaster.WithState(app.Context.deliver), req)
+
+		result := ResponseBeginBlock{
+			Events: []abciTypes.Event{blockRewardEvent},
+		}
 
 		//update the header to current block
 		app.header = req.Header
@@ -274,12 +278,8 @@ func (app *App) blockEnder() blockEnder {
 		//Check for vote expiration on active proposals
 		updateProposals(app.Context.proposalMaster, app.Context.jobStore, app.Context.deliver)
 
-		//Distribute Block rewards to Validators
-		blockRewardEvent := handleBlockRewards(app.Context.validators, app.Context.rewardMaster.Reward.WithState(app.Context.deliver), app.Node())
-
 		result := ResponseEndBlock{
 			ValidatorUpdates: updates,
-			Events:           []abciTypes.Event{blockRewardEvent},
 		}
 
 		app.logger.Detail("End Block: ", result, "height:", req.Height)
@@ -481,16 +481,9 @@ func updateProposals(proposalMaster *governance.ProposalMasterStore, jobStore *j
 	})
 }
 
-func handleBlockRewards(validators *identity.ValidatorStore, rewards *rewards.RewardStore, node *consensus.Node) abciTypes.Event {
-	//Get BlockStore
-	blockStore := node.BlockStore()
-	//Get Last known contiguous block height - Backtrack by 1 since block for current height is not committed
-	lastHeight := blockStore.Height() - 1
-	//Get Commit Object at "lastHeight"
-	blockCommit := blockStore.LoadBlockCommit(lastHeight)
-	//Get number of signatures in the commit
-	numOfSignatures := blockCommit.Size()
-
+func handleBlockRewards(validators *identity.ValidatorStore, rewardMaster *rewards.RewardMasterStore, block RequestBeginBlock) abciTypes.Event {
+	votes := block.LastCommitInfo.Votes
+	lastHeight := block.GetHeader().Height
 	heightKey := "height"
 
 	//Initialize Event for Block Response
@@ -512,22 +505,9 @@ func handleBlockRewards(validators *identity.ValidatorStore, rewards *rewards.Re
 	})
 
 	//Loop through all validators that participated in signing the last block
-	for index := 0; index < numOfSignatures; index++ {
-
-		//Get the validator's vote by index
-		validatorVote := blockCommit.GetVote(index)
-		if validatorVote == nil {
-			continue
-		}
-		if len(validatorVote.ValidatorAddress) == 0 {
-			continue
-		}
-		if len(validatorVote.Signature) == 0 {
-			continue
-		}
-
+	for _, vote := range votes {
 		//Verify Validator Address
-		valAddress := keys.Address(validatorVote.ValidatorAddress)
+		valAddress := keys.Address(vote.Validator.Address)
 		if valAddress.Err() != nil {
 			continue
 		}
@@ -536,18 +516,35 @@ func handleBlockRewards(validators *identity.ValidatorStore, rewards *rewards.Re
 			continue
 		}
 
-		//Distribute Block Reward to Validator
-		//TODO: Calculate reward to be distributed
-		amount := balance.NewAmount(10)
-		err = rewards.AddToAddress(valAddress, lastHeight, amount)
-		if err != nil {
-			continue
-		}
+		if vote.GetSignedLastBlock() {
+			//Distribute Block Reward to Validator
+			//TODO: Calculate reward to be distributed
+			amount := balance.NewAmount(10)
+			err = rewardMaster.Reward.AddToAddress(valAddress, lastHeight, amount)
+			if err != nil {
+				continue
+			}
 
-		//Record Amount in kvMap
-		kvMap[valAddress.String()] = kv.Pair{
-			Key:   []byte(valAddress.String()),
-			Value: []byte(amount.String()),
+			//Record Amount in kvMap
+			kvMap[valAddress.String()] = kv.Pair{
+				Key:   []byte(valAddress.String()),
+				Value: []byte(amount.String()),
+			}
+
+			//Update Matured Amount
+			options := rewardMaster.Reward.GetOptions()
+			matured := lastHeight % options.RewardInterval
+			if matured == 0 {
+				//Add rewards at chunk n - 2 to cumulative store
+				maturedAmount, err := rewardMaster.Reward.GetMaturedAmount(valAddress, lastHeight)
+				if err != nil {
+					continue
+				}
+				err = rewardMaster.RewardCumula.AddMaturedBalance(valAddress, maturedAmount)
+				if err != nil {
+					continue
+				}
+			}
 		}
 	}
 
