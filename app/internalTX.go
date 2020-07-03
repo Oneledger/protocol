@@ -140,7 +140,7 @@ func FinalizeProposals(header *Header, ctx *context, logger *log.Logger) {
 		ok, _ := newFinalize.ProcessDeliver(actionctx, rawTx)
 		if !ok {
 			logger.Error("Failed to Finalize : ", txData, "Error : ", err)
-			return
+			continue
 		}
 		ctx.deliver.Commit()
 	}
@@ -181,7 +181,7 @@ func ExpireProposals(header *Header, ctx *context, logger *log.Logger) {
 		ok, _ := newExpire.ProcessDeliver(actionctx, rawTx)
 		if !ok {
 			logger.Error("Failed to Expire : ", txData, "Error : ", err)
-			return
+			continue
 		}
 		ctx.deliver.Commit()
 	}
