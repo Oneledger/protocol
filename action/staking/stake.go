@@ -3,12 +3,13 @@ package staking
 import (
 	"encoding/json"
 
+	"github.com/pkg/errors"
+	"github.com/tendermint/tendermint/libs/kv"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/identity"
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/kv"
 )
 
 var _ action.Msg = &Stake{}
@@ -137,7 +138,7 @@ func (s stakeTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start
 
 // allow validator's stake address update only when it's clean
 func isStakeAddressClean(ctx *action.Context, v *identity.Validator) (bool, error) {
-	options, err := ctx.Govern.GetStakingOptions()
+	options, err := ctx.GovernanceStore.GetStakingOptions()
 	if err != nil {
 		return false, err
 	}

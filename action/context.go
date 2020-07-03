@@ -27,7 +27,6 @@ type Context struct {
 	Accounts            accounts.Wallet
 	Balances            *balance.Store
 	Domains             *ons.DomainStore
-	Govern              *governance.Store
 	Delegators          *delegation.DelegationStore
 	FeePool             *fees.Store
 	Currencies          *balance.CurrencySet
