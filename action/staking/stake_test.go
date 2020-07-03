@@ -100,7 +100,7 @@ func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, se
 	}
 	ctx.FeePool = fees.NewStore("tf", cs)
 	ctx.FeePool.SetupOpt(ctx.FeeOpt)
-	ctx.Govern = governance.NewStore("tg", cs)
+	ctx.GovernanceStore = governance.NewStore("tg", cs)
 	ctx.Delegators = delegation.NewDelegationStore("tst", cs)
 	ctx.Validators = identity.NewValidatorStore("tv", "purged", cs)
 
@@ -118,8 +118,8 @@ func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, se
 		MinSelfDelegationAmount: *balance.NewAmountFromInt(1),
 		MaturityTime:            10,
 	}
-	ctx.Govern.WithHeight(0).SetStakingOptions(delop)
-	ctx.Govern.WithHeight(0).SetLUH()
+	ctx.GovernanceStore.WithHeight(0).SetStakingOptions(delop)
+	ctx.GovernanceStore.WithHeight(0).SetLUH()
 	return ctx
 }
 
@@ -188,7 +188,7 @@ func initCheckStake(t *testing.T, ctx *action.Context, balToValidate int64) {
 	amt, _ = ctx.Delegators.GetDelegatorBoundedAmount(from.Bytes())
 	assert.True(t, amt.Equals(*balance.NewAmountFromInt(0)), "Got GetDelegatorBoundedAmount: %v", amt)
 
-	tt, _ := ctx.Govern.GetStakingOptions()
+	tt, _ := ctx.GovernanceStore.GetStakingOptions()
 	assert.True(t, tt.MinSelfDelegationAmount.Equals(*balance.NewAmountFromInt(1)), "Got MinSelfDelegationAmount: %v", amt)
 
 	val := getBalanceFromAddress(ctx, from)
@@ -239,7 +239,7 @@ func TestStakeTx_ProcessDeliver_OK(t *testing.T) {
 		amt, _ = ctx.Delegators.GetDelegatorBoundedAmount(from.Bytes())
 		assert.True(t, amt.Equals(*balance.NewAmountFromInt(0)), "Got GetDelegatorBoundedAmount: %v", amt)
 
-		options, _ := ctx.Govern.GetStakingOptions()
+		options, _ := ctx.GovernanceStore.GetStakingOptions()
 		assert.True(t, options.MinSelfDelegationAmount.Equals(*balance.NewAmountFromInt(1)), "Got MinSelfDelegationAmount: %v", amt)
 
 		val := getBalanceFromAddress(ctx, from)

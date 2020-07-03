@@ -68,7 +68,7 @@ func initCheckWithdraw(t *testing.T, ctx *action.Context, balToValidate int64) {
 	amt, _ = ctx.Delegators.GetDelegatorBoundedAmount(from.Bytes())
 	assert.True(t, amt.Equals(*balance.NewAmountFromInt(1)), "Got GetDelegatorBoundedAmount: %v", amt)
 
-	options, _ := ctx.Govern.GetStakingOptions()
+	options, _ := ctx.GovernanceStore.GetStakingOptions()
 	assert.True(t, options.MinSelfDelegationAmount.Equals(*balance.NewAmountFromInt(1)), "Got MinSelfDelegationAmount: %v", amt)
 
 	val := getBalanceFromAddress(ctx, from)
@@ -116,7 +116,7 @@ func TestWithdrawTx_ProcessDeliver_OK(t *testing.T) {
 		amt, _ = ctx.Delegators.GetDelegatorBoundedAmount(from.Bytes())
 		assert.True(t, amt.Equals(*balance.NewAmountFromInt(0)), "Got GetDelegatorBoundedAmount: %v", amt)
 
-		options, _ := ctx.Govern.GetStakingOptions()
+		options, _ := ctx.GovernanceStore.GetStakingOptions()
 		assert.True(t, options.MinSelfDelegationAmount.Equals(*balance.NewAmountFromInt(1)), "Got MinSelfDelegationAmount: %v", amt)
 
 		val := getBalanceFromAddress(ctx, from)

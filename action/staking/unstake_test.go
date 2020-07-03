@@ -58,7 +58,7 @@ func initCheckUnstake(t *testing.T, ctx *action.Context, balToValidate int64) {
 	ctx.Delegators.SetDelegatorEffectiveAmount(from.Bytes(), *balance.NewAmountFromInt(1))
 	ctx.Delegators.SetValidatorAmount(from.Bytes(), *balance.NewAmountFromInt(1))
 	// 1 block
-	ctx.Govern.SetStakingOptions(delegation.Options{
+	ctx.GovernanceStore.SetStakingOptions(delegation.Options{
 		MaturityTime:            1,
 		MinSelfDelegationAmount: *balance.NewAmountFromInt(1),
 	})
@@ -81,7 +81,7 @@ func initCheckUnstake(t *testing.T, ctx *action.Context, balToValidate int64) {
 	height := ctx.Header.GetHeight()
 	assert.True(t, height == 1)
 
-	tt, _ := ctx.Govern.GetStakingOptions()
+	tt, _ := ctx.GovernanceStore.GetStakingOptions()
 	assert.True(t, tt.MaturityTime == 1)
 	assert.True(t, tt.MinSelfDelegationAmount.Equals(*balance.NewAmountFromInt(1)), "Got MinSelfDelegationAmount: %v", amt)
 
@@ -135,7 +135,7 @@ func TestUnstakeTx_ProcessDeliver_OK(t *testing.T) {
 		amt, _ = ctx.Delegators.GetDelegatorBoundedAmount(from.Bytes())
 		assert.True(t, amt.Equals(*balance.NewAmountFromInt(0)), "Got GetDelegatorBoundedAmount: %v", amt)
 
-		options, _ := ctx.Govern.GetStakingOptions()
+		options, _ := ctx.GovernanceStore.GetStakingOptions()
 		assert.True(t, options.MinSelfDelegationAmount.Equals(*balance.NewAmountFromInt(1)), "Got inSelfDelegationAmount: %v", amt)
 
 		val := getBalanceFromAddress(ctx, from)
@@ -145,7 +145,7 @@ func TestUnstakeTx_ProcessDeliver_OK(t *testing.T) {
 		height := ctx.Header.GetHeight()
 		assert.True(t, height == 1)
 
-		tt, _ := ctx.Govern.GetStakingOptions()
+		tt, _ := ctx.GovernanceStore.GetStakingOptions()
 		assert.True(t, tt.MaturityTime == 1)
 
 		mature, _ := ctx.Delegators.GetMatureAmounts(height + tt.MaturityTime)
