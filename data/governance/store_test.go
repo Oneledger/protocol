@@ -12,7 +12,7 @@ import (
 	"github.com/Oneledger/protocol/storage"
 )
 
-var govStore *Store
+var gStore *Store
 
 func init() {
 	fmt.Println("####### TESTING GOVERNANCE STORE #######")
@@ -22,7 +22,7 @@ func init() {
 	cs := storage.NewState(storage.NewChainState("chainstate", newDB))
 
 	//Create Governance store
-	govStore = NewStore("g", cs)
+	gStore = NewStore("g", cs)
 }
 
 func TestStore_InitialChain(t *testing.T) {
@@ -102,12 +102,12 @@ func TestStore_GetProposalOptions(t *testing.T) {
 }
 
 func TestStore_SetLUH(t *testing.T) {
-	err := govStore.WithHeight(1000).SetLUH()
+	err := gStore.WithHeight(1000).SetLUH()
 	assert.NoError(t, err, "No error Expected")
 }
 
 func TestStore_GetLUH(t *testing.T) {
-	height, err := govStore.GetLUH()
+	height, err := gStore.GetLUH()
 	assert.NoError(t, err, "No error Expected")
 	assert.EqualValues(t, 1000, height, "Expected height is 1000 from Line 99")
 }
@@ -118,9 +118,9 @@ func TestStoreGetAndSet(t *testing.T) {
 	max := 300000
 	for i := 0; i < 30; i++ {
 		h := rand.Intn(max-min+1) + min
-		err := govStore.WithHeight(int64(h)).SetLUH()
+		err := gStore.WithHeight(int64(h)).SetLUH()
 		assert.NoError(t, err, "No error Expected")
-		height, err := govStore.GetLUH()
+		height, err := gStore.GetLUH()
 		assert.NoError(t, err, "No error Expected")
 		assert.EqualValues(t, h, height, "")
 		fmt.Println("Testing passed for height : ", h)
