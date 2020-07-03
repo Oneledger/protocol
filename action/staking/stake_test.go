@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/libs/bytes"
@@ -56,6 +57,8 @@ var (
 func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, setLogger bool, setCoin int64) *action.Context {
 
 	ctx := &action.Context{}
+	// header
+	ctx.Header = &abci.Header{Height: 1}
 	db := db.NewDB("test", db.MemDBBackend, "")
 	cs := storage.NewState(storage.NewChainState("balance", db))
 	// store
@@ -113,6 +116,7 @@ func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, se
 
 	delop := delegation.Options{
 		MinSelfDelegationAmount: *balance.NewAmountFromInt(1),
+		MaturityTime:            10,
 	}
 	ctx.Govern.WithHeight(0).SetStakingOptions(delop)
 	ctx.Govern.WithHeight(0).SetLUH()

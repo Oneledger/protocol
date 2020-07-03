@@ -79,7 +79,7 @@ func initCheckUnstake(t *testing.T, ctx *action.Context, balToValidate int64) {
 	assert.True(t, val.Equals(*balance.NewAmountFromInt(balToValidate)), "Got balance on address %s  - %s, required - %d", from.String(), val.String(), balToValidate)
 
 	height := ctx.Header.GetHeight()
-	assert.True(t, height == 0)
+	assert.True(t, height == 1)
 
 	tt, _ := ctx.Govern.GetStakingOptions()
 	assert.True(t, tt.MaturityTime == 1)
@@ -143,7 +143,7 @@ func TestUnstakeTx_ProcessDeliver_OK(t *testing.T) {
 		assert.True(t, val.Equals(*balance.NewAmountFromInt(requiredBal)), "Got balance on address %s  - %s, required - %d", from.String(), val.String(), requiredBal)
 
 		height := ctx.Header.GetHeight()
-		assert.True(t, height == 0)
+		assert.True(t, height == 1)
 
 		tt, _ := ctx.Govern.GetStakingOptions()
 		assert.True(t, tt.MaturityTime == 1)
