@@ -20,23 +20,27 @@ import (
 
 type ValidatorStore struct {
 	prefix      []byte
+	prefixPurge []byte
 	store       *storage.State
 	proposer    keys.Address
 	queue       ValidatorQueue
 	byzantine   []Validator
+	lastActive  map[string]int64
 	totalPower  int64
 	isValidator bool
 }
 
-func NewValidatorStore(prefix string, state *storage.State) *ValidatorStore {
+func NewValidatorStore(prefix string, prefixPurge string, state *storage.State) *ValidatorStore {
 	// TODO: get the genesis validators when start the node
 	return &ValidatorStore{
-		prefix:     storage.Prefix(prefix),
-		store:      state,
-		proposer:   []byte(nil),
-		queue:      ValidatorQueue{PriorityQueue: make(utils.PriorityQueue, 0, 100)},
-		byzantine:  make([]Validator, 0),
-		totalPower: 0,
+		prefix:      storage.Prefix(prefix),
+		prefixPurge: storage.Prefix(prefixPurge),
+		store:       state,
+		proposer:    []byte(nil),
+		queue:       ValidatorQueue{PriorityQueue: make(utils.PriorityQueue, 0, 100)},
+		byzantine:   make([]Validator, 0),
+		lastActive:  make(map[string]int64),
+		totalPower:  0,
 	}
 }
 
@@ -140,9 +144,11 @@ func (vs *ValidatorStore) Setup(req types.RequestBeginBlock, nodeValidatorAddres
 			// TODO: add fatal status for here after we decide what to do with byzantine validator
 			def = err
 		}
+		logger.Infof("slashed byzantine validator, address = %s", remove.Address)
 	}
 
 	vs.InitValidatorQueue(nodeValidatorAddress, req.GetHeader().Height)
+	vs.cacheActiveValidators(req.LastCommitInfo)
 
 	return def
 }
@@ -175,6 +181,15 @@ func (vs *ValidatorStore) InitValidatorQueue(nodeValidatorAddress keys.Address, 
 		return false
 	})
 	vs.queue.Init()
+}
+
+// cache last active validators in tendermint
+func (vs *ValidatorStore) cacheActiveValidators(lastCommit types.LastCommitInfo) {
+	vs.lastActive = make(map[string]int64)
+	for _, vote := range lastCommit.Votes {
+		addr := keys.Address(vote.Validator.Address)
+		vs.lastActive[string(addr)] = vote.Validator.Power
+	}
 }
 
 // get validators set
@@ -215,7 +230,7 @@ func (vs *ValidatorStore) IsValidatorAddress(addr keys.Address) bool {
 }
 
 // handle stake action
-func (vs *ValidatorStore) HandleStake(apply Stake) error {
+func (vs *ValidatorStore) HandleStake(apply Stake, updateStakeAddress bool) error {
 	validator := &Validator{}
 	if !vs.Exists(apply.ValidatorAddress) {
 		validator = NewValidator(
@@ -237,7 +252,12 @@ func (vs *ValidatorStore) HandleStake(apply Stake) error {
 
 		validator.Staking = *balance.NewAmountFromBigInt(amt)
 		validator.Power = calculatePower(validator.Staking)
+		if updateStakeAddress {
+			logger.Infof("update stake address: old= %s, new= %s", validator.StakeAddress.Humanize(), apply.StakeAddress.Humanize())
+			validator.StakeAddress = apply.StakeAddress
+		}
 	}
+
 	err := vs.set(*validator)
 	if err != nil {
 		return errors.Wrap(err, "failed to set validator for stake")
@@ -291,6 +311,38 @@ func (vs *ValidatorStore) HandleUnstake(unstake Unstake) error {
 	return nil
 }
 
+// Set validator last purge height
+func (vs *ValidatorStore) SetLastPurgeHeight(validator keys.Address, height int64) error {
+	key := append(vs.prefixPurge, validator...)
+	value, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(height)
+	if err != nil {
+		return errors.Wrap(err, "failed to serialize purged height")
+	}
+
+	err = vs.store.Set(key, value)
+	if err != nil {
+		return errors.Wrap(err, "failed to set purged height")
+	}
+	return nil
+}
+
+// Get validator last purge height
+func (vs *ValidatorStore) GetLastPurgeHeight(validator keys.Address) (height int64, err error) {
+	key := append(vs.prefixPurge, validator...)
+	dat, _ := vs.store.Get(key)
+	height = 0
+	if len(dat) == 0 {
+		return
+	}
+
+	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(dat, &height)
+	if err != nil {
+		logger.Error("failed to deserialize purged height", err)
+		return
+	}
+	return
+}
+
 func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.RequestEndBlock) []types.ValidatorUpdate {
 	height := req.GetHeight()
 	logger.Detailf("GetEndBlockUpdate started at block: %d\n", height)
@@ -310,20 +362,25 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 	minSelfDelegationAmount := stakingOptions.MinSelfDelegationAmount.BigInt().Int64()
 
 	if height > 1 || (len(vs.byzantine) > 0) {
+		// map for no top-power validators
+		noTopValidators := make(map[string]types.PubKey)
+
+		// collect top-power validators
 		cnt := int64(0)
 		for vs.queue.Len() > 0 {
 			// pop element to test
 			queued := vs.queue.Pop()
 			addr := queued.Value()
+			addrHuman := keys.Address(addr).Humanize()
 			key := append(vs.prefix, addr...)
 			data := vs.store.GetVersioned(height-1, key)
 			if len(data) == 0 {
-				logger.Errorf("Previous state data not found for address: %s", keys.Address(addr).Humanize())
+				logger.Errorf("Previous state data not found for address: %s", addrHuman)
 				continue
 			}
 			validator := &Validator{}
 			if err := serialize.GetSerializer(serialize.JSON).Deserialize(data, validator); err != nil {
-				logger.Errorf("Validator: %s not found", keys.Address(addr).Humanize())
+				logger.Errorf("Validator: %s not found", addrHuman)
 				continue
 			}
 
@@ -334,7 +391,7 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 				cnt++
 			}
 
-			// purge validator who's power is 0
+			// delete validator who's power is 0
 			if validator.Power <= 0 {
 				vKey := append(vs.prefix, validator.Address.Bytes()...)
 				//TODO: validator delete will not properly delete the item because of state implementation
@@ -342,17 +399,19 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 				if !ok {
 					logger.Error(err.Error())
 				}
-				updateTendermint = true
 			}
+
+			// append to update list
 			if updateTendermint {
-				logger.Detailf("Validator for update ready: %s - with power: %d\n", validator.Address.Humanize(), validator.Power)
+				logger.Detailf("Validator for update ready: %s - with power: %d\n", addrHuman, validator.Power)
 				validatorUpdates = append(validatorUpdates, types.ValidatorUpdate{
 					PubKey: validator.PubKey.GetABCIPubKey(),
 					Power:  validator.Power,
 				})
 			} else {
-				logger.Detailf("Validator for update not ready: %s - with power: %d and will be skipped for tendermint update\n", validator.Address.Humanize(), validator.Power)
+				noTopValidators[addrHuman] = validator.PubKey.GetABCIPubKey()
 			}
+
 			//distribute the fee for validators
 			if distribute {
 				feeShare := total.MultiplyInt64(queued.Priority()).DivideInt64(vs.totalPower)
@@ -366,6 +425,39 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 				}
 			}
 		}
+
+		// purge all other active validators if not among the top
+		for addr, power := range vs.lastActive {
+			addrHuman := keys.Address(addr).Humanize()
+			pub, ok := noTopValidators[addrHuman]
+			if !ok {
+				continue
+			}
+			// get last purge height
+			purgeHeight, err := vs.GetLastPurgeHeight(keys.Address(addr))
+			if err != nil {
+				logger.Errorf("failed to get last purge height, validator: %s", addrHuman)
+				continue
+			}
+			// validator purged in block H persists in block H+1, H+2, so we can't purge it again
+			if purgeHeight > 0 && height <= purgeHeight+2 {
+				continue
+			}
+
+			// add to validator update list
+			logger.Infof("Validator for purge ready: %s - with power: %d\n", addrHuman, power)
+			validatorUpdates = append(validatorUpdates, types.ValidatorUpdate{
+				PubKey: pub,
+				Power:  0,
+			})
+
+			// update last purge height
+			err = vs.SetLastPurgeHeight(keys.Address(addr), height)
+			if err != nil {
+				logger.Fatalf("failed  set last purge height, validator: %s", addrHuman)
+			}
+		}
+
 		// delegation
 		ctx.Delegators.UpdateWithdrawReward(height)
 	}

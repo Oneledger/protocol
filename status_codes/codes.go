@@ -104,6 +104,9 @@ const (
 	ETHTrackerNotFoundSuccess = 600101
 	ETHTrackerNotFoundOngoing = 600102
 
+	DelgErr                  = 6003
+	DelgErrStakeAddressInUse = 600301
+
 	GovErr                                = 7001
 	GovErrGetProposalOptions              = 700101
 	GovErrInvalidProposalId               = 700102
@@ -141,20 +144,20 @@ const (
 	GovErrStatusNotVoting                 = 700134
 	GovErrStatusNotFunding                = 700135
 	GovErrVotingTBD                       = 700136
-	GovErrFinalizeDistributtionFailed = 700137
-	GovErrFinalizeConfigUpdateFailed  = 700138
-	GovErrStatusUnableToSetFinalized  = 700139
-	GovErrUnabletoQueryVoteResult     = 700140
-	GovErrFundingDeadlineCrossed      = 700141
-	StatusUnableToSetVoting           = 700142
-	GovFundUnableToAdd                = 700143
-	GovFundUnableToDelete             = 700144
-	GovFundBalanceMismatch            = 700145
-	GovErrUnableToSetFinalizeFailed   = 700146
-	GovErrInvalidFundingGoal          = 700147
-	GovErrInvalidPassPercentage       = 700148
-	GovErrInvalidFundingDeadline      = 700149
-	GovErrInvalidVotingDeadline       = 700150
+	GovErrFinalizeDistributtionFailed     = 700137
+	GovErrFinalizeConfigUpdateFailed      = 700138
+	GovErrStatusUnableToSetFinalized      = 700139
+	GovErrUnabletoQueryVoteResult         = 700140
+	GovErrFundingDeadlineCrossed          = 700141
+	StatusUnableToSetVoting               = 700142
+	GovFundUnableToAdd                    = 700143
+	GovFundUnableToDelete                 = 700144
+	GovFundBalanceMismatch                = 700145
+	GovErrUnableToSetFinalizeFailed       = 700146
+	GovErrInvalidFundingGoal              = 700147
+	GovErrInvalidPassPercentage           = 700148
+	GovErrInvalidFundingDeadline          = 700149
+	GovErrInvalidVotingDeadline           = 700150
 	TxErrGettingETHOptions                = 700150
 	TxErrGettingONSOptions                = 700149
 	TxErrGettingBTCOptions                = 700148
