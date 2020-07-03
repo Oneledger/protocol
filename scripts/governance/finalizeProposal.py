@@ -42,11 +42,20 @@ if __name__ == "__main__":
     # test pass a proposal
     pid = test_pass_finalize_proposal()
     prop, funds = query_proposal(pid)
-    if prop["outcome"] != 49:
-        print "Exiting Outcome is not ProposalOutcomeCompletedYes"
+    if prop["outcome"] != ProposalOutcomeCompletedYes:
+        print "Exiting Test Outcome is not ProposalOutcomeCompletedYes"
         sys.exit(1)
 
+    print "PassedProposals ###############"
+    print query_proposals(ProposalStatePassed)
+
+    print "FailedProposals ################"
+    print query_proposals(ProposalStateFailed)
+
+    print "FinalizedProposlals ################"
     pList = query_proposals(ProposalStateFinalized)
+    print pList
+
     if len(pList) == 0:
-        print "Exiting Proposal was not finalized"
+        print "Exiting Test Proposal was not finalized"
         sys.exit(1)

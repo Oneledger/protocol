@@ -38,7 +38,7 @@ func EnableGovernance(r action.Router) error {
 	if err != nil {
 		return errors.Wrap(err, "ExpireVotesTx")
 	}
-	err = r.AddHandler(action.PROPOSAL_FINALIZE, finalizeProposalTx{})
+	err = r.AddHandler(action.PROPOSAL_FINALIZE, FinalizeProposal{})
 	if err != nil {
 		return errors.Wrap(err, "finalizeProposalTx")
 	}
@@ -51,7 +51,7 @@ func EnableInternalGovernance(r action.Router) error {
 	if err != nil {
 		return errors.Wrap(err, "ExpireVotesTx")
 	}
-	err = r.AddHandler(action.PROPOSAL_FINALIZE, finalizeProposalTx{})
+	err = r.AddHandler(action.PROPOSAL_FINALIZE, FinalizeProposal{})
 	if err != nil {
 		return errors.Wrap(err, "finalizeProposalTx")
 	}
