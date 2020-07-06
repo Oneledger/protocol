@@ -279,11 +279,11 @@ func (app *App) blockEnder() blockEnder {
 		FinalizeProposals(&app.header, &app.Context, app.logger)
 
 		//Distribute Block rewards to Validators
-		blockRewardEvent := handleBlockRewards(app.Context.validators, app.Context.rewardMaster.Reward.WithState(app.Context.deliver), app.Node())
+		//blockRewardEvent := handleBlockRewards(app.Context.validators, app.Context.rewardMaster.Reward.WithState(app.Context.deliver), app.Node())
 
 		result := ResponseEndBlock{
 			ValidatorUpdates: updates,
-			Events:           []abciTypes.Event{blockRewardEvent},
+			//Events:           []abciTypes.Event{blockRewardEvent},
 		}
 
 		app.logger.Detail("End Block: ", result, "height:", req.Height)
