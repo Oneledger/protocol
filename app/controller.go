@@ -482,11 +482,11 @@ func handleBlockRewards(validators *identity.ValidatorStore, rewards *rewards.Re
 
 		//Distribute Block Reward to Validator
 		//TODO: Calculate reward to be distributed
-		amount := balance.NewAmount(10)
-		err = rewards.AddToAddress(valAddress, lastHeight, amount)
-		if err != nil {
-			continue
-		}
+		amount := balance.NewAmount(0)
+		//err = rewards.AddToAddress(valAddress, lastHeight, amount)
+		//if err != nil {
+		//	continue
+		//}
 
 		//Record Amount in kvMap
 		kvMap[valAddress.String()] = kv.Pair{

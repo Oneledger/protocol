@@ -58,25 +58,31 @@ class Proposal:
         self.proposer = proposer
         self.init_fund = init_fund
 
-    def _calculate_proposal_info(self):
+    def _calculate_proposal_info(self, assign_funding_deadline, assign_voting_deadline):
         query_options = query_proposal_options()
         options = query_options["proposalOptions"]
         height = query_options["height"]
+        funding_deadline_in_use = options["configUpdate"]["fundingDeadline"]
+        voting_deadline_in_use = options["configUpdate"]["votingDeadline"]
+        if assign_funding_deadline != 0:
+            funding_deadline_in_use = assign_funding_deadline
+        if assign_voting_deadline != 0:
+            voting_deadline_in_use = assign_voting_deadline
 
         if self.pty == "configUpdate":
             funding_goal = options["configUpdate"]["fundingGoal"]
-            funding_deadline = height + options["configUpdate"]["fundingDeadline"]
-            voting_deadline = funding_deadline + options["configUpdate"]["votingDeadline"]
+            funding_deadline = height + funding_deadline_in_use
+            voting_deadline = funding_deadline + voting_deadline_in_use
             pass_percentage = options["configUpdate"]["passPercentage"]
         elif self.pty == "codeChange":
             funding_goal = options["codeChange"]["fundingGoal"]
-            funding_deadline = height + options["codeChange"]["fundingDeadline"]
-            voting_deadline = funding_deadline + options["codeChange"]["votingDeadline"]
+            funding_deadline = height + funding_deadline_in_use
+            voting_deadline = funding_deadline + voting_deadline_in_use
             pass_percentage = options["codeChange"]["passPercentage"]
         elif self.pty == "general":
             funding_goal = options["general"]["fundingGoal"]
-            funding_deadline = height + options["general"]["fundingDeadline"]
-            voting_deadline = funding_deadline + options["general"]["votingDeadline"]
+            funding_deadline = height + funding_deadline_in_use
+            voting_deadline = funding_deadline + voting_deadline_in_use
             pass_percentage = options["general"]["passPercentage"]
         else:
             sys.exit(-1)
@@ -84,7 +90,7 @@ class Proposal:
         return ProposalInfo(funding_goal, funding_deadline, voting_deadline, pass_percentage)
 
     def _create_proposal(self):
-        _proposal_info = self._calculate_proposal_info()
+        _proposal_info = self._calculate_proposal_info(12, 12)
         req = {
             "proposalId": self.get_encoded_pid(),
             "headline": self.headline,
@@ -229,7 +235,7 @@ class Proposal:
         return resp["result"]["rawTx"]
 
     def _create_proposal_invalid_info(self, invalid_field):
-        _proposal_info = self._calculate_proposal_info()
+        _proposal_info = self._calculate_proposal_info(12, 12)
         req = {
             "proposalId": self.get_encoded_pid(),
             "headline": self.headline,
