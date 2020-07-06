@@ -3,11 +3,13 @@ package staking
 import (
 	"encoding/json"
 
-	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/data/keys"
-	"github.com/Oneledger/protocol/identity"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
+
+	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/identity"
 )
 
 var _ action.Msg = &Stake{}
@@ -134,6 +136,41 @@ func (s stakeTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 2)
 }
 
+// allow validator's stake address update only when it's clean
+func isStakeAddressClean(ctx *action.Context, v *identity.Validator) (bool, error) {
+	options, err := ctx.GovernanceStore.GetStakingOptions()
+	if err != nil {
+		return false, err
+	}
+	zero := balance.NewAmountFromInt(0)
+
+	// check locked amount
+	lockedAmt, err := ctx.Delegators.GetValidatorDelegationAmount(v.Address, v.StakeAddress)
+	if err != nil {
+		return false, err
+	}
+	if !lockedAmt.Equals(*zero) {
+		return false, nil
+	}
+
+	// check pending amount
+	pendingAmounts := ctx.Delegators.GetMaturedPendingAmount(v.StakeAddress, ctx.Header.Height, options.MaturityTime+1)
+	if len(pendingAmounts) != 0 {
+		return false, nil
+	}
+
+	// check bounded amount
+	boundCoin, err := ctx.Delegators.GetDelegatorBoundedAmount(v.StakeAddress)
+	if err != nil {
+		return false, err
+	}
+	if !boundCoin.Equals(*zero) {
+		return false, nil
+	}
+
+	return true, nil
+}
+
 func runCheckStake(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	st := &Stake{}
 	err := st.Unmarshal(tx.Data)
@@ -150,6 +187,28 @@ func runCheckStake(ctx *action.Context, tx action.RawTx) (bool, action.Response)
 		Amount:           st.Stake.Value,
 	}
 
+	// trying to update existing validator's stake address
+	updateStakeAddress := false
+	if ctx.Validators.Exists(st.ValidatorAddress) {
+		validator, err := ctx.Validators.Get(st.ValidatorAddress)
+		if err != nil {
+			return false, action.Response{Log: errors.Wrap(err, st.StakeAddress.String()).Error()}
+		}
+
+		clean, err := isStakeAddressClean(ctx, validator)
+		if err != nil {
+			return false, action.Response{Log: errors.Wrap(err, st.StakeAddress.String()).Error()}
+		}
+
+		// update not allowed if existing stake address not cleaned up
+		if !validator.StakeAddress.Equal(st.StakeAddress) {
+			if !clean {
+				return false, action.Response{Log: action.ErrStakeAddressInUse.Marshal()}
+			}
+			updateStakeAddress = true
+		}
+	}
+
 	coin := st.Stake.ToCoinWithBase(ctx.Currencies)
 
 	err = ctx.Balances.MinusFromAddress(st.StakeAddress, coin)
@@ -162,7 +221,7 @@ func runCheckStake(ctx *action.Context, tx action.RawTx) (bool, action.Response)
 		return false, action.Response{Log: errors.Wrap(err, st.StakeAddress.String()).Error()}
 	}
 
-	err = ctx.Validators.HandleStake(stake)
+	err = ctx.Validators.HandleStake(stake, updateStakeAddress)
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
 	}

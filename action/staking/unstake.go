@@ -3,11 +3,12 @@ package staking
 import (
 	"encoding/json"
 
+	"github.com/pkg/errors"
+	"github.com/tendermint/tendermint/libs/kv"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/identity"
-	"github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/kv"
 )
 
 var _ action.Msg = &Unstake{}
@@ -127,7 +128,7 @@ func runCheckUnstake(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 
 	height := ctx.Header.GetHeight()
 
-	options, err := ctx.Govern.GetStakingOptions()
+	options, err := ctx.GovernanceStore.GetStakingOptions()
 	if err != nil {
 		return false, action.Response{Log: errors.Wrap(err, ust.StakeAddress.String()).Error()}
 	}

@@ -104,6 +104,9 @@ const (
 	ETHTrackerNotFoundSuccess = 600101
 	ETHTrackerNotFoundOngoing = 600102
 
+	DelgErr                  = 6003
+	DelgErrStakeAddressInUse = 600301
+
 	GovErr                                = 7001
 	GovErrGetProposalOptions              = 700101
 	GovErrInvalidProposalId               = 700102
