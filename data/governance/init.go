@@ -29,16 +29,17 @@ const (
 	ProposalOutcomeInProgress        ProposalOutcome = 0x26
 	ProposalOutcomeInsufficientFunds ProposalOutcome = 0x27
 	ProposalOutcomeInsufficientVotes ProposalOutcome = 0x28
-	ProposalOutcomeCancelled         ProposalOutcome = 0x29
-	ProposalOutcomeCompleted         ProposalOutcome = 0x30
+	ProposalOutcomeCompletedNo       ProposalOutcome = 0x29
+	ProposalOutcomeCancelled         ProposalOutcome = 0x30
+	ProposalOutcomeCompletedYes      ProposalOutcome = 0x31
 
 	//Proposal States
 	ProposalStateInvalid        ProposalState = 0xEE
-	ProposalStateActive         ProposalState = 0x31
-	ProposalStatePassed         ProposalState = 0x32
-	ProposalStateFailed         ProposalState = 0x33
-	ProposalStateFinalized      ProposalState = 0x34
-	ProposalStateFinalizeFailed ProposalState = 0x35
+	ProposalStateActive         ProposalState = 0x32
+	ProposalStatePassed         ProposalState = 0x33
+	ProposalStateFailed         ProposalState = 0x34
+	ProposalStateFinalized      ProposalState = 0x35
+	ProposalStateFinalizeFailed ProposalState = 0x36
 
 	//Vote Opinions
 	OPIN_UNKNOWN  VoteOpinion = 0x0

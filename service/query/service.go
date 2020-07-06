@@ -33,6 +33,7 @@ type Service struct {
 	feePool        *fees.Store
 	proposalMaster *governance.ProposalMasterStore
 	rewardMaster   *rewards.RewardMasterStore
+	governance     *governance.Store
 	logger         *log.Logger
 	txTypes        *[]action.TxTypeDescribe
 }
@@ -58,6 +59,7 @@ func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencie
 		rewardMaster:   rewardMaster,
 		logger:         logger,
 		txTypes:        txTypes,
+		governance:     govern,
 	}
 }
 

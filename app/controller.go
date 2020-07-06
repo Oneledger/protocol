@@ -3,16 +3,15 @@ package app
 import (
 	"encoding/hex"
 	"fmt"
-
-	"github.com/Oneledger/protocol/data/balance"
-	"github.com/Oneledger/protocol/data/rewards"
-	"github.com/tendermint/tendermint/libs/kv"
-
 	"math"
 	"runtime/debug"
 	"strconv"
 
-	"github.com/Oneledger/protocol/data/governance"
+	"github.com/tendermint/tendermint/libs/kv"
+
+	"github.com/Oneledger/protocol/consensus"
+	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/rewards"
 
 	"github.com/pkg/errors"
 
@@ -137,6 +136,9 @@ func (app *App) blockBeginner() blockBeginner {
 
 		//update the header to current block
 		app.header = req.Header
+		//Adds proposals that meet the requirements to either Expired or Finalizing Keys from transaction store
+		//Transaction store is not part of chainstate ,it just maintains a list of proposals from BlockBeginner to BlockEnder .Gets cleared at each Block Ender
+		AddInternalTX(app.Context.proposalMaster, app.Context.node.ValidatorAddress(), app.header.Height, app.Context.transaction, app.logger)
 
 		app.logger.Detail("Begin Block:", result, "height:", req.Header.Height, "AppHash:", hex.EncodeToString(req.Header.AppHash))
 		return result
@@ -165,12 +167,10 @@ func (app *App) txChecker() txChecker {
 		if err != nil {
 			app.logger.Errorf("checkTx failed to deserialize msg: %v, error: %s ", msg, err)
 		}
-
 		txCtx := app.Context.Action(&app.header, app.Context.check)
 		handler := txCtx.Router.Handler(tx.Type)
 
 		gas := txCtx.State.ConsumedGas()
-
 		ok, err := handler.Validate(txCtx, *tx)
 		if err != nil {
 			app.logger.Debug("Check Tx invalid: ", err.Error())
@@ -276,9 +276,12 @@ func (app *App) blockEnder() blockEnder {
 		ethTrackerlog := log.NewLoggerWithPrefix(app.Context.logWriter, "ethtracker").WithLevel(log.Level(app.Context.cfg.Node.LogLevel))
 		doTransitions(app.Context.jobStore, app.Context.btcTrackers.WithState(app.Context.deliver), app.Context.validators)
 		doEthTransitions(app.Context.jobStore, app.Context.ethTrackers, app.Context.node.ValidatorAddress(), ethTrackerlog, app.Context.witnesses, app.Context.deliver)
-
-		//Check for vote expiration on active proposals
-		updateProposals(app.Context.proposalMaster, app.Context.jobStore, app.Context.deliver)
+		// Proposals currently in store are cleared if deliver is successful
+		// If Expire or Finalize TX returns false,they will added to the proposals queue in the next block
+		// Errors are logged at the function level
+		// These functions iterate the transactions store
+		ExpireProposals(&app.header, &app.Context, app.logger)
+		FinalizeProposals(&app.header, &app.Context, app.logger)
 
 		result := ResponseEndBlock{
 			ValidatorUpdates: updates,
@@ -423,69 +426,10 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 
 }
 
-func updateProposals(proposalMaster *governance.ProposalMasterStore, jobStore *jobs.JobStore, deliver *storage.State) {
-	//Iterate through all active proposals
-	proposals := proposalMaster.Proposal.WithState(deliver)
-	activeProposals := proposals.WithPrefixType(governance.ProposalStateActive)
-
-	activeProposals.Iterate(func(id governance.ProposalID, proposal *governance.Proposal) bool {
-		height := deliver.Version()
-		//If the proposal is in Voting state and voting period expired, trigger internal tx to handle expiry
-		if proposal.Status == governance.ProposalStatusVoting && proposal.VotingDeadline < height {
-
-			//Create New Job to Expire the votes for current proposal
-			checkVotesJob := event.NewGovCheckVotesJob(proposal.ProposalID, proposal.Status)
-
-			//Check if the Job already exists
-			exists, _ := jobStore.WithChain(chain.ONELEDGER).JobExists(checkVotesJob.JobID)
-			if !exists {
-
-				//Save Job to OneLedger Job Store
-				err := jobStore.WithChain(chain.ONELEDGER).SaveJob(checkVotesJob)
-				if err != nil {
-					return true
-				}
-			}
-		}
-
-		return false
-	})
-
-	passedProposals := proposals.WithPrefixType(governance.ProposalStatePassed)
-	passedProposals.Iterate(func(id governance.ProposalID, proposal *governance.Proposal) bool {
-		if proposal.Status == governance.ProposalStatusCompleted && proposal.Outcome == governance.ProposalOutcomeCompleted {
-			finalizeJob := event.NewGovFinalizeProposalJob(proposal.ProposalID, proposal.Status)
-
-			exists, _ := jobStore.WithChain(chain.ONELEDGER).JobExists(finalizeJob.JobID)
-			if !exists {
-				err := jobStore.WithChain(chain.ONELEDGER).SaveJob(finalizeJob)
-				if err != nil {
-					return true
-				}
-			}
-		}
-		return false
-	})
-	failedProposals := proposals.WithPrefixType(governance.ProposalStateFailed)
-	failedProposals.Iterate(func(id governance.ProposalID, proposal *governance.Proposal) bool {
-		if proposal.Status == governance.ProposalStatusCompleted && proposal.Outcome == governance.ProposalOutcomeInsufficientVotes {
-			finalizeJob := event.NewGovFinalizeProposalJob(proposal.ProposalID, proposal.Status)
-
-			exists, _ := jobStore.WithChain(chain.ONELEDGER).JobExists(finalizeJob.JobID)
-			if !exists {
-				err := jobStore.WithChain(chain.ONELEDGER).SaveJob(finalizeJob)
-				if err != nil {
-					return true
-				}
-			}
-		}
-		return false
-	})
-}
-
 func handleBlockRewards(validators *identity.ValidatorStore, rewardMaster *rewards.RewardMasterStore, block RequestBeginBlock) abciTypes.Event {
 	votes := block.LastCommitInfo.Votes
 	lastHeight := block.GetHeader().Height
+
 	heightKey := "height"
 
 	//Initialize Event for Block Response

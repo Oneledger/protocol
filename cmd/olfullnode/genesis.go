@@ -24,6 +24,7 @@ import (
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/delegation"
 	"github.com/Oneledger/protocol/data/fees"
+	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/log"
@@ -153,7 +154,10 @@ func runGenesis(_ *cobra.Command, _ []string) error {
 		configDir := filepath.Join(nodeDir, "consensus", "config")
 		dataDir := filepath.Join(nodeDir, "consensus", "data")
 		nodeDataDir := filepath.Join(nodeDir, "nodedata")
-		createDirectories(configDir, dataDir, nodeDataDir)
+		err := createDirectories(configDir, dataDir, nodeDataDir)
+		if err != nil {
+			return err
+		}
 		ecdspkbytes, err := ioutil.ReadFile(filepath.Join(readDir, "priv_validator_key_ecdsa.json"))
 		if err != nil {
 			return err
@@ -303,7 +307,10 @@ func move(source string, destination string) error {
 	if err != nil {
 		return err
 	}
-	os.Remove(source)
+	err = os.Remove(source)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -476,7 +483,7 @@ func getInitialState(args *genesisArgument, nodeList []node, option ethchain.Cha
 		Staking:    staking,
 		Domains:    domains,
 		Fees:       fees_db,
-		Governance: consensus.GovernanceState{
+		Governance: governance.GovernanceState{
 			FeeOption:      feeOpt,
 			ETHCDOption:    option,
 			BTCCDOption:    btcOption,
