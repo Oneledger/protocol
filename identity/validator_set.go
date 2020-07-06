@@ -362,8 +362,8 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 	minSelfDelegationAmount := stakingOptions.MinSelfDelegationAmount.BigInt().Int64()
 
 	if height > 1 || (len(vs.byzantine) > 0) {
-		// map for no top-power validators
-		noTopValidators := make(map[string]types.PubKey)
+		// map for non top-power validators
+		nonTopValidators := make(map[string]types.PubKey)
 
 		// collect top-power validators
 		cnt := int64(0)
@@ -409,7 +409,7 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 					Power:  validator.Power,
 				})
 			} else {
-				noTopValidators[addrHuman] = validator.PubKey.GetABCIPubKey()
+				nonTopValidators[addrHuman] = validator.PubKey.GetABCIPubKey()
 			}
 
 			//distribute the fee for validators
@@ -429,7 +429,7 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 		// purge all other active validators if not among the top
 		for addr, power := range vs.lastActive {
 			addrHuman := keys.Address(addr).Humanize()
-			pub, ok := noTopValidators[addrHuman]
+			pub, ok := nonTopValidators[addrHuman]
 			if !ok {
 				continue
 			}
