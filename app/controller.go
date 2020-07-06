@@ -9,7 +9,6 @@ import (
 
 	"github.com/tendermint/tendermint/libs/kv"
 
-	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/rewards"
 
