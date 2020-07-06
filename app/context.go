@@ -6,11 +6,13 @@ import (
 	"path/filepath"
 	"time"
 
+	tmdb "github.com/tendermint/tm-db"
+
 	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/data/rewards"
+	"github.com/Oneledger/protocol/data/transactions"
 
 	"github.com/pkg/errors"
-	db "github.com/tendermint/tm-db"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/eth"
@@ -48,7 +50,7 @@ type context struct {
 	actionRouter action.Router
 
 	//db for chain state storage
-	db         db.DB
+	db         tmdb.DB
 	chainstate *storage.ChainState
 	check      *storage.State
 	deliver    *storage.State
@@ -74,6 +76,7 @@ type context struct {
 	proposalMaster  *governance.ProposalMasterStore
 	delegators      *delegation.DelegationStore
 	rewardMaster    *rewards.RewardMasterStore
+	transaction     *transactions.TransactionStore
 	logWriter       io.Writer
 }
 
@@ -110,6 +113,10 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.delegators = delegation.NewDelegationStore("st", storage.NewState(ctx.chainstate))
 	ctx.rewardMaster = NewRewardMasterStore(ctx.chainstate)
 	ctx.btcTrackers = bitcoin.NewTrackerStore("btct", storage.NewState(ctx.chainstate))
+	//Separate DB and chainstate
+	newDB := tmdb.NewDB("internaltxdb", tmdb.MemDBBackend, "")
+	cs := storage.NewState(storage.NewChainState("chainstateTX", newDB))
+	ctx.transaction = transactions.NewTransactionStore("intx", cs)
 
 	ctx.ethTrackers = ethereum.NewTrackerStore("etht", "ethfailed", "ethsuccess", storage.NewState(ctx.chainstate))
 	ctx.accounts = accounts.NewWallet(cfg, ctx.dbDir())
@@ -236,8 +243,8 @@ func (ctx *context) Services() (service.Map, error) {
 	ethTracker := ethereum.NewTrackerStore("etht", "ethfailed", "ethsuccess", storage.NewState(ctx.chainstate))
 	ethTracker.SetupOption(ctx.ethTrackers.GetOption())
 
-	ons := ons.NewDomainStore("d", storage.NewState(ctx.chainstate))
-	ons.SetOptions(ctx.domains.GetOptions())
+	onsStore := ons.NewDomainStore("d", storage.NewState(ctx.chainstate))
+	onsStore.SetOptions(ctx.domains.GetOptions())
 
 	proposalMaster := NewProposalMasterStore(ctx.chainstate)
 	proposalMaster.Proposal.SetOptions(ctx.proposalMaster.Proposal.GetOptions())
@@ -254,7 +261,7 @@ func (ctx *context) Services() (service.Map, error) {
 		NodeContext:    ctx.node,
 		ValidatorSet:   identity.NewValidatorStore("v", "purged", storage.NewState(ctx.chainstate)),
 		WitnessSet:     identity.NewWitnessStore("w", storage.NewState(ctx.chainstate)),
-		Domains:        ons,
+		Domains:        onsStore,
 		Delegators:     ctx.delegators,
 		ProposalMaster: proposalMaster,
 		RewardMaster:   rewardMaster,
@@ -329,7 +336,10 @@ func (ctx *context) Storage() StorageCtx {
 func (ctx *context) Close() {
 	closers := []closer{ctx.db, ctx.accounts, ctx.rpc, ctx.jobBus}
 	for _, closer := range closers {
-		closer.Close()
+		err := closer.Close()
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 

@@ -111,7 +111,7 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 	}
 
 	fundStore := ctx.ProposalMasterStore.ProposalFund
-	currentFundsForProposal := fundStore.GetCurrentFundsForProposal(proposal.ProposalID)
+	currentFundsForProposal:= fundStore.GetCurrentFundsForProposal(proposal.ProposalID)
 	// if outcome is not cancelled or insufficient funds
 	if proposal.Outcome != governance.ProposalOutcomeCancelled && proposal.Outcome != governance.ProposalOutcomeInsufficientFunds {
 		// if funding goal is reached or there is still time for funding,

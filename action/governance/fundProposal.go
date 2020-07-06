@@ -155,7 +155,8 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 	//   Change the state of the proposal to VOTING, if funding goal is met
 	fundingAmount := balance.NewAmountFromBigInt(fundProposal.FundValue.Value.BigInt())
 	fundStore := ctx.ProposalMasterStore.ProposalFund
-	currentFundsforProposal := fundStore.GetCurrentFundsForProposal(proposal.ProposalID)
+	currentFundsforProposal:= fundStore.GetCurrentFundsForProposal(proposal.ProposalID)
+	ctx.Logger.Detail("currentFundsforProposal: ", currentFundsforProposal)
 	newAmount := fundingAmount.Plus(*currentFundsforProposal)
 	if newAmount.BigInt().Cmp(proposal.FundingGoal.BigInt()) >= 0 {
 		//5. Update status

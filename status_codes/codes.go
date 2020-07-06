@@ -158,9 +158,9 @@ const (
 	GovErrInvalidPassPercentage           = 700148
 	GovErrInvalidFundingDeadline          = 700149
 	GovErrInvalidVotingDeadline           = 700150
-	TxErrGettingETHOptions                = 700150
-	TxErrGettingONSOptions                = 700149
-	TxErrGettingBTCOptions                = 700148
-	TxErrGettingRewardsOptions            = 700147
-	TxErrGettingFeeOptions                = 700146
+	TxErrGettingETHOptions                = 700151
+	TxErrGettingONSOptions                = 700152
+	TxErrGettingBTCOptions                = 700153
+	TxErrGettingRewardsOptions            = 700154
+	TxErrGettingFeeOptions                = 700155
 )
