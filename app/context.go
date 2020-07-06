@@ -103,7 +103,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.deliver = storage.NewState(ctx.chainstate)
 	ctx.check = storage.NewState(ctx.chainstate)
 
-	ctx.validators = identity.NewValidatorStore("v", storage.NewState(ctx.chainstate))
+	ctx.validators = identity.NewValidatorStore("v", "purged", storage.NewState(ctx.chainstate))
 	ctx.witnesses = identity.NewWitnessStore("w", storage.NewState(ctx.chainstate))
 	ctx.balances = balance.NewStore("b", storage.NewState(ctx.chainstate))
 	ctx.domains = ons.NewDomainStore("d", storage.NewState(ctx.chainstate))
@@ -259,7 +259,7 @@ func (ctx *context) Services() (service.Map, error) {
 		FeePool:        feePool,
 		Cfg:            ctx.cfg,
 		NodeContext:    ctx.node,
-		ValidatorSet:   identity.NewValidatorStore("v", storage.NewState(ctx.chainstate)),
+		ValidatorSet:   identity.NewValidatorStore("v", "purged", storage.NewState(ctx.chainstate)),
 		WitnessSet:     identity.NewWitnessStore("w", storage.NewState(ctx.chainstate)),
 		Domains:        onsStore,
 		Delegators:     ctx.delegators,
