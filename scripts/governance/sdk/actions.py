@@ -58,7 +58,7 @@ class Proposal:
         self.proposer = proposer
         self.init_fund = init_fund
 
-    def _calculate_proposal_info(self, assign_funding_deadline, assign_voting_deadline):
+    def _calculate_proposal_info(self, assign_funding_deadline):
         query_options = query_proposal_options()
         options = query_options["proposalOptions"]
         height = query_options["height"]
@@ -66,8 +66,6 @@ class Proposal:
         voting_deadline_in_use = options["configUpdate"]["votingDeadline"]
         if assign_funding_deadline != 0:
             funding_deadline_in_use = assign_funding_deadline
-        if assign_voting_deadline != 0:
-            voting_deadline_in_use = assign_voting_deadline
 
         if self.pty == "configUpdate":
             funding_goal = options["configUpdate"]["fundingGoal"]
@@ -90,7 +88,7 @@ class Proposal:
         return ProposalInfo(funding_goal, funding_deadline, voting_deadline, pass_percentage)
 
     def _create_proposal(self):
-        _proposal_info = self._calculate_proposal_info(12, 12)
+        _proposal_info = self._calculate_proposal_info(12)
         req = {
             "proposalId": self.get_encoded_pid(),
             "headline": self.headline,
@@ -235,7 +233,7 @@ class Proposal:
         return resp["result"]["rawTx"]
 
     def _create_proposal_invalid_info(self, invalid_field):
-        _proposal_info = self._calculate_proposal_info(12, 12)
+        _proposal_info = self._calculate_proposal_info(12)
         req = {
             "proposalId": self.get_encoded_pid(),
             "headline": self.headline,
