@@ -156,6 +156,7 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 	fundingAmount := balance.NewAmountFromBigInt(fundProposal.FundValue.Value.BigInt())
 	fundStore := ctx.ProposalMasterStore.ProposalFund
 	currentFundsforProposal := fundStore.GetCurrentFundsForProposal(proposal.ProposalID)
+	ctx.Logger.Detail("currentFundsforProposal: ", currentFundsforProposal)
 	newAmount := fundingAmount.Plus(*currentFundsforProposal)
 	if newAmount.BigInt().Cmp(proposal.FundingGoal.BigInt()) >= 0 {
 		//5. Update status

@@ -5,7 +5,6 @@ import (
 )
 
 var (
-
 	// Options Objects from store
 	ErrGetProposalOptions = codes.ProtocolError{codes.GovErrGetProposalOptions, "failed to get proposal options"}
 	ErrGetFeeOptions      = codes.ProtocolError{codes.TxErrGettingFeeOptions, "failed to get fee options"}
@@ -25,7 +24,6 @@ var (
 	ErrInvalidPassPercentage  = codes.ProtocolError{codes.GovErrInvalidPassPercentage, "invalid pass percentage"}
 	ErrInvalidFundingDeadline = codes.ProtocolError{codes.GovErrInvalidFundingDeadline, "invalid funding deadline"}
 	ErrInvalidVotingDeadline  = codes.ProtocolError{codes.GovErrInvalidVotingDeadline, "invalid voting deadline"}
-
 
 	//Funding
 	ErrDeductFunding          = codes.ProtocolError{codes.GovErrDeductFunding, "failed to deduct funds from address"}

@@ -128,7 +128,7 @@ func (svc *Service) GetProposalOptions(_ client.ListTxTypesRequest, reply *clien
 
 	*reply = client.GetProposalOptionsReply{
 		ProposalOptions: options,
-		Height: height,
+		Height:          height,
 	}
 	return nil
 }

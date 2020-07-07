@@ -57,7 +57,7 @@ var (
 
 	proposalInitialFunding, _   = balance.NewAmountFromString("1000000000", 10)
 	proposalFundingGoal, _      = balance.NewAmountFromString("10000000000", 10)
-	proposalFundingDeadline     = int64(12)
+	proposalFundingDeadline     = int64(100)
 	proposalVotingDeadline      = int64(12)
 	proposalPassPercentage      = 51
 	bountyProgramAddr           = "oneledgerBountyProgram"
@@ -512,8 +512,8 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 
 	// staking
 	stakingOption := delegation.Options{
-		MinSelfDelegationAmount: *balance.NewAmount(5),
-		MinDelegationAmount:     *balance.NewAmount(5),
+		MinSelfDelegationAmount: *balance.NewAmount(1),
+		MinDelegationAmount:     *balance.NewAmount(1),
 		TopValidatorCount:       3,
 		MaturityTime:            10,
 	}
