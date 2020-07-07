@@ -3,10 +3,11 @@ package governance
 import (
 	"encoding/json"
 
-	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/data/governance"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
+
+	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/data/governance"
 )
 
 var _ action.Msg = &ExpireVotes{}
@@ -42,7 +43,7 @@ func (e ExpireVotes) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, a
 }
 
 func (e ExpireVotes) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	ctx.Logger.Debug("Processing ExpireVotes Transaction for DeliverTx", tx)
+	ctx.Logger.Detail("Processing ExpireVotes Transaction for DeliverTx", tx)
 	return runExpireVotes(ctx, tx)
 }
 
@@ -109,7 +110,6 @@ func runExpireVotes(ctx *action.Context, tx action.RawTx) (bool, action.Response
 	result := action.Response{
 		Events: action.GetEvent(expireVotes.Tags(), "expire_votes_success"),
 	}
-
 	return true, result
 }
 

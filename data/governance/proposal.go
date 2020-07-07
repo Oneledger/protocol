@@ -36,33 +36,35 @@ type ProposalOptionSet struct {
 }
 
 type Proposal struct {
-	ProposalID      ProposalID      `json:"proposalId"`
-	Type            ProposalType    `json:"proposalType"`
-	Status          ProposalStatus  `json:"status"`
-	Outcome         ProposalOutcome `json:"outcome"`
-	Headline        string          `json:"headline"`
-	Description     string          `json:"descr"`
-	Proposer        keys.Address    `json:"proposer"`
-	FundingDeadline int64           `json:"fundingDeadline"`
-	FundingGoal     *balance.Amount `json:"fundingGoal"`
-	VotingDeadline  int64           `json:"votingDeadline"`
-	PassPercentage  int             `json:"passPercent"`
+	ProposalID            ProposalID      `json:"proposalId"`
+	Type                  ProposalType    `json:"proposalType"`
+	Status                ProposalStatus  `json:"status"`
+	Outcome               ProposalOutcome `json:"outcome"`
+	Headline              string          `json:"headline"`
+	Description           string          `json:"descr"`
+	Proposer              keys.Address    `json:"proposer"`
+	FundingDeadline       int64           `json:"fundingDeadline"`
+	FundingGoal           *balance.Amount `json:"fundingGoal"`
+	VotingDeadline        int64           `json:"votingDeadline"`
+	PassPercentage        int             `json:"passPercent"`
+	GovernanceStateUpdate GovernanceState `json:"updateGovernanace"`
 }
 
 func NewProposal(proposalID ProposalID, propType ProposalType, desc string, headline string, proposer keys.Address, fundingDeadline int64, fundingGoal *balance.Amount,
-	votingDeadline int64, passPercentage int) *Proposal {
+	votingDeadline int64, passPercentage int, upd GovernanceState) *Proposal {
 
 	return &Proposal{
-		ProposalID:      proposalID,
-		Type:            propType,
-		Status:          ProposalStatusFunding,
-		Outcome:         ProposalOutcomeInProgress,
-		Description:     desc,
-		Headline:        headline,
-		Proposer:        proposer,
-		FundingDeadline: fundingDeadline,
-		FundingGoal:     fundingGoal,
-		VotingDeadline:  votingDeadline,
-		PassPercentage:  passPercentage,
+		ProposalID:            proposalID,
+		Type:                  propType,
+		Status:                ProposalStatusFunding,
+		Outcome:               ProposalOutcomeInProgress,
+		Description:           desc,
+		Headline:              headline,
+		Proposer:              proposer,
+		FundingDeadline:       fundingDeadline,
+		FundingGoal:           fundingGoal,
+		VotingDeadline:        votingDeadline,
+		PassPercentage:        passPercentage,
+		GovernanceStateUpdate: upd,
 	}
 }

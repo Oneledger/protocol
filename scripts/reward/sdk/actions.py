@@ -44,6 +44,20 @@ def list_validators():
     return result
 
 
+def query_matured_rewards(validator):
+    req = {
+        "validator": validator
+    }
+
+    resp = rpc_call('query.GetValidatorMaturityAmount', req)
+
+    if "result" in resp:
+        result = resp["result"]
+    else:
+        result = ""
+    return result
+
+
 def sign(raw_tx, address):
     resp = rpc_call('owner.SignWithAddress', {"rawTx": raw_tx, "address": address})
     return resp["result"]

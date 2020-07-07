@@ -1,6 +1,7 @@
 package rewards
 
 import (
+	"errors"
 	"strconv"
 	"strings"
 
@@ -31,6 +32,17 @@ func NewRewardStore(prefix string, intervalPrefix string, state *storage.State) 
 func (rs *RewardStore) WithState(state *storage.State) *RewardStore {
 	rs.State = state
 	return rs
+}
+
+func (rs *RewardStore) generateMaturedKey(address keys.Address, height int64, interval int64) (Key storage.StoreKey) {
+	Key = nil
+
+	lastInterval := rs.GetInterval(height)
+	index := lastInterval.LastIndex + int64((height-lastInterval.LastHeight)/interval) + 1
+	if index >= 2 {
+		Key = storage.StoreKey(address.String() + storage.DB_PREFIX + string(index-2))
+	}
+	return
 }
 
 func (rs *RewardStore) generateKey(address keys.Address, height int64, interval int64) (Key storage.StoreKey) {
@@ -142,10 +154,31 @@ func (rs *RewardStore) Iterate(addr keys.Address, fn func(c string, amt balance.
 	)
 }
 
+func (rs *RewardStore) GetMaturedAmount(address keys.Address, height int64) (*balance.Amount, error) {
+	key := append(rs.prefix, rs.generateMaturedKey(address, height, rs.rewardOptions.RewardInterval)...)
+	data, err := rs.State.Get(key)
+	amount := balance.NewAmount(0)
+	if len(data) == 0 {
+		return nil, errors.New("key doesn't exist")
+	}
+	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(data, amount)
+	return amount, err
+}
+
 func (rs *RewardStore) SetOptions(options *Options) {
 	rs.rewardOptions = options
 }
 
 func (rs *RewardStore) GetOptions() *Options {
 	return rs.rewardOptions
+}
+func (rs *RewardStore) UpdateOptions(height int64, options *Options) error {
+	if rs.rewardOptions.RewardInterval != options.RewardInterval {
+		err := rs.SetInterval(height)
+		if err != nil {
+			return err
+		}
+	}
+	rs.SetOptions(options)
+	return nil
 }

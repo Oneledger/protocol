@@ -88,7 +88,7 @@ func (args *VoteArguments) ClientRequest(currencies *balance.CurrencySet) (clien
 func setVoteArgs() {
 	// Transaction Parameters
 	voteProposalCmd.Flags().StringVar(&voteArgs.ProposalID, "id", "", "proposal ID")
-	voteProposalCmd.Flags().BytesHexVar(&voteArgs.Address, "address", []byte{}, "validator address")
+	voteProposalCmd.Flags().BytesHexVar(&voteArgs.Address, "address", []byte{}, "address")
 	voteProposalCmd.Flags().StringVar(&voteArgs.Opinion, "opinion", "YES", "vote opinion, YES / NO / GIVEUP")
 	voteProposalCmd.Flags().StringVar(&voteArgs.Password, "password", "", "password to access secure wallet.")
 	voteProposalCmd.Flags().StringVar(&voteArgs.GasPrice, "gasprice", "0", "include a gas price in OLT")

@@ -3,17 +3,14 @@ package app
 import (
 	"encoding/hex"
 	"fmt"
-
-	"github.com/Oneledger/protocol/consensus"
-	"github.com/Oneledger/protocol/data/balance"
-	"github.com/Oneledger/protocol/data/rewards"
-	"github.com/tendermint/tendermint/libs/kv"
-
 	"math"
 	"runtime/debug"
 	"strconv"
 
-	"github.com/Oneledger/protocol/data/governance"
+	"github.com/tendermint/tendermint/libs/kv"
+
+	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/rewards"
 
 	"github.com/pkg/errors"
 
@@ -129,10 +126,18 @@ func (app *App) blockBeginner() blockBeginner {
 			app.logger.Error("validator set with error", err)
 		}
 
-		result := ResponseBeginBlock{}
+		// update Block Rewards
+		//blockRewardEvent := handleBlockRewards(app.Context.validators, app.Context.rewardMaster.WithState(app.Context.deliver), req)
+
+		result := ResponseBeginBlock{
+			//Events: []abciTypes.Event{blockRewardEvent},
+		}
 
 		//update the header to current block
 		app.header = req.Header
+		//Adds proposals that meet the requirements to either Expired or Finalizing Keys from transaction store
+		//Transaction store is not part of chainstate ,it just maintains a list of proposals from BlockBeginner to BlockEnder .Gets cleared at each Block Ender
+		AddInternalTX(app.Context.proposalMaster, app.Context.node.ValidatorAddress(), app.header.Height, app.Context.transaction, app.logger)
 
 		app.logger.Detail("Begin Block:", result, "height:", req.Header.Height, "AppHash:", hex.EncodeToString(req.Header.AppHash))
 		return result
@@ -161,12 +166,10 @@ func (app *App) txChecker() txChecker {
 		if err != nil {
 			app.logger.Errorf("checkTx failed to deserialize msg: %v, error: %s ", msg, err)
 		}
-
 		txCtx := app.Context.Action(&app.header, app.Context.check)
 		handler := txCtx.Router.Handler(tx.Type)
 
 		gas := txCtx.State.ConsumedGas()
-
 		ok, err := handler.Validate(txCtx, *tx)
 		if err != nil {
 			app.logger.Debug("Check Tx invalid: ", err.Error())
@@ -266,22 +269,21 @@ func (app *App) blockEnder() blockEnder {
 		fee, err := app.Context.feePool.WithState(app.Context.deliver).Get([]byte(fees.POOL_KEY))
 		app.logger.Detail("endblock fee", fee, err)
 
-		updates := app.Context.validators.GetEndBlockUpdate(app.Context.ValidatorCtx(), req)
+		updates := app.Context.validators.WithState(app.Context.deliver).GetEndBlockUpdate(app.Context.ValidatorCtx(), req)
 		app.logger.Detailf("Sending updates with nodes to tendermint: %+v\n", updates)
 
 		ethTrackerlog := log.NewLoggerWithPrefix(app.Context.logWriter, "ethtracker").WithLevel(log.Level(app.Context.cfg.Node.LogLevel))
 		doTransitions(app.Context.jobStore, app.Context.btcTrackers.WithState(app.Context.deliver), app.Context.validators)
 		doEthTransitions(app.Context.jobStore, app.Context.ethTrackers, app.Context.node.ValidatorAddress(), ethTrackerlog, app.Context.witnesses, app.Context.deliver)
-
-		//Check for vote expiration on active proposals
-		updateProposals(app.Context.proposalMaster, app.Context.jobStore, app.Context.deliver)
-
-		//Distribute Block rewards to Validators
-		blockRewardEvent := handleBlockRewards(app.Context.validators, app.Context.rewardMaster.Reward.WithState(app.Context.deliver), app.Node())
+		// Proposals currently in store are cleared if deliver is successful
+		// If Expire or Finalize TX returns false,they will added to the proposals queue in the next block
+		// Errors are logged at the function level
+		// These functions iterate the transactions store
+		ExpireProposals(&app.header, &app.Context, app.logger)
+		FinalizeProposals(&app.header, &app.Context, app.logger)
 
 		result := ResponseEndBlock{
 			ValidatorUpdates: updates,
-			Events:           []abciTypes.Event{blockRewardEvent},
 		}
 
 		app.logger.Detail("End Block: ", result, "height:", req.Height)
@@ -423,75 +425,9 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 
 }
 
-func updateProposals(proposalMaster *governance.ProposalMasterStore, jobStore *jobs.JobStore, deliver *storage.State) {
-	//Iterate through all active proposals
-	proposals := proposalMaster.Proposal.WithState(deliver)
-	activeProposals := proposals.WithPrefixType(governance.ProposalStateActive)
-
-	activeProposals.Iterate(func(id governance.ProposalID, proposal *governance.Proposal) bool {
-		height := deliver.Version()
-		//If the proposal is in Voting state and voting period expired, trigger internal tx to handle expiry
-		if proposal.Status == governance.ProposalStatusVoting && proposal.VotingDeadline < height {
-
-			//Create New Job to Expire the votes for current proposal
-			checkVotesJob := event.NewGovCheckVotesJob(proposal.ProposalID, proposal.Status)
-
-			//Check if the Job already exists
-			exists, _ := jobStore.WithChain(chain.ONELEDGER).JobExists(checkVotesJob.JobID)
-			if !exists {
-
-				//Save Job to OneLedger Job Store
-				err := jobStore.WithChain(chain.ONELEDGER).SaveJob(checkVotesJob)
-				if err != nil {
-					return true
-				}
-			}
-		}
-
-		return false
-	})
-
-	passedProposals := proposals.WithPrefixType(governance.ProposalStatePassed)
-	passedProposals.Iterate(func(id governance.ProposalID, proposal *governance.Proposal) bool {
-		if proposal.Status == governance.ProposalStatusCompleted && proposal.Outcome == governance.ProposalOutcomeCompleted {
-			finalizeJob := event.NewGovFinalizeProposalJob(proposal.ProposalID, proposal.Status)
-
-			exists, _ := jobStore.WithChain(chain.ONELEDGER).JobExists(finalizeJob.JobID)
-			if !exists {
-				err := jobStore.WithChain(chain.ONELEDGER).SaveJob(finalizeJob)
-				if err != nil {
-					return true
-				}
-			}
-		}
-		return false
-	})
-	failedProposals := proposals.WithPrefixType(governance.ProposalStateFailed)
-	failedProposals.Iterate(func(id governance.ProposalID, proposal *governance.Proposal) bool {
-		if proposal.Status == governance.ProposalStatusCompleted && proposal.Outcome == governance.ProposalOutcomeInsufficientVotes {
-			finalizeJob := event.NewGovFinalizeProposalJob(proposal.ProposalID, proposal.Status)
-
-			exists, _ := jobStore.WithChain(chain.ONELEDGER).JobExists(finalizeJob.JobID)
-			if !exists {
-				err := jobStore.WithChain(chain.ONELEDGER).SaveJob(finalizeJob)
-				if err != nil {
-					return true
-				}
-			}
-		}
-		return false
-	})
-}
-
-func handleBlockRewards(validators *identity.ValidatorStore, rewards *rewards.RewardStore, node *consensus.Node) abciTypes.Event {
-	//Get BlockStore
-	blockStore := node.BlockStore()
-	//Get Last known contiguous block height - Backtrack by 1 since block for current height is not committed
-	lastHeight := blockStore.Height() - 1
-	//Get Commit Object at "lastHeight"
-	blockCommit := blockStore.LoadBlockCommit(lastHeight)
-	//Get number of signatures in the commit
-	numOfSignatures := blockCommit.Size()
+func handleBlockRewards(validators *identity.ValidatorStore, rewardMaster *rewards.RewardMasterStore, block RequestBeginBlock) abciTypes.Event {
+	votes := block.LastCommitInfo.Votes
+	lastHeight := block.GetHeader().Height
 
 	heightKey := "height"
 
@@ -514,22 +450,9 @@ func handleBlockRewards(validators *identity.ValidatorStore, rewards *rewards.Re
 	})
 
 	//Loop through all validators that participated in signing the last block
-	for index := 0; index < numOfSignatures; index++ {
-
-		//Get the validator's vote by index
-		validatorVote := blockCommit.GetVote(index)
-		if validatorVote == nil {
-			continue
-		}
-		if len(validatorVote.ValidatorAddress) == 0 {
-			continue
-		}
-		if len(validatorVote.Signature) == 0 {
-			continue
-		}
-
+	for _, vote := range votes {
 		//Verify Validator Address
-		valAddress := keys.Address(validatorVote.ValidatorAddress)
+		valAddress := keys.Address(vote.Validator.Address)
 		if valAddress.Err() != nil {
 			continue
 		}
@@ -538,18 +461,35 @@ func handleBlockRewards(validators *identity.ValidatorStore, rewards *rewards.Re
 			continue
 		}
 
-		//Distribute Block Reward to Validator
-		//TODO: Calculate reward to be distributed
-		amount := balance.NewAmount(10)
-		err = rewards.AddToAddress(valAddress, lastHeight, amount)
-		if err != nil {
-			continue
-		}
+		if vote.GetSignedLastBlock() {
+			//Distribute Block Reward to Validator
+			//TODO: Calculate reward to be distributed
+			amount := balance.NewAmount(10)
+			err = rewardMaster.Reward.AddToAddress(valAddress, lastHeight, amount)
+			if err != nil {
+				continue
+			}
 
-		//Record Amount in kvMap
-		kvMap[valAddress.String()] = kv.Pair{
-			Key:   []byte(valAddress.String()),
-			Value: []byte(amount.String()),
+			//Record Amount in kvMap
+			kvMap[valAddress.String()] = kv.Pair{
+				Key:   []byte(valAddress.String()),
+				Value: []byte(amount.String()),
+			}
+
+			//Update Matured Amount
+			options := rewardMaster.Reward.GetOptions()
+			matured := lastHeight % options.RewardInterval
+			if matured == 0 {
+				//Add rewards at chunk n - 2 to cumulative store
+				maturedAmount, err := rewardMaster.Reward.GetMaturedAmount(valAddress, lastHeight)
+				if err != nil {
+					continue
+				}
+				err = rewardMaster.RewardCumula.AddMaturedBalance(valAddress, maturedAmount)
+				if err != nil {
+					continue
+				}
+			}
 		}
 	}
 

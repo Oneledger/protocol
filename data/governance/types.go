@@ -4,10 +4,24 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+
+	"github.com/Oneledger/protocol/chains/bitcoin"
+	ethchain "github.com/Oneledger/protocol/chains/ethereum"
+	"github.com/Oneledger/protocol/data/delegation"
+	"github.com/Oneledger/protocol/data/fees"
+	"github.com/Oneledger/protocol/data/ons"
+	"github.com/Oneledger/protocol/data/rewards"
 )
 
-
-
+type GovernanceState struct {
+	FeeOption      fees.FeeOption             `json:"feeOption"`
+	ETHCDOption    ethchain.ChainDriverOption `json:"ethchaindriverOption"`
+	BTCCDOption    bitcoin.ChainDriverOption  `json:"bitcoinChainDriverOption"`
+	ONSOptions     ons.Options                `json:"onsOptions"`
+	PropOptions    ProposalOptionSet          `json:"propOptions"`
+	StakingOptions delegation.Options         `json:"stakingOptions"`
+	RewardOptions  rewards.Options            `json:"rewardOptions"`
+}
 type (
 	ProposalID      string
 	ProposalType    int
@@ -119,8 +133,10 @@ func (outCome ProposalOutcome) String() string {
 		return "Failed [insufficient votes]"
 	case ProposalOutcomeCancelled:
 		return "Failed [cancelled]"
-	case ProposalOutcomeCompleted:
-		return "Passed"
+	case ProposalOutcomeCompletedYes:
+		return "PassedYes"
+	case ProposalOutcomeCompletedNo:
+		return "PassedNo"
 	default:
 		return "Invalid outcome"
 	}

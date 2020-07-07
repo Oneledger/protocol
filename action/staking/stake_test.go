@@ -6,6 +6,13 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	abci "github.com/tendermint/tendermint/abci/types"
+	"github.com/tendermint/tendermint/crypto"
+	"github.com/tendermint/tendermint/crypto/ed25519"
+	"github.com/tendermint/tendermint/libs/bytes"
+	db "github.com/tendermint/tm-db"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/chain"
@@ -16,11 +23,6 @@ import (
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/storage"
-	"github.com/stretchr/testify/assert"
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	"github.com/tendermint/tendermint/libs/bytes"
-	db "github.com/tendermint/tm-db"
 )
 
 // global setup
@@ -55,6 +57,8 @@ var (
 func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, setLogger bool, setCoin int64) *action.Context {
 
 	ctx := &action.Context{}
+	// header
+	ctx.Header = &abci.Header{Height: 1}
 	db := db.NewDB("test", db.MemDBBackend, "")
 	cs := storage.NewState(storage.NewChainState("balance", db))
 	// store
@@ -96,9 +100,9 @@ func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, se
 	}
 	ctx.FeePool = fees.NewStore("tf", cs)
 	ctx.FeePool.SetupOpt(ctx.FeeOpt)
-	ctx.Govern = governance.NewStore("tg", cs)
+	ctx.GovernanceStore = governance.NewStore("tg", cs)
 	ctx.Delegators = delegation.NewDelegationStore("tst", cs)
-	ctx.Validators = identity.NewValidatorStore("tv", cs)
+	ctx.Validators = identity.NewValidatorStore("tv", "purged", cs)
 
 	validator := identity.NewValidator(
 		from.Bytes(),
@@ -112,8 +116,10 @@ func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, se
 
 	delop := delegation.Options{
 		MinSelfDelegationAmount: *balance.NewAmountFromInt(1),
+		MaturityTime:            10,
 	}
-	ctx.Govern.SetStakingOptions(delop)
+	ctx.GovernanceStore.WithHeight(0).SetStakingOptions(delop)
+	ctx.GovernanceStore.WithHeight(0).SetLUH()
 	return ctx
 }
 
@@ -182,7 +188,7 @@ func initCheckStake(t *testing.T, ctx *action.Context, balToValidate int64) {
 	amt, _ = ctx.Delegators.GetDelegatorBoundedAmount(from.Bytes())
 	assert.True(t, amt.Equals(*balance.NewAmountFromInt(0)), "Got GetDelegatorBoundedAmount: %v", amt)
 
-	tt, _ := ctx.Govern.GetStakingOptions()
+	tt, _ := ctx.GovernanceStore.GetStakingOptions()
 	assert.True(t, tt.MinSelfDelegationAmount.Equals(*balance.NewAmountFromInt(1)), "Got MinSelfDelegationAmount: %v", amt)
 
 	val := getBalanceFromAddress(ctx, from)
@@ -233,7 +239,7 @@ func TestStakeTx_ProcessDeliver_OK(t *testing.T) {
 		amt, _ = ctx.Delegators.GetDelegatorBoundedAmount(from.Bytes())
 		assert.True(t, amt.Equals(*balance.NewAmountFromInt(0)), "Got GetDelegatorBoundedAmount: %v", amt)
 
-		options, _ := ctx.Govern.GetStakingOptions()
+		options, _ := ctx.GovernanceStore.GetStakingOptions()
 		assert.True(t, options.MinSelfDelegationAmount.Equals(*balance.NewAmountFromInt(1)), "Got MinSelfDelegationAmount: %v", amt)
 
 		val := getBalanceFromAddress(ctx, from)

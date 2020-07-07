@@ -101,6 +101,6 @@ func (a *Amount) Equals(value Amount) bool {
 	return false
 }
 
-func (a Amount) Float() *big.Float {
+func (a Amount) BigFloat() *big.Float {
 	return new(big.Float).SetInt(a.BigInt())
 }

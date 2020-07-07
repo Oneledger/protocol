@@ -79,7 +79,11 @@ func (fundProposalTx) Validate(ctx *action.Context, signedTx action.SignedTx) (b
 		return false, err
 	}
 	//Validate Fee for funding request
-	err = action.ValidateFee(ctx.FeePool.GetOpt(), signedTx.Fee)
+	feeOpt, err := ctx.GovernanceStore.GetFeeOption()
+	if err != nil {
+		return false, governance.ErrGetFeeOptions
+	}
+	err = action.ValidateFee(feeOpt, signedTx.Fee)
 	if err != nil {
 		return false, err
 	}
@@ -152,11 +156,15 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 	fundingAmount := balance.NewAmountFromBigInt(fundProposal.FundValue.Value.BigInt())
 	fundStore := ctx.ProposalMasterStore.ProposalFund
 	currentFundsforProposal := fundStore.GetCurrentFundsForProposal(proposal.ProposalID)
+	ctx.Logger.Detail("currentFundsforProposal: ", currentFundsforProposal)
 	newAmount := fundingAmount.Plus(*currentFundsforProposal)
 	if newAmount.BigInt().Cmp(proposal.FundingGoal.BigInt()) >= 0 {
-		//5. Update status and set voting deadline
+		//5. Update status
 		proposal.Status = governance.ProposalStatusVoting
-		options := ctx.ProposalMasterStore.Proposal.GetOptionsByType(proposal.Type)
+		options, err := ctx.GovernanceStore.GetProposalOptionsByType(proposal.Type)
+		if err != nil {
+			helpers.LogAndReturnFalse(ctx.Logger, governance.ErrGetProposalOptions, fundProposal.Tags(), err)
+		}
 		proposal.VotingDeadline = ctx.Header.Height + options.VotingDeadline
 
 		//6. If the proposal moves into Voting state, take a snap shot of Validator Set,

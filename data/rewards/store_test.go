@@ -1,6 +1,7 @@
 package rewards
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/Oneledger/protocol/data/balance"
@@ -13,7 +14,7 @@ import (
 const (
 	rewardsPrefix         = "rew"
 	rewardsIntervalPrefix = "rewInt"
-	numPrivateKeys        = 4
+	numPrivateKeys        = 5
 	rewardInterval        = 15
 )
 
@@ -164,5 +165,26 @@ func TestRewardStore_Interval(t *testing.T) {
 			reward, _ := rewardStore.Get(validatorList[3], int64(i))
 			assert.Equal(t, reward, balance.NewAmount(10))
 		}
+	}
+}
+
+func TestRewardStore_GetMaturedAmount(t *testing.T) {
+	var matured *balance.Amount
+
+	//Create Test DB
+	newDB := db.NewDB("test", db.MemDBBackend, "")
+	cs := storage.NewState(storage.NewChainState("chainstate", newDB))
+
+	rewardStore = NewRewardStore(rewardsPrefix, rewardsIntervalPrefix, cs)
+	rewardStore.SetOptions(&rewardOptions)
+	rewardStore.WithState(cs)
+
+	for i := 0; i < 100; i++ {
+		_ = rewardStore.AddToAddress(validatorList[4], int64(i), balance.NewAmount(10))
+		matured, _ = rewardStore.GetMaturedAmount(validatorList[4], int64(i))
+
+		fmt.Println("matured amount: ", matured, "height: ", i)
+
+		rewardStore.State.Commit()
 	}
 }
