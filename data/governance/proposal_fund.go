@@ -17,7 +17,6 @@ func (fund *ProposalFund) Print() {
 	fmt.Printf("Proposal ID : %s | Funding Address : %s  | Funding Amount  : %s \n", fund.id, fund.address.String(), fund.fundingAmount.String())
 }
 
-
 func (pf *ProposalFundStore) DeleteAllFunds(id ProposalID) error {
 	e := error(nil)
 	pf.GetFundsForProposalID(id, func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund {

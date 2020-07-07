@@ -6,7 +6,7 @@ import (
 	"github.com/Oneledger/protocol/data/keys"
 )
 
-func (svc *Service) ListRewardsForValidator(req client.ListRewardsRequest, resp *client.ListRewardsReply) error {
+func (svc *Service) ListRewardsForValidator(req client.RewardsRequest, resp *client.ListRewardsReply) error {
 	validatorAddr := keys.Address{}
 	err := validatorAddr.UnmarshalText([]byte(req.Validator))
 	if err != nil {
@@ -21,6 +21,26 @@ func (svc *Service) ListRewardsForValidator(req client.ListRewardsRequest, resp 
 	*resp = client.ListRewardsReply{
 		Validator: validatorAddr,
 		Rewards:   rewards,
+	}
+
+	return nil
+}
+
+func (svc *Service) GetValidatorMaturityAmount(req client.RewardsRequest, resp *client.MatureRewardsReply) error {
+	validatorAddr := keys.Address{}
+	err := validatorAddr.UnmarshalText([]byte(req.Validator))
+	if err != nil {
+		return err
+	}
+
+	amount, err := svc.rewardMaster.RewardCumula.GetMaturedBalance(validatorAddr)
+	if err != nil {
+		return err
+	}
+
+	*resp = client.MatureRewardsReply{
+		Validator:     validatorAddr,
+		MatureRewards: *amount,
 	}
 
 	return nil

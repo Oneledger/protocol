@@ -25,7 +25,6 @@ var (
 	ErrInvalidFundingDeadline = codes.ProtocolError{codes.GovErrInvalidFundingDeadline, "invalid funding deadline"}
 	ErrInvalidVotingDeadline  = codes.ProtocolError{codes.GovErrInvalidVotingDeadline, "invalid voting deadline"}
 
-
 	//Funding
 	ErrDeductFunding          = codes.ProtocolError{codes.GovErrDeductFunding, "failed to deduct funds from address"}
 	ErrAddFunding             = codes.ProtocolError{codes.GovErrAddFunding, "failed to add funds to address"}

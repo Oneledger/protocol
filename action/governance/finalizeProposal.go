@@ -192,7 +192,7 @@ func runFinalizeProposal(ctx *action.Context, tx action.RawTx) (bool, action.Res
 func distributeFunds(ctx *action.Context, proposal *governance.Proposal, proposalDistribution *governance.ProposalFundDistribution) error {
 	// Required Perimeters for Fund Distribution
 	fundStore := ctx.ProposalMasterStore.ProposalFund
-	totalFunds:= fundStore.GetCurrentFundsForProposal(proposal.ProposalID)
+	totalFunds := fundStore.GetCurrentFundsForProposal(proposal.ProposalID)
 	c, ok := ctx.Currencies.GetCurrencyByName("OLT")
 	if !ok {
 		return action.ErrInvalidCurrency
