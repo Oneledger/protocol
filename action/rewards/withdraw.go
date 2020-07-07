@@ -4,15 +4,19 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/helpers"
+	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/rewards"
 )
 
 type Withdraw struct {
 	ValidatorAddress        action.Address `json:"validatorAddress"`
 	ValidatorSigningAddress action.Address `json:"validatorSigningAddress"`
+	WithdrawAmount          action.Amount  `json:"withdrawAmount"`
 }
 
 func (w Withdraw) Signers() []action.Address {
@@ -67,6 +71,22 @@ func (withdrawTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool,
 	if !ctx.Validators.IsValidatorAddress(withdraw.ValidatorAddress) {
 		return false, action.ErrInvalidValidatorAddr
 	}
+
+	currency, ok := ctx.Currencies.GetCurrencyByName("OLT")
+	if !ok {
+		panic("no default currency available in the network")
+	}
+	if currency.Name != withdraw.WithdrawAmount.Currency {
+		return false, errors.Wrap(action.ErrInvalidAmount, withdraw.WithdrawAmount.String())
+	}
+	err = withdraw.ValidatorSigningAddress.Err()
+	if err != nil {
+		return false, errors.Wrap(action.ErrInvalidAddress, err.Error())
+	}
+	err = withdraw.ValidatorAddress.Err()
+	if err != nil {
+		return false, errors.Wrap(action.ErrInvalidAddress, err.Error())
+	}
 	return true, nil
 }
 
@@ -91,15 +111,25 @@ func runWithdraw(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrUnserializable, withdraw.Tags(), err)
 	}
-	fmt.Println("Validator :", withdraw.ValidatorAddress)
 
 	//1. Check the cumulative rewards DB
 	_ = ctx.RewardMasterStore.RewardCm
-	//2. Get the difference of amount earned vs amount withdrawn for the validator issuing this transaction
 
-	//3. Check how much he is eligible to withdraw (which is calculated in step2)
+	//2. Get the difference of amount earned vs amount withdrawn for the validator issuing this transaction
+	//3. Check how much he is eligible to withdraw
 	//4. If the amount withdrawn is less than or equal to amount eligible to be withdrawn, make the transaction success.
 	//5. In case of no failure, add this amount the person withdrew, to total withdrawn amount in cumulative rewards db
+
+	err = ctx.RewardMasterStore.RewardCm.WithdrawRewards(withdraw.ValidatorAddress, &withdraw.WithdrawAmount.Value)
+	if err != nil {
+		helpers.LogAndReturnFalse(ctx.Logger, rewards.UnableToWithdraw, withdraw.Tags(), err)
+	}
+
 	//6. Update the balance db with the withdrawn amount for that validator
-	return helpers.LogAndReturnTrue(ctx.Logger, withdraw.Tags(), "Success")
+	withDrawCoin := withdraw.WithdrawAmount.ToCoin(ctx.Currencies)
+	err = ctx.Balances.AddToAddress(withdraw.ValidatorAddress.Bytes(), withDrawCoin)
+	if err != nil {
+		return helpers.LogAndReturnFalse(ctx.Logger, balance.ErrBalanceErrorAddFailed, withdraw.Tags(), err)
+	}
+	return helpers.LogAndReturnTrue(ctx.Logger, withdraw.Tags(), fmt.Sprintf("Successfully withdrawn %s to Validator Address %s", withDrawCoin, withdraw.ValidatorAddress.String()))
 }

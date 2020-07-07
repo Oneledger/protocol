@@ -3,8 +3,8 @@ import time
 from actions import *
 
 
-def WithdrawRewards(Walletaddress, secs=1):
+def WithdrawRewards(Walletaddress, amount, secs=1):
     # fund the proposal
-    withdraw = Withdraw(Walletaddress)
+    withdraw = Withdraw(Walletaddress, amount)
     withdraw.send_withdraw()
     time.sleep(secs)

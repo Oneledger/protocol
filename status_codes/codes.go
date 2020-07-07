@@ -150,4 +150,8 @@ const (
 	GovFundUnableToDelete                 = 700144
 	GovFundBalanceMismatch                = 700145
 	GovErrUnableToSetFinalizeFailed       = 700146
+
+	//Rewards Error
+	RewardsUnableToGetMaturedAmount = 800001
+	RewardsUnableToWithdraw         = 800002
 )

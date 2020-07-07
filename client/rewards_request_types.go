@@ -17,6 +17,7 @@ type ListRewardsReply struct {
 
 type WithdrawRewardsRequest struct {
 	ValidatorSigningAddress keys.Address  `json:"validatorSigningAddress"`
+	WithdrawAmount          action.Amount `json:"withdrawAmount"`
 	GasPrice                action.Amount `json:"gasPrice"`
 	Gas                     int64         `json:"gas"`
 }

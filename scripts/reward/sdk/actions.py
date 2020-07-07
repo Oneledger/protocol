@@ -68,12 +68,17 @@ def broadcast_commit(raw_tx, signature, pub_key):
 
 
 class Withdraw:
-    def __init__(self, valindatorWalletAddress):
+    def __init__(self, valindatorWalletAddress, amount):
         self.address = valindatorWalletAddress
+        self.withdrawAmount = amount
 
     def _withdraw_reward(self):
         req = {
             "validatorSigningAddress": self.address,
+            "withdrawAmount": {
+                "currency": "OLT",
+                "value": self.withdrawAmount,
+            },
             "gasPrice": {
                 "currency": "OLT",
                 "value": "1000000000",
@@ -93,6 +98,7 @@ class Withdraw:
         result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
         if "ok" in result:
             if not result["ok"]:
+                print "Not OK"
                 sys.exit(-1)
             else:
                 print "################### Withdraw completed : "

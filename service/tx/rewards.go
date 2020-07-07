@@ -22,6 +22,7 @@ func (s *Service) WithdrawRewards(args client.WithdrawRewardsRequest, reply *cli
 	withdrawRewards := rewards.Withdraw{
 		ValidatorAddress:        address,
 		ValidatorSigningAddress: args.ValidatorSigningAddress,
+		WithdrawAmount:          args.WithdrawAmount,
 	}
 
 	data, err := withdrawRewards.Marshal()
