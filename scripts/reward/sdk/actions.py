@@ -112,7 +112,6 @@ class Withdraw:
         result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
         if "ok" in result:
             if not result["ok"]:
-                print "Not OK"
                 sys.exit(-1)
             else:
                 print "################### Withdraw completed : "

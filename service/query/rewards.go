@@ -33,7 +33,7 @@ func (svc *Service) GetValidatorMaturityAmount(req client.RewardsRequest, resp *
 		return err
 	}
 
-	amount, err := svc.rewardMaster.RewardCumula.GetMaturedBalance(validatorAddr)
+	amount, err := svc.rewardMaster.RewardCm.GetMaturedBalance(validatorAddr)
 	if err != nil {
 		return err
 	}

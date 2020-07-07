@@ -2,7 +2,6 @@ package rewards
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
@@ -112,17 +111,15 @@ func runWithdraw(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrUnserializable, withdraw.Tags(), err)
 	}
 
-	//1. Check the cumulative rewards DB
-	_ = ctx.RewardMasterStore.RewardCm
-
 	//2. Get the difference of amount earned vs amount withdrawn for the validator issuing this transaction
 	//3. Check how much he is eligible to withdraw
 	//4. If the amount withdrawn is less than or equal to amount eligible to be withdrawn, make the transaction success.
 	//5. In case of no failure, add this amount the person withdrew, to total withdrawn amount in cumulative rewards db
-
+	//maturedBalance, _ := ctx.RewardMasterStore.RewardCm.GetMaturedRewards(withdraw.ValidatorAddress)
+	//fmt.Println("Matured Balance :", maturedBalance, withdraw.ValidatorAddress)
 	err = ctx.RewardMasterStore.RewardCm.WithdrawRewards(withdraw.ValidatorAddress, &withdraw.WithdrawAmount.Value)
 	if err != nil {
-		helpers.LogAndReturnFalse(ctx.Logger, rewards.UnableToWithdraw, withdraw.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, rewards.UnableToWithdraw, withdraw.Tags(), err)
 	}
 
 	//6. Update the balance db with the withdrawn amount for that validator
@@ -131,5 +128,6 @@ func runWithdraw(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, balance.ErrBalanceErrorAddFailed, withdraw.Tags(), err)
 	}
-	return helpers.LogAndReturnTrue(ctx.Logger, withdraw.Tags(), fmt.Sprintf("Successfully withdrawn %s to Validator Address %s", withDrawCoin, withdraw.ValidatorAddress.String()))
+	ctx.Logger.Debugf("Successfully withdrawn %s to Validator Address %s", withDrawCoin, withdraw.ValidatorAddress.String())
+	return helpers.LogAndReturnTrue(ctx.Logger, withdraw.Tags(), "Success")
 }
