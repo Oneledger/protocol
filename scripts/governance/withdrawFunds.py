@@ -27,7 +27,7 @@ _prop_to_cancel = Proposal(_pid_to_cancel, "general", "proposal for funds withdr
 _encoded_pid = _prop.get_encoded_pid()
 _encoded_pid_to_cancel = _prop_to_cancel.get_encoded_pid()
 
-_wait = 6
+_wait = 2
 
 
 def fund_proposal(pid, amount, funder):
@@ -114,7 +114,7 @@ if __name__ == "__main__":
     query_balance(_proposer)
 
     for x in range(_wait):
-        print("wait for 60s, " + str(_wait * 10 - x * 10) + "s left")
+        print("wait for 20s, " + str(_wait * 10 - x * 10) + "s left")
         time.sleep(10)
 
     print bcolors.WARNING + "#### TRY TO WITHDRAW NOT FUNDED PROPOSAL, SHOULD FAIL: ####" + bcolors.ENDC

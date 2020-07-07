@@ -1,0 +1,40 @@
+#!/bin/bash
+
+RED='\e[31m'
+GRN="\e[32m"
+YEL="\e[33m"
+NC='\033[0m'
+
+node_num=$1
+root_dir="$OLDATA/devnet/$1-Node"
+echo "node path: $root_dir"
+
+pushd $root_dir
+
+# create a test admin account
+addr_admin=$(olclient account --root $root_dir add --name admin --password admin | grep Address | awk '{print $NF}' | cut -d't' -f 2)
+if [ $? -ne 0 ]; then
+    echo -e "${RED}failed to create admin account${NC}"
+    exit -1
+fi
+echo "admin address: $addr_admin"
+
+# get initial token holder address
+addr_holder=$(olclient list --root $root_dir | grep Address | awk 'END{print $2}' | cut -d't' -f 2)
+if [ $? -ne 0 ]; then
+    echo -e "${RED}failed to get token holder address${NC}"
+    exit -1
+fi
+echo "holder address: $addr_holder"
+
+# send fund from token holder to admin
+olclient sendfunds --root $root_dir --party $addr_holder --counterparty $addr_admin --amount 10000000 --fee 0.0001
+if [ $? -ne 0 ]; then
+    echo -e "${RED}sending fund from $addr_holder to $addr_admin failed${NC}"
+    exit -1
+fi
+
+# stake some initial OLT
+olclient delegation stake --amount $2 --address $addr_admin --password admin
+
+popd
