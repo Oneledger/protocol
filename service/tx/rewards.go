@@ -1,16 +1,16 @@
 package tx
 
 import (
-	"github.com/google/uuid"
-
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/rewards"
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/serialize"
 	codes "github.com/Oneledger/protocol/status_codes"
+
+	"github.com/google/uuid"
 )
 
-func (s *Service) WithdrawRewards(args client.WithdrawRewardsRequest, reply *client.CreateTxReply) error {
+func (s *Service) WithdrawRewards(args client.WithdrawRewardsRequest, reply *client.WithdrawRewardsReply) error {
 	// Get address of local validator , assuming withdraw rewards will be called by validator in his own node
 	hPub, err := s.nodeContext.ValidatorPubKey().GetHandler()
 	if err != nil {
@@ -20,9 +20,9 @@ func (s *Service) WithdrawRewards(args client.WithdrawRewardsRequest, reply *cli
 	address := hPub.Address()
 	// create Withdrawal request for Validator
 	withdrawRewards := rewards.Withdraw{
-		ValidatorAddress:        address,
-		ValidatorSigningAddress: args.ValidatorSigningAddress,
-		WithdrawAmount:          args.WithdrawAmount,
+		ValidatorAddress: address,
+		SignerAddress:    args.ValidatorAddress,
+		WithdrawAmount:   action.Amount{Currency: "OLT", Value: args.WithdrawAmount},
 	}
 
 	data, err := withdrawRewards.Marshal()
@@ -31,15 +31,11 @@ func (s *Service) WithdrawRewards(args client.WithdrawRewardsRequest, reply *cli
 	}
 
 	uuidNew, _ := uuid.NewUUID()
-	fee := action.Fee{
-		Price: args.GasPrice,
-		Gas:   args.Gas,
-	}
-
+	feeAmount := s.feeOpt.MinFee()
 	tx := &action.RawTx{
 		Type: action.WITHDRAW_REWARD,
 		Data: data,
-		Fee:  fee,
+		Fee:  action.Fee{action.Amount{Currency: "OLT", Value: *feeAmount.Amount}, 100000},
 		Memo: uuidNew.String(),
 	}
 
@@ -48,7 +44,7 @@ func (s *Service) WithdrawRewards(args client.WithdrawRewardsRequest, reply *cli
 		return codes.ErrSerialization
 	}
 
-	*reply = client.CreateTxReply{RawTx: packet}
+	*reply = client.WithdrawRewardsReply{RawTx: packet}
 
 	return nil
 }

@@ -177,7 +177,6 @@ func (ks *KeyStore) GetKeyData(path string, address Address, passphrase string) 
 	if err != nil {
 		return nil, err
 	}
-
 	cipherData, err := hex.DecodeString(accData.CipherText)
 	if err != nil {
 		return nil, err
@@ -276,6 +275,7 @@ func buildFileName(address Address) string {
 }
 
 func GetFileName(path string, address Address) (string, error) {
+	fmt.Println("Path :", path, address.String())
 	pattern, _ := filepath.Abs(path + "*" + address.Humanize())
 	matches, err := filepath.Glob(pattern)
 	if err != nil {

@@ -1,7 +1,6 @@
 package client
 
 import (
-	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 )
@@ -21,8 +20,13 @@ type MatureRewardsReply struct {
 }
 
 type WithdrawRewardsRequest struct {
-	ValidatorSigningAddress keys.Address  `json:"validatorSigningAddress"`
-	WithdrawAmount          action.Amount `json:"withdrawAmount"`
-	GasPrice                action.Amount `json:"gasPrice"`
-	Gas                     int64         `json:"gas"`
+	ValidatorAddress keys.Address   `json:"validatorSigningAddress"`
+	WithdrawAmount   balance.Amount `json:"withdrawAmount"`
+	//GasPrice         action.Amount  `json:"gasPrice"`
+	//Gas              int64          `json:"gas"`
+}
+
+type WithdrawRewardsReply struct {
+	RawTx []byte `json:"rawTx"`
+	//Signature action.Signature `json:"signature"`
 }

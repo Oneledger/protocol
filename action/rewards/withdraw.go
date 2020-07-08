@@ -13,13 +13,13 @@ import (
 )
 
 type Withdraw struct {
-	ValidatorAddress        action.Address `json:"validatorAddress"`
-	ValidatorSigningAddress action.Address `json:"validatorSigningAddress"`
-	WithdrawAmount          action.Amount  `json:"withdrawAmount"`
+	ValidatorAddress action.Address `json:"validatorAddress"`
+	SignerAddress    action.Address `json:"signerAddress"`
+	WithdrawAmount   action.Amount  `json:"withdrawAmount"`
 }
 
 func (w Withdraw) Signers() []action.Address {
-	return []action.Address{w.ValidatorSigningAddress}
+	return []action.Address{w.SignerAddress}
 }
 
 func (w Withdraw) Type() action.Type {
@@ -77,10 +77,6 @@ func (withdrawTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool,
 	}
 	if currency.Name != withdraw.WithdrawAmount.Currency {
 		return false, errors.Wrap(action.ErrInvalidAmount, withdraw.WithdrawAmount.String())
-	}
-	err = withdraw.ValidatorSigningAddress.Err()
-	if err != nil {
-		return false, errors.Wrap(action.ErrInvalidAddress, err.Error())
 	}
 	err = withdraw.ValidatorAddress.Err()
 	if err != nil {
