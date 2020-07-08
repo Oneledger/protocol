@@ -2,6 +2,7 @@ package staking
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/tendermint/tendermint/libs/kv"
 
@@ -123,6 +124,14 @@ func runWithdraw(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
 	}
+
+	height := ctx.Header.GetHeight()
+	options, err := ctx.GovernanceStore.GetStakingOptions()
+	if err != nil {
+		return false, action.Response{Log: errors.Wrap(err, draw.StakeAddress.String()).Error()}
+	}
+	info := fmt.Sprintf("runWithdraw: height= %v, MaturityTime= %v", height, options.MaturityTime)
+	fmt.Println(info)
 
 	coin := draw.Stake.ToCoinWithBase(ctx.Currencies)
 
