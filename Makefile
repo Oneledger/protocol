@@ -94,6 +94,11 @@ govtest: reset
 	python scripts/governance/queryProposals.py
 	@./scripts/stopNodes
 
+rewardstest: reset
+	@./scripts/testsend
+	python scripts/reward/withdraw.py
+	@./scripts/stopNodes
+
 alltest: reset
 	@./scripts/testsend
 	@./scripts/getValidators
