@@ -124,6 +124,11 @@ func runWithdraw(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
 	//6. Update the balance db with the withdrawn amount for that validator
 	withDrawCoin := withdraw.WithdrawAmount.ToCoin(ctx.Currencies)
+	rewardsPool := action.Address(ctx.RewardMasterStore.GetOptions().RewardPoolAddress)
+	err = ctx.Balances.MinusFromAddress(rewardsPool, withDrawCoin)
+	if err != nil {
+		return helpers.LogAndReturnFalse(ctx.Logger, balance.ErrBalanceErrorMinusFailed, withdraw.Tags(), err)
+	}
 	err = ctx.Balances.AddToAddress(withdraw.ValidatorAddress.Bytes(), withDrawCoin)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, balance.ErrBalanceErrorAddFailed, withdraw.Tags(), err)
