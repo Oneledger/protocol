@@ -33,6 +33,25 @@ func (rs *RewardStore) WithState(state *storage.State) *RewardStore {
 	return rs
 }
 
+func (rs *RewardStore) generateMaturedKey(address keys.Address, height int64, interval int64) (Key storage.StoreKey) {
+	Key = nil
+
+	lastInterval := rs.GetInterval(height)
+	index := lastInterval.LastIndex + int64((height-lastInterval.LastHeight)/interval) + 1
+	if index >= 2 {
+		Key = storage.StoreKey(address.String() + storage.DB_PREFIX + string(index-2))
+	}
+	return
+}
+
+func (rs *RewardStore) generatePreviousKey(address keys.Address, height int64, interval int64) (Key storage.StoreKey) {
+	Key = nil
+	lastInterval := rs.GetInterval(height)
+	index := lastInterval.LastIndex + int64((height-lastInterval.LastHeight)/interval)
+	Key = storage.StoreKey(address.String() + storage.DB_PREFIX + string(index))
+	return
+}
+
 func (rs *RewardStore) generateKey(address keys.Address, height int64, interval int64) (Key storage.StoreKey) {
 	lastInterval := rs.GetInterval(height)
 	index := lastInterval.LastIndex + int64((height-lastInterval.LastHeight)/interval) + 1
@@ -40,7 +59,17 @@ func (rs *RewardStore) generateKey(address keys.Address, height int64, interval 
 	return
 }
 
-func (rs *RewardStore) Get(address keys.Address, height int64) (amount *balance.Amount, err error) {
+func (rs *RewardStore) Get(key storage.StoreKey) (amount *balance.Amount, err error) {
+	data, err := rs.State.Get(key)
+	amount = balance.NewAmount(0)
+	if len(data) == 0 {
+		return
+	}
+	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(data, amount)
+	return
+}
+
+func (rs *RewardStore) GetWithHeight(address keys.Address, height int64) (amount *balance.Amount, err error) {
 	key := append(rs.prefix, rs.generateKey(address, height, rs.rewardOptions.RewardInterval)...)
 	data, err := rs.State.Get(key)
 	amount = balance.NewAmount(0)
@@ -113,7 +142,7 @@ func (rs *RewardStore) GetInterval(height int64) *Interval {
 }
 
 func (rs *RewardStore) AddToAddress(address keys.Address, height int64, amount *balance.Amount) error {
-	prevAmount, err := rs.Get(address, height)
+	prevAmount, err := rs.GetWithHeight(address, height)
 	newAmount := amount
 	if err == nil {
 		newAmount = prevAmount.Plus(*amount)
@@ -142,6 +171,11 @@ func (rs *RewardStore) Iterate(addr keys.Address, fn func(c string, amt balance.
 	)
 }
 
+func (rs *RewardStore) GetMaturedAmount(address keys.Address, height int64) (*balance.Amount, error) {
+	key := append(rs.prefix, rs.generateMaturedKey(address, height, rs.rewardOptions.RewardInterval)...)
+	return rs.Get(key)
+}
+
 func (rs *RewardStore) SetOptions(options *Options) {
 	rs.rewardOptions = options
 }
@@ -158,4 +192,22 @@ func (rs *RewardStore) UpdateOptions(height int64, options *Options) error {
 	}
 	rs.SetOptions(options)
 	return nil
+}
+
+func (rs *RewardStore) GetLastTwoChunks(address keys.Address) (*balance.Amount, error) {
+	amount := balance.NewAmount(0)
+	previousAmount := balance.NewAmount(0)
+	currentKey := append(rs.prefix, rs.generateKey(address, rs.State.Version(), rs.rewardOptions.RewardInterval)...)
+	previousKey := append(rs.prefix, rs.generatePreviousKey(address, rs.State.Version(), rs.rewardOptions.RewardInterval)...)
+	amount, err := rs.Get(currentKey)
+	if err != nil {
+		return nil, err
+	}
+
+	previousAmount, err = rs.Get(previousKey)
+	if err != nil {
+		return nil, err
+	}
+
+	return amount.Plus(*previousAmount), nil
 }

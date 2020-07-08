@@ -22,3 +22,17 @@ def list_validators():
     result = resp["result"]
     # print json.dumps(resp, indent=4)
     return result
+
+
+def query_matured_rewards(validator):
+    req = {
+        "validator": validator
+    }
+
+    resp = rpc_call('query.GetTotalRewardsForValidator', req)
+
+    if "result" in resp:
+        result = resp["result"]
+    else:
+        result = ""
+    return result

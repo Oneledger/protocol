@@ -229,8 +229,5 @@ func (pf *ProposalFundStore) DeleteFunds(proposalId ProposalID, fundingAddress k
 		return false, err
 	}
 
-
 	return ok, nil
 }
-
-

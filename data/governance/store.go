@@ -40,8 +40,7 @@ const (
 
 	INDIVIDUAL_FUNDS_PREFIX string = "i"
 
-	LAST_UPDATE_HEIGHT  string = "lastupdateheight"
-
+	LAST_UPDATE_HEIGHT string = "lastupdateheight"
 )
 
 type Store struct {
