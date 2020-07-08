@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 
+	"github.com/Oneledger/protocol/data/delegation"
 	"github.com/Oneledger/protocol/data/rewards"
 
 	"github.com/pkg/errors"
@@ -11,7 +12,6 @@ import (
 	"github.com/Oneledger/protocol/chains/bitcoin"
 	ethchain "github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/balance"
-	"github.com/Oneledger/protocol/data/delegation"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/serialize"
