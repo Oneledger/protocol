@@ -14,7 +14,8 @@ type ListRewardsReply struct {
 	Rewards   []balance.Amount `json:"rewards"`
 }
 
-type ValidatorRewardStat struct {
+type ValidatorRewardStats struct {
+	Address         keys.Address   `json:"address"`
 	PendingAmount   balance.Amount `json:"pendingAmount"`
 	WithdrawnAmount balance.Amount `json:"withdrawnAmount"`
 	MatureBalance   balance.Amount `json:"matureBalance"`
@@ -22,6 +23,6 @@ type ValidatorRewardStat struct {
 }
 
 type RewardStat struct {
-	Validators   []ValidatorRewardStat `json:"validators"`
-	TotalRewards balance.Amount        `json:"totalRewards"`
+	Validators   []ValidatorRewardStats `json:"validators"`
+	TotalRewards balance.Amount         `json:"totalRewards"`
 }
