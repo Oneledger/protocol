@@ -206,6 +206,12 @@ func (svc *Service) Stake(args client.StakeRequest, reply *client.StakeReply) er
 		address, args.Address, args.Amount,
 	)
 
+	val, err := svc.validators.Get(address)
+	if err == nil && !val.StakeAddress.Equal(args.Address) {
+		svc.logger.Errorf("Wrong stake address for validator %s\n", address)
+		return codes.ErrInvalidStakeAddress
+	}
+
 	apply := staking.Stake{
 		ValidatorAddress:     address,
 		StakeAddress:         args.Address,
@@ -265,6 +271,12 @@ func (svc *Service) Unstake(args client.UnstakeRequest, reply *client.UnstakeRep
 		address, args.Address, args.Amount,
 	)
 
+	val, err := svc.validators.Get(address)
+	if err == nil && !val.StakeAddress.Equal(args.Address) {
+		svc.logger.Errorf("Wrong stake address for validator %s\n", address)
+		return codes.ErrInvalidStakeAddress
+	}
+
 	apply := staking.Unstake{
 		ValidatorAddress: address,
 		StakeAddress:     args.Address,
@@ -320,6 +332,12 @@ func (svc *Service) Withdraw(args client.WithdrawRequest, reply *client.Withdraw
 	svc.logger.Infof("Validator - %s, delegator - %s, withdraw amount - %+v\n",
 		address, args.Address, args.Amount,
 	)
+
+	val, err := svc.validators.Get(address)
+	if err == nil && !val.StakeAddress.Equal(args.Address) {
+		svc.logger.Errorf("Wrong stake address for validator %s\n", address)
+		return codes.ErrInvalidStakeAddress
+	}
 
 	apply := staking.Withdraw{
 		ValidatorAddress: address,

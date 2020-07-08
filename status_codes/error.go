@@ -13,8 +13,8 @@ import (
 	Protocol Error definition
 */
 type ProtocolError struct {
-	Code int          `json:"code"`
-	Msg  string		  `json:"msg"`
+	Code int    `json:"code"`
+	Msg  string `json:"msg"`
 }
 
 func (se ProtocolError) Error() string {
@@ -73,13 +73,14 @@ var (
 	ErrTrackerBalance  = ProtocolError{InternalErrorTrackerInsufficientBalance, "insufficient balance in tracker"}
 
 	// Query errors
-	ErrBadAddress      = ProtocolError{IncorrectAddress, "address incorrect"}
-	ErrGettingBalance  = ProtocolError{InternalErrorGettingBalance, "error  getting balance"}
-	ErrListValidators  = ProtocolError{InternalErrorListValidators, "error getting list of validators"}
-	ErrListWitnesses   = ProtocolError{InternalErrorListWitnesses, "error getting list of witnesses"}
-	ErrGetProposal     = ProtocolError{InternalErrorGettingProposal, "error getting proposal"}
-	ErrFindingCurrency = ProtocolError{CurrencyNotFound, "error finding currency"}
-	ErrGetTx           = ProtocolError{TxNotFound, "error get tx from tendermint"}
+	ErrBadAddress          = ProtocolError{IncorrectAddress, "address incorrect"}
+	ErrGettingBalance      = ProtocolError{InternalErrorGettingBalance, "error  getting balance"}
+	ErrListValidators      = ProtocolError{InternalErrorListValidators, "error getting list of validators"}
+	ErrListWitnesses       = ProtocolError{InternalErrorListWitnesses, "error getting list of witnesses"}
+	ErrGetProposal         = ProtocolError{InternalErrorGettingProposal, "error getting proposal"}
+	ErrFindingCurrency     = ProtocolError{CurrencyNotFound, "error finding currency"}
+	ErrGetTx               = ProtocolError{TxNotFound, "error get tx from tendermint"}
+	ErrInvalidStakeAddress = ProtocolError{IncorrectAddress, "not valid staking address for this validator"}
 
 	// ONS errors
 	ErrBadName                   = ProtocolError{ONSErrDomainMissing, "domain name not provided"}
@@ -89,16 +90,14 @@ var (
 	ErrDomainExists              = ProtocolError{ONSErrDomainExists, "domain already exists"}
 	ErrDebitingFromAddress       = ProtocolError{ONSErrDebitingFromAddress, "cannot debit from address"}
 	ErrAddingToFeePool           = ProtocolError{ONSErrAddingToFeePool, "cannot add to fee pool"}
-	ErrInvalidUri                = ProtocolError{ONSErrInvalidUri , "invalid uri"}
-	ErrGettingParentName         = ProtocolError{ONSErrGettingParentName , "cannot get parent name"}
-	ErrParentDoesNotExist        = ProtocolError{ONSErrParentDoesNotExist , "parent domain does not exist"}
-	ErrParentNotOwned            = ProtocolError{ONSErrParentNotOwned , "parent domain not owned"}
-	ErrFailedToCalculateExpiry   = ProtocolError{ONSErrFailedToCalculateExpiry , "failed to calculate expiry"}
-	ErrFailedToCreateDomain      = ProtocolError{ONSErrFailedToCreateDomain , "failed to create domain"}
-	ErrFailedAddingDomainToStore = ProtocolError{ONSErrFailedAddingDomainToStore , "failed to add domain to store"}
-	ErrInvalidDomainName         = ProtocolError{ONSErrInvalidDomainName , "invalid domain name"}
-
-
+	ErrInvalidUri                = ProtocolError{ONSErrInvalidUri, "invalid uri"}
+	ErrGettingParentName         = ProtocolError{ONSErrGettingParentName, "cannot get parent name"}
+	ErrParentDoesNotExist        = ProtocolError{ONSErrParentDoesNotExist, "parent domain does not exist"}
+	ErrParentNotOwned            = ProtocolError{ONSErrParentNotOwned, "parent domain not owned"}
+	ErrFailedToCalculateExpiry   = ProtocolError{ONSErrFailedToCalculateExpiry, "failed to calculate expiry"}
+	ErrFailedToCreateDomain      = ProtocolError{ONSErrFailedToCreateDomain, "failed to create domain"}
+	ErrFailedAddingDomainToStore = ProtocolError{ONSErrFailedAddingDomainToStore, "failed to add domain to store"}
+	ErrInvalidDomainName         = ProtocolError{ONSErrInvalidDomainName, "invalid domain name"}
 
 	// Tx errors
 

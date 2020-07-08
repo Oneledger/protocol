@@ -88,6 +88,11 @@ func (us unstakeTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, err
 		return false, err
 	}
 
+	val, err := ctx.Validators.Get(ust.ValidatorAddress)
+	if err == nil && !val.StakeAddress.Equal(ust.StakeAddress) {
+		return false, action.ErrInvalidAddress
+	}
+
 	coin := ust.Stake.ToCoinWithBase(ctx.Currencies)
 	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromInt(0)) {
 		return false, action.ErrInvalidAmount

@@ -92,6 +92,11 @@ func (s stakeTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error)
 		return false, err
 	}
 
+	val, err := ctx.Validators.Get(st.ValidatorAddress)
+	if err == nil && !val.StakeAddress.Equal(st.StakeAddress) {
+		return false, action.ErrInvalidAddress
+	}
+
 	_, err = st.ValidatorPubKey.GetHandler()
 	if err != nil {
 		return false, action.ErrInvalidPubkey
