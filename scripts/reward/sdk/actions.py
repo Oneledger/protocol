@@ -29,7 +29,7 @@ def query_matured_rewards(validator):
         "validator": validator
     }
 
-    resp = rpc_call('query.GetValidatorMaturityAmount', req)
+    resp = rpc_call('query.GetTotalRewardsForValidator', req)
 
     if "result" in resp:
         result = resp["result"]
