@@ -71,26 +71,21 @@ func (svc *Service) GetTotalRewardsForValidator(req client.RewardsRequest, reply
 
 func (svc *Service) GetTotalRewards(_ client.RewardsRequest, reply *client.RewardStat) error {
 	totalRewards := balance.NewAmount(0)
-	validators, err := svc.validators.GetValidatorSet()
-	if err != nil {
-		return err
-	}
-
 	validatorList := make([]client.ValidatorRewardStats, 0, 64)
 
-	for _, val := range validators {
+	svc.rewardMaster.Reward.IterateAddrList(func(addr keys.Address) bool {
 		validatorStats := &client.ValidatorRewardStats{}
 		valRewardReq := client.RewardsRequest{
-			Validator: val.Address.String(),
+			Validator: addr.String(),
 		}
 		err := svc.GetTotalRewardsForValidator(valRewardReq, validatorStats)
 		if err != nil {
-			return err
+			return true
 		}
 		validatorList = append(validatorList, *validatorStats)
-
 		totalRewards = totalRewards.Plus(validatorStats.TotalAmount)
-	}
+		return false
+	})
 
 	*reply = client.RewardStat{
 		Validators:   validatorList,

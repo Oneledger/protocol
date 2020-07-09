@@ -130,7 +130,7 @@ func (app *App) blockBeginner() blockBeginner {
 		//blockRewardEvent := handleBlockRewards(app.Context.validators, app.Context.rewardMaster.WithState(app.Context.deliver), req)
 
 		result := ResponseBeginBlock{
-			//	Events: []abciTypes.Event{blockRewardEvent},
+			//Events: []abciTypes.Event{blockRewardEvent},
 		}
 
 		//update the header to current block
