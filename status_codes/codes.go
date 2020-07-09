@@ -163,4 +163,8 @@ const (
 	TxErrGettingBTCOptions                = 700153
 	TxErrGettingRewardsOptions            = 700154
 	TxErrGettingFeeOptions                = 700155
+
+	//Rewards Error
+	RewardsUnableToGetMaturedAmount = 800001
+	RewardsUnableToWithdraw         = 800002
 )

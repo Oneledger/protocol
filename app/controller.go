@@ -127,10 +127,10 @@ func (app *App) blockBeginner() blockBeginner {
 		}
 
 		// update Block Rewards
-		//blockRewardEvent := handleBlockRewards(app.Context.validators, app.Context.rewardMaster.WithState(app.Context.deliver), req)
+		blockRewardEvent := handleBlockRewards(app.Context.validators, app.Context.rewardMaster.WithState(app.Context.deliver), req)
 
 		result := ResponseBeginBlock{
-			//Events: []abciTypes.Event{blockRewardEvent},
+			Events: []abciTypes.Event{blockRewardEvent},
 		}
 
 		//update the header to current block
@@ -485,7 +485,7 @@ func handleBlockRewards(validators *identity.ValidatorStore, rewardMaster *rewar
 				if err != nil {
 					continue
 				}
-				err = rewardMaster.RewardCumula.AddMaturedBalance(valAddress, maturedAmount)
+				err = rewardMaster.RewardCm.AddMaturedBalance(valAddress, maturedAmount)
 				if err != nil {
 					continue
 				}

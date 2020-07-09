@@ -20,19 +20,19 @@ type Interval struct {
 }
 
 type RewardMasterStore struct {
-	Reward       *RewardStore
-	RewardCumula *RewardCumulativeStore
+	Reward   *RewardStore
+	RewardCm *RewardCumulativeStore
 }
 
 func (rwz *RewardMasterStore) WithState(state *storage.State) *RewardMasterStore {
 	rwz.Reward.WithState(state)
-	rwz.RewardCumula.WithState(state)
+	rwz.RewardCm.WithState(state)
 	return rwz
 }
 
 func (rwz *RewardMasterStore) SetOptions(options *Options) {
 	rwz.Reward.SetOptions(options)
-	rwz.RewardCumula.SetOptions(options)
+	rwz.RewardCm.SetOptions(options)
 }
 
 func (rwz *RewardMasterStore) GetOptions() *Options {
@@ -41,7 +41,7 @@ func (rwz *RewardMasterStore) GetOptions() *Options {
 
 func NewRewardMasterStore(rwz *RewardStore, rwzc *RewardCumulativeStore) *RewardMasterStore {
 	return &RewardMasterStore{
-		Reward:       rwz,
-		RewardCumula: rwzc,
+		Reward:   rwz,
+		RewardCm: rwzc,
 	}
 }
