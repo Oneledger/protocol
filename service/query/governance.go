@@ -86,12 +86,11 @@ func (svc *Service) ListProposals(req client.ListProposalsRequest, reply *client
 // list funds by funder for a proposal
 func (svc *Service) GetFundsForProposalByFunder(req client.GetFundsForProposalByFunderRequest, reply *client.GetFundsForProposalByFunderReply) error {
 	// Validate parameters
-	if len(req.Funder) != 0 {
-		err := req.Funder.Err()
-		if err != nil {
-			return errors.New("invalid proposer address")
-		}
+	err := req.Funder.Err()
+	if err != nil {
+		return errors.New("invalid proposer address")
 	}
+
 	amount := svc.proposalMaster.ProposalFund.GetFundsForProposalByFunder(req.ProposalId, req.Funder)
 	*reply = client.GetFundsForProposalByFunderReply{
 		Amount: *amount,
