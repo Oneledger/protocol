@@ -34,19 +34,18 @@ func (svc *Service) GetTotalRewardsForValidator(req client.RewardsRequest, reply
 		return err
 	}
 
-	//Get Matured balance
-	matureBalance, err := svc.rewardMaster.RewardCumula.GetMaturedBalance(validatorAddr)
+	matureBalance, err := svc.rewardMaster.RewardCm.GetMaturedBalance(validatorAddr)
 	if err != nil || matureBalance == nil {
 		return err
 	}
 	//Get Withdrawn Amount
-	withdrawnAmount, err := svc.rewardMaster.RewardCumula.GetWithdrawnRewards(validatorAddr)
+	withdrawnAmount, err := svc.rewardMaster.RewardCm.GetWithdrawnRewards(validatorAddr)
 	if err != nil || withdrawnAmount == nil {
 		return err
 	}
 
 	//Get Total Mature rewards. Mature balance + withdrawn amount
-	matureAmount, err := svc.rewardMaster.RewardCumula.GetMaturedRewards(validatorAddr)
+	matureAmount, err := svc.rewardMaster.RewardCm.GetMaturedRewards(validatorAddr)
 	if err != nil || matureAmount == nil {
 		return err
 	}

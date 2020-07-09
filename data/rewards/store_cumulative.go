@@ -3,6 +3,8 @@ package rewards
 import (
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
@@ -76,14 +78,14 @@ func (rws *RewardCumulativeStore) GetWithdrawnRewards(validator keys.Address) (a
 
 // Withdraw an 'amount' of rewards from rewards balance
 func (rws *RewardCumulativeStore) WithdrawRewards(validator keys.Address, amount *balance.Amount) error {
+
 	err := rws.minusRewardsBalance(validator, amount)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Minus from Matured Balance")
 	}
-
 	err = rws.addWithdrawnRewards(validator, amount)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Add to Withdraw Balance")
 	}
 
 	return nil
@@ -102,7 +104,7 @@ func (rws *RewardCumulativeStore) GetOptions() *Options {
 	return rws.rewardOptions
 }
 
-//-----------------------------helpper functions defined below
+//-----------------------------helper functions defined below
 //
 // Set cumulative amount by key
 func (rws *RewardCumulativeStore) set(key storage.StoreKey, amt *balance.Amount) error {

@@ -180,6 +180,11 @@ func (c *ServiceClient) ListRewards(req RewardsRequest) (out *ListRewardsReply, 
 	return
 }
 
+func (c *ServiceClient) WithdrawRewards(req WithdrawRewardsRequest) (out WithdrawRewardsReply, err error) {
+	err = c.Call("tx.WithdrawRewards", req, &out)
+	return
+}
+
 /* Broadcast */
 func (c *ServiceClient) TxAsync(req BroadcastRequest) (out BroadcastReply, err error) {
 	err = c.Call("broadcast.TxAsync", req, &out)

@@ -26,3 +26,15 @@ type RewardStat struct {
 	Validators   []ValidatorRewardStats `json:"validators"`
 	TotalRewards balance.Amount         `json:"totalRewards"`
 }
+
+type WithdrawRewardsRequest struct {
+	ValidatorAddress keys.Address   `json:"validatorSigningAddress"`
+	WithdrawAmount   balance.Amount `json:"withdrawAmount"`
+	//GasPrice         action.Amount  `json:"gasPrice"`
+	//Gas              int64          `json:"gas"`
+}
+
+type WithdrawRewardsReply struct {
+	RawTx []byte `json:"rawTx"`
+	//Signature action.Signature `json:"signature"`
+}
