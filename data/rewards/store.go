@@ -15,16 +15,18 @@ type RewardStore struct {
 	szlr            serialize.Serializer
 	prefix          []byte
 	prefixIntervals []byte
+	prefixAddrList  []byte
 
 	rewardOptions *Options
 }
 
-func NewRewardStore(prefix string, intervalPrefix string, state *storage.State) *RewardStore {
+func NewRewardStore(prefix string, intervalPrefix string, addrListPrefix string, state *storage.State) *RewardStore {
 	return &RewardStore{
 		State:           state,
 		szlr:            serialize.GetSerializer(serialize.PERSISTENT),
 		prefix:          storage.Prefix(prefix),
 		prefixIntervals: storage.Prefix(intervalPrefix),
+		prefixAddrList:  storage.Prefix(addrListPrefix),
 	}
 }
 
@@ -80,7 +82,7 @@ func (rs *RewardStore) GetWithHeight(address keys.Address, height int64) (amount
 	return
 }
 
-func (rs *RewardStore) Set(address keys.Address, height int64, amount *balance.Amount) error {
+func (rs *RewardStore) SetWithHeight(address keys.Address, height int64, amount *balance.Amount) error {
 	data, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(amount)
 	if err != nil {
 		return err
@@ -141,14 +143,41 @@ func (rs *RewardStore) GetInterval(height int64) *Interval {
 	return lastInterval
 }
 
+func (rs *RewardStore) IterateAddrList(fn func(key keys.Address) bool) bool {
+	return rs.State.IterateRange(
+		append(rs.prefixAddrList),
+		storage.Rangefix(string(rs.prefixAddrList)),
+		true,
+		func(key, value []byte) bool {
+			address := keys.Address{}
+			arr := strings.Split(string(key), storage.DB_PREFIX)
+			keyStr := arr[len(arr)-1]
+
+			err := address.UnmarshalText([]byte(keyStr))
+			if err != nil {
+				return true
+			}
+			return fn(address)
+		},
+	)
+}
+
+func (rs *RewardStore) AddAddressToList(address keys.Address) {
+	key := append(rs.prefixAddrList, storage.StoreKey(storage.DB_PREFIX+address.String())...)
+	if !rs.State.Exists(key) {
+		_ = rs.State.Set(key, []byte("active"))
+	}
+}
+
 func (rs *RewardStore) AddToAddress(address keys.Address, height int64, amount *balance.Amount) error {
 	prevAmount, err := rs.GetWithHeight(address, height)
 	newAmount := amount
 	if err == nil {
 		newAmount = prevAmount.Plus(*amount)
 	}
+	rs.AddAddressToList(address)
 
-	return rs.Set(address, height, newAmount)
+	return rs.SetWithHeight(address, height, newAmount)
 }
 
 //Iterate through all reward records for a given Address
@@ -206,7 +235,7 @@ func (rs *RewardStore) GetLastTwoChunks(address keys.Address) (*balance.Amount, 
 
 	previousAmount, err = rs.Get(previousKey)
 	if err != nil {
-		return nil, err
+		return amount, nil
 	}
 
 	return amount.Plus(*previousAmount), nil

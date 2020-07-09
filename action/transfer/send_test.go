@@ -166,7 +166,7 @@ func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, se
 		ProposalVote: nil,
 	}
 
-	rwz := rewards.NewRewardStore("r", "ri", cs)
+	rwz := rewards.NewRewardStore("r", "ri", "ra", cs)
 	rwzc := rewards.NewRewardCumulativeStore("rc", cs)
 	ctx.RewardMasterStore = rewards.NewRewardMasterStore(rwz, rwzc)
 	rewardOptions := rewards.Options{

@@ -172,7 +172,7 @@ func NewProposalMasterStore(chainstate *storage.ChainState) *governance.Proposal
 }
 
 func NewRewardMasterStore(chainstate *storage.ChainState) *rewards.RewardMasterStore {
-	reward := rewards.NewRewardStore("rwz", "ri", storage.NewState(chainstate))
+	reward := rewards.NewRewardStore("rwz", "ri", "rwaddr", storage.NewState(chainstate))
 	rewardCumula := rewards.NewRewardCumulativeStore("rwzc", storage.NewState(chainstate))
 	return rewards.NewRewardMasterStore(reward, rewardCumula)
 }

@@ -116,3 +116,16 @@ class Withdraw:
             else:
                 print "################### Withdraw completed : "
                 return result["txHash"]
+
+
+def query_total_rewards():
+    resp = rpc_call('query.GetTotalRewards', {})
+
+    if "result" in resp:
+        result = resp["result"]
+    else:
+        result = ""
+
+    print json.dumps(resp, indent=4)
+
+    return result
