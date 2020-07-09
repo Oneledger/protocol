@@ -141,6 +141,15 @@ func (pf *ProposalFundStore) GetCurrentFundsForProposal(proposalID ProposalID) *
 	return funds
 }
 
+func (pf *ProposalFundStore) GetFundsForProposalByFunder(proposalID ProposalID, funder keys.Address) *balance.Amount {
+	key := assembleIndividualFundsKey(proposalID, funder)
+	funds, err := pf.get(key)
+	if err != nil {
+		funds = balance.NewAmount(0)
+	}
+	return funds
+}
+
 func assembleTotalFundsKey(proposalId ProposalID) storage.StoreKey {
 	key := storage.StoreKey(TOTAL_FUNDS_PREFIX + storage.DB_PREFIX + string(proposalId))
 	return key

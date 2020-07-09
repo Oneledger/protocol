@@ -92,6 +92,8 @@ govtest: reset
 	make reset
 	@./scripts/testsend
 	python scripts/governance/queryProposals.py
+	python scripts/governance/getFundsByFunder.py
+	python scripts/governance/queryProposalOptions.py
 	@./scripts/stopNodes
 
 alltest: reset

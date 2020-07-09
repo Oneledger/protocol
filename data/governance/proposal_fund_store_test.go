@@ -70,6 +70,9 @@ func TestProposalFundStore_AddFunds(t *testing.T) {
 	err = store.AddFunds(ID2, address2, balance.NewAmount(120))
 	assert.NoError(t, err, "")
 	cs.Commit()
+	err = store.AddFunds(ID2, address2, balance.NewAmount(220))
+	assert.NoError(t, err, "")
+	cs.Commit()
 
 }
 
@@ -133,6 +136,13 @@ func TestGetCurrentFunds(t *testing.T) {
 	currentFunds := store.GetCurrentFundsForProposal(ID1)
 	funds := currentFunds.BigInt().Int64()
 	assert.EqualValues(t, int64(1000), funds, "")
+}
+
+func TestGetFundsForProposalByFunder(t *testing.T) {
+	//fmt.Println("Getting Total fund for ProposalID")
+	currentFunds := store.GetFundsForProposalByFunder(ID2, address2)
+	funds := currentFunds.BigInt().Int64()
+	assert.EqualValues(t, int64(340), funds, "")
 }
 
 func TestDeleteAllFunds(t *testing.T) {
