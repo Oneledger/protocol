@@ -18,6 +18,7 @@ import (
 	"github.com/Oneledger/protocol/action/eth"
 	action_gov "github.com/Oneledger/protocol/action/governance"
 	action_ons "github.com/Oneledger/protocol/action/ons"
+	action_rewards "github.com/Oneledger/protocol/action/rewards"
 	"github.com/Oneledger/protocol/action/staking"
 	"github.com/Oneledger/protocol/action/transfer"
 	"github.com/Oneledger/protocol/app/node"
@@ -154,6 +155,8 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	_ = eth.EnableETH(ctx.actionRouter)
 	_ = eth.EnableInternalETH(ctx.internalRouter)
 
+	_ = action_rewards.EnableRewards(ctx.actionRouter)
+
 	_ = action_gov.EnableGovernance(ctx.actionRouter)
 	_ = action_gov.EnableInternalGovernance(ctx.internalRouter)
 	_ = staking.EnableStaking(ctx.actionRouter)
@@ -169,7 +172,7 @@ func NewProposalMasterStore(chainstate *storage.ChainState) *governance.Proposal
 }
 
 func NewRewardMasterStore(chainstate *storage.ChainState) *rewards.RewardMasterStore {
-	reward := rewards.NewRewardStore("rwz", "ri", storage.NewState(chainstate))
+	reward := rewards.NewRewardStore("rwz", "ri", "rwaddr", storage.NewState(chainstate))
 	rewardCumula := rewards.NewRewardCumulativeStore("rwzc", storage.NewState(chainstate))
 	return rewards.NewRewardMasterStore(reward, rewardCumula)
 }

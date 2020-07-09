@@ -23,10 +23,11 @@ import (
 
 	"golang.org/x/crypto/ssh/terminal"
 
+	"github.com/spf13/cobra"
+
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/log"
-	"github.com/spf13/cobra"
 )
 
 const (
@@ -71,8 +72,15 @@ var DelegationCmd = &cobra.Command{
 	Long:  "Delegation module for OneLedger chain",
 }
 
+var RewardsCmd = &cobra.Command{
+	Use:   "rewards",
+	Short: "OneLedger rewards",
+	Long:  "Rewards module for OneLedger chain",
+}
+
 func main() {
 	RootCmd.AddCommand(DelegationCmd)
+	RootCmd.AddCommand(RewardsCmd)
 	Execute()
 }
 

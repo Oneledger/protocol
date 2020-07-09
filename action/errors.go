@@ -28,4 +28,5 @@ var (
 
 	ErrInvalidValidatorAddr = codes.ProtocolError{codes.GovErrInvalidValidatorAddr, "invalid validator address"}
 	ErrStakeAddressInUse    = codes.ProtocolError{codes.DelgErrStakeAddressInUse, "current stake address is in use"}
+	ErrStakeAddressMismatch = codes.ProtocolError{codes.DelgErrStakeAddressMismatch, "stake address does not match"}
 )

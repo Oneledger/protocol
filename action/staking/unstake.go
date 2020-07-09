@@ -2,6 +2,7 @@ package staking
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
@@ -87,6 +88,11 @@ func (us unstakeTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, err
 		return false, err
 	}
 
+	val, err := ctx.Validators.Get(ust.ValidatorAddress)
+	if err == nil && !val.StakeAddress.Equal(ust.StakeAddress) {
+		return false, action.ErrStakeAddressMismatch
+	}
+
 	coin := ust.Stake.ToCoinWithBase(ctx.Currencies)
 	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromInt(0)) {
 		return false, action.ErrInvalidAmount
@@ -133,6 +139,8 @@ func runCheckUnstake(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		return false, action.Response{Log: errors.Wrap(err, ust.StakeAddress.String()).Error()}
 	}
 
+	info := fmt.Sprintf("runUnstake: height= %v, MaturityTime= %v", height, options.MaturityTime)
+	fmt.Println(info)
 	err = ctx.Delegators.Unstake(ust.ValidatorAddress, ust.StakeAddress, ust.Stake.Value, height+options.MaturityTime)
 	if err != nil {
 		return false, action.Response{Log: errors.Wrap(err, ust.StakeAddress.String()).Error()}

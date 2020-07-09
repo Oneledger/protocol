@@ -127,10 +127,10 @@ func (app *App) blockBeginner() blockBeginner {
 		}
 
 		// update Block Rewards
-		//blockRewardEvent := handleBlockRewards(app.Context.validators, app.Context.rewardMaster.WithState(app.Context.deliver), req)
+		blockRewardEvent := handleBlockRewards(app.Context.validators, app.Context.rewardMaster.WithState(app.Context.deliver), req)
 
 		result := ResponseBeginBlock{
-			//Events: []abciTypes.Event{blockRewardEvent},
+			Events: []abciTypes.Event{blockRewardEvent},
 		}
 
 		//update the header to current block
@@ -475,23 +475,26 @@ func handleBlockRewards(validators *identity.ValidatorStore, rewardMaster *rewar
 				Key:   []byte(valAddress.String()),
 				Value: []byte(amount.String()),
 			}
-
-			//Update Matured Amount
-			options := rewardMaster.Reward.GetOptions()
-			matured := lastHeight % options.RewardInterval
-			if matured == 0 {
-				//Add rewards at chunk n - 2 to cumulative store
-				maturedAmount, err := rewardMaster.Reward.GetMaturedAmount(valAddress, lastHeight)
-				if err != nil {
-					continue
-				}
-				err = rewardMaster.RewardCumula.AddMaturedBalance(valAddress, maturedAmount)
-				if err != nil {
-					continue
-				}
-			}
 		}
 	}
+
+	//Update Matured Amount
+	rewardMaster.Reward.IterateAddrList(func(addr keys.Address) bool {
+		options := rewardMaster.Reward.GetOptions()
+		matured := lastHeight % options.RewardInterval
+		if matured == 0 {
+			//Add rewards at chunk n - 2 to cumulative store
+			maturedAmount, err := rewardMaster.Reward.GetMaturedAmount(addr, lastHeight)
+			if err != nil {
+				return false
+			}
+			err = rewardMaster.RewardCm.AddMaturedBalance(addr, maturedAmount)
+			if err != nil {
+				return false
+			}
+		}
+		return false
+	})
 
 	//Populate Event with validator rewards
 	result.Type = "block_rewards"
