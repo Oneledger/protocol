@@ -158,9 +158,8 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	//if err != nil {
 	//	helpers.LogAndReturnFalse(ctx.Logger, governance.ErrGetProposalOptions, createProposal.Tags(), err)
 	//}
-	//TODO implement validattions for all stores
 	if createProposal.ProposalType == governance.ProposalTypeConfigUpdate {
-		validateConfig(ctx, createProposal)
+		governance.ValidateGov(createProposal.ConfigUpdate)
 	}
 
 	//Create Proposal and save to Proposal Store
