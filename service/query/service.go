@@ -2,6 +2,7 @@ package query
 
 import (
 	"encoding/hex"
+	"fmt"
 	"strings"
 
 	"github.com/Oneledger/protocol/data/rewards"
@@ -241,6 +242,8 @@ func (svc *Service) DelegationStatus(req client.DelegationStatusRequest, resp *c
 	withdrawableAmount, _ := svc.delegators.GetDelegatorBoundedAmount(req.Address)
 
 	height := svc.balances.State.Version()
+	info := fmt.Sprintf("Get delegation status: height= %v, MaturityTime= %v", height, options.MaturityTime)
+	fmt.Println(info)
 	maturedAmounts := svc.delegators.GetMaturedPendingAmount(req.Address, height, options.MaturityTime+1)
 
 	bal, err := svc.balances.GetBalance(req.Address, svc.currencies)
