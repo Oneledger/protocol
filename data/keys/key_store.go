@@ -275,7 +275,6 @@ func buildFileName(address Address) string {
 }
 
 func GetFileName(path string, address Address) (string, error) {
-	fmt.Println("Path :", path, address.String())
 	pattern, _ := filepath.Abs(path + "*" + address.Humanize())
 	matches, err := filepath.Glob(pattern)
 	if err != nil {

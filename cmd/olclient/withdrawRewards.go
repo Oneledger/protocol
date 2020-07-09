@@ -6,7 +6,6 @@
 package main
 
 import (
-	"fmt"
 	"path/filepath"
 
 	"github.com/Oneledger/protocol/action"
@@ -82,7 +81,6 @@ func withdrawRewards(cmd *cobra.Command, args []string) error {
 	//Verify User Password
 
 	usrAddress := keys.Address(withDrawRewardsArgs.Address)
-	fmt.Println("usraddress", withDrawRewardsArgs.Address)
 	authenticated, err := wallet.VerifyPassphrase(usrAddress, withDrawRewardsArgs.Password)
 	if !authenticated {
 		ctx.logger.Error("authentication error", err)
