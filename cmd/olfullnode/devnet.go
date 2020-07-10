@@ -81,9 +81,22 @@ var (
 		ProposerReward: 00.00,
 	}
 
-	blockRewardsCalcInterval    = int64(1000)
-	annualBlockRewardsSupply, _ = balance.NewAmountFromString("50000000000000000000000000", 10)
-	yearsOfBlockRewardsSupply   = int64(5)
+	estimatedSecondsPerCycle  = int64(172800)
+	blockSpeedCalculateCycle  = int64(10000)
+	burnoutRate, _            = balance.NewAmountFromString("5000000000000000000", 10)
+	yearCloseWindow           = int64(3600 * 24)
+	yearBlockRewardShare_1, _ = balance.NewAmountFromString("70000000000000000000000000", 10)
+	yearBlockRewardShare_2, _ = balance.NewAmountFromString("70000000000000000000000000", 10)
+	yearBlockRewardShare_3, _ = balance.NewAmountFromString("40000000000000000000000000", 10)
+	yearBlockRewardShare_4, _ = balance.NewAmountFromString("40000000000000000000000000", 10)
+	yearBlockRewardShare_5, _ = balance.NewAmountFromString("10000000000000000000000000", 10)
+	yearBlockRewardShares     = []balance.Amount{
+		*yearBlockRewardShare_1,
+		*yearBlockRewardShare_2,
+		*yearBlockRewardShare_3,
+		*yearBlockRewardShare_4,
+		*yearBlockRewardShare_5,
+	}
 
 	testnetArgs = &testnetConfig{}
 
@@ -453,12 +466,13 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 	}
 
 	rewzOpt := rewards.Options{
-		RewardInterval:    args.rewardsInterval,
-		RewardPoolAddress: "rewardpool",
-		RewardCurrency:    "OLT",
-		CalculateInterval: blockRewardsCalcInterval,
-		AnnualSupply:      *annualBlockRewardsSupply,
-		YearsOfSupply:     yearsOfBlockRewardsSupply,
+		RewardInterval:           args.rewardsInterval,
+		RewardPoolAddress:        "rewardpool",
+		RewardCurrency:           "OLT",
+		EstimatedSecondsPerCycle: estimatedSecondsPerCycle,
+		BlockSpeedCalculateCycle: blockSpeedCalculateCycle,
+		BurnoutRate:              *burnoutRate,
+		YearBlockRewardShares:    yearBlockRewardShares,
 	}
 	states := initialState(args, nodeList, *cdo, *onsOp, btccdo, propOpt, reserveDomains, initialAddrs, rewzOpt)
 

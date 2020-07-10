@@ -1,17 +1,28 @@
 package rewards
 
 import (
+	"os"
+
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/storage"
 )
 
+var logger *log.Logger
+
+func init() {
+	logger = log.NewDefaultLogger(os.Stdout).WithPrefix("rewards")
+}
+
 type Options struct {
-	RewardInterval    int64          `json:"rewardInterval"`
-	RewardPoolAddress string         `json:"rewardPoolAddress"`
-	RewardCurrency    string         `json:"rewardCurrency"`
-	CalculateInterval int64          `json:"calculateInterval"`
-	AnnualSupply      balance.Amount `json:"annualSupply"`
-	YearsOfSupply     int64          `json:"yearsOfSupply"`
+	RewardInterval           int64            `json:"rewardInterval"`
+	RewardPoolAddress        string           `json:"rewardPoolAddress"`
+	RewardCurrency           string           `json:"rewardCurrency"`
+	EstimatedSecondsPerCycle int64            `json:"estimatedSecondsPerCycle"`
+	BlockSpeedCalculateCycle int64            `json:"blockSpeedCalculateCycle"`
+	YearCloseWindow          int64            `json:"yearCloseWindow"`
+	YearBlockRewardShares    []balance.Amount `json:"yearBlockRewardShares"`
+	BurnoutRate              balance.Amount   `json:"burnoutRate"`
 }
 
 type Interval struct {

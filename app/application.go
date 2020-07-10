@@ -383,6 +383,7 @@ func (app *App) Prepare() error {
 			return err
 		}
 		app.Context.rewardMaster.SetOptions(rewardsOpt)
+		app.Context.rewardMaster.RewardCumula.Init(app.node, app.Context.currencies)
 	}
 
 	nodecfg, err := consensus.ParseConfig(&app.Context.cfg)

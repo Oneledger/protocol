@@ -101,6 +101,13 @@ func (a *Amount) Equals(value Amount) bool {
 	return false
 }
 
+func (a *Amount) LessThan(value Amount) bool {
+	if a.BigInt().Cmp(value.BigInt()) == -1 {
+		return true
+	}
+	return false
+}
+
 func (a Amount) BigFloat() *big.Float {
 	return new(big.Float).SetInt(a.BigInt())
 }
