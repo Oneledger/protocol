@@ -159,7 +159,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	//	helpers.LogAndReturnFalse(ctx.Logger, governance.ErrGetProposalOptions, createProposal.Tags(), err)
 	//}
 	if createProposal.ProposalType == governance.ProposalTypeConfigUpdate {
-		governance.ValidateGov(createProposal.ConfigUpdate)
+		ctx.GovernanceStore.ValidateGov(createProposal.ConfigUpdate)
 	}
 
 	//Create Proposal and save to Proposal Store
