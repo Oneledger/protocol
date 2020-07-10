@@ -126,8 +126,11 @@ func runRedeem(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		ctx.Logger.Error("")
 		return false, action.Response{Log: errors.Wrap(action.ErrUnserializable, err.Error()).Error()}
 	}
-
-	req, err := ethereum.ParseRedeem(redeem.ETHTxn, ctx.ETHTrackers.GetOption().ContractABI)
+	ethOptions, err := ctx.GovernanceStore.GetETHChainDriverOption()
+	if err != nil {
+		return helpers.LogAndReturnFalse(ctx.Logger, gov.ErrGetEthOptions, redeem.Tags(), err)
+	}
+	req, err := ethereum.ParseRedeem(redeem.ETHTxn, ethOptions.ContractABI)
 	if err != nil {
 		return false, action.Response{Log: (errors.Wrap(action.ErrInvalidExtTx, err.Error())).Error()}
 	}
@@ -136,10 +139,7 @@ func runRedeem(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	if !ok {
 		return false, action.Response{Log: "ETH not registered"}
 	}
-	ethOptions, err := ctx.GovernanceStore.GetETHChainDriverOption()
-	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, gov.ErrGetEthOptions, redeem.Tags(), err)
-	}
+
 	coin := c.NewCoinFromAmount(*balance.NewAmountFromBigInt(req.Amount))
 	err = ctx.Balances.MinusFromAddress(redeem.Owner, coin)
 	if err != nil {
