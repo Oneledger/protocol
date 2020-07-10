@@ -8,11 +8,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+
 	"github.com/tendermint/tendermint/libs/kv"
 
-	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/data/ons"
 	"github.com/pkg/errors"
+
+	"github.com/Oneledger/protocol/action"
+	gov "github.com/Oneledger/protocol/data/governance"
+	"github.com/Oneledger/protocol/data/ons"
 )
 
 var _ Ons = &DomainSale{}
@@ -97,7 +100,11 @@ func (domainSaleTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, err
 		return false, err
 	}
 
-	err = action.ValidateFee(ctx.FeePool.GetOpt(), tx.Fee)
+	feeOpt, err := ctx.GovernanceStore.GetFeeOption()
+	if err != nil {
+		return false, gov.ErrGetFeeOptions
+	}
+	err = action.ValidateFee(feeOpt, tx.Fee)
 	if err != nil {
 		return false, err
 	}
@@ -121,9 +128,12 @@ func (domainSaleTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, err
 	if c.Name != sale.Price.Currency {
 		return false, errors.Wrap(action.ErrInvalidAmount, sale.Price.String())
 	}
-
+	opt, err := ctx.GovernanceStore.GetONSOptions()
+	if err != nil {
+		return false, gov.ErrGetONSOptions
+	}
 	coin := sale.Price.ToCoin(ctx.Currencies)
-	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromAmount(ctx.Domains.GetOptions().PerBlockFees)) {
+	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromAmount(opt.PerBlockFees)) {
 		return false, action.ErrNotEnoughFund
 	}
 
