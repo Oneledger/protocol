@@ -88,7 +88,7 @@ func (svc *Service) GetFundsForProposalByFunder(req client.GetFundsForProposalBy
 	// Validate parameters
 	err := req.Funder.Err()
 	if err != nil {
-		return errors.New("invalid proposer address")
+		return errors.New("invalid funder address")
 	}
 
 	amount := svc.proposalMaster.ProposalFund.GetFundsForProposalByFunder(req.ProposalId, req.Funder)

@@ -16,6 +16,7 @@ if __name__ == "__main__":
     prop_0 = gen_prop(_proposer_0, "general")
     prop_0.send_create()
     time.sleep(1)
+    print addr_list[0]
     fund_proposal(prop_0.pid, _funding, addr_list[0])
     fund_proposal(prop_0.pid, _funding, addr_list[0])
 
