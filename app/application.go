@@ -144,7 +144,7 @@ func (app *App) setupState(stateBytes []byte) error {
 	if err != nil {
 		return errors.Wrap(err, "Error in setting up ONS options")
 	}
-	app.Context.domains.SetOptions(&initial.Governance.ONSOptions)
+	//app.Context.domains.SetOptions(&initial.Governance.ONSOptions)
 
 	err = app.Context.govern.WithHeight(app.header.Height).SetRewardOptions(initial.Governance.RewardOptions)
 	if err != nil {
@@ -356,11 +356,11 @@ func (app *App) Prepare() error {
 
 		app.Context.feePool.SetupOpt(feeOpt)
 
-		onsOpt, err := app.Context.govern.WithHeight(app.header.Height).GetONSOptions()
-		if err != nil {
-			return err
-		}
-		app.Context.domains.SetOptions(onsOpt)
+		//onsOpt, err := app.Context.govern.WithHeight(app.header.Height).GetONSOptions()
+		//if err != nil {
+		//	return err
+		//}
+		//app.Context.domains.SetOptions(onsOpt)
 
 		cdOpt, err := app.Context.govern.WithHeight(app.header.Height).GetETHChainDriverOption()
 		if err != nil {

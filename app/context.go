@@ -247,7 +247,7 @@ func (ctx *context) Services() (service.Map, error) {
 	ethTracker.SetupOption(ctx.ethTrackers.GetOption())
 
 	onsStore := ons.NewDomainStore("d", storage.NewState(ctx.chainstate))
-	onsStore.SetOptions(ctx.domains.GetOptions())
+	//onsStore.SetOptions(ctx.domains.GetOptions())
 
 	proposalMaster := NewProposalMasterStore(ctx.chainstate)
 	proposalMaster.Proposal.SetOptions(ctx.proposalMaster.Proposal.GetOptions())
