@@ -26,37 +26,60 @@ class Staking:
             sys.exit(-1)
         print "################### olclient prepare succeed"
 
-    def stake(self, amount, stake_address, secs=1):
+    def stake(self, amount, stake_address, expect_success, secs=1):
         args = ['olclient', 'delegation', 'stake', '--root', self.node, '--amount', amount, '--address',
                 stake_address[3:],
                 '--password', 'pass']
         target = dirname(dirname(os.getcwd()))
         # set protocol root path as current path
-        process = subprocess.Popen(args, cwd=target)
+        process = subprocess.Popen(args, cwd=target, stdout=subprocess.PIPE)
         process.wait()
+        output = process.stdout.readlines()
         time.sleep(secs)
 
         # check return code
         if process.returncode != 0:
             print "olclient stake failed"
             sys.exit(-1)
-        print "################### olclient stake succeed"
+        # check for keyword "Failed" in stdout
+        target_regex = r"Failed"
+        match = re.search(target_regex, output[1])
+        if (match is None) and (expect_success is False):
+            print "olclient stake succeed, but it should fail!"
+            sys.exit(-1)
+        elif (match is not None) and (expect_success is True):
+            print "olclient stake failed"
+            sys.exit(-1)
 
-    def unstake(self, amount, stake_address, secs=1):
+        print "################### olclient stake succeed or failed as expected"
+
+    def unstake(self, amount, stake_address, expect_success, secs=1):
         args = ['olclient', 'delegation', 'unstake', '--root', self.node, '--amount', amount, '--address',
                 stake_address[3:],
                 '--password', 'pass']
         target = dirname(dirname(os.getcwd()))
         # set protocol root path as current path
-        process = subprocess.Popen(args, cwd=target)
+        process = subprocess.Popen(args, cwd=target, stdout=subprocess.PIPE)
         process.wait()
+        output = process.stdout.readlines()
         time.sleep(secs)
 
         # check return code
         if process.returncode != 0:
             print "olclient unstake failed"
             sys.exit(-1)
-        print "################### olclient unstake succeed"
+
+        # check for keyword "Failed" in stdout
+        target_regex = r"Failed"
+        match = re.search(target_regex, output[1])
+        if (match is None) and (expect_success is False):
+            print "olclient stake succeed, but it should fail!"
+            sys.exit(-1)
+        elif (match is not None) and (expect_success is True):
+            print "olclient stake failed"
+            sys.exit(-1)
+
+        print "################### olclient unstake succeed or failed as expected"
 
     def withdraw(self, amount, stake_address, secs=1):
         args = ['olclient', 'delegation', 'withdraw', '--root', self.node, '--amount', amount, '--address',
