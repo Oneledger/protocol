@@ -100,8 +100,8 @@ govtest: reset
 # run staking tests
 #
 staketest: reset
-    python scripts/staking/staking.py
-    @./scripts/stopNodes
+	python scripts/staking/staking.py
+	@./scripts/stopNodes
 
 
 alltest: reset
