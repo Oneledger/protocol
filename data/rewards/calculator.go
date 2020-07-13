@@ -4,8 +4,8 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/balance"
+	tmnode "github.com/tendermint/tendermint/node"
 )
 
 type YearReward struct {
@@ -17,11 +17,11 @@ type YearReward struct {
 type RewardCalculator struct {
 	height      int64
 	yearRewards []YearReward
-	node        *consensus.Node
+	node        *tmnode.Node
 	options     *Options
 }
 
-func NewRewardCalculator(height int64, yearRewards []YearReward, node *consensus.Node, options *Options) *RewardCalculator {
+func NewRewardCalculator(height int64, yearRewards []YearReward, node *tmnode.Node, options *Options) *RewardCalculator {
 	return &RewardCalculator{
 		height:      height,
 		yearRewards: yearRewards,
@@ -59,7 +59,7 @@ func (calc *RewardCalculator) Calculate() (amt *balance.Amount, burnedout bool, 
 }
 
 func (calc *RewardCalculator) secondsPerCycleLatest() (int64, time.Time) {
-	tEnd := calc.node.BlockStore().LoadBlock(1).Header.Time.UTC()
+	tEnd := calc.node.BlockStore().LoadBlockMeta(1).Header.Time.UTC()
 	secsPerCycle := calc.options.EstimatedSecondsPerCycle
 	if calc.height > calc.options.BlockSpeedCalculateCycle {
 		// get speed calculation [begin, end] height
@@ -68,8 +68,8 @@ func (calc *RewardCalculator) secondsPerCycleLatest() (int64, time.Time) {
 		cycleBegin := cycleEnd - cycle
 
 		// duration of the cycle, in secs
-		tBegin := calc.node.BlockStore().LoadBlock(cycleBegin).Header.Time.UTC()
-		tEnd = calc.node.BlockStore().LoadBlock(cycleEnd).Header.Time.UTC()
+		tBegin := calc.node.BlockStore().LoadBlockMeta(cycleBegin).Header.Time.UTC()
+		tEnd = calc.node.BlockStore().LoadBlockMeta(cycleEnd).Header.Time.UTC()
 		secsPerCycle = int64(tEnd.Sub(tBegin).Seconds())
 	}
 	return secsPerCycle, tEnd

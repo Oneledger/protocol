@@ -1,15 +1,14 @@
 package rewards
 
 import (
-	"errors"
 	"time"
 
-	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/pkg/errors"
+	tmnode "github.com/tendermint/tendermint/node"
 )
 
 type RewardCumulativeStore struct {
@@ -17,8 +16,7 @@ type RewardCumulativeStore struct {
 	szlr   serialize.Serializer
 	prefix []byte
 
-	node          *consensus.Node
-	currencies    *balance.CurrencySet
+	node          *tmnode.Node
 	rewardOptions *Options
 }
 
@@ -30,9 +28,8 @@ func NewRewardCumulativeStore(prefix string, state *storage.State) *RewardCumula
 	}
 }
 
-func (rws *RewardCumulativeStore) Init(node *consensus.Node, currencies *balance.CurrencySet) {
+func (rws *RewardCumulativeStore) Init(node *tmnode.Node) {
 	rws.node = node
-	rws.currencies = currencies
 }
 
 func (rws *RewardCumulativeStore) WithState(state *storage.State) *RewardCumulativeStore {
@@ -42,7 +39,7 @@ func (rws *RewardCumulativeStore) WithState(state *storage.State) *RewardCumulat
 
 // Pull a combined block rewards from total supply for all voting validators for given block height
 // Pulled rewards MUST be 100% distributed since it has already been deducted from total supply
-func (rws *RewardCumulativeStore) PullRewards(blockHeight int64, bftTime time.Time, poolAmt balance.Amount) (amount *balance.Amount, burnedout bool, err error) {
+func (rws *RewardCumulativeStore) PullRewards(height int64, bftTime time.Time, poolAmt balance.Amount) (amount *balance.Amount, burnedout bool, err error) {
 	// get year distributed amount till now
 	yearRewards, err := rws.GetYearDistributedRewards()
 	if err != nil {
@@ -50,11 +47,13 @@ func (rws *RewardCumulativeStore) PullRewards(blockHeight int64, bftTime time.Ti
 	}
 
 	// calculate reward for each block
-	calc := NewRewardCalculator(blockHeight, yearRewards, rws.node, rws.rewardOptions)
+	calc := NewRewardCalculator(height, yearRewards, rws.node, rws.rewardOptions)
 	amount, burnedout, year, err := calc.Calculate()
 	if err != nil {
 		return
 	}
+
+	// calculate burnout rate
 	if burnedout && poolAmt.LessThan(*amount) {
 		*amount = poolAmt
 	}
@@ -66,11 +65,7 @@ func (rws *RewardCumulativeStore) PullRewards(blockHeight int64, bftTime time.Ti
 	}
 
 	// accumulates year distributed rewards
-	rws.addYearDistributedRewards(yearRewards, year, amount)
-	if err != nil {
-		return
-	}
-
+	err = rws.addYearDistributedRewards(yearRewards, year, amount)
 	return
 }
 
@@ -97,6 +92,10 @@ func (rws *RewardCumulativeStore) GetMaturedBalance(validator keys.Address) (amt
 	key := rws.getBalanceKey(validator)
 	amt, err = rws.get(key)
 	return
+}
+
+func (rws *RewardCumulativeStore) IterateMaturedBalances(fn func(validator keys.Address, amt *balance.Amount) bool) (stopped bool) {
+	return rws.iterate("balance_", fn)
 }
 
 // Add an 'amount' of matured rewards to rewards balance
@@ -136,6 +135,10 @@ func (rws *RewardCumulativeStore) GetWithdrawnRewards(validator keys.Address) (a
 	return
 }
 
+func (rws *RewardCumulativeStore) IterateWithdrawnRewards(fn func(validator keys.Address, amt *balance.Amount) bool) (stopped bool) {
+	return rws.iterate("withdrawn_", fn)
+}
+
 // Withdraw an 'amount' of rewards from rewards balance
 func (rws *RewardCumulativeStore) WithdrawRewards(validator keys.Address, amount *balance.Amount) error {
 
@@ -159,7 +162,11 @@ func (rws *RewardCumulativeStore) GetOptions() *Options {
 	return rws.rewardOptions
 }
 
-//-----------------------------helper functions defined below
+func (rws *RewardCumulativeStore) SetNode(node *tmnode.Node) {
+	rws.node = node
+}
+
+//-----------------------------helper functions
 //
 // Set cumulative amount(s) by key
 func (rws *RewardCumulativeStore) set(key storage.StoreKey, amts interface{}) error {
@@ -185,6 +192,26 @@ func (rws *RewardCumulativeStore) get(key storage.StoreKey) (amt *balance.Amount
 	return
 }
 
+// for matured balances and wirndraw amounts
+func (rws *RewardCumulativeStore) iterate(subkey string, fn func(validator keys.Address, amt *balance.Amount) bool) (stopped bool) {
+	prefix := append(rws.prefix, subkey...)
+	return rws.state.IterateRange(
+		prefix,
+		storage.Rangefix(string(prefix)),
+		true,
+		func(key, value []byte) bool {
+			amt := balance.NewAmount(0)
+			err := rws.szlr.Deserialize(value, amt)
+			if err != nil {
+				logger.Error("failed to deserialize cumulative amount")
+				return false
+			}
+			addr := key[len(prefix):]
+			return fn(addr, amt)
+		},
+	)
+}
+
 // Get year rewards
 func (rws *RewardCumulativeStore) getYearRewards(key storage.StoreKey) (rewards []YearReward, err error) {
 	dat, err := rws.state.Get(key)
@@ -200,23 +227,9 @@ func (rws *RewardCumulativeStore) getYearRewards(key storage.StoreKey) (rewards 
 	return
 }
 
-// Calculate year from time
-func (rws *RewardCumulativeStore) getRewardYear(bftTime time.Time) int {
-	tBlock := bftTime.UTC()
-	tStart := rws.node.BlockStore().LoadBlock(1).Header.Time.UTC()
-
-	year := tStart.Year()
-	tStart = tStart.AddDate(1, 0, 0)
-	for tBlock.After(tStart) || tBlock.Equal(tStart) {
-		year++
-		tStart = tStart.AddDate(1, 0, 0)
-	}
-	return year
-}
-
 // Initialize each reward year's information
 func (rws *RewardCumulativeStore) initYearRewards(key storage.StoreKey) (rewards []YearReward, err error) {
-	tStart := rws.node.BlockStore().LoadBlock(1).Header.Time.UTC()
+	tStart := rws.node.BlockStore().LoadBlockMeta(1).Header.Time.UTC()
 	numofYears := len(rws.rewardOptions.YearBlockRewardShares)
 
 	// calculate each year's start/close time
@@ -252,19 +265,13 @@ func (rws *RewardCumulativeStore) getYearDistributedKey() []byte {
 
 // Key for balance
 func (rws *RewardCumulativeStore) getBalanceKey(validator keys.Address) []byte {
-	key := string(rws.prefix) + validator.String() + storage.DB_PREFIX + "balance"
+	key := string(rws.prefix) + "balance" + storage.DB_PREFIX + validator.String()
 	return storage.StoreKey(key)
 }
 
 // Key for withdrawn
 func (rws *RewardCumulativeStore) getWithdrawnKey(validator keys.Address) []byte {
-	key := string(rws.prefix) + validator.String() + storage.DB_PREFIX + "withdrawn"
-	return storage.StoreKey(key)
-}
-
-// Key for block rewards calculator
-func (rws *RewardCumulativeStore) getCalculatorKey(blockHeight int64) []byte {
-	key := string(rws.prefix) + "calc"
+	key := string(rws.prefix) + "withdrawn" + storage.DB_PREFIX + validator.String()
 	return storage.StoreKey(key)
 }
 
@@ -317,4 +324,78 @@ func (rws *RewardCumulativeStore) addWithdrawnRewards(validator keys.Address, am
 
 	err = rws.set(key, amt.Plus(*amount))
 	return err
+}
+
+//-----------------------------Dump/Load chain state
+//
+type RewardAmount struct {
+	Address keys.Address    `json:"address"`
+	Amount  *balance.Amount `json:"amount"`
+}
+
+type RewardCumuState struct {
+	TotalDistributed *balance.Amount `json:"totalDistributed"`
+	YearsDistributed []YearReward    `json:"yearsDistributed"`
+	MaturedBalances  []RewardAmount  `json:"maturedBalances"`
+	WithdrawnAmounts []RewardAmount  `json:"withdrawnAmounts"`
+}
+
+func (rws *RewardCumulativeStore) dumpState() (state *RewardCumuState, err error) {
+	// dump total distributed rewards
+	state = &RewardCumuState{}
+	state.TotalDistributed, err = rws.GetTotalDistributedRewards()
+	if err != nil {
+		return
+	}
+	// dump each year's distributed rewards
+	state.YearsDistributed, err = rws.GetYearDistributedRewards()
+	if err != nil {
+		return
+	}
+	// dump each validator's matured balance
+	rws.iterate("balance_", func(addr keys.Address, amt *balance.Amount) bool {
+		matured := RewardAmount{
+			Address: addr,
+			Amount:  amt,
+		}
+		state.MaturedBalances = append(state.MaturedBalances, matured)
+		return false
+	})
+	// dump each validator's total withdrawn rewards
+	rws.iterate("withdrawn_", func(addr keys.Address, amt *balance.Amount) bool {
+		draw := RewardAmount{
+			Address: addr,
+			Amount:  amt,
+		}
+		state.WithdrawnAmounts = append(state.WithdrawnAmounts, draw)
+		return false
+	})
+	return
+}
+
+func (rws *RewardCumulativeStore) loadState(state *RewardCumuState) (err error) {
+	err = rws.addTotalDistributedRewards(state.TotalDistributed)
+	if err != nil {
+		return
+	}
+	if len(state.YearsDistributed) == len(rws.rewardOptions.YearBlockRewardShares) {
+		key := rws.getYearDistributedKey()
+		err = rws.set(key, state.YearsDistributed)
+		if err != nil {
+			return errors.Wrap(err, "failed to load initial year distributed amounts")
+		}
+	}
+	for _, matured := range state.MaturedBalances {
+		err = rws.AddMaturedBalance(matured.Address, matured.Amount)
+		if err != nil {
+			return errors.Wrap(err, "failed to load initial matured balance")
+		}
+	}
+	for _, draw := range state.WithdrawnAmounts {
+		err = rws.addWithdrawnRewards(draw.Address, draw.Amount)
+		if err != nil {
+			return errors.Wrap(err, "failed to load initial withdrawn amount")
+		}
+	}
+	return nil
 }

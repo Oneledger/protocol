@@ -228,6 +228,19 @@ func writeListWithTag(ctx app.StorageCtx, writer io.Writer, tag string) bool {
 	return true
 }
 
+func writeStoreWithTag(ctx app.StorageCtx, writer io.Writer, tag string) (state interface{}, succeed bool) {
+	succeed = false
+	switch section := tag; section {
+	case "rewards":
+		state, succeed = ctx.RewardMaster.DumpState()
+	}
+	if !succeed {
+		return
+	}
+	succeed = writeStructWithTag(writer, state, tag)
+	return
+}
+
 func SaveChainState(application *app.App, filename string, directory string) error {
 	ctx := application.Context.Storage()
 	version, err := ctx.Chainstate.LoadVersion(saveStateCtx.version)
@@ -298,6 +311,7 @@ func SaveChainState(application *app.App, filename string, directory string) err
 	writeStructWithTag(writer, appState.Chain, "state")
 	writeListWithTag(ctx, writer, "balances")
 	writeListWithTag(ctx, writer, "staking")
+	writeStoreWithTag(ctx, writer, "rewards")
 	writeListWithTag(ctx, writer, "domains")
 	writeListWithTag(ctx, writer, "trackers")
 	writeListWithTag(ctx, writer, "fees")

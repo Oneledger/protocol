@@ -165,7 +165,6 @@ func (app *App) setupState(stateBytes []byte) error {
 		return errors.Wrap(err, "Setup FeeOptions Options")
 	}
 	app.Context.feePool.SetupOpt(&initial.Governance.FeeOption)
-	app.Context.rewardMaster.SetOptions(&initial.Governance.RewardOptions)
 
 	err = app.Context.govern.WithHeight(app.header.Height).SetLUH()
 	if err != nil {
@@ -198,6 +197,10 @@ func (app *App) setupState(stateBytes []byte) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to add initial ethereum witness")
 		}
+	}
+
+	if !app.Context.rewardMaster.WithState(app.Context.deliver).LoadState(initial.Rewards) {
+		return errors.Wrap(err, "failed to setup initial rewards")
 	}
 
 	for _, domain := range initial.Domains {
@@ -383,7 +386,7 @@ func (app *App) Prepare() error {
 			return err
 		}
 		app.Context.rewardMaster.SetOptions(rewardsOpt)
-		app.Context.rewardMaster.RewardCumula.Init(app.node, app.Context.currencies)
+		app.Context.rewardMaster.RewardCm.SetNode(app.node)
 	}
 
 	nodecfg, err := consensus.ParseConfig(&app.Context.cfg)

@@ -35,6 +35,17 @@ type RewardMasterStore struct {
 	RewardCm *RewardCumulativeStore
 }
 
+type RewardMasterState struct {
+	CumuState *RewardCumuState `json:"cumuState"`
+}
+
+func NewRewardMasterStore(rwz *RewardStore, rwzc *RewardCumulativeStore) *RewardMasterStore {
+	return &RewardMasterStore{
+		Reward:   rwz,
+		RewardCm: rwzc,
+	}
+}
+
 func (rwz *RewardMasterStore) WithState(state *storage.State) *RewardMasterStore {
 	rwz.Reward.WithState(state)
 	rwz.RewardCm.WithState(state)
@@ -50,9 +61,26 @@ func (rwz *RewardMasterStore) GetOptions() *Options {
 	return rwz.Reward.GetOptions()
 }
 
-func NewRewardMasterStore(rwz *RewardStore, rwzc *RewardCumulativeStore) *RewardMasterStore {
-	return &RewardMasterStore{
-		Reward:   rwz,
-		RewardCm: rwzc,
+func (rwz *RewardMasterStore) DumpState() (masterState RewardMasterState, succeed bool) {
+	masterState = RewardMasterState{}
+	succeed = false
+	cumuState, err := rwz.RewardCm.dumpState()
+	if err != nil {
+		return
 	}
+
+	masterState.CumuState = cumuState
+	succeed = true
+	return
+}
+
+func (rwz *RewardMasterStore) LoadState(masterState RewardMasterState) (succeed bool) {
+	succeed = false
+	err := rwz.RewardCm.loadState(masterState.CumuState)
+	if err != nil {
+		return
+	}
+
+	succeed = true
+	return
 }
