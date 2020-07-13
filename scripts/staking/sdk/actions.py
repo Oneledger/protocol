@@ -103,6 +103,16 @@ class Staking:
             print "olclient check status failed"
             sys.exit(-1)
 
+        # check pending matured amount in output
+        if hasFifthLine:
+            target_regex = r"Pending matured amount:$"
+        else:
+            target_regex = r"Pending matured amount: empty$"
+        match = re.search(target_regex, output[3])
+        if match is None:
+            print "olclient check status failed"
+            sys.exit(-1)
+
         # check if there is fifth line
         if (len(output) <= 4 and hasFifthLine) or (len(output) > 4 and (not hasFifthLine)):
             print "olclient check status failed"
