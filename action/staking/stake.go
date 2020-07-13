@@ -2,7 +2,6 @@ package staking
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
@@ -192,14 +191,6 @@ func runCheckStake(ctx *action.Context, tx action.RawTx) (bool, action.Response)
 		Name:             st.NodeName,
 		Amount:           st.Stake.Value,
 	}
-
-	height := ctx.Header.GetHeight()
-	options, err := ctx.GovernanceStore.GetStakingOptions()
-	if err != nil {
-		return false, action.Response{Log: errors.Wrap(err, st.StakeAddress.String()).Error()}
-	}
-	info := fmt.Sprintf("runStake: height= %v, MaturityTime= %v", height, options.MaturityTime)
-	fmt.Println(info)
 
 	// trying to update existing validator's stake address
 	updateStakeAddress := false
