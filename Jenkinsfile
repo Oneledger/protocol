@@ -80,6 +80,18 @@ pipeline {
             }
         }
         
+        stage('staking test') {
+            steps {
+                script {
+                    try {
+                        sh 'make stakingtest'
+                    } catch (e) {
+                        unstable('staking test stage failed!')
+                        sh 'exit 0'
+                    }
+                }
+            }
+        }
         stage('all test') {
             steps {
                 script {
