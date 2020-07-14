@@ -64,6 +64,15 @@ func init() {
 	vStore = NewStore("g", cs)
 }
 
+func TestStore_ValidateGov(t *testing.T) {
+	updates := generateGov()
+	updates.PropOptions.ConfigUpdate.InitialFunding = balance.NewAmountFromInt(5000)
+	ok, err := vStore.ValidateGov(*updates)
+
+	assert.NoError(t, err, "Should Pass")
+	assert.True(t, ok)
+}
+
 func TestStore_ValidateProposal(t *testing.T) {
 	//Tests for Initial Funding
 	updates := generateGov()
@@ -378,14 +387,38 @@ func generateGov() *GovernanceState {
 		TotalSupplyAddr:    "",
 		BlockConfirmation:  12,
 	}
-	vStore.WithHeight(0).SetFeeOption(feeOpt)
-	vStore.WithHeight(0).SetStakingOptions(stakingOption)
-	vStore.WithHeight(0).SetONSOptions(onsOp)
-	vStore.WithHeight(0).SetETHChainDriverOption(ethOpt)
-	vStore.WithHeight(0).SetBTCChainDriverOption(btccdo)
-	vStore.WithHeight(0).SetRewardOptions(rewzOpt)
-	vStore.WithHeight(0).SetProposalOptions(propOpt)
-	vStore.WithHeight(0).SetLUH()
+	err := vStore.WithHeight(0).SetFeeOption(feeOpt)
+	if err != nil {
+		fmt.Println(err)
+	}
+	err = vStore.WithHeight(0).SetStakingOptions(stakingOption)
+	if err != nil {
+		fmt.Println(err)
+	}
+	err = vStore.WithHeight(0).SetONSOptions(onsOp)
+	if err != nil {
+		fmt.Println(err)
+	}
+	err = vStore.WithHeight(0).SetETHChainDriverOption(ethOpt)
+	if err != nil {
+		fmt.Println(err)
+	}
+	err = vStore.WithHeight(0).SetBTCChainDriverOption(btccdo)
+	if err != nil {
+		fmt.Println(err)
+	}
+	err = vStore.WithHeight(0).SetRewardOptions(rewzOpt)
+	if err != nil {
+		fmt.Println(err)
+	}
+	err = vStore.WithHeight(0).SetProposalOptions(propOpt)
+	if err != nil {
+		fmt.Println(err)
+	}
+	err = vStore.WithHeight(0).SetLUH()
+	if err != nil {
+		fmt.Println(err)
+	}
 	return &GovernanceState{
 		FeeOption:      feeOpt,
 		ETHCDOption:    ethOpt,
