@@ -39,6 +39,7 @@ var (
 	maxDeadlineVotingGeneral   = int64(156000)
 	minPassPercentage          = int64(51)
 	maxPassPercentage          = int64(67)
+	decimalsAllowed            = 2
 	//ONS
 	minBaseDomainPrice = int64(0)
 	//FEE
@@ -231,23 +232,29 @@ func (st *Store) ValidateProposal(opt *ProposalOptionSet) (bool, error) {
 	if !verifyRangeInt64(int64(general.PassPercentage), minPassPercentage, maxPassPercentage) {
 		return false, errors.New("pass percentage for general update is not within range")
 	}
-	if !verifyDistribution(config.PassedFundDistribution) {
-		return false, errors.New("pass funds distribution for config update does not sum to 100")
+	ok, err = verifyDistribution(config.PassedFundDistribution)
+	if err != nil || !ok {
+		return false, err
 	}
-	if !verifyDistribution(config.FailedFundDistribution) {
-		return false, errors.New("fail funds distribution for config update does not sum to 100")
+	ok, err = verifyDistribution(config.FailedFundDistribution)
+	if err != nil || !ok {
+		return false, err
 	}
-	if !verifyDistribution(code.PassedFundDistribution) {
-		return false, errors.New("pass funds distribution for code update does not sum to 100")
+	ok, err = verifyDistribution(code.PassedFundDistribution)
+	if err != nil || !ok {
+		return false, err
 	}
-	if !verifyDistribution(code.FailedFundDistribution) {
-		return false, errors.New("fail funds distribution for code update does not sum to 100")
+	ok, err = verifyDistribution(code.FailedFundDistribution)
+	if err != nil || !ok {
+		return false, err
 	}
-	if !verifyDistribution(general.PassedFundDistribution) {
-		return false, errors.New("pass funds distribution for general update does not sum to 100")
+	ok, err = verifyDistribution(general.PassedFundDistribution)
+	if err != nil || !ok {
+		return false, err
 	}
-	if !verifyDistribution(general.FailedFundDistribution) {
-		return false, errors.New("fail funds distribution for general update does not sum to 100")
+	ok, err = verifyDistribution(general.FailedFundDistribution)
+	if err != nil || !ok {
+		return false, err
 	}
 	if code.ProposalExecutionCost != oldOptions.CodeChange.ProposalExecutionCost {
 		return false, errors.New("OnLedger Address cannot me changed code update execution cost")
@@ -282,6 +289,21 @@ func verifyRangeInt64(value int64, min int64, max int64) bool {
 	return value >= min && value <= max
 }
 
-func verifyDistribution(distribution ProposalFundDistribution) bool {
-	return distribution.Burn+distribution.BountyPool+distribution.ExecutionCost+distribution.ProposerReward+distribution.FeePool+distribution.Validators == 100.00
+func verifyDistribution(distribution ProposalFundDistribution) (bool, error) {
+	if !(checkDecimalPlaces(distribution.ExecutionCost) ||
+		checkDecimalPlaces(distribution.Burn) || checkDecimalPlaces(distribution.BountyPool) ||
+		checkDecimalPlaces(distribution.ProposerReward) || checkDecimalPlaces(distribution.Validators) || checkDecimalPlaces(distribution.Validators)) {
+		return false, errors.New("only two decimal places allowed")
+	}
+
+	if distribution.Burn+distribution.BountyPool+distribution.ExecutionCost+distribution.ProposerReward+distribution.FeePool+distribution.Validators != 100.00 {
+		return false, errors.New("sum of amounts does not equal 100")
+	}
+	return true, nil
+}
+
+func checkDecimalPlaces(value float64) bool {
+	valuef := value * math.Pow(10.0, float64(decimalsAllowed))
+	extra := valuef - float64(int(valuef))
+	return extra == 0
 }

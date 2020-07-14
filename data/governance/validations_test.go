@@ -137,15 +137,29 @@ func TestStore_ValidateProposal(t *testing.T) {
 	updates.PropOptions.ConfigUpdate.PassedFundDistribution.ProposerReward = 18.000000001
 	updates.PropOptions.ConfigUpdate.PassedFundDistribution.ExecutionCost = 17.9999999959
 	ok, err = vStore.ValidateProposal(&updates.PropOptions)
-
-	assert.Error(t, err, "Failing , Because of decimal conversion")
+	assert.EqualError(t, err, "only two decimal places allowed", "Failing because of decimal places")
+	assert.Error(t, err)
 	assert.False(t, ok)
-	updates.PropOptions.ConfigUpdate.PassedFundDistribution.FeePool = 18.00000000
-	updates.PropOptions.ConfigUpdate.PassedFundDistribution.Validators = 18.00000000
-	updates.PropOptions.ConfigUpdate.PassedFundDistribution.BountyPool = 10.00000000
-	updates.PropOptions.ConfigUpdate.PassedFundDistribution.Burn = 18.000000000
-	updates.PropOptions.ConfigUpdate.PassedFundDistribution.ProposerReward = 18.00000000
-	updates.PropOptions.ConfigUpdate.PassedFundDistribution.ExecutionCost = 18.00000000
+
+	updates.PropOptions.ConfigUpdate.PassedFundDistribution.FeePool = 18.00
+	updates.PropOptions.ConfigUpdate.PassedFundDistribution.Validators = 18.00
+	updates.PropOptions.ConfigUpdate.PassedFundDistribution.BountyPool = 10.00
+	updates.PropOptions.ConfigUpdate.PassedFundDistribution.Burn = 18.00
+	updates.PropOptions.ConfigUpdate.PassedFundDistribution.ProposerReward = 18.00
+	updates.PropOptions.ConfigUpdate.PassedFundDistribution.ExecutionCost = 0.00
+	ok, err = vStore.ValidateProposal(&updates.PropOptions)
+	assert.EqualError(t, err, "sum of amounts does not equal 100", "Failing because amount does not match")
+	assert.Error(t, err)
+	assert.False(t, ok)
+
+	updates = generateGov()
+	updates.PropOptions.ConfigUpdate.InitialFunding = balance.NewAmountFromInt(5000)
+	updates.PropOptions.ConfigUpdate.PassedFundDistribution.FeePool = 18.00
+	updates.PropOptions.ConfigUpdate.PassedFundDistribution.Validators = 18.00
+	updates.PropOptions.ConfigUpdate.PassedFundDistribution.BountyPool = 10.00
+	updates.PropOptions.ConfigUpdate.PassedFundDistribution.Burn = 18.00
+	updates.PropOptions.ConfigUpdate.PassedFundDistribution.ProposerReward = 18.00
+	updates.PropOptions.ConfigUpdate.PassedFundDistribution.ExecutionCost = 18.00
 	ok, err = vStore.ValidateProposal(&updates.PropOptions)
 	assert.NoError(t, err, "Should pass , decimals rounded off ")
 	assert.True(t, ok)
