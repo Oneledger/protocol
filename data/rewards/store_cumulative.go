@@ -39,7 +39,7 @@ func (rws *RewardCumulativeStore) WithState(state *storage.State) *RewardCumulat
 
 // Pull a combined block rewards from total supply for all voting validators for given block height
 // Pulled rewards MUST be 100% distributed since it has already been deducted from total supply
-func (rws *RewardCumulativeStore) PullRewards(height int64, bftTime time.Time, poolAmt balance.Amount) (amount *balance.Amount, burnedout bool, err error) {
+func (rws *RewardCumulativeStore) PullRewards(height int64, bftTime time.Time, poolAmt *balance.Amount) (amount *balance.Amount, burnedout bool, err error) {
 	// get year distributed amount till now
 	yearRewards, err := rws.GetYearDistributedRewards()
 	if err != nil {
@@ -55,7 +55,7 @@ func (rws *RewardCumulativeStore) PullRewards(height int64, bftTime time.Time, p
 
 	// calculate burnout rate
 	if burnedout && poolAmt.LessThan(*amount) {
-		*amount = poolAmt
+		*amount = *poolAmt
 	}
 
 	// accumulates total distributed rewards
@@ -65,7 +65,9 @@ func (rws *RewardCumulativeStore) PullRewards(height int64, bftTime time.Time, p
 	}
 
 	// accumulates year distributed rewards
-	err = rws.addYearDistributedRewards(yearRewards, year, amount)
+	if !burnedout {
+		err = rws.addYearDistributedRewards(yearRewards, year, amount)
+	}
 	return
 }
 
