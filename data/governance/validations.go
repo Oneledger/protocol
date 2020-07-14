@@ -67,7 +67,7 @@ func (st *Store) ValidateGov(govstate GovernanceState) (bool, error) {
 	}
 	ok, err = st.ValidateBTC(&govstate.BTCCDOption)
 	if err != nil || !ok {
-		return false, err
+		return false, errors.New("BTC options cannot be cahnged")
 	}
 	ok, err = st.ValidateETH(&govstate.ETHCDOption)
 	if err != nil || !ok {
@@ -168,7 +168,7 @@ func (st *Store) ValidateETH(opt *ethchain.ChainDriverOption) (bool, error) {
 func (st *Store) ValidateBTC(opt *bitcoin.ChainDriverOption) (bool, error) {
 	oldOptions, err := st.GetBTCChainDriverOption()
 	if err != nil {
-		return false, errors.New("BTC options cannot be changed")
+		return false, errors.New("unable to get BTC options")
 	}
 	return reflect.DeepEqual(oldOptions, opt), nil
 }

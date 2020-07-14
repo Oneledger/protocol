@@ -211,11 +211,80 @@ func TestStore_ValidateONS(t *testing.T) {
 
 func TestStore_ValidateFee(t *testing.T) {
 	updates := generateGov()
-	updates.ONSOptions.Currency = "Test"
+	updates.FeeOption.MinFeeDecimal = 20
 	ok, err := vStore.ValidateFee(&updates.FeeOption)
-	assert.Error(t, err, "Currency Cannot be changed")
+	assert.Error(t, err, "Fee decimal too high")
 	assert.False(t, ok)
+	updates = generateGov()
+	updates.FeeOption.MinFeeDecimal = -1
+	ok, err = vStore.ValidateFee(&updates.FeeOption)
+	assert.Error(t, err, "Fee decimal too low")
+	assert.False(t, ok)
+	updates = generateGov()
+	updates.FeeOption.FeeCurrency = balance.Currency{}
+	ok, err = vStore.ValidateFee(&updates.FeeOption)
+	assert.Error(t, err, "Fee Currency cannot be changed")
+	assert.False(t, ok)
+	updates = generateGov()
+	ok, err = vStore.ValidateFee(&updates.FeeOption)
+	assert.NoError(t, err, "Should Pass")
+	assert.True(t, ok)
 }
+
+func TestStore_ValidateETH(t *testing.T) {
+	updates := generateGov()
+	updates.ETHCDOption.TotalSupplyAddr = "Test"
+	ok, err := vStore.ValidateETH(&updates.ETHCDOption)
+	assert.Error(t, err, "Cannot be changed ")
+	assert.False(t, ok)
+	updates = generateGov()
+	updates.ETHCDOption.TotalSupply = "Test"
+	ok, err = vStore.ValidateETH(&updates.ETHCDOption)
+	assert.Error(t, err, "Cannot be changed ")
+	assert.False(t, ok)
+
+	updates = generateGov()
+	updates.ETHCDOption.ERCContractAddress = common.BytesToAddress([]byte("0xB62132e35a6c13ee1EE0f84dC5d40bad8d815206"))
+	ok, err = vStore.ValidateETH(&updates.ETHCDOption)
+	assert.Error(t, err, "Cannot be changed ")
+	assert.False(t, ok)
+
+	updates = generateGov()
+	updates.ETHCDOption.ContractAddress = common.BytesToAddress([]byte("0xB62132e35a6c13ee1EE0f84dC5d40bad8d815206"))
+	ok, err = vStore.ValidateETH(&updates.ETHCDOption)
+	assert.Error(t, err, "Cannot be changed ")
+	assert.False(t, ok)
+
+	updates = generateGov()
+	updates.ETHCDOption.BlockConfirmation = int64(60)
+	ok, err = vStore.ValidateETH(&updates.ETHCDOption)
+	assert.Error(t, err, "Block Confirmation too high ")
+	assert.False(t, ok)
+
+	updates = generateGov()
+	ok, err = vStore.ValidateETH(&updates.ETHCDOption)
+	assert.NoError(t, err, "Should Pass")
+	assert.True(t, ok)
+}
+
+func TestStore_ValidateBTC(t *testing.T) {
+	ok, err := vStore.ValidateBTC(&bitcoin.ChainDriverOption{})
+	assert.False(t, ok, "Cannot Be changed ")
+	updates := generateGov()
+	ok, err = vStore.ValidateBTC(&updates.BTCCDOption)
+	assert.NoError(t, err, "Should Pass")
+	assert.True(t, ok)
+}
+
+func TestStore_ValidateRewards(t *testing.T) {
+	ok, err := vStore.ValidateRewards(&rewards.Options{})
+	assert.False(t, ok, "Cannot Be changed ")
+	updates := generateGov()
+	ok, err = vStore.ValidateRewards(&updates.RewardOptions)
+	assert.NoError(t, err, "Should Pass")
+	assert.True(t, ok)
+}
+
 func generateGov() *GovernanceState {
 	perblock, _ := big.NewInt(0).SetString("100000000000000", 10)
 	baseDomainPrice, _ := big.NewInt(0).SetString("1000000000000000000000", 10)
