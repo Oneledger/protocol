@@ -149,9 +149,73 @@ func TestStore_ValidateProposal(t *testing.T) {
 	ok, err = vStore.ValidateProposal(&updates.PropOptions)
 	assert.NoError(t, err, "Should pass , decimals rounded off ")
 	assert.True(t, ok)
-
+}
+func TestStore_ValidateStaking(t *testing.T) {
+	//Tests for Initial Funding
+	updates := generateGov()
+	updates.StakingOptions.MaturityTime = 2340000
+	ok, err := vStore.ValidateStaking(&updates.StakingOptions)
+	assert.Error(t, err, "Maturity time too high")
+	assert.False(t, ok)
+	updates.StakingOptions.MaturityTime = 2340
+	ok, err = vStore.ValidateStaking(&updates.StakingOptions)
+	assert.Error(t, err, "Maturity time too low")
+	assert.False(t, ok)
+	updates.StakingOptions.MaturityTime = 109200
+	ok, err = vStore.ValidateStaking(&updates.StakingOptions)
+	assert.NoError(t, err, "Should Pass")
+	assert.True(t, ok)
+	updates.StakingOptions.MinDelegationAmount = *balance.NewAmountFromInt(100000)
+	ok, err = vStore.ValidateStaking(&updates.StakingOptions)
+	assert.Error(t, err, "Delegation amount too less")
+	assert.False(t, ok)
+	updates.StakingOptions.MinDelegationAmount = *balance.NewAmountFromInt(1000000)
+	ok, err = vStore.ValidateStaking(&updates.StakingOptions)
+	assert.NoError(t, err, "Should Pass")
+	assert.True(t, ok)
+	updates.StakingOptions.TopValidatorCount = 2
+	ok, err = vStore.ValidateStaking(&updates.StakingOptions)
+	assert.Error(t, err, "Validator count is too low")
+	assert.False(t, ok)
+	updates.StakingOptions.TopValidatorCount = 10
+	ok, err = vStore.ValidateStaking(&updates.StakingOptions)
+	assert.NoError(t, err, "Should Pass")
+	assert.True(t, ok)
+	updates = generateGov()
+	ok, err = vStore.ValidateStaking(&updates.StakingOptions)
+	assert.NoError(t, err, "Should Pass")
+	assert.True(t, ok)
 }
 
+func TestStore_ValidateONS(t *testing.T) {
+	updates := generateGov()
+	updates.ONSOptions.Currency = "Test"
+	ok, err := vStore.ValidateONS(&updates.ONSOptions)
+	assert.Error(t, err, "Currency Cannot be changed")
+	assert.False(t, ok)
+	updates = generateGov()
+	updates.ONSOptions.FirstLevelDomains = []string{"Test"}
+	ok, err = vStore.ValidateONS(&updates.ONSOptions)
+	assert.Error(t, err, "First level Domains Cannot be changed")
+	assert.False(t, ok)
+	updates = generateGov()
+	updates.ONSOptions.BaseDomainPrice = *balance.NewAmountFromInt(int64(-1))
+	ok, err = vStore.ValidateONS(&updates.ONSOptions)
+	assert.Error(t, err, "BaseDomainPrice must be greater than 0")
+	assert.False(t, ok)
+	updates = generateGov()
+	ok, err = vStore.ValidateONS(&updates.ONSOptions)
+	assert.NoError(t, err, "Cannot be changed")
+	assert.True(t, ok)
+}
+
+func TestStore_ValidateFee(t *testing.T) {
+	updates := generateGov()
+	updates.ONSOptions.Currency = "Test"
+	ok, err := vStore.ValidateFee(&updates.FeeOption)
+	assert.Error(t, err, "Currency Cannot be changed")
+	assert.False(t, ok)
+}
 func generateGov() *GovernanceState {
 	perblock, _ := big.NewInt(0).SetString("100000000000000", 10)
 	baseDomainPrice, _ := big.NewInt(0).SetString("1000000000000000000000", 10)
@@ -211,10 +275,10 @@ func generateGov() *GovernanceState {
 		YearsOfSupply:     yearsOfBlockRewardsSupply,
 	}
 	stakingOption := delegation.Options{
-		MinSelfDelegationAmount: *balance.NewAmount(1),
-		MinDelegationAmount:     *balance.NewAmount(1),
-		TopValidatorCount:       3,
-		MaturityTime:            10,
+		MinSelfDelegationAmount: *balance.NewAmount(1000000),
+		MinDelegationAmount:     *balance.NewAmount(10000000),
+		TopValidatorCount:       8,
+		MaturityTime:            109200,
 	}
 	olt := balance.Currency{Id: 0, Name: "OLT", Chain: chain.ONELEDGER, Decimal: 18, Unit: "nue"}
 	feeOpt := fees.FeeOption{

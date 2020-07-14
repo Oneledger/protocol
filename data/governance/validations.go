@@ -37,14 +37,23 @@ var (
 	maxDeadlineFundingGeneral  = int64(156000)
 	minDeadlineVotingeGeneral  = int64(36400)
 	maxDeadlineVotingGeneral   = int64(156000)
-	minPassPercentage          = int64(50)
-	maxPassPercentage          = int64(68)
-
-	minBaseDomainPrice   = int64(0)
-	minFeeDecimal        = int64(0)
-	maxFeeDecimal        = int64(18)
+	minPassPercentage          = int64(51)
+	maxPassPercentage          = int64(67)
+	//ONS
+	minBaseDomainPrice = int64(0)
+	//FEE
+	minFeeDecimal = int64(0)
+	maxFeeDecimal = int64(18)
+	//ETH
 	minBlockConfirmation = int64(0)
 	maxBlockConfirmation = int64(50)
+	//Staking
+	minDelegationAmount = balance.NewAmountFromInt(1000000)
+	maxDelegationAmount = balance.NewAmountFromInt(10000000)
+	minValidatorCount   = int64(8)
+	maxValidatorCount   = int64(64)
+	minMaturityTime     = int64(109200)
+	maxMaturityTime     = int64(234000)
 )
 
 func (st *Store) ValidateGov(govstate GovernanceState) (bool, error) {
@@ -85,11 +94,12 @@ func (st *Store) ValidateONS(opt *ons.Options) (bool, error) {
 		return false, err
 	}
 	if oldOptions.Currency != opt.Currency {
-		return false, err
+		return false, errors.New("currency cannot be changed")
 	}
 	if !reflect.DeepEqual(oldOptions.FirstLevelDomains, opt.FirstLevelDomains) {
 		return false, errors.New("first level domains cannot be changed")
 	}
+
 	if opt.BaseDomainPrice.BigInt().Int64() < minBaseDomainPrice {
 		return false, errors.New("base domain price needs to be greater than 0 ")
 	}
@@ -112,6 +122,17 @@ func (st *Store) ValidateFee(opt *fees.FeeOption) (bool, error) {
 }
 
 func (st *Store) ValidateStaking(opt *delegation.Options) (bool, error) {
+	ok, err := opt.MinDelegationAmount.CheckRange(*minDelegationAmount, *maxDelegationAmount)
+	if err != nil || !ok {
+		return false, err
+	}
+	if !verifyRangeInt64(opt.TopValidatorCount, minValidatorCount, maxValidatorCount) {
+		return false, errors.New("validator count not within range")
+	}
+	if !verifyRangeInt64(opt.MaturityTime, minMaturityTime, maxMaturityTime) {
+		return false, errors.New("maturity time not with range")
+	}
+
 	return true, nil
 }
 
@@ -258,7 +279,7 @@ func verifyMinFunding(intialFunding *balance.Amount, fundingGoal *balance.Amount
 }
 
 func verifyRangeInt64(value int64, min int64, max int64) bool {
-	return value > min && value < max
+	return value >= min && value <= max
 }
 
 func verifyDistribution(distribution ProposalFundDistribution) bool {
