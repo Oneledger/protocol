@@ -174,6 +174,8 @@ func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, se
 		RewardPoolAddress: "rewardspool",
 	}
 	ctx.RewardMasterStore.SetOptions(&rewardOptions)
+	ctx.GovernanceStore.SetFeeOption(*ctx.FeeOpt)
+	ctx.GovernanceStore.WithHeight(0).SetLUH()
 	return ctx
 }
 

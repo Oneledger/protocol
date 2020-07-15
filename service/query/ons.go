@@ -2,6 +2,7 @@ package query
 
 import (
 	"github.com/Oneledger/protocol/client"
+	gov "github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/ons"
 	codes "github.com/Oneledger/protocol/status_codes"
 )
@@ -162,9 +163,12 @@ func (svc *Service) ONS_GetDomainByBeneficiary(req client.ONSGetDomainsRequest, 
 }
 
 func (svc *Service) ONS_GetOptions(_ struct{}, reply *client.ONSGetOptionsReply) error {
-
+	onsOpt, err := svc.governance.GetONSOptions()
+	if err != nil {
+		return gov.ErrGetONSOptions
+	}
 	*reply = client.ONSGetOptionsReply{
-		Options: *svc.ons.GetOptions(),
+		Options: *onsOpt,
 	}
 	return nil
 }

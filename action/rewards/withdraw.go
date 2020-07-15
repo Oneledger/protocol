@@ -9,6 +9,7 @@ import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/Oneledger/protocol/data/balance"
+	gov "github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/rewards"
 )
 
@@ -63,7 +64,11 @@ func (withdrawTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool,
 		return false, err
 	}
 
-	err = action.ValidateFee(ctx.FeePool.GetOpt(), signedTx.Fee)
+	feeOpt, err := ctx.GovernanceStore.GetFeeOption()
+	if err != nil {
+		return false, gov.ErrGetFeeOptions
+	}
+	err = action.ValidateFee(feeOpt, signedTx.Fee)
 	if err != nil {
 		return false, err
 	}

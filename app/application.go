@@ -144,7 +144,6 @@ func (app *App) setupState(stateBytes []byte) error {
 	if err != nil {
 		return errors.Wrap(err, "Error in setting up ONS options")
 	}
-	app.Context.domains.SetOptions(&initial.Governance.ONSOptions)
 
 	err = app.Context.govern.WithHeight(app.header.Height).SetRewardOptions(initial.Governance.RewardOptions)
 	if err != nil {
@@ -203,10 +202,10 @@ func (app *App) setupState(stateBytes []byte) error {
 	for _, domain := range initial.Domains {
 		if ons.GetNameFromString(domain.Name).IsValid() && app.Context.domains.GetOptions().IsNameAllowed(ons.Name(domain.Name)) {
 			d, err := ons.NewDomain(domain.Owner, domain.Beneficiary, domain.Name, 0, domain.URI, domain.ExpireHeight)
-			d.ActiveFlag = false
 			if err != nil {
 				return errors.Wrap(err, "failed to create initial domain")
 			}
+			d.ActiveFlag = false
 			err = app.Context.domains.WithState(app.Context.deliver).Set(d)
 			if err != nil {
 				return errors.Wrap(err, "failed to setup initial domain")
@@ -357,12 +356,6 @@ func (app *App) Prepare() error {
 
 		app.Context.feePool.SetupOpt(feeOpt)
 
-		onsOpt, err := app.Context.govern.WithHeight(app.header.Height).GetONSOptions()
-		if err != nil {
-			return err
-		}
-		app.Context.domains.SetOptions(onsOpt)
-
 		cdOpt, err := app.Context.govern.WithHeight(app.header.Height).GetETHChainDriverOption()
 		if err != nil {
 			return err
@@ -370,6 +363,9 @@ func (app *App) Prepare() error {
 		app.Context.ethTrackers.SetupOption(cdOpt)
 
 		btcOption, err := app.Context.govern.WithHeight(app.header.Height).GetBTCChainDriverOption()
+		if err != nil {
+			return err
+		}
 		btcConfig := bitcoin.NewBTCConfig(app.Context.cfg.ChainDriver, btcOption.ChainType)
 
 		app.Context.btcTrackers.SetConfig(btcConfig)

@@ -10,10 +10,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/chain"
 	trackerlib "github.com/Oneledger/protocol/data/ethereum"
+	gov "github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
 )
 
@@ -85,7 +87,11 @@ func (ethRedeemTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool
 	}
 
 	// validate fee
-	err = action.ValidateFee(ctx.FeePool.GetOpt(), signedTx.Fee)
+	feeOpt, err := ctx.GovernanceStore.GetFeeOption()
+	if err != nil {
+		return false, gov.ErrGetFeeOptions
+	}
+	err = action.ValidateFee(feeOpt, signedTx.Fee)
 	if err != nil {
 		ctx.Logger.Error("validate fee failed", err)
 		return false, err
@@ -120,8 +126,11 @@ func runRedeem(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		ctx.Logger.Error("")
 		return false, action.Response{Log: errors.Wrap(action.ErrUnserializable, err.Error()).Error()}
 	}
-
-	req, err := ethereum.ParseRedeem(redeem.ETHTxn, ctx.ETHTrackers.GetOption().ContractABI)
+	ethOptions, err := ctx.GovernanceStore.GetETHChainDriverOption()
+	if err != nil {
+		return helpers.LogAndReturnFalse(ctx.Logger, gov.ErrGetEthOptions, redeem.Tags(), err)
+	}
+	req, err := ethereum.ParseRedeem(redeem.ETHTxn, ethOptions.ContractABI)
 	if err != nil {
 		return false, action.Response{Log: (errors.Wrap(action.ErrInvalidExtTx, err.Error())).Error()}
 	}
@@ -137,7 +146,7 @@ func runRedeem(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false, action.Response{Log: (errors.Wrap(action.ErrNotEnoughFund, err.Error())).Error()}
 	}
 	// Subtracting from common address to maintain count of the total oEth minted
-	ethSupply := keys.Address(ctx.ETHTrackers.GetOption().TotalSupplyAddr)
+	ethSupply := keys.Address(ethOptions.TotalSupplyAddr)
 	err = ctx.Balances.MinusFromAddress(ethSupply, coin)
 	if err != nil {
 		return false, action.Response{Log: (errors.Wrap(action.ErrNotEnoughFund, err.Error())).Error()}

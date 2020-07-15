@@ -4,12 +4,16 @@ package eth
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/action/helpers"
 	ethchaindriver "github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/ethereum"
+	gov "github.com/Oneledger/protocol/data/governance"
+
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 )
@@ -85,7 +89,11 @@ func (e ethERC20LockTx) Validate(ctx *action.Context, signedTx action.SignedTx) 
 	}
 
 	// validate fee
-	err = action.ValidateFee(ctx.FeePool.GetOpt(), signedTx.Fee)
+	feeOpt, err := ctx.GovernanceStore.GetFeeOption()
+	if err != nil {
+		return false, gov.ErrGetFeeOptions
+	}
+	err = action.ValidateFee(feeOpt, signedTx.Fee)
 	if err != nil {
 		ctx.Logger.Error("validate fee failed", err)
 		return false, err
@@ -130,7 +138,10 @@ func runERC20Lock(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		}
 	}
 
-	ethOptions := ctx.ETHTrackers.GetOption()
+	ethOptions, err := ctx.GovernanceStore.GetETHChainDriverOption()
+	if err != nil {
+		return helpers.LogAndReturnFalse(ctx.Logger, gov.ErrGetEthOptions, erc20lock.Tags(), err)
+	}
 	token, err := ethchaindriver.GetToken(ethOptions.TokenList, *ethTx.To())
 	if err != nil {
 		return false, action.Response{
