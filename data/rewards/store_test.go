@@ -1,7 +1,6 @@
 package rewards
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/Oneledger/protocol/data/balance"
@@ -14,7 +13,8 @@ import (
 const (
 	rewardsPrefix         = "rew"
 	rewardsIntervalPrefix = "rewInt"
-	numPrivateKeys        = 5
+	rewardsAddrList       = "rewAddr"
+	numPrivateKeys        = 6
 	rewardInterval        = 15
 )
 
@@ -39,22 +39,22 @@ func init() {
 	newDB := db.NewDB("test", db.MemDBBackend, "")
 	cs := storage.NewState(storage.NewChainState("chainstate", newDB))
 
-	rewardStore = NewRewardStore(rewardsPrefix, rewardsIntervalPrefix, cs)
+	rewardStore = NewRewardStore(rewardsPrefix, rewardsIntervalPrefix, rewardsAddrList, cs)
 	rewardStore.SetOptions(&rewardOptions)
 	rewardStore.WithState(cs)
 }
 
 func TestRewardStore_Set(t *testing.T) {
-	rewardStore.Set(validatorList[0], 1, balance.NewAmount(100))
-	amt, _ := rewardStore.Get(validatorList[0], rewardInterval-1)
+	rewardStore.SetWithHeight(validatorList[0], 1, balance.NewAmount(100))
+	amt, _ := rewardStore.GetWithHeight(validatorList[0], rewardInterval-1)
 	assert.Equal(t, amt, balance.NewAmount(100))
 
-	rewardStore.Set(validatorList[1], 1, balance.NewAmount(200))
-	amt, _ = rewardStore.Get(validatorList[1], rewardInterval-1)
+	rewardStore.SetWithHeight(validatorList[1], 1, balance.NewAmount(200))
+	amt, _ = rewardStore.GetWithHeight(validatorList[1], rewardInterval-1)
 	assert.Equal(t, amt, balance.NewAmount(200))
 
-	rewardStore.Set(validatorList[2], 1, balance.NewAmount(300))
-	amt, _ = rewardStore.Get(validatorList[2], rewardInterval-1)
+	rewardStore.SetWithHeight(validatorList[2], 1, balance.NewAmount(300))
+	amt, _ = rewardStore.GetWithHeight(validatorList[2], rewardInterval-1)
 	assert.Equal(t, amt, balance.NewAmount(300))
 }
 
@@ -66,7 +66,7 @@ func TestRewardStore_AddToAddress(t *testing.T) {
 	}
 	//Verify amount is the same for every version in the interval
 	for i := 0; i < rewardInterval; i++ {
-		amt, _ := rewardStore.Get(validatorList[0], int64(i))
+		amt, _ := rewardStore.GetWithHeight(validatorList[0], int64(i))
 		assert.Equal(t, amt, balance.NewAmount(115))
 	}
 
@@ -77,7 +77,7 @@ func TestRewardStore_AddToAddress(t *testing.T) {
 	}
 	//Verify amount is the same for every version in the interval
 	for i := rewardInterval; i < 2*rewardInterval; i++ {
-		amt, _ := rewardStore.Get(validatorList[0], int64(i))
+		amt, _ := rewardStore.GetWithHeight(validatorList[0], int64(i))
 		assert.Equal(t, amt, balance.NewAmount(15))
 	}
 }
@@ -138,7 +138,7 @@ func TestRewardStore_Interval(t *testing.T) {
 	//Validate whether the different intervals are being followed
 	for i := 0; i < 100; i++ {
 		if i < 30 {
-			reward, _ := rewardStore.Get(validatorList[3], int64(i))
+			reward, _ := rewardStore.GetWithHeight(validatorList[3], int64(i))
 			assert.Equal(t, reward, balance.NewAmount(150))
 		}
 		if i < 60 && i >= 30 {
@@ -146,7 +146,7 @@ func TestRewardStore_Interval(t *testing.T) {
 				RewardInterval:    10,
 				RewardPoolAddress: "",
 			})
-			reward, _ := rewardStore.Get(validatorList[3], int64(i))
+			reward, _ := rewardStore.GetWithHeight(validatorList[3], int64(i))
 			assert.Equal(t, reward, balance.NewAmount(100))
 		}
 		if i >= 60 && i < 90 {
@@ -154,7 +154,7 @@ func TestRewardStore_Interval(t *testing.T) {
 				RewardInterval:    5,
 				RewardPoolAddress: "",
 			})
-			reward, _ := rewardStore.Get(validatorList[3], int64(i))
+			reward, _ := rewardStore.GetWithHeight(validatorList[3], int64(i))
 			assert.Equal(t, reward, balance.NewAmount(50))
 		}
 		if i >= 90 {
@@ -162,7 +162,7 @@ func TestRewardStore_Interval(t *testing.T) {
 				RewardInterval:    1,
 				RewardPoolAddress: "",
 			})
-			reward, _ := rewardStore.Get(validatorList[3], int64(i))
+			reward, _ := rewardStore.GetWithHeight(validatorList[3], int64(i))
 			assert.Equal(t, reward, balance.NewAmount(10))
 		}
 	}
@@ -175,16 +175,81 @@ func TestRewardStore_GetMaturedAmount(t *testing.T) {
 	newDB := db.NewDB("test", db.MemDBBackend, "")
 	cs := storage.NewState(storage.NewChainState("chainstate", newDB))
 
-	rewardStore = NewRewardStore(rewardsPrefix, rewardsIntervalPrefix, cs)
+	rewardStore = NewRewardStore(rewardsPrefix, rewardsIntervalPrefix, rewardsAddrList, cs)
 	rewardStore.SetOptions(&rewardOptions)
 	rewardStore.WithState(cs)
+
+	_ = rewardStore.AddToAddress(validatorList[5], int64(1), balance.NewAmount(10))
 
 	for i := 0; i < 100; i++ {
 		_ = rewardStore.AddToAddress(validatorList[4], int64(i), balance.NewAmount(10))
 		matured, _ = rewardStore.GetMaturedAmount(validatorList[4], int64(i))
 
-		fmt.Println("matured amount: ", matured, "height: ", i)
+		if i >= 30 {
+			assert.Equal(t, matured, balance.NewAmount(150))
+		}
 
 		rewardStore.State.Commit()
 	}
+}
+
+func TestRewardStore_GetLastTwoChunks(t *testing.T) {
+	amount, err := rewardStore.GetLastTwoChunks(validatorList[4])
+	assert.Equal(t, err, nil)
+	assert.Equal(t, amount, balance.NewAmount(250))
+
+	amount, err = rewardStore.GetMaturedAmount(validatorList[5], 35)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, amount, balance.NewAmount(10))
+}
+
+func TestRewardStore_GetLastTwoChunks2(t *testing.T) {
+	//Create Test DB
+	newDB := db.NewDB("test", db.MemDBBackend, "")
+	cs := storage.NewState(storage.NewChainState("chainstate", newDB))
+
+	rewardStore = NewRewardStore(rewardsPrefix, rewardsIntervalPrefix, rewardsAddrList, cs)
+	rewardStore.SetOptions(&Options{
+		RewardInterval:    1,
+		RewardPoolAddress: "",
+	})
+	rewardStore.WithState(cs)
+
+	for i := 0; i < 4; i++ {
+		_ = rewardStore.AddToAddress(validatorList[5], int64(i), balance.NewAmount(10))
+
+		if i < 1 {
+			amount, _ := rewardStore.GetLastTwoChunks(validatorList[5])
+			assert.Equal(t, amount, balance.NewAmount(10))
+		}
+
+		if i >= 2 {
+			amount, _ := rewardStore.GetLastTwoChunks(validatorList[5])
+			assert.Equal(t, amount, balance.NewAmount(20))
+		}
+
+		rewardStore.State.Commit()
+	}
+}
+
+func TestRewardStore_IterateAddrList(t *testing.T) {
+	//Create Test DB
+	newDB := db.NewDB("test", db.MemDBBackend, "")
+	cs := storage.NewState(storage.NewChainState("chainstate", newDB))
+
+	rewardStore = NewRewardStore(rewardsPrefix, rewardsIntervalPrefix, rewardsAddrList, cs)
+	rewardStore.SetOptions(&rewardOptions)
+	rewardStore.WithState(cs)
+
+	for _, addr := range validatorList {
+		_ = rewardStore.AddToAddress(addr, 5, balance.NewAmount(19))
+	}
+	rewardStore.State.Commit()
+
+	count := 0
+	rewardStore.IterateAddrList(func(key keys.Address) bool {
+		count++
+		return false
+	})
+	assert.Equal(t, count, 6)
 }

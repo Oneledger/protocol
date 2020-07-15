@@ -112,6 +112,7 @@ type testnetConfig struct {
 	deploySmartcontracts bool
 	cloud                bool
 	loglevel             int
+	rewardsInterval      int64
 	reserved_domains     string
 }
 
@@ -131,6 +132,7 @@ func init() {
 	testnetCmd.Flags().BoolVar(&testnetArgs.deploySmartcontracts, "deploy_smart_contracts", false, "deploy eth contracts")
 	testnetCmd.Flags().BoolVar(&testnetArgs.cloud, "cloud_deploy", false, "set true for deploying on cloud")
 	testnetCmd.Flags().IntVar(&testnetArgs.loglevel, "loglevel", 3, "Specify the log level for olfullnode. 0: Fatal, 1: Error, 2: Warning, 3: Info, 4: Debug, 5: Detail")
+	testnetCmd.Flags().Int64Var(&testnetArgs.rewardsInterval, "rewards_interval", 1, "Block rewards interval")
 	testnetCmd.Flags().StringVar(&testnetArgs.reserved_domains, "reserved_domains", "", "Directory which contains Reserved domains list")
 
 }
@@ -451,7 +453,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 	}
 
 	rewzOpt := rewards.Options{
-		RewardInterval:    150,
+		RewardInterval:    args.rewardsInterval,
 		RewardPoolAddress: "rewardpool",
 		RewardCurrency:    "OLT",
 		CalculateInterval: blockRewardsCalcInterval,

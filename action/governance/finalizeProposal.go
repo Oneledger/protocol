@@ -303,7 +303,7 @@ func executeConfigUpdate(ctx *action.Context, proposal *governance.Proposal) err
 	//Setup Options for individual stores
 	// TODO remove these after all TX have been modified to use Gov store
 	ctx.ProposalMasterStore.Proposal.SetOptions(&updatedGov.PropOptions)
-	ctx.RewardMasterStore.RewardCumula.SetOptions(&updatedGov.RewardOptions)
+	ctx.RewardMasterStore.RewardCm.SetOptions(&updatedGov.RewardOptions)
 	ctx.FeePool.SetupOpt(&updatedGov.FeeOption)
 	ctx.Domains.SetOptions(&updatedGov.ONSOptions)
 	ctx.ETHTrackers.SetupOption(&updatedGov.ETHCDOption)

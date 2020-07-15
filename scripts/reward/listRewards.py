@@ -8,7 +8,8 @@ def query_block_rewards():
             response = list_validators()
             print '-------------------------------- Height: ', response["height"], ' --------------------------------'
             for v in response["validators"]:
-                print query_rewards(v["address"]), "Matured Amount: ", query_matured_rewards(v["address"])
+                print query_rewards(v["address"])
+                print "Validator Reward Stats: ", query_matured_rewards(v["address"])
             sleep(5)
     except KeyboardInterrupt:
         print 'Exiting Test'

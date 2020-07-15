@@ -177,7 +177,6 @@ func (ks *KeyStore) GetKeyData(path string, address Address, passphrase string) 
 	if err != nil {
 		return nil, err
 	}
-
 	cipherData, err := hex.DecodeString(accData.CipherText)
 	if err != nil {
 		return nil, err

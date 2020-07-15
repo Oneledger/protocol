@@ -104,8 +104,9 @@ const (
 	ETHTrackerNotFoundSuccess = 600101
 	ETHTrackerNotFoundOngoing = 600102
 
-	DelgErr                  = 6003
-	DelgErrStakeAddressInUse = 600301
+	DelgErr                     = 6003
+	DelgErrStakeAddressInUse    = 600301
+	DelgErrStakeAddressMismatch = 600302
 
 	GovErr                                = 7001
 	GovErrGetProposalOptions              = 700101
@@ -164,4 +165,8 @@ const (
 	TxErrGettingRewardsOptions            = 700154
 	TxErrGettingFeeOptions                = 700155
 	TxErrValidateGovState                 = 700156
+
+	//Rewards Error
+	RewardsUnableToGetMaturedAmount = 800001
+	RewardsUnableToWithdraw         = 800002
 )

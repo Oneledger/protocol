@@ -92,7 +92,17 @@ govtest: reset
 	make reset
 	@./scripts/testsend
 	python scripts/governance/queryProposals.py
+	python scripts/governance/getFundsByFunder.py
+	python scripts/governance/queryProposalOptions.py
 	@./scripts/stopNodes
+
+#
+# run staking tests
+#
+stakingtest: reset
+	python scripts/staking/self_staking.py
+	@./scripts/stopNodes
+
 
 alltest: reset
 	@./scripts/testsend

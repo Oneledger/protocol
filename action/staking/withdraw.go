@@ -89,6 +89,11 @@ func (withdrawTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error
 		return false, err
 	}
 
+	val, err := ctx.Validators.Get(draw.ValidatorAddress)
+	if err == nil && !val.StakeAddress.Equal(draw.StakeAddress) {
+		return false, action.ErrStakeAddressMismatch
+	}
+
 	coin := draw.Stake.ToCoinWithBase(ctx.Currencies)
 	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromInt(0)) {
 		return false, action.ErrInvalidAmount

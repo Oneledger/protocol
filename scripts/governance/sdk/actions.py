@@ -656,3 +656,15 @@ def query_proposal_options():
         sys.exit(-1)
     # print json.dumps(resp, indent=4)
     return resp["result"]
+
+
+def get_funds_for_proposal_by_funder(proposalId, funder):
+    req = {
+        "proposalId": proposalId,
+        "funderAddress": funder
+    }
+    resp = rpc_call('query.GetFundsForProposalByFunder', req)
+    if "result" not in resp:
+        sys.exit(-1)
+
+    return resp["result"]

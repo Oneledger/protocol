@@ -102,3 +102,12 @@ type GetProposalOptionsReply struct {
 	ProposalOptions governance.ProposalOptionSet `json:"proposalOptions"`
 	Height          int64                        `json:"height"`
 }
+
+type GetFundsForProposalByFunderRequest struct {
+	ProposalId    governance.ProposalID `json:"proposalId"`
+	Funder        keys.Address          `json:"funderAddress"`
+}
+
+type GetFundsForProposalByFunderReply struct {
+	Amount    balance.Amount        `json:"amount"`
+}

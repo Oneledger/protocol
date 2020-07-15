@@ -1,7 +1,6 @@
 package rewards
 
 import (
-	"errors"
 	"strconv"
 	"strings"
 
@@ -16,16 +15,18 @@ type RewardStore struct {
 	szlr            serialize.Serializer
 	prefix          []byte
 	prefixIntervals []byte
+	prefixAddrList  []byte
 
 	rewardOptions *Options
 }
 
-func NewRewardStore(prefix string, intervalPrefix string, state *storage.State) *RewardStore {
+func NewRewardStore(prefix string, intervalPrefix string, addrListPrefix string, state *storage.State) *RewardStore {
 	return &RewardStore{
 		State:           state,
 		szlr:            serialize.GetSerializer(serialize.PERSISTENT),
 		prefix:          storage.Prefix(prefix),
 		prefixIntervals: storage.Prefix(intervalPrefix),
+		prefixAddrList:  storage.Prefix(addrListPrefix),
 	}
 }
 
@@ -45,6 +46,14 @@ func (rs *RewardStore) generateMaturedKey(address keys.Address, height int64, in
 	return
 }
 
+func (rs *RewardStore) generatePreviousKey(address keys.Address, height int64, interval int64) (Key storage.StoreKey) {
+	Key = nil
+	lastInterval := rs.GetInterval(height)
+	index := lastInterval.LastIndex + int64((height-lastInterval.LastHeight)/interval)
+	Key = storage.StoreKey(address.String() + storage.DB_PREFIX + string(index))
+	return
+}
+
 func (rs *RewardStore) generateKey(address keys.Address, height int64, interval int64) (Key storage.StoreKey) {
 	lastInterval := rs.GetInterval(height)
 	index := lastInterval.LastIndex + int64((height-lastInterval.LastHeight)/interval) + 1
@@ -52,7 +61,17 @@ func (rs *RewardStore) generateKey(address keys.Address, height int64, interval 
 	return
 }
 
-func (rs *RewardStore) Get(address keys.Address, height int64) (amount *balance.Amount, err error) {
+func (rs *RewardStore) Get(key storage.StoreKey) (amount *balance.Amount, err error) {
+	data, err := rs.State.Get(key)
+	amount = balance.NewAmount(0)
+	if len(data) == 0 {
+		return
+	}
+	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(data, amount)
+	return
+}
+
+func (rs *RewardStore) GetWithHeight(address keys.Address, height int64) (amount *balance.Amount, err error) {
 	key := append(rs.prefix, rs.generateKey(address, height, rs.rewardOptions.RewardInterval)...)
 	data, err := rs.State.Get(key)
 	amount = balance.NewAmount(0)
@@ -63,7 +82,7 @@ func (rs *RewardStore) Get(address keys.Address, height int64) (amount *balance.
 	return
 }
 
-func (rs *RewardStore) Set(address keys.Address, height int64, amount *balance.Amount) error {
+func (rs *RewardStore) SetWithHeight(address keys.Address, height int64, amount *balance.Amount) error {
 	data, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(amount)
 	if err != nil {
 		return err
@@ -124,14 +143,41 @@ func (rs *RewardStore) GetInterval(height int64) *Interval {
 	return lastInterval
 }
 
+func (rs *RewardStore) IterateAddrList(fn func(key keys.Address) bool) bool {
+	return rs.State.IterateRange(
+		append(rs.prefixAddrList),
+		storage.Rangefix(string(rs.prefixAddrList)),
+		true,
+		func(key, value []byte) bool {
+			address := keys.Address{}
+			arr := strings.Split(string(key), storage.DB_PREFIX)
+			keyStr := arr[len(arr)-1]
+
+			err := address.UnmarshalText([]byte(keyStr))
+			if err != nil {
+				return true
+			}
+			return fn(address)
+		},
+	)
+}
+
+func (rs *RewardStore) AddAddressToList(address keys.Address) {
+	key := append(rs.prefixAddrList, storage.StoreKey(storage.DB_PREFIX+address.String())...)
+	if !rs.State.Exists(key) {
+		_ = rs.State.Set(key, []byte("active"))
+	}
+}
+
 func (rs *RewardStore) AddToAddress(address keys.Address, height int64, amount *balance.Amount) error {
-	prevAmount, err := rs.Get(address, height)
+	prevAmount, err := rs.GetWithHeight(address, height)
 	newAmount := amount
 	if err == nil {
 		newAmount = prevAmount.Plus(*amount)
 	}
+	rs.AddAddressToList(address)
 
-	return rs.Set(address, height, newAmount)
+	return rs.SetWithHeight(address, height, newAmount)
 }
 
 //Iterate through all reward records for a given Address
@@ -156,13 +202,7 @@ func (rs *RewardStore) Iterate(addr keys.Address, fn func(c string, amt balance.
 
 func (rs *RewardStore) GetMaturedAmount(address keys.Address, height int64) (*balance.Amount, error) {
 	key := append(rs.prefix, rs.generateMaturedKey(address, height, rs.rewardOptions.RewardInterval)...)
-	data, err := rs.State.Get(key)
-	amount := balance.NewAmount(0)
-	if len(data) == 0 {
-		return nil, errors.New("key doesn't exist")
-	}
-	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(data, amount)
-	return amount, err
+	return rs.Get(key)
 }
 
 func (rs *RewardStore) SetOptions(options *Options) {
@@ -181,4 +221,22 @@ func (rs *RewardStore) UpdateOptions(height int64, options *Options) error {
 	}
 	rs.SetOptions(options)
 	return nil
+}
+
+func (rs *RewardStore) GetLastTwoChunks(address keys.Address) (*balance.Amount, error) {
+	amount := balance.NewAmount(0)
+	previousAmount := balance.NewAmount(0)
+	currentKey := append(rs.prefix, rs.generateKey(address, rs.State.Version(), rs.rewardOptions.RewardInterval)...)
+	previousKey := append(rs.prefix, rs.generatePreviousKey(address, rs.State.Version(), rs.rewardOptions.RewardInterval)...)
+	amount, err := rs.Get(currentKey)
+	if err != nil {
+		return nil, err
+	}
+
+	previousAmount, err = rs.Get(previousKey)
+	if err != nil {
+		return amount, nil
+	}
+
+	return amount.Plus(*previousAmount), nil
 }
