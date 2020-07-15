@@ -204,8 +204,9 @@ func (app *App) setupState(stateBytes []byte) error {
 	}
 
 	for _, domain := range initial.Domains {
-		if ons.GetNameFromString(domain.Name).IsValid() {
+		if ons.GetNameFromString(domain.Name).IsValid() && app.Context.domains.GetOptions().IsNameAllowed(ons.Name(domain.Name)) {
 			d, err := ons.NewDomain(domain.Owner, domain.Beneficiary, domain.Name, 0, domain.URI, domain.ExpireHeight)
+			d.ActiveFlag = false
 			if err != nil {
 				return errors.Wrap(err, "failed to create initial domain")
 			}
