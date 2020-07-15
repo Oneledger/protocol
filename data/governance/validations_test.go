@@ -192,7 +192,7 @@ func TestStore_ValidateStaking(t *testing.T) {
 	ok, err = vStore.ValidateStaking(&updates.StakingOptions)
 	assert.NoError(t, err, "Should Pass")
 	assert.True(t, ok)
-	updates.StakingOptions.MinDelegationAmount = *balance.NewAmountFromInt(100000)
+	updates.StakingOptions.MinDelegationAmount = *balance.NewAmountFromInt(-1)
 	ok, err = vStore.ValidateStaking(&updates.StakingOptions)
 	assert.Error(t, err, "Delegation amount too less")
 	assert.False(t, ok)
