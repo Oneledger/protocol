@@ -3,11 +3,15 @@ package ons
 import (
 	"bytes"
 	"encoding/json"
+
 	"github.com/tendermint/tendermint/libs/kv"
 
-	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/data/ons"
 	"github.com/pkg/errors"
+
+	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/action/helpers"
+	gov "github.com/Oneledger/protocol/data/governance"
+	"github.com/Oneledger/protocol/data/ons"
 )
 
 var _ Ons = &RenewDomain{}
@@ -82,7 +86,11 @@ func (r RenewDomainTx) Validate(ctx *action.Context, signedTx action.SignedTx) (
 	}
 
 	//Verify fee currency is valid and the amount exceeds the minimum.
-	err = action.ValidateFee(ctx.FeePool.GetOpt(), signedTx.Fee)
+	feeOpt, err := ctx.GovernanceStore.GetFeeOption()
+	if err != nil {
+		return false, gov.ErrGetFeeOptions
+	}
+	err = action.ValidateFee(feeOpt, signedTx.Fee)
 	if err != nil {
 		return false, errors.Wrap(err, err.Error())
 	}
@@ -105,9 +113,12 @@ func (r RenewDomainTx) Validate(ctx *action.Context, signedTx action.SignedTx) (
 	if c.Name != renewDomain.BuyingPrice.Currency {
 		return false, errors.Wrap(action.ErrInvalidAmount, renewDomain.BuyingPrice.String())
 	}
-
+	opt, err := ctx.GovernanceStore.GetONSOptions()
+	if err != nil {
+		return false, gov.ErrGetONSOptions
+	}
 	coin := renewDomain.BuyingPrice.ToCoin(ctx.Currencies)
-	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromAmount(ctx.Domains.GetOptions().PerBlockFees)) {
+	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromAmount(opt.PerBlockFees)) {
 		return false, action.ErrNotEnoughFund
 	}
 
@@ -168,7 +179,10 @@ func runRenew(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	}
 
 	// calculate the blocks
-	opt := ctx.Domains.GetOptions()
+	opt, err := ctx.GovernanceStore.GetONSOptions()
+	if err != nil {
+		return helpers.LogAndReturnFalse(ctx.Logger, gov.ErrGetONSOptions, renewDomain.Tags(), err)
+	}
 	extend, err := calculateRenewal(&renewDomain.BuyingPrice.Value, &opt.PerBlockFees)
 	if err != nil {
 		return false, action.Response{
