@@ -3,14 +3,19 @@ package ons
 import (
 	"bytes"
 	"encoding/json"
-	codes "github.com/Oneledger/protocol/status_codes"
-	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
+
+	"github.com/tendermint/tendermint/libs/kv"
+
+	"github.com/Oneledger/protocol/action/helpers"
+	gov "github.com/Oneledger/protocol/data/governance"
+	codes "github.com/Oneledger/protocol/status_codes"
+
+	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/ons"
-	"github.com/pkg/errors"
 )
 
 var _ Ons = &DomainCreate{}
@@ -91,7 +96,11 @@ func (domainCreateTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, e
 	}
 
 	//Verify fee currency is valid and the amount exceeds the minimum.
-	err = action.ValidateFee(ctx.FeePool.GetOpt(), tx.Fee)
+	feeOpt, err := ctx.GovernanceStore.GetFeeOption()
+	if err != nil {
+		return false, gov.ErrGetFeeOptions
+	}
+	err = action.ValidateFee(feeOpt, tx.Fee)
 	if err != nil {
 		return false, err
 	}
@@ -114,8 +123,12 @@ func (domainCreateTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, e
 	}
 
 	// the buying amount should be more than base creation price for domains
+	opt, err := ctx.GovernanceStore.GetONSOptions()
+	if err != nil {
+		return false, gov.ErrGetONSOptions
+	}
 	coin := create.BuyingPrice.ToCoin(ctx.Currencies)
-	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromAmount(ctx.Domains.GetOptions().BaseDomainPrice)) {
+	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromAmount(opt.BaseDomainPrice)) {
 		return false, action.ErrInvalidAmount
 	}
 
@@ -171,7 +184,10 @@ func runCreate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		}
 	}
 
-	opt := ctx.Domains.GetOptions()
+	opt, err := ctx.GovernanceStore.GetONSOptions()
+	if err != nil {
+		return helpers.LogAndReturnFalse(ctx.Logger, gov.ErrGetONSOptions, create.Tags(), err)
+	}
 
 	ok := verifyDomainName(create.Name, opt)
 	if !ok {
