@@ -386,7 +386,7 @@ func (app *App) Prepare() error {
 			return err
 		}
 		app.Context.rewardMaster.SetOptions(rewardsOpt)
-		app.Context.rewardMaster.RewardCm.SetNode(app.node)
+		app.Context.rewardMaster.RewardCm.SetBlockStore(app.node.BlockStore())
 	}
 
 	nodecfg, err := consensus.ParseConfig(&app.Context.cfg)

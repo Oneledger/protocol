@@ -89,7 +89,7 @@ var (
 	yearBlockRewardShare_2, _ = balance.NewAmountFromString("70000000000000000000000000", 10)
 	yearBlockRewardShare_3, _ = balance.NewAmountFromString("40000000000000000000000000", 10)
 	yearBlockRewardShare_4, _ = balance.NewAmountFromString("40000000000000000000000000", 10)
-	yearBlockRewardShare_5, _ = balance.NewAmountFromString("10000000000000000000000000", 10)
+	yearBlockRewardShare_5, _ = balance.NewAmountFromString("30000000000000000000000000", 10)
 	yearBlockRewardShares     = []balance.Amount{
 		*yearBlockRewardShare_1,
 		*yearBlockRewardShare_2,
@@ -471,8 +471,9 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		RewardCurrency:           "OLT",
 		EstimatedSecondsPerCycle: estimatedSecondsPerCycle,
 		BlockSpeedCalculateCycle: blockSpeedCalculateCycle,
-		BurnoutRate:              *burnoutRate,
+		YearCloseWindow:          yearCloseWindow,
 		YearBlockRewardShares:    yearBlockRewardShares,
+		BurnoutRate:              *burnoutRate,
 	}
 	states := initialState(args, nodeList, *cdo, *onsOp, btccdo, propOpt, reserveDomains, initialAddrs, rewzOpt)
 

@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/Oneledger/protocol/data/balance"
-	tmnode "github.com/tendermint/tendermint/node"
+	tmstore "github.com/tendermint/tendermint/store"
 )
 
 type YearReward struct {
@@ -14,18 +14,22 @@ type YearReward struct {
 	Distributed *balance.Amount
 }
 
+type TestReward struct {
+	Distributed *balance.Amount
+}
+
 type RewardCalculator struct {
 	height      int64
-	yearRewards []YearReward
-	node        *tmnode.Node
+	yearRewards []*YearReward
+	blockStore  *tmstore.BlockStore
 	options     *Options
 }
 
-func NewRewardCalculator(height int64, yearRewards []YearReward, node *tmnode.Node, options *Options) *RewardCalculator {
+func NewRewardCalculator(height int64, yearRewards []*YearReward, blockStore *tmstore.BlockStore, options *Options) *RewardCalculator {
 	return &RewardCalculator{
 		height:      height,
 		yearRewards: yearRewards,
-		node:        node,
+		blockStore:  blockStore,
 		options:     options,
 	}
 }
@@ -59,7 +63,7 @@ func (calc *RewardCalculator) Calculate() (amt *balance.Amount, burnedout bool, 
 }
 
 func (calc *RewardCalculator) secondsPerCycleLatest() (int64, time.Time) {
-	tEnd := calc.node.BlockStore().LoadBlockMeta(1).Header.Time.UTC()
+	tEnd := calc.blockStore.LoadBlockMeta(1).Header.Time.UTC()
 	secsPerCycle := calc.options.EstimatedSecondsPerCycle
 	if calc.height > calc.options.BlockSpeedCalculateCycle {
 		// get speed calculation [begin, end] height
@@ -68,8 +72,8 @@ func (calc *RewardCalculator) secondsPerCycleLatest() (int64, time.Time) {
 		cycleBegin := cycleEnd - cycle
 
 		// duration of the cycle, in secs
-		tBegin := calc.node.BlockStore().LoadBlockMeta(cycleBegin).Header.Time.UTC()
-		tEnd = calc.node.BlockStore().LoadBlockMeta(cycleEnd).Header.Time.UTC()
+		tBegin := calc.blockStore.LoadBlockMeta(cycleBegin).Header.Time.UTC()
+		tEnd = calc.blockStore.LoadBlockMeta(cycleEnd).Header.Time.UTC()
 		secsPerCycle = int64(tEnd.Sub(tBegin).Seconds())
 	}
 	return secsPerCycle, tEnd
@@ -86,12 +90,13 @@ func (calc *RewardCalculator) numofMoreBlocksBeforeYearClose() (int64, int) {
 		if secsToClose >= calc.options.YearCloseWindow {
 			// calculate how many more blocks proportionally
 			cycle := calc.options.BlockSpeedCalculateCycle
-			numofMoreBlocks = int64(float64(secsToClose) / float64(secsPerCycle) * float64(cycle))
+			numofMoreBlocks = int64(float64(secsToClose*cycle) / float64(secsPerCycle))
 			if numofMoreBlocks == 0 {
 				// this shouldn't happen if YearCloseWindow is set propoerly
 				continue
 			}
 			yearIndex = i
+			break
 		}
 	}
 	return numofMoreBlocks, yearIndex
