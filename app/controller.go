@@ -473,12 +473,13 @@ func handleBlockRewards(validators *identity.ValidatorStore, balances *balance.S
 	}
 	currency.GetCurrencyById(0)
 	coin := rewardPoolBalance.GetCoin(curr)
-	totalRewards, burnt, _, err := rewardMaster.RewardCm.PullRewards(lastHeight, coin.Amount)
+	totalRewards, burnt, year, err := rewardMaster.RewardCm.PullRewards(lastHeight, coin.Amount)
 	if err != nil || burnt {
 		return abciTypes.Event{}
 	}
 
 	//Loop through all validators that participated in signing the last block
+	totalConsumed := balance.NewAmount(0)
 	for _, vote := range votes {
 		//Verify Validator Address
 		valAddress := keys.Address(vote.Validator.Address)
@@ -496,6 +497,8 @@ func handleBlockRewards(validators *identity.ValidatorStore, balances *balance.S
 			if err != nil {
 				continue
 			}
+			//Add to Consumed amount
+			totalConsumed = totalConsumed.Plus(*amount)
 
 			//Record Amount in kvMap
 			kvMap[valAddress.String()] = kv.Pair{
@@ -523,6 +526,7 @@ func handleBlockRewards(validators *identity.ValidatorStore, balances *balance.S
 	})
 
 	//pass total consumed amount to cumulative db
+	_ = rewardMaster.RewardCm.ConsumeRewards(totalConsumed, burnt, year)
 
 	//Populate Event with validator rewards
 	result.Type = "block_rewards"
