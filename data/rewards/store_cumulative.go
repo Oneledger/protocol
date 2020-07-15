@@ -14,15 +14,17 @@ type RewardCumulativeStore struct {
 	szlr   serialize.Serializer
 	prefix []byte
 
+	calculator    *RewardCalculator
 	blockStore    *tmstore.BlockStore
 	rewardOptions *Options
 }
 
 func NewRewardCumulativeStore(prefix string, state *storage.State) *RewardCumulativeStore {
 	return &RewardCumulativeStore{
-		state:  state,
-		prefix: storage.Prefix(prefix),
-		szlr:   serialize.GetSerializer(serialize.PERSISTENT),
+		state:      state,
+		prefix:     storage.Prefix(prefix),
+		szlr:       serialize.GetSerializer(serialize.PERSISTENT),
+		calculator: &RewardCalculator{},
 	}
 }
 
@@ -34,14 +36,14 @@ func (rws *RewardCumulativeStore) WithState(state *storage.State) *RewardCumulat
 // Pull a combined block rewards from total supply for all voting validators for given block height
 func (rws *RewardCumulativeStore) PullRewards(height int64, poolAmt *balance.Amount) (amount *balance.Amount, burnedout bool, year int, err error) {
 	// get year distributed amount till now
-	yearRewards, err := rws.GetYearDistributedRewards()
+	rewardYears, err := rws.GetYearDistributedRewards()
 	if err != nil {
 		return
 	}
 
 	// calculate reward for each block
-	calc := NewRewardCalculator(height, yearRewards, rws.blockStore, rws.rewardOptions)
-	amount, burnedout, year, err = calc.Calculate()
+	rws.calculator.Reset(height, rewardYears)
+	amount, burnedout, year, err = rws.calculator.Calculate()
 	if err != nil {
 		return
 	}
@@ -50,10 +52,12 @@ func (rws *RewardCumulativeStore) PullRewards(height int64, poolAmt *balance.Amo
 	if burnedout && poolAmt.LessThan(*amount) {
 		*amount = *poolAmt
 	}
+
+	logger.Infof("Rewards pulled,   amount = %s, height = %v", amount, height)
 	return
 }
 
-// Deduct actual distributed block rewards from total/year supply
+// Deduct actual distributed rewards from total/year supply
 func (rws *RewardCumulativeStore) ConsumeRewards(consumed *balance.Amount, burnedout bool, year int) error {
 	// accumulates total distributed rewards
 	err := rws.addTotalDistributedRewards(consumed)
@@ -62,13 +66,11 @@ func (rws *RewardCumulativeStore) ConsumeRewards(consumed *balance.Amount, burne
 	}
 
 	// accumulates year distributed rewards
-	if burnedout {
-		yearRewards, err := rws.GetYearDistributedRewards()
-		if err != nil {
-			return err
-		}
-		err = rws.addYearDistributedRewards(yearRewards, year, consumed)
+	if !burnedout {
+		err = rws.addYearDistributedRewards(year, consumed)
 	}
+
+	logger.Infof("Rewards consumed, amount = %s, year = %v", consumed, year+1)
 	return err
 }
 
@@ -80,13 +82,13 @@ func (rws *RewardCumulativeStore) GetTotalDistributedRewards() (amt *balance.Amo
 }
 
 // Get a list of each year's distributed rewards till now
-func (rws *RewardCumulativeStore) GetYearDistributedRewards() (yearRewards []*YearReward, err error) {
+func (rws *RewardCumulativeStore) GetYearDistributedRewards() (rewardYears RewardYears, err error) {
 	key := rws.getYearDistributedKey()
 	if !rws.state.Exists(key) {
-		yearRewards, err = rws.initYearRewards(key)
+		rewardYears, err = rws.initRewardYears(key)
 		return
 	}
-	yearRewards, err = rws.getYearRewards(key)
+	rewardYears, err = rws.getRewardYears(key)
 	return
 }
 
@@ -159,6 +161,8 @@ func (rws *RewardCumulativeStore) WithdrawRewards(validator keys.Address, amount
 
 func (rws *RewardCumulativeStore) SetOptions(options *Options) {
 	rws.rewardOptions = options
+	rws.calculator.SetOptions(options)
+
 }
 
 func (rws *RewardCumulativeStore) GetOptions() *Options {
@@ -167,6 +171,7 @@ func (rws *RewardCumulativeStore) GetOptions() *Options {
 
 func (rws *RewardCumulativeStore) SetBlockStore(blockStore *tmstore.BlockStore) {
 	rws.blockStore = blockStore
+	rws.calculator.SetBlockStore(blockStore)
 }
 
 //-----------------------------helper functions
@@ -216,37 +221,41 @@ func (rws *RewardCumulativeStore) iterate(subkey string, fn func(validator keys.
 }
 
 // Get year rewards
-func (rws *RewardCumulativeStore) getYearRewards(key storage.StoreKey) (rewards []*YearReward, err error) {
+func (rws *RewardCumulativeStore) getRewardYears(key storage.StoreKey) (rewards RewardYears, err error) {
 	dat, err := rws.state.Get(key)
 	if err != nil {
 		return
 	}
-	rewards = make([]*YearReward, 0)
+	rewards = RewardYears{
+		Years: make([]RewardYear, 0),
+	}
 	if len(dat) == 0 {
 		err = YearRewardsMissing
 		return
 	}
-	err = rws.szlr.Deserialize(dat, rewards)
+	err = rws.szlr.Deserialize(dat, &rewards)
 	return
 }
 
 // Initialize each reward year's information
-func (rws *RewardCumulativeStore) initYearRewards(key storage.StoreKey) (rewards []*YearReward, err error) {
+func (rws *RewardCumulativeStore) initRewardYears(key storage.StoreKey) (rewards RewardYears, err error) {
 	tStart := rws.blockStore.LoadBlockMeta(1).Header.Time.UTC()
 	numofYears := len(rws.rewardOptions.YearBlockRewardShares)
 
 	// calculate each year's start/close time
-	rewards = make([]*YearReward, 0)
+	rewards = RewardYears{
+		Years: make([]RewardYear, 0),
+	}
 	for i := 0; i < numofYears; i++ {
 		tClose := tStart.AddDate(1, 0, 0).UTC()
-		reward := &YearReward{
+		reward := RewardYear{
 			StartTime:   tStart,
 			CloseTime:   tClose,
 			Distributed: balance.NewAmount(0),
 		}
 		logger.Infof("Initial year-%v [start: %s], [close: %s]", i+1, tStart, tClose)
 		tStart = tClose
-		rewards = append(rewards, reward)
+		rewards.Years = append(rewards.Years, reward)
 	}
 
 	// save to DB
@@ -291,12 +300,15 @@ func (rws *RewardCumulativeStore) addTotalDistributedRewards(amount *balance.Amo
 }
 
 // Add to total year distributed rewards
-func (rws *RewardCumulativeStore) addYearDistributedRewards(yearRewards []*YearReward, year int, amount *balance.Amount) error {
+func (rws *RewardCumulativeStore) addYearDistributedRewards(year int, amount *balance.Amount) error {
+	rewardYears, err := rws.GetYearDistributedRewards()
+	if err != nil {
+		return err
+	}
+	yearDist := rewardYears.Years[year].Distributed
+	rewardYears.Years[year].Distributed = yearDist.Plus(*amount)
 	key := rws.getYearDistributedKey()
-	yearDist := yearRewards[year].Distributed
-	yearRewards[year].Distributed = yearDist.Plus(*amount)
-
-	err := rws.set(key, yearRewards)
+	err = rws.set(key, rewardYears)
 	return err
 }
 
@@ -338,7 +350,7 @@ type RewardAmount struct {
 
 type RewardCumuState struct {
 	TotalDistributed *balance.Amount `json:"totalDistributed"`
-	YearsDistributed []*YearReward   `json:"yearsDistributed"`
+	YearsDistributed RewardYears     `json:"yearsDistributed"`
 	MaturedBalances  []RewardAmount  `json:"maturedBalances"`
 	WithdrawnAmounts []RewardAmount  `json:"withdrawnAmounts"`
 }
@@ -381,7 +393,7 @@ func (rws *RewardCumulativeStore) loadState(state *RewardCumuState) (err error) 
 	if err != nil {
 		return
 	}
-	if len(state.YearsDistributed) == len(rws.rewardOptions.YearBlockRewardShares) {
+	if len(state.YearsDistributed.Years) == len(rws.rewardOptions.YearBlockRewardShares) {
 		key := rws.getYearDistributedKey()
 		err = rws.set(key, state.YearsDistributed)
 		if err != nil {

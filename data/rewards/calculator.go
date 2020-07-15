@@ -8,35 +8,35 @@ import (
 	tmstore "github.com/tendermint/tendermint/store"
 )
 
-type YearReward struct {
+type RewardYear struct {
 	StartTime   time.Time
 	CloseTime   time.Time
 	Distributed *balance.Amount
 }
 
-type TestReward struct {
-	Distributed *balance.Amount
+type RewardYears struct {
+	Years []RewardYear
 }
 
 type RewardCalculator struct {
 	height      int64
-	yearRewards []*YearReward
+	burnedout   bool
+	rewardYears RewardYears
 	blockStore  *tmstore.BlockStore
 	options     *Options
 }
 
-func NewRewardCalculator(height int64, yearRewards []*YearReward, blockStore *tmstore.BlockStore, options *Options) *RewardCalculator {
-	return &RewardCalculator{
-		height:      height,
-		yearRewards: yearRewards,
-		blockStore:  blockStore,
-		options:     options,
-	}
+func (calc *RewardCalculator) Reset(height int64, rewardYears RewardYears) {
+	calc.height = height
+	calc.rewardYears = rewardYears
 }
 
 func (calc *RewardCalculator) Calculate() (amt *balance.Amount, burnedout bool, year int, err error) {
 	amt = balance.NewAmount(0)
-	burnedout = false
+	burnedout = calc.burnedout
+	if burnedout {
+		return
+	}
 
 	// forcast how many more blocks can be generated before year close
 	options := calc.options
@@ -48,9 +48,9 @@ func (calc *RewardCalculator) Calculate() (amt *balance.Amount, burnedout bool, 
 	}
 
 	// how much rewards left before year close
-	yearRewardSupply := options.YearBlockRewardShares[year]
-	yearRewardDistributed := calc.yearRewards[year].Distributed
-	yearRewardLeft, err := yearRewardSupply.Minus(*yearRewardDistributed)
+	yearSupply := options.YearBlockRewardShares[year]
+	yearDistributed := calc.rewardYears.Years[year].Distributed
+	yearLeft, err := yearSupply.Minus(*yearDistributed)
 	if err != nil {
 		// shouldn't happen by design
 		logger.Errorf("Year rewards burned out unexpectedly, year= %v", year+1)
@@ -58,7 +58,7 @@ func (calc *RewardCalculator) Calculate() (amt *balance.Amount, burnedout bool, 
 	}
 
 	// calculate rewards per block
-	amt = balance.NewAmountFromBigInt(big.NewInt(0).Div(yearRewardLeft.BigInt(), big.NewInt(numofMoreBlocks)))
+	amt = balance.NewAmountFromBigInt(big.NewInt(0).Div(yearLeft.BigInt(), big.NewInt(numofMoreBlocks)))
 	return
 }
 
@@ -85,7 +85,7 @@ func (calc *RewardCalculator) numofMoreBlocksBeforeYearClose() (int64, int) {
 
 	numofMoreBlocks := int64(0)
 	yearIndex := -1
-	for i, rewardYear := range calc.yearRewards {
+	for i, rewardYear := range calc.rewardYears.Years {
 		secsToClose := int64(rewardYear.CloseTime.Sub(tCycleEnd).Seconds())
 		if secsToClose >= calc.options.YearCloseWindow {
 			// calculate how many more blocks proportionally
@@ -100,4 +100,12 @@ func (calc *RewardCalculator) numofMoreBlocksBeforeYearClose() (int64, int) {
 		}
 	}
 	return numofMoreBlocks, yearIndex
+}
+
+func (rws *RewardCalculator) SetOptions(options *Options) {
+	rws.options = options
+}
+
+func (calc *RewardCalculator) SetBlockStore(blockStore *tmstore.BlockStore) {
+	calc.blockStore = blockStore
 }
