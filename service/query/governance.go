@@ -2,6 +2,7 @@ package query
 
 import (
 	"errors"
+
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/data/governance"
 	codes "github.com/Oneledger/protocol/status_codes"
@@ -109,6 +110,10 @@ func (svc *Service) GetGovernanceOptionsForHeight(req client.GovernanceOptionsRe
 	if err != nil {
 		return err
 	}
+	luh, err := svc.governance.GetLUH()
+	if err != nil {
+		return err
+	}
 	*reply = client.GovernanceOptionsReply{
 		GovOptions: governance.GovernanceState{
 			FeeOption:     *feeOpt,
@@ -117,17 +122,22 @@ func (svc *Service) GetGovernanceOptionsForHeight(req client.GovernanceOptionsRe
 			ONSOptions:    *onsOpt,
 			PropOptions:   *propOpt,
 			RewardOptions: *rewardOpt,
-		}}
+		},
+		LastUpdateHeight: luh,
+	}
 	return nil
 }
 
 func (svc *Service) GetProposalOptions(_ client.ListTxTypesRequest, reply *client.GetProposalOptionsReply) error {
 
-	options := *svc.proposalMaster.Proposal.GetOptions()
+	options, err := svc.governance.GetProposalOptions()
+	if err != nil {
+		return err
+	}
 	height := svc.proposalMaster.Proposal.GetState().Version()
 
 	*reply = client.GetProposalOptionsReply{
-		ProposalOptions: options,
+		ProposalOptions: *options,
 		Height:          height,
 	}
 	return nil

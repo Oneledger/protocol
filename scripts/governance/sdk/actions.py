@@ -105,23 +105,18 @@ class Proposal:
             "passPercentage": _proposal_info.pass_percentage,
             "configUpdate": {
                 "bitcoinChainDriverOption": {
-                    "TotalSupply": "1",
+                    "TotalSupply": "1000000000",
                     "BlockConfirmation": 6,
-                    "ChainType": "TESTINGUPDATE",
+                    "ChainType": "testnet3",
                     "TotalSupplyAddr": "oneledgerSupplyAddress"
                 },
                 "ethchaindriverOption": {
                     "ERCContractAddress": "0x0000000000000000000000000000000000000000",
                     "ContractAddress": "0x0000000000000000000000000000000000000000",
-                    "BlockConfirmation": 0,
+                    "BlockConfirmation": 12,
                     "ERCContractABI": "",
                     "TotalSupply": "",
-                    "TokenList": [{
-                        "TokName": "string",
-                        "TokAddr": "0x0000000000000000000000000000000000000000",
-                        "TokAbi": "string",
-                        "TokTotalSupply": "string",
-                    }],
+                    "TokenList": [],
                     "ContractABI": "",
                     "TotalSupplyAddr": ""
                 },
@@ -137,7 +132,17 @@ class Proposal:
                 },
                 "rewardOptions": {
                     "rewardPoolAddress": "rewardpool",
-                    "rewardInterval": 150
+                    "rewardInterval": 150,
+                    "rewardCurrency": "OLT",
+                    "calculateInterval": 1000,
+                    "annualSupply": "50000000000000000000000000",
+                    "yearsOfSupply": 5
+                },
+                "stakingOptions": {
+                    "minSelfDelegationAmount": "1",
+                    "minDelegationAmount": "1",
+                    "topValidatorCount": 8,
+                    "maturityTime": 109200
                 },
                 "propOptions": {
                     "configUpdate": {
@@ -159,9 +164,9 @@ class Proposal:
                         },
                         "fundingGoal": "10000000000",
                         "proposalExecutionCost": "executionCostConfig",
-                        "votingDeadline": 12,
-                        "initialFunding": "100000000",
-                        "fundingDeadline": 12,
+                        "votingDeadline": 36400,
+                        "initialFunding": "5000",
+                        "fundingDeadline": 36400,
                         "passPercentage": 51
                     },
                     "bountyProgramAddr": "oneledgerBountyProgram",
@@ -184,9 +189,9 @@ class Proposal:
                         },
                         "fundingGoal": "10000000000",
                         "proposalExecutionCost": "executionCostCodeChange",
-                        "votingDeadline": 12,
+                        "votingDeadline": 36401,
                         "initialFunding": "1000000000",
-                        "fundingDeadline": 12,
+                        "fundingDeadline": 36401,
                         "passPercentage": 51
                     },
                     "general": {
@@ -208,9 +213,9 @@ class Proposal:
                         },
                         "fundingGoal": "10000000000",
                         "proposalExecutionCost": "executionCostGeneral",
-                        "votingDeadline": 12,
+                        "votingDeadline": 36401,
                         "initialFunding": "1000000000",
-                        "fundingDeadline": 12,
+                        "fundingDeadline": 36401,
                         "passPercentage": 51
                     }
                 },
@@ -630,7 +635,7 @@ def query_governanceState():
     result = resp["result"]
 
     # print json.dumps(resp, indent=4)
-    return result["govOptions"]
+    return result
 
 
 def query_balance(address):

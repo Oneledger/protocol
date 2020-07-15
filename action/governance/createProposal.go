@@ -7,6 +7,7 @@ import (
 	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
@@ -159,7 +160,11 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	//	helpers.LogAndReturnFalse(ctx.Logger, governance.ErrGetProposalOptions, createProposal.Tags(), err)
 	//}
 	if createProposal.ProposalType == governance.ProposalTypeConfigUpdate {
-		ctx.GovernanceStore.ValidateGov(createProposal.ConfigUpdate)
+		ok, err := ctx.GovernanceStore.ValidateGov(createProposal.ConfigUpdate)
+		if err != nil || !ok {
+			return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrValidateGovState, createProposal.Tags(), err)
+		}
+
 	}
 
 	//Create Proposal and save to Proposal Store

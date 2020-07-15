@@ -12,6 +12,7 @@ var (
 	ErrGetONSOptions      = codes.ProtocolError{codes.TxErrGettingONSOptions, "failed to get ONS options"}
 	ErrGetEthOptions      = codes.ProtocolError{codes.TxErrGettingETHOptions, "failed to get ETH options"}
 	ErrGetBtcOptions      = codes.ProtocolError{codes.TxErrGettingBTCOptions, "failed to get BTC options"}
+	ErrValidateGovState   = codes.ProtocolError{codes.TxErrValidateGovState, "failed to validate gov state"}
 
 	//Proposal
 	ErrInvalidProposalId      = codes.ProtocolError{codes.GovErrInvalidProposalId, "invalid proposal id"}

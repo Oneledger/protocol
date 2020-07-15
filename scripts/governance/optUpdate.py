@@ -2,7 +2,7 @@ from sdk import *
 
 addr_list = addresses()
 
-_pid_pass = "id_20061"
+_pid_pass = "id_20064"
 _proposer = addr_list[0]
 _initial_funding = (int("2") * 10 ** 9)
 _each_funding = (int("5") * 10 ** 9)
@@ -42,14 +42,15 @@ def test_change_gov_options():
 if __name__ == "__main__":
     print "#### Governance State Before : ####"
     opt = query_governanceState()
-    print "bitcoinChainDriverOption.ChainType :" + opt["bitcoinChainDriverOption"]["ChainType"]
+    print "Last Update Height:" + str(opt["lastUpdateHeight"])
     test_change_gov_options()
     #
     # print "#### FINALIZED PROPOSALS: ####"
     # proposalstats = query_proposals(0X34)
     print "#### Governance State After : ####"
     opt = query_governanceState()
-    print "bitcoinChainDriverOption.ChainType :" + opt["bitcoinChainDriverOption"]["ChainType"]
+    opt = query_governanceState()
+    print "Last Update Height:" + str(opt["lastUpdateHeight"])
 
 #
 # print proposalstats["height"]

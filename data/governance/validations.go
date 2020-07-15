@@ -2,10 +2,11 @@ package governance
 
 import (
 	"bytes"
-	"errors"
 	"math"
 	"math/big"
 	"reflect"
+
+	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/chains/bitcoin"
 	ethchain "github.com/Oneledger/protocol/chains/ethereum"
@@ -49,7 +50,7 @@ var (
 	minBlockConfirmation = int64(0)
 	maxBlockConfirmation = int64(50)
 	//Staking
-	minDelegationAmount = balance.NewAmountFromInt(1000000)
+	minDelegationAmount = balance.NewAmountFromInt(0)
 	maxDelegationAmount = balance.NewAmountFromInt(10000000)
 	minValidatorCount   = int64(8)
 	maxValidatorCount   = int64(64)
@@ -68,7 +69,7 @@ func (st *Store) ValidateGov(govstate GovernanceState) (bool, error) {
 	}
 	ok, err = st.ValidateBTC(&govstate.BTCCDOption)
 	if err != nil || !ok {
-		return false, errors.New("BTC options cannot be cahnged")
+		return false, errors.New("BTC options cannot be changed")
 	}
 	ok, err = st.ValidateETH(&govstate.ETHCDOption)
 	if err != nil || !ok {
@@ -84,7 +85,7 @@ func (st *Store) ValidateGov(govstate GovernanceState) (bool, error) {
 	}
 	ok, err = st.ValidateRewards(&govstate.RewardOptions)
 	if err != nil || !ok {
-		return false, err
+		return false, errors.New("reward options cannot be changed ")
 	}
 	return true, nil
 }
@@ -125,7 +126,7 @@ func (st *Store) ValidateFee(opt *fees.FeeOption) (bool, error) {
 func (st *Store) ValidateStaking(opt *delegation.Options) (bool, error) {
 	ok, err := opt.MinDelegationAmount.CheckRange(*minDelegationAmount, *maxDelegationAmount)
 	if err != nil || !ok {
-		return false, err
+		return false, errors.Wrap(err, "Min Delegation Amount")
 	}
 	if !verifyRangeInt64(opt.TopValidatorCount, minValidatorCount, maxValidatorCount) {
 		return false, errors.New("validator count not within range")

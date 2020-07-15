@@ -47,7 +47,8 @@ type ListProposalsReply struct {
 type GovernanceOptionsRequest struct {
 }
 type GovernanceOptionsReply struct {
-	GovOptions governance.GovernanceState `json:"govOptions"`
+	GovOptions       governance.GovernanceState `json:"govOptions"`
+	LastUpdateHeight int64                      `json:"lastUpdateHeight"`
 }
 
 type VoteProposalRequest struct {

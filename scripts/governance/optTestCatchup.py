@@ -2,14 +2,14 @@ from sdk import *
 
 addr_list = addresses()
 
-_pid_fail = "id_20061"
-_pid_pass = "id_20063"
-_pid_pass2 = "id_20064"
+_pid_fail = "id_30061"
+_pid_pass = "id_30063"
+_pid_pass2 = "id_30064"
 _proposer = addr_list[0]
 _initial_funding = 1000000000
 _each_funding = (int("5") * 10 ** 9)
 _funding_goal_general = (int("10") * 10 ** 9)
-_initial_funding_too_less = 100000000
+_initial_funding_too_less = 5000
 
 
 def test_catchup():
@@ -51,19 +51,4 @@ def test_catchup():
 
 
 if __name__ == "__main__":
-    print "#### Governance State Before : ####"
-    opt = query_governanceState()
-    print "propOptions.configUpdate.initialFunding :" + opt["propOptions"]["configUpdate"]["initialFunding"]
     test_catchup()
-    #
-    # print "#### FINALIZED PROPOSALS: ####"
-    # proposalstats = query_proposals(0X34)
-    print "#### Governance State After : ####"
-    opt = query_governanceState()
-    print "propOptions.configUpdate.initialFunding :" + opt["propOptions"]["configUpdate"]["initialFunding"]
-
-#
-# print proposalstats["height"]
-#
-# print "#### FINALIZEFAILED PROPOSALS: ####"
-# query_proposals("finalizeFailed")

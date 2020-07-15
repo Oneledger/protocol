@@ -65,9 +65,7 @@ func init() {
 }
 
 func TestStore_ValidateGov(t *testing.T) {
-	updates := generateGov()
-	updates.PropOptions.ConfigUpdate.InitialFunding = balance.NewAmountFromInt(5000)
-	ok, err := vStore.ValidateGov(*updates)
+	ok, err := vStore.ValidateGov(*generateGov())
 
 	assert.NoError(t, err, "Should Pass")
 	assert.True(t, ok)
@@ -92,7 +90,9 @@ func TestStore_ValidateProposal(t *testing.T) {
 	ok, err = vStore.ValidateProposal(&updates.PropOptions)
 	assert.NoError(t, err, "Should Pass max is IntMax CodeChange")
 	assert.True(t, ok)
+
 	//Tests for Funding Goal
+	updates = generateGov()
 	updates.PropOptions.ConfigUpdate.InitialFunding = balance.NewAmountFromInt(5000)
 	updates.PropOptions.ConfigUpdate.FundingGoal = balance.NewAmountFromInt(5000)
 	ok, err = vStore.ValidateProposal(&updates.PropOptions)
@@ -103,23 +103,25 @@ func TestStore_ValidateProposal(t *testing.T) {
 	ok, err = vStore.ValidateProposal(&updates.PropOptions)
 	assert.NoError(t, err, "Should Pass Funding Goal is 3 times initial funding")
 	assert.True(t, ok)
+
 	//Tests for Deadline
+	updates = generateGov()
 	updates.PropOptions.ConfigUpdate.FundingDeadline = int64(156001)
 	ok, err = vStore.ValidateProposal(&updates.PropOptions)
 	assert.Error(t, err, "Funding Deadline is too high")
 	assert.False(t, ok)
-
 	updates.PropOptions.ConfigUpdate.VotingDeadline = int64(15)
 	ok, err = vStore.ValidateProposal(&updates.PropOptions)
 	assert.Error(t, err, "Voting Deadline is too low")
 	assert.False(t, ok)
-
 	updates.PropOptions.ConfigUpdate.VotingDeadline = int64(36401)
 	updates.PropOptions.ConfigUpdate.FundingDeadline = int64(36401)
 	ok, err = vStore.ValidateProposal(&updates.PropOptions)
 	assert.NoError(t, err, "Should pass Voting and Funding Deadline")
 	assert.True(t, ok)
+
 	//Tests for pass percentage
+	updates = generateGov()
 	updates.PropOptions.ConfigUpdate.PassPercentage = 50
 	ok, err = vStore.ValidateProposal(&updates.PropOptions)
 	assert.Error(t, err, "Pass percentage too low")
@@ -134,11 +136,13 @@ func TestStore_ValidateProposal(t *testing.T) {
 	assert.True(t, ok)
 
 	// Test distribution
+	updates = generateGov()
 	updates.PropOptions.ConfigUpdate.PassedFundDistribution.FeePool = 0
 	ok, err = vStore.ValidateProposal(&updates.PropOptions)
 	assert.Error(t, err, "Distribution is not 100%")
 	assert.False(t, ok)
 
+	updates = generateGov()
 	updates.PropOptions.ConfigUpdate.PassedFundDistribution.FeePool = 18.000000001
 	updates.PropOptions.ConfigUpdate.PassedFundDistribution.Validators = 18.000000001
 	updates.PropOptions.ConfigUpdate.PassedFundDistribution.BountyPool = 10.000000001
@@ -150,6 +154,7 @@ func TestStore_ValidateProposal(t *testing.T) {
 	assert.Error(t, err)
 	assert.False(t, ok)
 
+	updates = generateGov()
 	updates.PropOptions.ConfigUpdate.PassedFundDistribution.FeePool = 18.00
 	updates.PropOptions.ConfigUpdate.PassedFundDistribution.Validators = 18.00
 	updates.PropOptions.ConfigUpdate.PassedFundDistribution.BountyPool = 10.00
@@ -162,7 +167,6 @@ func TestStore_ValidateProposal(t *testing.T) {
 	assert.False(t, ok)
 
 	updates = generateGov()
-	updates.PropOptions.ConfigUpdate.InitialFunding = balance.NewAmountFromInt(5000)
 	updates.PropOptions.ConfigUpdate.PassedFundDistribution.FeePool = 18.00
 	updates.PropOptions.ConfigUpdate.PassedFundDistribution.Validators = 18.00
 	updates.PropOptions.ConfigUpdate.PassedFundDistribution.BountyPool = 10.00
@@ -326,7 +330,7 @@ func generateGov() *GovernanceState {
 
 	propOpt := ProposalOptionSet{
 		ConfigUpdate: ProposalOption{
-			InitialFunding:         proposalInitialFunding,
+			InitialFunding:         balance.NewAmountFromInt(5000),
 			FundingGoal:            proposalFundingGoal,
 			FundingDeadline:        proposalFundingDeadline,
 			VotingDeadline:         proposalVotingDeadline,

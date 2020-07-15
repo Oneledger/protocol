@@ -163,4 +163,5 @@ const (
 	TxErrGettingBTCOptions                = 700153
 	TxErrGettingRewardsOptions            = 700154
 	TxErrGettingFeeOptions                = 700155
+	TxErrValidateGovState                 = 700156
 )
