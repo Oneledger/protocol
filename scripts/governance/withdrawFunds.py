@@ -31,28 +31,24 @@ _wait = 2
 
 
 def fund_proposal(pid, amount, funder):
-    # fund the proposal
     prop_fund = ProposalFund(pid, amount, funder)
     prop_fund.send_fund()
     time.sleep(2)
 
 
 def withdraw_fund(pid, funder, amount, beneficiary):
-    # fund the proposal
     fund_withdraw = ProposalFundsWithdraw(pid, funder, amount, beneficiary)
     fund_withdraw.withdraw_fund(funder)
     time.sleep(2)
 
 
 def withdraw_fund_malicious(wrong_funder, pid, funder, amount, beneficiary):
-    # fund the proposal
     fund_withdraw = ProposalFundsWithdraw(pid, funder, amount, beneficiary)
     fund_withdraw.withdraw_fund_should_fail(wrong_funder)
     time.sleep(2)
 
 
 def withdraw_fund_should_fail(pid, funder, amount, beneficiary):
-    # fund the proposal
     fund_withdraw = ProposalFundsWithdraw(pid, funder, amount, beneficiary)
     fund_withdraw.withdraw_fund_should_fail(funder)
     time.sleep(2)

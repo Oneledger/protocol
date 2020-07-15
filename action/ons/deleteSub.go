@@ -3,11 +3,14 @@ package ons
 import (
 	"bytes"
 	"encoding/json"
+
 	"github.com/tendermint/tendermint/libs/kv"
 
-	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/data/ons"
 	"github.com/pkg/errors"
+
+	"github.com/Oneledger/protocol/action"
+	gov "github.com/Oneledger/protocol/data/governance"
+	"github.com/Oneledger/protocol/data/ons"
 )
 
 /*
@@ -73,7 +76,11 @@ func (d deleteSubTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bo
 		return false, err
 	}
 
-	err = action.ValidateFee(ctx.FeePool.GetOpt(), signedTx.Fee)
+	feeOpt, err := ctx.GovernanceStore.GetFeeOption()
+	if err != nil {
+		return false, gov.ErrGetFeeOptions
+	}
+	err = action.ValidateFee(feeOpt, signedTx.Fee)
 	if err != nil {
 		return false, err
 	}
