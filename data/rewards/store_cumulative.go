@@ -24,7 +24,7 @@ func NewRewardCumulativeStore(prefix string, state *storage.State) *RewardCumula
 		state:      state,
 		prefix:     storage.Prefix(prefix),
 		szlr:       serialize.GetSerializer(serialize.PERSISTENT),
-		calculator: &RewardCalculator{},
+		calculator: NewRewardCalculator(),
 	}
 }
 
@@ -34,7 +34,7 @@ func (rws *RewardCumulativeStore) WithState(state *storage.State) *RewardCumulat
 }
 
 // Pull a combined block rewards from total supply for all voting validators for given block height
-func (rws *RewardCumulativeStore) PullRewards(height int64, poolAmt *balance.Amount) (amount *balance.Amount, burnedout bool, year int, err error) {
+func (rws *RewardCumulativeStore) PullRewards(height int64, poolAmt *balance.Amount) (amount *balance.Amount, err error) {
 	// get year distributed amount till now
 	rewardYears, err := rws.GetYearDistributedRewards()
 	if err != nil {
@@ -43,22 +43,33 @@ func (rws *RewardCumulativeStore) PullRewards(height int64, poolAmt *balance.Amo
 
 	// calculate reward for each block
 	rws.calculator.Reset(height, rewardYears)
-	amount, burnedout, year, err = rws.calculator.Calculate()
+	amount, err = rws.calculator.Calculate()
 	if err != nil {
 		return
 	}
 
 	// calculate burnout rate
+	burnedout := rws.calculator.Burnedout()
 	if burnedout && poolAmt.LessThan(*amount) {
 		*amount = *poolAmt
 	}
 
+	// print each cycle's distribution
+	if (height-1)%rws.rewardOptions.BlockSpeedCalculateCycle == 0 {
+		cycleNo := rws.calculator.cached.cycleNo
+		logger.Infof("Rewards cycle started, cycleNo = %v, amount = %s, height = %v", cycleNo, amount, height)
+		for y, r := range rewardYears.Years {
+			logger.Infof("Rewards year-%v, distributed: %s", y+1, r.Distributed)
+		}
+	}
+
+	// print this block's distribution
 	logger.Infof("Rewards pulled,   amount = %s, height = %v", amount, height)
 	return
 }
 
 // Deduct actual distributed rewards from total/year supply
-func (rws *RewardCumulativeStore) ConsumeRewards(consumed *balance.Amount, burnedout bool, year int) error {
+func (rws *RewardCumulativeStore) ConsumeRewards(consumed *balance.Amount) error {
 	// accumulates total distributed rewards
 	err := rws.addTotalDistributedRewards(consumed)
 	if err != nil {
@@ -66,11 +77,12 @@ func (rws *RewardCumulativeStore) ConsumeRewards(consumed *balance.Amount, burne
 	}
 
 	// accumulates year distributed rewards
-	if !burnedout {
-		err = rws.addYearDistributedRewards(year, consumed)
+	calc := rws.calculator
+	if !calc.cached.burnedout {
+		err = rws.addYearDistributedRewards(calc.cached.year, consumed)
 	}
 
-	logger.Infof("Rewards consumed, amount = %s, year = %v", consumed, year+1)
+	logger.Infof("Rewards consumed, amount = %s, year = %v", consumed, calc.cached.year+1)
 	return err
 }
 

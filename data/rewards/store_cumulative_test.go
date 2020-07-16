@@ -2,6 +2,7 @@ package rewards
 
 import (
 	"fmt"
+	"math/big"
 	"math/rand"
 	"testing"
 	"time"
@@ -36,18 +37,30 @@ var (
 	estimatedSecondsPerCycle  = int64(3600 * 24 * 10) // 1 cycle == 10 days
 	blockSpeedCalculateCycle  = int64(50)             // calculate speed every 50 blocks
 	burnoutRate, _            = balance.NewAmountFromString("5", 10)
-	yearCloseWindow           = int64(3600 * 24) // 1 day
+	yearCloseWindow           = int64(3600 * 24 * 5) // 5 days
 	yearBlockRewardShare_1, _ = balance.NewAmountFromString("70000000", 10)
 	yearBlockRewardShare_2, _ = balance.NewAmountFromString("70000000", 10)
 	yearBlockRewardShare_3, _ = balance.NewAmountFromString("40000000", 10)
 	yearBlockRewardShare_4, _ = balance.NewAmountFromString("40000000", 10)
-	yearBlockRewardShare_5, _ = balance.NewAmountFromString("10000000", 10)
+	yearBlockRewardShare_5, _ = balance.NewAmountFromString("30000000", 10)
 	yearBlockRewardShares     = []balance.Amount{
 		*yearBlockRewardShare_1,
 		*yearBlockRewardShare_2,
 		*yearBlockRewardShare_3,
 		*yearBlockRewardShare_4,
 		*yearBlockRewardShare_5,
+	}
+	yearBlockRewardDist_1, _ = balance.NewAmountFromString("68441850", 10)
+	yearBlockRewardDist_2, _ = balance.NewAmountFromString("70058400", 10)
+	yearBlockRewardDist_3, _ = balance.NewAmountFromString("39384025", 10)
+	yearBlockRewardDist_4, _ = balance.NewAmountFromString("39967950", 10)
+	yearBlockRewardDist_5, _ = balance.NewAmountFromString("29421575", 10)
+	yearBlockRewardDist      = []balance.Amount{
+		*yearBlockRewardDist_1,
+		*yearBlockRewardDist_2,
+		*yearBlockRewardDist_3,
+		*yearBlockRewardDist_4,
+		*yearBlockRewardDist_5,
 	}
 
 	rewzOpt = &Options{
@@ -73,7 +86,7 @@ func setupBlockStore(years int) time.Time {
 	// seed
 	tNow := time.Now()
 	tStart := tNow
-	rand.Seed(tNow.UnixNano())
+	rand.Seed(1)
 
 	// simulates randomly generating at approximately 0.2day(4.3~5.3hours) per block
 	secsPerBlock := int64(estimatedSecondsPerBlock)
@@ -154,14 +167,12 @@ func TestRewardsCumulativeStore_RewardYears(t *testing.T) {
 	years := setupRewardYears(tStart)
 
 	// check pulled reward amount
-	amount, burnedout, year, err := store.PullRewards(1, balance.NewAmount(0))
+	amount, err := store.PullRewards(1, balance.NewAmount(0))
 	assert.Nil(t, err)
-	assert.False(t, burnedout)
-	assert.Equal(t, 0, year)
 	assert.True(t, zero.LessThan(*amount))
 
 	// set consumed
-	err = store.ConsumeRewards(amount, burnedout, year)
+	err = store.ConsumeRewards(amount)
 	assert.Nil(t, err)
 
 	// check consumed
@@ -169,6 +180,66 @@ func TestRewardsCumulativeStore_RewardYears(t *testing.T) {
 	years.Years[0].Distributed = years.Years[0].Distributed.Plus(*amount)
 	assert.Nil(t, err)
 	assert.Equal(t, years, rewardYears)
+}
+
+func TestRewardsCumulativeStore_PullRewards(t *testing.T) {
+	setup()
+	tStart := setupBlockStore(5).UTC()
+	years := setupRewardYears(tStart)
+
+	// check pulled reward amount for 5 years
+	for i := 1; i <= 9100; i++ {
+		height := int64(i)
+		amount, err := store.PullRewards(height, balance.NewAmount(0))
+		assert.Nil(t, err)
+		assert.True(t, zero.LessThan(*amount))
+
+		// consume only 80% of amount on an even height
+		if height%2 == 0 {
+			numerator := big.NewInt(0).Mul(amount.BigInt(), big.NewInt(4))
+			amount = balance.NewAmountFromBigInt(big.NewInt(0).Div(numerator, big.NewInt(5)))
+		}
+
+		// set consumed
+		err = store.ConsumeRewards(amount)
+		assert.Nil(t, err)
+
+		// check consumed
+		rewardYears, err := store.GetYearDistributedRewards()
+		assert.Nil(t, err)
+		calc := store.calculator
+		year := calc.cached.year
+		years.Years[year].Distributed = years.Years[year].Distributed.Plus(*amount)
+		assert.Equal(t, years, rewardYears)
+	}
+
+	// test burnout, pool has nothing
+	height := int64(9101)
+	amount, err := store.PullRewards(height, balance.NewAmount(0))
+	assert.Nil(t, err)
+	assert.True(t, zero.Equals(*amount))
+
+	// test burnout, pool amount < burnout rate
+	height = int64(9102)
+	amount, err = store.PullRewards(height, balance.NewAmount(4))
+	assert.Nil(t, err)
+	assert.True(t, amount.Equals(*balance.NewAmount(4)))
+	assert.True(t, store.calculator.Burnedout())
+
+	// test burnout, pool amount >= burnout rate
+	height = int64(9103)
+	amount, err = store.PullRewards(height, balance.NewAmount(6))
+	assert.Nil(t, err)
+	assert.True(t, amount.Equals(*burnoutRate))
+
+	// year distribution amount now fixed
+	rewardYears, err := store.GetYearDistributedRewards()
+	assert.Nil(t, err)
+	assert.Equal(t, yearBlockRewardDist[0], *rewardYears.Years[0].Distributed)
+	assert.Equal(t, yearBlockRewardDist[1], *rewardYears.Years[1].Distributed)
+	assert.Equal(t, yearBlockRewardDist[2], *rewardYears.Years[2].Distributed)
+	assert.Equal(t, yearBlockRewardDist[3], *rewardYears.Years[3].Distributed)
+	assert.Equal(t, yearBlockRewardDist[4], *rewardYears.Years[4].Distributed)
 }
 
 func TestRewardsCumulativeStore_AddGetMaturedBalance(t *testing.T) {

@@ -473,8 +473,8 @@ func handleBlockRewards(validators *identity.ValidatorStore, balances *balance.S
 	}
 	currency.GetCurrencyById(0)
 	coin := rewardPoolBalance.GetCoin(curr)
-	totalRewards, burnt, year, err := rewardMaster.RewardCm.PullRewards(lastHeight, coin.Amount)
-	if err != nil || burnt {
+	totalRewards, err := rewardMaster.RewardCm.PullRewards(lastHeight, coin.Amount)
+	if err != nil {
 		return abciTypes.Event{}
 	}
 
@@ -526,7 +526,7 @@ func handleBlockRewards(validators *identity.ValidatorStore, balances *balance.S
 	})
 
 	//pass total consumed amount to cumulative db
-	_ = rewardMaster.RewardCm.ConsumeRewards(totalConsumed, burnt, year)
+	_ = rewardMaster.RewardCm.ConsumeRewards(totalConsumed)
 
 	//Populate Event with validator rewards
 	result.Type = "block_rewards"
