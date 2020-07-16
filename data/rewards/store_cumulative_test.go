@@ -1,9 +1,13 @@
 package rewards
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"math/big"
 	"math/rand"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -330,4 +334,61 @@ func TestRewardsCumulativeStore_OverWithdraw(t *testing.T) {
 	matured, err := store.GetMaturedRewards(validator1)
 	assert.Nil(t, err)
 	assert.Equal(t, matured, expected)
+}
+
+func TestRewardsCumulativeStore_DumpLoadState(t *testing.T) {
+	setup()
+	tStart := setupBlockStore(5).UTC()
+	setupRewardYears(tStart)
+
+	// pull 1800 blocks' rewards
+	for i := 1; i <= 1800; i++ {
+		height := int64(i)
+		amount, _ := store.PullRewards(height, balance.NewAmount(0))
+		// consume only 80% of amount on an even height
+		if height%2 == 0 {
+			numerator := big.NewInt(0).Mul(amount.BigInt(), big.NewInt(4))
+			amount = balance.NewAmountFromBigInt(big.NewInt(0).Div(numerator, big.NewInt(5)))
+		}
+		// set consumed
+		store.ConsumeRewards(amount)
+	}
+
+	// add some balances
+	store.AddMaturedBalance(validator1, balance.NewAmount(100))
+	store.AddMaturedBalance(validator2, balance.NewAmount(200))
+	store.addWithdrawnRewards(validator1, balance.NewAmount(1100))
+	store.addWithdrawnRewards(validator2, balance.NewAmount(2100))
+	store.state.Commit()
+
+	// prepare to dump
+	dir, _ := os.Getwd()
+	file := filepath.Join(dir, "genesis.json")
+	writer, err := os.Create(file)
+	assert.Nil(t, err)
+	defer func() { _ = os.Remove(file) }()
+	state, err := store.dumpState()
+	assert.Nil(t, err)
+
+	// dump to Genesis
+	str, err := json.MarshalIndent(state, "", " ")
+	assert.Nil(t, err)
+	_, err = writer.Write(str)
+	assert.Nil(t, err)
+	err = writer.Close()
+	assert.Nil(t, err)
+
+	// load from Genesis
+	reader, err := os.Open(file)
+	stateBytes, _ := ioutil.ReadAll(reader)
+	assert.Nil(t, err)
+	stateLoaded := &RewardCumuState{
+		TotalDistributed: balance.NewAmount(0),
+		YearsDistributed: RewardYears{Years: []RewardYear{}},
+		MaturedBalances:  []RewardAmount{},
+		WithdrawnAmounts: []RewardAmount{},
+	}
+	err = json.Unmarshal(stateBytes, stateLoaded)
+	assert.Nil(t, err)
+	assert.Equal(t, state, stateLoaded)
 }
