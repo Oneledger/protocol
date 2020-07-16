@@ -154,3 +154,11 @@ save: reset
 	make install_c
 	@./scripts/saveState
 	@./scripts/startDev
+
+testData: 
+	@./scripts/testsend
+	python scripts/ons/create_domain.py
+	python scripts/ons/create_sub_domain.py
+	python scripts/ons/renew_domain.py
+	python scripts/ons/buy_sell_domain.py
+	python scripts/ons/update_domain.py
