@@ -181,9 +181,9 @@ func (rws *RewardCumulativeStore) GetOptions() *Options {
 	return rws.rewardOptions
 }
 
-func (rws *RewardCumulativeStore) SetBlockStore(blockStore *tmstore.BlockStore) {
+func (rws *RewardCumulativeStore) Init(blockStore *tmstore.BlockStore) {
 	rws.blockStore = blockStore
-	rws.calculator.SetBlockStore(blockStore)
+	rws.calculator.Init(blockStore)
 }
 
 //-----------------------------helper functions

@@ -383,7 +383,6 @@ func (app *App) Prepare() error {
 			return err
 		}
 		app.Context.rewardMaster.SetOptions(rewardsOpt)
-		app.Context.rewardMaster.RewardCm.SetBlockStore(app.node.BlockStore())
 	}
 
 	nodecfg, err := consensus.ParseConfig(&app.Context.cfg)
@@ -404,6 +403,9 @@ func (app *App) Prepare() error {
 
 	// Init witness store after genesis witnesses loaded in above NewNode
 	app.Context.witnesses.Init(chain.ETHEREUM, app.Context.node.ValidatorAddress())
+
+	// Init reward cumulative store
+	app.Context.rewardMaster.RewardCm.Init(app.node.BlockStore())
 
 	// Initialize internal Services
 	app.Context.internalService = event.NewService(app.Context.node,

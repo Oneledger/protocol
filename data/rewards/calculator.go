@@ -159,6 +159,6 @@ func (rws *RewardCalculator) SetOptions(options *Options) {
 	rws.options = options
 }
 
-func (calc *RewardCalculator) SetBlockStore(blockStore *tmstore.BlockStore) {
+func (calc *RewardCalculator) Init(blockStore *tmstore.BlockStore) {
 	calc.blockStore = blockStore
 }

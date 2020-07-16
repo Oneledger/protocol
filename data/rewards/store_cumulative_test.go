@@ -103,7 +103,7 @@ func setupBlockStore(years int) time.Time {
 		}
 		makeFakeBlock(blockStore, int64(i+1), tNow)
 	}
-	store.SetBlockStore(blockStore)
+	store.Init(blockStore)
 	return tStart
 }
 
