@@ -3,15 +3,18 @@ package eth
 
 import (
 	"encoding/json"
-	"github.com/tendermint/tendermint/libs/kv"
 	"strconv"
+
+	"github.com/tendermint/tendermint/libs/kv"
+
+	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/balance"
 	trackerlib "github.com/Oneledger/protocol/data/ethereum"
+	gov "github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
-	"github.com/pkg/errors"
 )
 
 type ReportFinality struct {
@@ -234,7 +237,11 @@ func refundTokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx Report
 	if !ok {
 		return errors.New("ETH not registered")
 	}
-	req, err := ethereum.ParseRedeem(tracker.SignedETHTx, ctx.ETHTrackers.GetOption().ContractABI)
+	ethOpt, err := ctx.GovernanceStore.GetETHChainDriverOption()
+	if err != nil {
+		return gov.ErrGetEthOptions
+	}
+	req, err := ethereum.ParseRedeem(tracker.SignedETHTx, ethOpt.ContractABI)
 	oEthRefundCoin := c.NewCoinFromAmount(*balance.NewAmountFromBigInt(req.Amount))
 	if err != nil {
 		return errors.Wrap(action.ErrInvalidExtTx, err.Error())
@@ -244,7 +251,7 @@ func refundTokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx Report
 		ctx.Logger.Error(err)
 		return errors.New("Unable to refund OETH , But Tracker has been added to Failed Trackerstore")
 	}
-	ethSupply := keys.Address(ctx.ETHTrackers.GetOption().TotalSupplyAddr)
+	ethSupply := keys.Address(ethOpt.TotalSupplyAddr)
 	err = ctx.Balances.AddToAddress(ethSupply, oEthRefundCoin)
 	if err != nil {
 		return errors.New("Unable to update total Eth supply")
@@ -263,7 +270,10 @@ func mintTokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx ReportFi
 	if err != nil {
 		return err
 	}
-
+	ethOpt, err := ctx.GovernanceStore.GetETHChainDriverOption()
+	if err != nil {
+		return gov.ErrGetEthOptions
+	}
 	oEthCoin := curr.NewCoinFromAmount(*balance.NewAmountFromBigInt(lockAmount.Amount))
 	err = ctx.Balances.AddToAddress(oltTx.Locker, oEthCoin)
 	if err != nil {
@@ -271,7 +281,7 @@ func mintTokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx ReportFi
 		return errors.New("Unable to mint")
 	}
 
-	ethSupply := keys.Address(ctx.ETHTrackers.GetOption().TotalSupplyAddr)
+	ethSupply := keys.Address(ethOpt.TotalSupplyAddr)
 	err = ctx.Balances.AddToAddress(ethSupply, oEthCoin)
 	if err != nil {
 		return errors.Wrap(err, "Unable to update total Eth supply")
@@ -304,8 +314,11 @@ func burnERC20Tokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx Rep
 		return err
 	}
 
-	ethOptions := ctx.ETHTrackers.GetOption()
-	token, err := ethereum.GetToken(ethOptions.TokenList, *ethTx.To())
+	ethOpt, err := ctx.GovernanceStore.GetETHChainDriverOption()
+	if err != nil {
+		return gov.ErrGetEthOptions
+	}
+	token, err := ethereum.GetToken(ethOpt.TokenList, *ethTx.To())
 	if err != nil {
 		return err
 	}
@@ -328,8 +341,11 @@ func mintERC20tokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx Rep
 		return err
 	}
 
-	ethOptions := ctx.ETHTrackers.GetOption()
-	token, err := ethereum.GetToken(ethOptions.TokenList, *ethTx.To())
+	ethOpt, err := ctx.GovernanceStore.GetETHChainDriverOption()
+	if err != nil {
+		return gov.ErrGetEthOptions
+	}
+	token, err := ethereum.GetToken(ethOpt.TokenList, *ethTx.To())
 	if err != nil {
 		return err
 	}
@@ -339,7 +355,7 @@ func mintERC20tokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx Rep
 		return errors.New("Currency not allowed ")
 	}
 
-	erc20Params, err := ethereum.ParseErc20Lock(ethOptions.TokenList, tracker.SignedETHTx)
+	erc20Params, err := ethereum.ParseErc20Lock(ethOpt.TokenList, tracker.SignedETHTx)
 	if err != nil {
 		return err
 	}
@@ -351,7 +367,7 @@ func mintERC20tokens(ctx *action.Context, tracker *trackerlib.Tracker, oltTx Rep
 		return errors.Errorf("Unable to mint token for : %s", token.TokName)
 	}
 
-	tokenSupply := keys.Address(ethOptions.TotalSupplyAddr)
+	tokenSupply := keys.Address(ethOpt.TotalSupplyAddr)
 	err = ctx.Balances.AddToAddress(tokenSupply, otokenCoin)
 	if err != nil {
 		return errors.Errorf("Unable to update totalSupply for token : %s", token.TokName)

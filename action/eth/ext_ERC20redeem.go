@@ -7,14 +7,17 @@ import (
 
 	"github.com/tendermint/tendermint/libs/kv"
 
+	ethcommon "github.com/ethereum/go-ethereum/common"
+	"github.com/pkg/errors"
+
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/chain"
 	trackerlib "github.com/Oneledger/protocol/data/ethereum"
+	gov "github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
-	ethcommon "github.com/ethereum/go-ethereum/common"
-	"github.com/pkg/errors"
 )
 
 var _ action.Msg = &ERC20Redeem{}
@@ -86,7 +89,11 @@ func (e ethERC20RedeemTx) Validate(ctx *action.Context, signedTx action.SignedTx
 	}
 
 	// validate fee
-	err = action.ValidateFee(ctx.FeePool.GetOpt(), signedTx.Fee)
+	feeOpt, err := ctx.GovernanceStore.GetFeeOption()
+	if err != nil {
+		return false, gov.ErrGetFeeOptions
+	}
+	err = action.ValidateFee(feeOpt, signedTx.Fee)
 	if err != nil {
 		ctx.Logger.Error("validate fee failed", err)
 		return false, err
@@ -123,7 +130,10 @@ func runERC20Reddem(ctx *action.Context, tx action.RawTx) (bool, action.Response
 		return false, action.Response{Log: action.ErrUnserializable.Error()}
 	}
 
-	ethOptions := ctx.ETHTrackers.GetOption()
+	ethOptions, err := ctx.GovernanceStore.GetETHChainDriverOption()
+	if err != nil {
+		return helpers.LogAndReturnFalse(ctx.Logger, gov.ErrGetEthOptions, erc20redeem.Tags(), err)
+	}
 	redeemParams, err := ethereum.ParseERC20RedeemParams(erc20redeem.ETHTxn, ethOptions.ERCContractABI)
 	if err != nil {
 		ctx.Logger.Error(err)
