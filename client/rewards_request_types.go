@@ -5,6 +5,8 @@ import (
 	"github.com/Oneledger/protocol/data/keys"
 )
 
+type ListRewardsRequest struct{}
+
 type RewardsRequest struct {
 	Validator string `json:"validator"`
 }
@@ -12,6 +14,7 @@ type RewardsRequest struct {
 type ListRewardsReply struct {
 	Validator keys.Address     `json:"validator"`
 	Rewards   []balance.Amount `json:"rewards"`
+	Height    int64            `json:"height"`
 }
 
 type ValidatorRewardStats struct {
@@ -25,6 +28,7 @@ type ValidatorRewardStats struct {
 type RewardStat struct {
 	Validators   []ValidatorRewardStats `json:"validators"`
 	TotalRewards balance.Amount         `json:"totalRewards"`
+	Height       int64                  `json:"height"`
 }
 
 type WithdrawRewardsRequest struct {

@@ -21,6 +21,7 @@ func (svc *Service) ListRewardsForValidator(req client.RewardsRequest, resp *cli
 	*resp = client.ListRewardsReply{
 		Validator: validatorAddr,
 		Rewards:   rewards,
+		Height:    svc.rewardMaster.Reward.GetState().Version(),
 	}
 
 	return nil
@@ -68,7 +69,7 @@ func (svc *Service) GetTotalRewardsForValidator(req client.RewardsRequest, reply
 	return nil
 }
 
-func (svc *Service) GetTotalRewards(_ client.RewardsRequest, reply *client.RewardStat) error {
+func (svc *Service) GetTotalRewards(_ client.ListRewardsRequest, reply *client.RewardStat) error {
 	totalRewards := balance.NewAmount(0)
 	validatorList := make([]client.ValidatorRewardStats, 0, 64)
 
@@ -89,6 +90,7 @@ func (svc *Service) GetTotalRewards(_ client.RewardsRequest, reply *client.Rewar
 	*reply = client.RewardStat{
 		Validators:   validatorList,
 		TotalRewards: *totalRewards,
+		Height:       svc.rewardMaster.Reward.GetState().Version(),
 	}
 
 	return nil

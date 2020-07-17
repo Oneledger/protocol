@@ -103,6 +103,12 @@ stakingtest: reset
 	python scripts/staking/self_staking.py
 	@./scripts/stopNodes
 
+# run rewards tests
+rewardtest: reset
+	@./scripts/testsend
+	python scripts/reward/testRewards.py
+	python scripts/reward/listRewards.py
+	@./scripts/stopNodes
 
 alltest: reset
 	@./scripts/testsend
