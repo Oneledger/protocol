@@ -51,10 +51,10 @@ var (
 	TestTokenABI     = contract.ERC20BasicABI
 	LockRedeemERCABI = contract.LockRedeemERCABI
 	// LockRedeemERC20ABI = contract.ContextABI
-	LockRedeemContractAddr      = "0xbC809dCa8828D36Ae1d693e5f3be199AfbB722C0"
+	LockRedeemContractAddr      = "0x3b77a81bcc8baa7eddf6f86f2439a3c980d541c8"
 	TestTokenContractAddr       = "0x0000000000000000000000000000000000000000"
 	LockRedeemERC20ContractAddr = "0x0000000000000000000000000000000000000000"
-	readDir                     = "/home/tanmay/Codebase/Test/devnet/"
+	readDir                     = "/home/tanmay/Codebase/Test/Pk-dev3/"
 
 	cfg = config.DefaultEthConfig("rinkeby", "de5e96cbb6284d5ea1341bf6cb7fa401")
 	//cfg               = config.DefaultEthConfig("", "")
@@ -76,7 +76,6 @@ var (
 	toAddress               = common.HexToAddress(LockRedeemContractAddr)
 	toAddressTestToken      = common.HexToAddress(TestTokenContractAddr)
 	toAdddressLockRedeemERC = common.HexToAddress(LockRedeemERC20ContractAddr)
-	gasLimit                = uint64(700000)
 )
 
 func createValue(str string) *big.Int {
@@ -140,15 +139,20 @@ func init() {
 //Insufficient Funds    :Refund   ok
 //InsufficientFunds(50% Validators) + Panic (50 % Validators): Refund
 func main() {
-	getstatus(lock())
+	//getstatus(lock())
 	//time.Sleep(time.Second * 5)
-	//getstatus(redeem())
+	getstatus(redeem())
 	//sendTrasactions(12)
 	//erc20lock()
 	///time.Sleep(10 * time.Second)
 	//erc20Redeem()
 	//takeValidatorFunds()
 }
+
+//Funds transferred from : 0x866224ec55B38Fe4A655491A50A91dE034134579 Amount Transfered : 29996934500020000
+//Funds transferred from : 0xA1280FeBe167973e4DEcd061d8f590EeA812a2Ff Amount Transfered : 29990354000020000
+//Funds transferred from : 0xAD6F567FE93374Dfd97bDCeEF1d50d003c56D780 Amount Transfered : 30020531000030000
+//Funds transferred from : 0xaC6bb3690bcD578300BD15D4694a065b4a6f831a Amount Transfered : 29974434500020000
 
 func takeValidatorFunds() {
 	for i := 0; i < 4; i++ {
@@ -273,7 +277,7 @@ func lock() []byte {
 	if err != nil {
 		log.Fatal(err)
 	}
-	gasLimit := gasLimit // in units
+	gasLimit := uint64(6721974) // in units
 	auth := bind.NewKeyedTransactor(UserprivKey)
 	auth.Nonce = big.NewInt(int64(nonce))
 	auth.Value = big.NewInt(0) // in wei
@@ -396,7 +400,7 @@ func redeem() []byte {
 		log.Fatal(err)
 	}
 
-	gasLimit := gasLimit // in units
+	gasLimit := uint64(6321974) // in units
 
 	gasPrice, err := client.SuggestGasPrice(context.Background())
 	if err != nil {
@@ -636,7 +640,7 @@ func erc20Redeem() {
 		log.Fatal(err)
 	}
 
-	gasLimit := gasLimit // in units
+	gasLimit := uint64(6321974) // in units
 
 	gasPrice, err := client.SuggestGasPrice(context.Background())
 	if err != nil {
