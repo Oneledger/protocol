@@ -132,14 +132,14 @@ class Proposal:
                 },
                 "rewardOptions": {
                     "rewardPoolAddress": "rewardpool",
-                    "rewardInterval": 150,
+                    "rewardInterval": 1,
                     "rewardCurrency": "OLT",
                     "calculateInterval": 1000,
                     "annualSupply": "50000000000000000000000000",
                     "yearsOfSupply": 5
                 },
                 "stakingOptions": {
-                    "minSelfDelegationAmount": "1",
+                    "minSelfDelegationAmount": "3000000",
                     "minDelegationAmount": "1",
                     "topValidatorCount": 8,
                     "maturityTime": 109200
@@ -189,9 +189,9 @@ class Proposal:
                         },
                         "fundingGoal": "10000000000",
                         "proposalExecutionCost": "executionCostCodeChange",
-                        "votingDeadline": 36401,
+                        "votingDeadline": 156000,
                         "initialFunding": "1000000000",
-                        "fundingDeadline": 36401,
+                        "fundingDeadline": 156000,
                         "passPercentage": 51
                     },
                     "general": {
@@ -213,9 +213,9 @@ class Proposal:
                         },
                         "fundingGoal": "10000000000",
                         "proposalExecutionCost": "executionCostGeneral",
-                        "votingDeadline": 36401,
+                        "votingDeadline": 72800,
                         "initialFunding": "1000000000",
-                        "fundingDeadline": 36401,
+                        "fundingDeadline": 72800,
                         "passPercentage": 51
                     }
                 },

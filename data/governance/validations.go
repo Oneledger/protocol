@@ -18,6 +18,7 @@ import (
 )
 
 var (
+	blocksPerDay               = int64(5200)
 	infiniteMaxBalance         = balance.NewAmountFromInt(math.MaxInt64)
 	initialFundingConfigMin    = balance.NewAmountFromInt(1)
 	initialFundingConfigMax    = balance.NewAmountFromInt(100000)
@@ -26,18 +27,18 @@ var (
 	initialFundingGeneralMin   = balance.NewAmountFromInt(10000)
 	initialFundingGeneralMax   = infiniteMaxBalance
 	initialToFundingMultiplier = int64(3)
-	minDeadlineFundingConfig   = int64(36400)
-	maxDeadlineFundingConfig   = int64(156000)
-	minDeadlineVotingeConfig   = int64(36400)
-	maxDeadlineVotingConfig    = int64(156000)
-	minDeadlineFundingCode     = int64(36400)
-	maxDeadlineFundingCode     = int64(156000)
-	minDeadlineVotingeCode     = int64(36400)
-	maxDeadlineVotingCode      = int64(156000)
-	minDeadlineFundingGeneral  = int64(36400)
-	maxDeadlineFundingGeneral  = int64(156000)
-	minDeadlineVotingeGeneral  = int64(36400)
-	maxDeadlineVotingGeneral   = int64(156000)
+	minDeadlineFundingConfig   = getDeadline(7)
+	maxDeadlineFundingConfig   = getDeadline(30)
+	minDeadlineVotingeConfig   = getDeadline(7)
+	maxDeadlineVotingConfig    = getDeadline(30)
+	minDeadlineFundingCode     = getDeadline(30)
+	maxDeadlineFundingCode     = getDeadline(30 * 6)
+	minDeadlineVotingCode      = getDeadline(30)
+	maxDeadlineVotingCode      = getDeadline(30 * 3)
+	minDeadlineFundingGeneral  = getDeadline(14)
+	maxDeadlineFundingGeneral  = getDeadline(30)
+	minDeadlineVotingeGeneral  = getDeadline(14)
+	maxDeadlineVotingGeneral   = getDeadline(30)
 	minPassPercentage          = int64(51)
 	maxPassPercentage          = int64(67)
 	decimalsAllowed            = 2
@@ -50,12 +51,12 @@ var (
 	minBlockConfirmation = int64(0)
 	maxBlockConfirmation = int64(50)
 	//Staking
-	minDelegationAmount = balance.NewAmountFromInt(0)
-	maxDelegationAmount = balance.NewAmountFromInt(10000000)
-	minValidatorCount   = int64(8)
-	maxValidatorCount   = int64(64)
-	minMaturityTime     = int64(109200)
-	maxMaturityTime     = int64(234000)
+	minSelfDelegationAmount = balance.NewAmountFromInt(3000000)
+	maxSelfDelegationAmount = balance.NewAmountFromInt(10000000)
+	minValidatorCount       = int64(8)
+	maxValidatorCount       = int64(64)
+	minMaturityTime         = int64(109200)
+	maxMaturityTime         = int64(234000)
 )
 
 func (st *Store) ValidateGov(govstate GovernanceState) (bool, error) {
@@ -124,7 +125,7 @@ func (st *Store) ValidateFee(opt *fees.FeeOption) (bool, error) {
 }
 
 func (st *Store) ValidateStaking(opt *delegation.Options) (bool, error) {
-	ok, err := opt.MinDelegationAmount.CheckRange(*minDelegationAmount, *maxDelegationAmount)
+	ok, err := opt.MinSelfDelegationAmount.CheckRange(*minSelfDelegationAmount, *maxSelfDelegationAmount)
 	if err != nil || !ok {
 		return false, errors.Wrap(err, "Min Delegation Amount")
 	}
@@ -215,7 +216,7 @@ func (st *Store) ValidateProposal(opt *ProposalOptionSet) (bool, error) {
 	if !verifyRangeInt64(code.FundingDeadline, minDeadlineFundingCode, maxDeadlineFundingCode) {
 		return false, errors.New("funding deadline for code update is not within range")
 	}
-	if !verifyRangeInt64(code.VotingDeadline, minDeadlineVotingeCode, maxDeadlineVotingCode) {
+	if !verifyRangeInt64(code.VotingDeadline, minDeadlineVotingCode, maxDeadlineVotingCode) {
 		return false, errors.New("funding deadline for code update is not within range")
 	}
 	if !verifyRangeInt64(general.FundingDeadline, minDeadlineFundingGeneral, maxDeadlineFundingGeneral) {
@@ -307,4 +308,8 @@ func checkDecimalPlaces(value float64) bool {
 	valuef := value * math.Pow(10.0, float64(decimalsAllowed))
 	extra := valuef - float64(int(valuef))
 	return extra == 0
+}
+
+func getDeadline(nofodays int64) int64 {
+	return nofodays * blocksPerDay
 }

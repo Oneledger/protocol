@@ -23,8 +23,6 @@ import (
 var (
 	proposalInitialFunding, _   = balance.NewAmountFromString("1000000000", 10)
 	proposalFundingGoal, _      = balance.NewAmountFromString("10000000000", 10)
-	proposalFundingDeadline     = int64(36401)
-	proposalVotingDeadline      = int64(36401)
 	proposalPassPercentage      = 51
 	bountyProgramAddr           = "oneledgerBountyProgram"
 	executionCostAddrConfig     = "executionCostConfig"
@@ -192,14 +190,20 @@ func TestStore_ValidateStaking(t *testing.T) {
 	ok, err = vStore.ValidateStaking(&updates.StakingOptions)
 	assert.NoError(t, err, "Should Pass")
 	assert.True(t, ok)
-	updates.StakingOptions.MinDelegationAmount = *balance.NewAmountFromInt(-1)
+	updates = generateGov()
+	updates.StakingOptions.MinSelfDelegationAmount = *balance.NewAmountFromInt(300)
 	ok, err = vStore.ValidateStaking(&updates.StakingOptions)
 	assert.Error(t, err, "Delegation amount too less")
 	assert.False(t, ok)
-	updates.StakingOptions.MinDelegationAmount = *balance.NewAmountFromInt(1000000)
+	updates.StakingOptions.MinSelfDelegationAmount = *balance.NewAmountFromInt(30000000)
+	ok, err = vStore.ValidateStaking(&updates.StakingOptions)
+	assert.Error(t, err, "Delegation amount too much")
+	assert.False(t, ok)
+	updates.StakingOptions.MinSelfDelegationAmount = *balance.NewAmountFromInt(3000000)
 	ok, err = vStore.ValidateStaking(&updates.StakingOptions)
 	assert.NoError(t, err, "Should Pass")
 	assert.True(t, ok)
+	updates = generateGov()
 	updates.StakingOptions.TopValidatorCount = 2
 	ok, err = vStore.ValidateStaking(&updates.StakingOptions)
 	assert.Error(t, err, "Validator count is too low")
@@ -332,8 +336,8 @@ func generateGov() *GovernanceState {
 		ConfigUpdate: ProposalOption{
 			InitialFunding:         balance.NewAmountFromInt(5000),
 			FundingGoal:            proposalFundingGoal,
-			FundingDeadline:        proposalFundingDeadline,
-			VotingDeadline:         proposalVotingDeadline,
+			FundingDeadline:        getDeadline(7),
+			VotingDeadline:         getDeadline(7),
 			PassPercentage:         proposalPassPercentage,
 			PassedFundDistribution: passedProposalDistribution,
 			FailedFundDistribution: failedProposalDistribution,
@@ -342,8 +346,8 @@ func generateGov() *GovernanceState {
 		CodeChange: ProposalOption{
 			InitialFunding:         proposalInitialFunding,
 			FundingGoal:            proposalFundingGoal,
-			FundingDeadline:        proposalFundingDeadline,
-			VotingDeadline:         proposalVotingDeadline,
+			FundingDeadline:        getDeadline(30),
+			VotingDeadline:         getDeadline(30),
 			PassPercentage:         proposalPassPercentage,
 			PassedFundDistribution: passedProposalDistribution,
 			FailedFundDistribution: failedProposalDistribution,
@@ -352,8 +356,8 @@ func generateGov() *GovernanceState {
 		General: ProposalOption{
 			InitialFunding:         proposalInitialFunding,
 			FundingGoal:            proposalFundingGoal,
-			FundingDeadline:        proposalFundingDeadline,
-			VotingDeadline:         proposalVotingDeadline,
+			FundingDeadline:        getDeadline(14),
+			VotingDeadline:         getDeadline(14),
 			PassPercentage:         proposalPassPercentage,
 			PassedFundDistribution: passedProposalDistribution,
 			FailedFundDistribution: failedProposalDistribution,
@@ -371,8 +375,8 @@ func generateGov() *GovernanceState {
 		YearsOfSupply:     yearsOfBlockRewardsSupply,
 	}
 	stakingOption := delegation.Options{
-		MinSelfDelegationAmount: *balance.NewAmount(1000000),
-		MinDelegationAmount:     *balance.NewAmount(10000000),
+		MinSelfDelegationAmount: *balance.NewAmount(3000000),
+		MinDelegationAmount:     *balance.NewAmount(1),
 		TopValidatorCount:       8,
 		MaturityTime:            109200,
 	}
