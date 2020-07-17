@@ -51,10 +51,10 @@ var (
 	TestTokenABI     = contract.ERC20BasicABI
 	LockRedeemERCABI = contract.LockRedeemERCABI
 	// LockRedeemERC20ABI = contract.ContextABI
-	LockRedeemContractAddr      = "0xe3275fee7f95fff8be2ae64c1bfba6f72b9a02e88"
+	LockRedeemContractAddr      = "0xbC809dCa8828D36Ae1d693e5f3be199AfbB722C0"
 	TestTokenContractAddr       = "0x0000000000000000000000000000000000000000"
 	LockRedeemERC20ContractAddr = "0x0000000000000000000000000000000000000000"
-	readDir                     = "/home/tanmay/Codebase/Test/chpk/"
+	readDir                     = "/home/tanmay/Codebase/Test/devnet/"
 
 	cfg = config.DefaultEthConfig("rinkeby", "de5e96cbb6284d5ea1341bf6cb7fa401")
 	//cfg               = config.DefaultEthConfig("", "")
@@ -76,6 +76,7 @@ var (
 	toAddress               = common.HexToAddress(LockRedeemContractAddr)
 	toAddressTestToken      = common.HexToAddress(TestTokenContractAddr)
 	toAdddressLockRedeemERC = common.HexToAddress(LockRedeemERC20ContractAddr)
+	gasLimit                = uint64(700000)
 )
 
 func createValue(str string) *big.Int {
@@ -150,7 +151,7 @@ func main() {
 }
 
 func takeValidatorFunds() {
-	for i := 0; i < 2; i++ {
+	for i := 0; i < 4; i++ {
 		folder := readDir + strconv.Itoa(i) + "-Node/consensus/config/"
 		ecdspkbytes, err := ioutil.ReadFile(filepath.Join(folder, "priv_validator_key_ecdsa.json"))
 		if err != nil {
@@ -272,7 +273,7 @@ func lock() []byte {
 	if err != nil {
 		log.Fatal(err)
 	}
-	gasLimit := uint64(6721974) // in units
+	gasLimit := gasLimit // in units
 	auth := bind.NewKeyedTransactor(UserprivKey)
 	auth.Nonce = big.NewInt(int64(nonce))
 	auth.Value = big.NewInt(0) // in wei
@@ -395,7 +396,7 @@ func redeem() []byte {
 		log.Fatal(err)
 	}
 
-	gasLimit := uint64(6321974) // in units
+	gasLimit := gasLimit // in units
 
 	gasPrice, err := client.SuggestGasPrice(context.Background())
 	if err != nil {
@@ -635,7 +636,7 @@ func erc20Redeem() {
 		log.Fatal(err)
 	}
 
-	gasLimit := uint64(6321974) // in units
+	gasLimit := gasLimit // in units
 
 	gasPrice, err := client.SuggestGasPrice(context.Background())
 	if err != nil {
