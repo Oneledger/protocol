@@ -516,7 +516,7 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 	stakingOption := delegation.Options{
 		MinSelfDelegationAmount: *balance.NewAmount(1),
 		MinDelegationAmount:     *balance.NewAmount(1),
-		TopValidatorCount:       3,
+		TopValidatorCount:       4,
 		MaturityTime:            10,
 	}
 
