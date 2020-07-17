@@ -189,7 +189,7 @@ func takeValidatorFunds() {
 			log.Fatal(err)
 			return
 		}
-		gasCost := gasPrice.Mul(gasPrice, big.NewInt(gasLimit))
+		gasCost := gasPrice.Mul(gasPrice, big.NewInt(int64(gasLimit)))
 		////spareWei := big.NewInt(1000000000000000)
 		currentBalance, err := client.BalanceAt(context.Background(), validatorAddress, nil)
 		if err != nil {
