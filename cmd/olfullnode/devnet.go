@@ -81,8 +81,8 @@ var (
 		ProposerReward: 00.00,
 	}
 
-	estimatedSecondsPerCycle  = int64(172800)
-	blockSpeedCalculateCycle  = int64(10000)
+	estimatedSecondsPerCycle  = int64(1728)
+	blockSpeedCalculateCycle  = int64(100)
 	burnoutRate, _            = balance.NewAmountFromString("5000000000000000000", 10)
 	yearCloseWindow           = int64(3600 * 24)
 	yearBlockRewardShare_1, _ = balance.NewAmountFromString("70000000000000000000000000", 10)
@@ -523,6 +523,9 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 	}
 	balances := make([]consensus.BalanceState, 0, len(nodeList))
 	staking := make([]consensus.Stake, 0, len(nodeList))
+	rewards := rewards.RewardMasterState{
+		CumuState: rewards.NewRewardCumuState(),
+	}
 	domains := make([]consensus.DomainState, 0, len(nodeList))
 	fees_db := make([]consensus.BalanceState, 0, len(nodeList))
 	total := olt.NewCoinFromInt(args.totalFunds)
@@ -642,7 +645,7 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 		Currencies: currencies,
 		Balances:   balances,
 		Staking:    staking,
-		Rewards:    rewards.RewardMasterState{},
+		Rewards:    rewards,
 		Domains:    domains,
 		Fees:       fees_db,
 		Governance: governance.GovernanceState{

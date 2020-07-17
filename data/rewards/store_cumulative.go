@@ -367,6 +367,15 @@ type RewardCumuState struct {
 	WithdrawnAmounts []RewardAmount  `json:"withdrawnAmounts"`
 }
 
+func NewRewardCumuState() *RewardCumuState {
+	return &RewardCumuState{
+		TotalDistributed: balance.NewAmount(0),
+		YearsDistributed: RewardYears{Years: []RewardYear{}},
+		MaturedBalances:  []RewardAmount{},
+		WithdrawnAmounts: []RewardAmount{},
+	}
+}
+
 func (rws *RewardCumulativeStore) dumpState() (state *RewardCumuState, err error) {
 	// dump total distributed rewards
 	state = &RewardCumuState{}

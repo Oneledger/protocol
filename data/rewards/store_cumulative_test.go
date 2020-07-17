@@ -382,12 +382,7 @@ func TestRewardsCumulativeStore_DumpLoadState(t *testing.T) {
 	reader, err := os.Open(file)
 	stateBytes, _ := ioutil.ReadAll(reader)
 	assert.Nil(t, err)
-	stateLoaded := &RewardCumuState{
-		TotalDistributed: balance.NewAmount(0),
-		YearsDistributed: RewardYears{Years: []RewardYear{}},
-		MaturedBalances:  []RewardAmount{},
-		WithdrawnAmounts: []RewardAmount{},
-	}
+	stateLoaded := NewRewardCumuState()
 	err = json.Unmarshal(stateBytes, stateLoaded)
 	assert.Nil(t, err)
 	assert.Equal(t, state, stateLoaded)
