@@ -24,19 +24,19 @@ def test_pass_proposal():
     fund_proposal(encoded_pid, _each_funding, addr_list[1])
     check_proposal_state(encoded_pid, ProposalOutcomeInProgress, ProposalStatusVoting)
 
-    # 1st vote --> 25%
+    # 1st vote --> YES--10%
     vote_proposal(encoded_pid, OPIN_POSITIVE, url_0, addr_list[0])
     check_proposal_state(encoded_pid, ProposalOutcomeInProgress, ProposalStatusVoting)
 
-    # 2nd vote --> 25%
+    # 2nd vote --> YES--10% NO--20%
     vote_proposal(encoded_pid, OPIN_NEGATIVE, url_1, addr_list[1])
     check_proposal_state(encoded_pid, ProposalOutcomeInProgress, ProposalStatusVoting)
 
-    # 3rd vote --> 50%
+    # 3rd vote --> YES--40% NO--20%
     vote_proposal(encoded_pid, OPIN_POSITIVE, url_2, addr_list[2])
     check_proposal_state(encoded_pid, ProposalOutcomeInProgress, ProposalStatusVoting)
 
-    # 4th vote --> 75%
+    # 4th vote --> YES--80% NO--20%
     vote_proposal(encoded_pid, OPIN_POSITIVE, url_3, addr_list[2])
     check_proposal_state(encoded_pid, ProposalOutcomeCompletedYes, ProposalStatusCompleted)
 
@@ -59,7 +59,7 @@ def test_fail_proposal():
     vote_proposal(encoded_pid, OPIN_POSITIVE, url_0, addr_list[0])
     check_proposal_state(encoded_pid, ProposalOutcomeInProgress, ProposalStatusVoting)
 
-    # 2nd vote --> NO--25%
+    # 2nd vote --> NO--20%
     vote_proposal(encoded_pid, OPIN_NEGATIVE, url_1, addr_list[1])
     check_proposal_state(encoded_pid, ProposalOutcomeInProgress, ProposalStatusVoting)
 

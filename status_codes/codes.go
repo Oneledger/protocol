@@ -168,4 +168,5 @@ const (
 	//Rewards Error
 	RewardsUnableToGetMaturedAmount = 800001
 	RewardsUnableToWithdraw         = 800002
+	RewardsYearRewardsMissing       = 800003
 )

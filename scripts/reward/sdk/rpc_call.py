@@ -1,7 +1,10 @@
+import os
 import requests
 import json
 
 url = "http://127.0.0.1:26602/jsonrpc"
+devnet = os.path.join(os.environ['OLDATA'], "devnet")
+node_0 = os.path.join(devnet, "0-Node")
 headers = {
     "Content-Type": "application/json",
     "Accept": "application/json",
