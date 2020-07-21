@@ -429,9 +429,8 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 
 //Get Individual Validator reward based on power
 func getRewardForValidator(totalPower int64, validatorPower int64, totalRewards *balance.Amount) *balance.Amount {
-	percent := int64(float64(validatorPower) / float64(totalPower) * 1000.0)
-	numerator := big.NewInt(0).Mul(totalRewards.BigInt(), big.NewInt(percent))
-	reward := balance.NewAmountFromBigInt(big.NewInt(0).Div(numerator, big.NewInt(1000)))
+	numerator := big.NewInt(0).Mul(totalRewards.BigInt(), big.NewInt(validatorPower))
+	reward := balance.NewAmountFromBigInt(big.NewInt(0).Div(numerator, big.NewInt(totalPower)))
 	return reward
 }
 
