@@ -3,6 +3,7 @@ package governance
 import (
 	"encoding/binary"
 	"fmt"
+	"sync"
 
 	"github.com/Oneledger/protocol/data/rewards"
 
@@ -47,6 +48,7 @@ type Store struct {
 	state  *storage.State
 	prefix []byte
 	height int64
+	c      sync.Mutex
 }
 
 func NewStore(prefix string, state *storage.State) *Store {
@@ -116,7 +118,9 @@ func (st *Store) SetLUH() error {
 }
 
 func (st *Store) GetLUH() (int64, error) {
+	st.c.Lock()
 	data, err := st.GetUnversioned(LAST_UPDATE_HEIGHT)
+	st.c.Unlock()
 	if err != nil {
 		return 0, err
 	}
