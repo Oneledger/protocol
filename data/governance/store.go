@@ -48,7 +48,7 @@ type Store struct {
 	state  *storage.State
 	prefix []byte
 	height int64
-	c      sync.Mutex
+	c      sync.RWMutex
 }
 
 func NewStore(prefix string, state *storage.State) *Store {
@@ -90,12 +90,16 @@ func (st *Store) Set(key string, value []byte) error {
 }
 
 func (st *Store) GetUnversioned(key string) ([]byte, error) {
+	st.c.Lock()
+	defer st.c.Unlock()
 	prefixKey := append(st.prefix, key...)
 	fmt.Println("Trying to get Value for key : ", prefixKey)
 	return st.state.Get(prefixKey)
 }
 
 func (st *Store) SetUnversioned(key string, value []byte) error {
+	st.c.Lock()
+	defer st.c.Unlock()
 	prefixKey := append(st.prefix, key...)
 	err := st.state.Set(prefixKey, value)
 	return err
@@ -119,9 +123,7 @@ func (st *Store) SetLUH() error {
 }
 
 func (st *Store) GetLUH() (int64, error) {
-	st.c.Lock()
 	data, err := st.GetUnversioned(LAST_UPDATE_HEIGHT)
-	st.c.Unlock()
 	if err != nil {
 		return 0, err
 	}
