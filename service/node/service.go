@@ -3,12 +3,14 @@ package node
 import (
 	"fmt"
 	"net/url"
+	"regexp"
 
 	"github.com/tendermint/tendermint/p2p"
 
 	"github.com/Oneledger/protocol/app/node"
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/config"
+	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/log"
 	codes "github.com/Oneledger/protocol/status_codes"
 )
@@ -61,7 +63,14 @@ func (svc *Service) ID(req client.NodeIDRequest, reply *client.NodeIDReply) erro
 		out := fmt.Sprintf("%s@%s", nodeKey.ID(), u.Host)
 		*reply = client.NodeIDReply{Id: out}
 	} else {
-		*reply = client.NodeIDReply{Id: string(nodeKey.ID())}
+		pubKey, _ := keys.PubKeyFromTendermint(nodeKey.PubKey().Bytes())
+		encoded, _ := pubKey.GobEncode()
+		matches := regexp.MustCompile(`^{.*:.*,.*:"(.*)"}$`).FindStringSubmatch(string(encoded))
+		if len(matches) > 1 {
+			*reply = client.NodeIDReply{PublicKey: matches[1], Id: string(nodeKey.ID())}
+		} else {
+			*reply = client.NodeIDReply{PublicKey: string(encoded), Id: string(nodeKey.ID())}
+		}
 	}
 	return nil
 }
