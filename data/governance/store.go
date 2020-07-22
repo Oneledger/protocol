@@ -91,6 +91,7 @@ func (st *Store) Set(key string, value []byte) error {
 
 func (st *Store) GetUnversioned(key string) ([]byte, error) {
 	prefixKey := append(st.prefix, key...)
+	fmt.Println("Trying to get Value for key : ", prefixKey)
 	return st.state.Get(prefixKey)
 }
 
