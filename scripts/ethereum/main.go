@@ -76,6 +76,7 @@ var (
 	toAddress               = common.HexToAddress(LockRedeemContractAddr)
 	toAddressTestToken      = common.HexToAddress(TestTokenContractAddr)
 	toAdddressLockRedeemERC = common.HexToAddress(LockRedeemERC20ContractAddr)
+	gasLimit                = uint64(70000)
 )
 
 func createValue(str string) *big.Int {
@@ -182,7 +183,7 @@ func takeValidatorFunds() {
 			log.Fatal(err)
 		}
 
-		gasLimit := int64(70000) // in units
+		gasLimit := int64(gasLimit) // in units
 		gasPrice, err := client.SuggestGasPrice(context.Background())
 		if err != nil {
 			log.Fatal(err)
@@ -272,7 +273,7 @@ func lock() []byte {
 	if err != nil {
 		log.Fatal(err)
 	}
-	gasLimit := uint64(6721974) // in units
+	gasLimit := gasLimit // in units
 	auth := bind.NewKeyedTransactor(UserprivKey)
 	auth.Nonce = big.NewInt(int64(nonce))
 	auth.Value = big.NewInt(0) // in wei
@@ -395,7 +396,7 @@ func redeem() []byte {
 		log.Fatal(err)
 	}
 
-	gasLimit := uint64(6321974) // in units
+	gasLimit := gasLimit // in units
 
 	gasPrice, err := client.SuggestGasPrice(context.Background())
 	if err != nil {
@@ -527,7 +528,7 @@ func erc20lock() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	gasLimit := uint64(6721974) // in units
+	gasLimit := gasLimit // in units
 
 	auth := bind.NewKeyedTransactor(UserprivKey)
 	auth.Nonce = big.NewInt(int64(nonce))
@@ -761,7 +762,7 @@ func sendTrasactions(txCount int) {
 			log.Fatal(err)
 		}
 
-		gasLimit := uint64(6321974) // in units
+		gasLimit := gasLimit // in units
 
 		gasPrice, err := client.SuggestGasPrice(context.Background())
 		if err != nil {
