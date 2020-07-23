@@ -58,20 +58,23 @@ func showNodeID(root string, shouldShowIP bool) (result string, err error) {
 		return result, err
 	}
 
+	// get public key text
+	pubKey, _ := keys.PubKeyFromTendermint(nodeKey.PubKey().Bytes())
+	encoded, _ := pubKey.GobEncode()
+	pubKeyText := string(encoded)
+	matches := regexp.MustCompile(`^{.*:.*,.*:"(.*)"}$`).FindStringSubmatch(pubKeyText)
+	if len(matches) > 1 {
+		pubKeyText = matches[1]
+	}
+
 	ip := configuration.CFG.P2P.ExternalAddress
 	if shouldShowIP {
 		u, err := url.Parse(ip)
 		if err != nil {
 			return result, err
 		}
-		return fmt.Sprintf("%s@%s", nodeKey.ID(), u.Host), nil
+		return fmt.Sprintf("publicKey: %s, id: %s@%s", pubKeyText, nodeKey.ID(), u.Host), nil
 	} else {
-		pubKey, _ := keys.PubKeyFromTendermint(nodeKey.PubKey().Bytes())
-		encoded, _ := pubKey.GobEncode()
-		matches := regexp.MustCompile(`^{.*:.*,.*:"(.*)"}$`).FindStringSubmatch(string(encoded))
-		if len(matches) > 1 {
-			return fmt.Sprintf("publicKey: %s, id: %s", matches[1], nodeKey.ID()), nil
-		}
-		return fmt.Sprintf("publicKey: %s, id: %s", string(encoded), nodeKey.ID()), nil
+		return fmt.Sprintf("publicKey: %s, id: %s", pubKeyText, nodeKey.ID()), nil
 	}
 }

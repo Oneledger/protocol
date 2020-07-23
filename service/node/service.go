@@ -53,6 +53,15 @@ func (svc *Service) ID(req client.NodeIDRequest, reply *client.NodeIDReply) erro
 		return codes.ErrLoadingNodeKey
 	}
 
+	// get public key text
+	pubKey, _ := keys.PubKeyFromTendermint(nodeKey.PubKey().Bytes())
+	encoded, _ := pubKey.GobEncode()
+	pubKeyText := string(encoded)
+	matches := regexp.MustCompile(`^{.*:.*,.*:"(.*)"}$`).FindStringSubmatch(pubKeyText)
+	if len(matches) > 1 {
+		pubKeyText = matches[1]
+	}
+
 	// silenced error because not present means false
 	ip := p2pAddressFromCFG(svc.cfg)
 	if req.ShouldShowIP {
@@ -61,16 +70,9 @@ func (svc *Service) ID(req client.NodeIDRequest, reply *client.NodeIDReply) erro
 			return codes.ErrParsingAddress
 		}
 		out := fmt.Sprintf("%s@%s", nodeKey.ID(), u.Host)
-		*reply = client.NodeIDReply{Id: out}
+		*reply = client.NodeIDReply{PublicKey: pubKeyText, Id: out}
 	} else {
-		pubKey, _ := keys.PubKeyFromTendermint(nodeKey.PubKey().Bytes())
-		encoded, _ := pubKey.GobEncode()
-		matches := regexp.MustCompile(`^{.*:.*,.*:"(.*)"}$`).FindStringSubmatch(string(encoded))
-		if len(matches) > 1 {
-			*reply = client.NodeIDReply{PublicKey: matches[1], Id: string(nodeKey.ID())}
-		} else {
-			*reply = client.NodeIDReply{PublicKey: string(encoded), Id: string(nodeKey.ID())}
-		}
+		*reply = client.NodeIDReply{PublicKey: pubKeyText, Id: string(nodeKey.ID())}
 	}
 	return nil
 }
@@ -79,7 +81,7 @@ func (svc *Service) ID(req client.NodeIDRequest, reply *client.NodeIDReply) erro
 // not present from the config
 func p2pAddressFromCFG(cfg *config.Server) string {
 	extP2P := cfg.Network.ExternalP2PAddress
-	if extP2P != "" {
+	if extP2P == "" {
 		return cfg.Network.P2PAddress
 	}
 

@@ -141,7 +141,7 @@ type NodeIDRequest struct {
 	ShouldShowIP bool `json:"shouldShowIP,omitempty"`
 }
 type NodeIDReply struct {
-	PublicKey string `json:publicKey`
+	PublicKey string `json:"publicKey"`
 	Id        string `json:"id"`
 }
 
