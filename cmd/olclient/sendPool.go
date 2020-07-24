@@ -23,7 +23,9 @@ import (
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
+	accounts2 "github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/keys"
 )
 
 func (args *SendPoolArguments) ClientRequest(currencies *balance.CurrencySet) (client.SendPoolTxRequest, error) {
@@ -71,6 +73,22 @@ func sendFundsPool(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	fmt.Println(req)
+
+	if len(sendargs.Password) == 0 {
+		sendargs.Password = PromptForPassword()
+	}
+	wallet, err := accounts2.NewWalletKeyStore(keyStorePath)
+	if err != nil {
+		ctx.logger.Error("failed to create secure wallet", err)
+		return err
+	}
+	usrAddress := keys.Address(sendargs.Party)
+	authenticated, err := wallet.VerifyPassphrase(usrAddress, sendargs.Password)
+	if !authenticated {
+		ctx.logger.Error("authentication error", err)
+		return err
+	}
+
 	reply, err := fullnode.SendToPoolTx(req)
 	if err != nil {
 		ctx.logger.Error("failed to create SendPoolTx", err)
