@@ -1,12 +1,13 @@
 package rewards
 
 import (
+	"github.com/pkg/errors"
+	tmstore "github.com/tendermint/tendermint/store"
+
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
-	"github.com/pkg/errors"
-	tmstore "github.com/tendermint/tendermint/store"
 )
 
 type RewardCumulativeStore struct {
@@ -57,14 +58,14 @@ func (rws *RewardCumulativeStore) PullRewards(height int64, poolAmt *balance.Amo
 	// print each cycle's distribution
 	if (height-1)%rws.rewardOptions.BlockSpeedCalculateCycle == 0 {
 		cycleNo := rws.calculator.cached.cycleNo
-		logger.Infof("Rewards cycle started, cycleNo = %v, amount = %s, height = %v", cycleNo, amount, height)
+		logger.Detailf("Rewards cycle started, cycleNo = %v, amount = %s, height = %v", cycleNo, amount, height)
 		for y, r := range rewardYears.Years {
-			logger.Infof("Rewards year-%v, distributed: %s", y+1, r.Distributed)
+			logger.Detailf("Rewards year-%v, distributed: %s", y+1, r.Distributed)
 		}
 	}
 
 	// print this block's distribution
-	logger.Infof("Rewards pulled,   amount = %s, height = %v", amount, height)
+	logger.Detailf("Rewards pulled,   amount = %s, height = %v", amount, height)
 	return
 }
 
@@ -82,7 +83,7 @@ func (rws *RewardCumulativeStore) ConsumeRewards(consumed *balance.Amount) error
 		err = rws.addYearDistributedRewards(calc.cached.year, consumed)
 	}
 
-	logger.Infof("Rewards consumed, amount = %s, year = %v", consumed, calc.cached.year+1)
+	logger.Detailf("Rewards consumed, amount = %s, year = %v", consumed, calc.cached.year+1)
 	return err
 }
 
