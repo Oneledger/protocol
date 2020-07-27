@@ -34,6 +34,7 @@ def addValidatorAccounts(numofValidators):
         args = ['olclient', 'show_node_id']
         target = dirname(dirname(os.getcwd()))
         node = str(i) + "-Node"
+        print(os.environ['OLDATA'])
         dir = target + "/Codebase/Test/devnet/" + node
         process = subprocess.Popen(args, cwd=dir, stdout=subprocess.PIPE)
         process.wait()
@@ -61,10 +62,6 @@ if __name__ == "__main__":
     process = subprocess.Popen(args)
     process.wait()
 
-    # # test rewards distribution
-    # validators = testRewardsDistribution()
-    #
-    # test rewards withdraw
     testrewardswithdraw(validatorAccounts)
 
 print bcolors.OKGREEN + "#### Withdraw block rewards succeed" + bcolors.ENDC
