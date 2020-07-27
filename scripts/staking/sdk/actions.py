@@ -81,21 +81,26 @@ class Staking:
 
         print "################### olclient unstake succeed or failed as expected"
 
-    def withdraw(self, amount, stake_address, secs=1):
+    def withdraw(self, amount, stake_address, expect_success, secs=1):
         args = ['olclient', 'delegation', 'withdraw', '--root', self.node, '--amount', amount, '--address',
                 stake_address[3:],
                 '--password', 'pass']
         target = dirname(dirname(os.getcwd()))
         # set protocol root path as current path
-        process = subprocess.Popen(args, cwd=target)
+        process = subprocess.Popen(args, cwd=target, stdout=subprocess.PIPE)
         process.wait()
+        output = process.stdout.readlines()
         time.sleep(secs)
 
-        # check return code
-        if process.returncode != 0:
+        # check for keyword "Failed" in stdout
+        target_regex = r"Failed"
+        match = re.search(target_regex, output[1])
+        if (match is None) and (expect_success is False):
+            print "olclient withdraw succeed, but it should fail!"
+            sys.exit(-1)
+        elif (match is not None) and (expect_success is True):
             print "olclient withdraw failed"
             sys.exit(-1)
-        print "################### olclient withdraw succeed"
 
     def checkStatus(self, stake_address, delegation_amount, withdrawable_amount, hasFifthLine, secs=1):
         args = ['olclient', 'delegation', 'status', '--root', self.node, '--address', stake_address[3:]]
