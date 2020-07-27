@@ -1,4 +1,5 @@
 from time import sleep
+
 from sdk.common import *
 
 # test only 50 blocks to save time
@@ -66,17 +67,40 @@ def testRewardsWithdraw(validators):
     amount = int(reward['withdrawnAmount'])
     print amount
 
-if __name__ == "__main__":
-    # send some funds to pool through olclient
-    account = addr_list[0][3:]
-    args = ['olclient', 'sendpool', '--root', node_0, '--amount', '10000', '--party', account, '--poolName', 'RewardsPool', '--fee', '0.0001']
-    process = subprocess.Popen(args)
+
+def addValidatorAccounts():
+    args = ['olclient', 'show_node_id']
+    dir = "/home/tanmay/Codebase/Test/devnet/0-Node"
+    process = subprocess.Popen(args, cwd=dir, stdout=subprocess.PIPE)
     process.wait()
+    output = process.stdout.readlines()
+    sleep(1)
+    pubKey = output[0].split(",")[0].split(":")[1].strip()
+    f = open(dir + "/consensus/config/node_key.json", "r")
+    contents = json.loads(f.read())
+    privKey = contents['priv_key']['value']
+    args = ['olclient', 'account', 'add', '--privkey', privKey, '--pubkey', pubKey, "--password", '1234']
+    process = subprocess.Popen(args, cwd=dir, stdout=subprocess.PIPE)
+    process.wait()
+    output = process.stdout.readlines()
+    sleep(1)
+    print output
 
-    # test rewards distribution
-    validators = testRewardsDistribution()
 
-    # test rewards withdraw
-    testRewardsWithdraw(validators)
+if __name__ == "__main__":
+    addValidatorAccounts()
+    # # send some funds to pool through olclient
+    # account = addr_list[0][3:]
+    # args = ['olclient', 'sendpool', '--root', node_0, '--amount', '10000', '--party', account, '--poolName', 'RewardsPool', '--fee', '0.0001']
+    # process = subprocess.Popen(args)
+    # process.wait()
+    #
+    # # test rewards distribution
+    # validators = testRewardsDistribution()
+    #
+    # # test rewards withdraw
+    # testRewardsWithdraw(validators)
+
+print bcolors.OKGREEN + "#### Verify block rewards succeed" + bcolors.ENDC
 
 print bcolors.OKGREEN + "#### Verify block rewards succeed" + bcolors.ENDC
