@@ -1,12 +1,13 @@
 package rewards
 
 import (
+	"github.com/pkg/errors"
+	tmstore "github.com/tendermint/tendermint/store"
+
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
-	"github.com/pkg/errors"
-	tmstore "github.com/tendermint/tendermint/store"
 )
 
 type RewardCumulativeStore struct {
@@ -57,9 +58,9 @@ func (rws *RewardCumulativeStore) PullRewards(height int64, poolAmt *balance.Amo
 	// print each cycle's distribution
 	if (height-1)%rws.rewardOptions.BlockSpeedCalculateCycle == 0 {
 		cycleNo := rws.calculator.cached.cycleNo
-		logger.Infof("Rewards cycle started, cycleNo = %v, amount = %s, height = %v", cycleNo, amount, height)
+		logger.Detailf("Rewards cycle started, cycleNo = %v, amount = %s, height = %v", cycleNo, amount, height)
 		for y, r := range rewardYears.Years {
-			logger.Infof("Rewards year-%v, distributed: %s", y+1, r.Distributed)
+			logger.Detailf("Rewards year-%v, distributed: %s", y+1, r.Distributed)
 		}
 	}
 
