@@ -80,10 +80,11 @@ func (rws *RewardCumulativeStore) ConsumeRewards(consumed *balance.Amount) error
 	// accumulates year distributed rewards
 	calc := rws.calculator
 	if !calc.cached.burnedout {
-		err = rws.addYearDistributedRewards(calc.cached.year, consumed)
+		_, _, lastInCycle := rws.calculator.getCycleNo()
+		err = rws.addYearDistributedRewards(calc.cached.year, consumed, lastInCycle)
 	}
 
-	logger.Infof("Rewards consumed, amount = %s, year = %v", consumed, calc.cached.year+1)
+	logger.Detailf("Rewards consumed, amount = %s, year = %v", consumed, calc.cached.year+1)
 	return err
 }
 
@@ -262,9 +263,10 @@ func (rws *RewardCumulativeStore) initRewardYears(key storage.StoreKey) (rewards
 	for i := 0; i < numofYears; i++ {
 		tClose := tStart.AddDate(1, 0, 0).UTC()
 		reward := RewardYear{
-			StartTime:   tStart,
-			CloseTime:   tClose,
-			Distributed: balance.NewAmount(0),
+			StartTime:     tStart,
+			CloseTime:     tClose,
+			Distributed:   balance.NewAmount(0),
+			TillLastCycle: balance.NewAmount(0),
 		}
 		logger.Infof("Initial year-%v [start: %s], [close: %s]", i+1, tStart, tClose)
 		tStart = tClose
@@ -313,13 +315,19 @@ func (rws *RewardCumulativeStore) addTotalDistributedRewards(amount *balance.Amo
 }
 
 // Add to total year distributed rewards
-func (rws *RewardCumulativeStore) addYearDistributedRewards(year int, amount *balance.Amount) error {
+func (rws *RewardCumulativeStore) addYearDistributedRewards(year int, amount *balance.Amount, lastInCycle bool) error {
 	rewardYears, err := rws.GetYearDistributedRewards()
 	if err != nil {
 		return err
 	}
+
+	// save total distributed amount of the cycle if cycle is ending
 	yearDist := rewardYears.Years[year].Distributed
 	rewardYears.Years[year].Distributed = yearDist.Plus(*amount)
+	if lastInCycle {
+		rewardYears.Years[year].TillLastCycle = rewardYears.Years[year].Distributed
+		logger.Infof("Rewards till last cycle, amount = %s", rewardYears.Years[year].TillLastCycle)
+	}
 	key := rws.getYearDistributedKey()
 	err = rws.set(key, rewardYears)
 	return err
