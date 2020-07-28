@@ -55,10 +55,10 @@ def testRewardsDistribution():
 if __name__ == "__main__":
     # send some funds to pool through olclient
     account = addr_list[0][3:]
-    args = ['olclient', 'sendpool', '--root', node_0, '--amount', '10000', '--party', account, '--poolName',
-            'RewardsPool', '--fee', '0.0001']
-    process = subprocess.Popen(args)
-    process.wait()
+    # args = ['olclient', 'sendpool', '--root', node_0, '--amount', '10000', '--party', account, '--poolname',
+    #         'RewardsPool', '--fee', '0.0001']
+    # process = subprocess.Popen(args)
+    # process.wait()
 
     # test rewards distribution
     validators = testRewardsDistribution()
