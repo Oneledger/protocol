@@ -2,6 +2,7 @@ package delegation
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/Oneledger/protocol/data/balance"
@@ -12,6 +13,7 @@ import (
 
 type DelegationStore struct {
 	state  *storage.State
+	szlr   serialize.Serializer
 	prefix []byte
 	mux    sync.Mutex
 }
@@ -31,6 +33,7 @@ func NewDelegationStore(prefix string, state *storage.State) *DelegationStore {
 	return &DelegationStore{
 		state:  state,
 		prefix: storage.Prefix(prefix),
+		szlr:   serialize.GetSerializer(serialize.PERSISTENT),
 	}
 }
 
@@ -47,12 +50,12 @@ func (st *DelegationStore) Get(key []byte) (amt *balance.Amount, err error) {
 	if len(dat) == 0 {
 		return
 	}
-	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(dat, amt)
+	err = st.szlr.Deserialize(dat, amt)
 	return
 }
 
 func (st *DelegationStore) Set(key []byte, amt *balance.Amount) error {
-	dat, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(amt)
+	dat, err := st.szlr.Serialize(amt)
 	if err != nil {
 		return err
 	}
@@ -157,7 +160,7 @@ func (st *DelegationStore) GetMatureAmounts(version int64) (mature *MatureBlock,
 	if len(dat) == 0 {
 		return
 	}
-	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(dat, mature)
+	err = st.szlr.Deserialize(dat, mature)
 	if err != nil {
 		return
 	}
@@ -167,7 +170,7 @@ func (st *DelegationStore) GetMatureAmounts(version int64) (mature *MatureBlock,
 func (st *DelegationStore) SetMatureAmounts(version int64, mature *MatureBlock) (err error) {
 	key := st.getMatureKey(version)
 
-	dat, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(mature)
+	dat, err := st.szlr.Serialize(mature)
 	if err != nil {
 		return err
 	}
@@ -190,7 +193,7 @@ func (st *DelegationStore) GetMaturedPendingAmount(delegatorAddress keys.Address
 			if m.Amount.Equals(*balance.NewAmountFromInt(0)) {
 				continue
 			}
-			if m.Address.Equal(delegatorAddress) {
+			if len(delegatorAddress) == 0 || m.Address.Equal(delegatorAddress) {
 				amts = append(amts, matureBlock.Data[i])
 			}
 		}
@@ -386,4 +389,195 @@ func (st *DelegationStore) UpdateWithdrawReward(height int64) {
 		}
 		st.SetMatureAmounts(height, mature)
 	}
+}
+
+// iterate
+func (st *DelegationStore) iterate(subkey string, fn func(addr keys.Address, amt *balance.Amount) bool) (stopped bool) {
+	prefix := append(st.prefix, subkey...)
+	return st.state.IterateRange(
+		prefix,
+		storage.Rangefix(string(prefix)),
+		true,
+		func(key, value []byte) bool {
+			amt := balance.NewAmount(0)
+			err := st.szlr.Deserialize(value, amt)
+			if err != nil {
+				fmt.Printf("failed to deserialize delegation amount")
+				return false
+			}
+			addr := keys.Address{}
+			err = addr.UnmarshalText(key[len(prefix):])
+			if err != nil {
+				fmt.Printf("failed to deserialize delegator address")
+				return false
+			}
+			return fn(addr, amt)
+		},
+	)
+}
+
+// iterate
+func (st *DelegationStore) iterateVD(subkey string, fn func(validator keys.Address, delegator keys.Address, amt *balance.Amount) bool) (stopped bool) {
+	prefix := append(st.prefix, subkey...)
+	return st.state.IterateRange(
+		prefix,
+		storage.Rangefix(string(prefix)),
+		true,
+		func(key, value []byte) bool {
+			amt := balance.NewAmount(0)
+			err := st.szlr.Deserialize(value, amt)
+			if err != nil {
+				fmt.Printf("failed to deserialize delegation amount")
+				return false
+			}
+			// key in format "%validator_%delegator"
+			vd := strings.Split(string(key[len(prefix):]), "_")
+			if len(vd) != 2 {
+				fmt.Printf("failed to deserialize validator delegator addresses")
+				return false
+			}
+
+			// parse validator and delegator addresses
+			validator := keys.Address{}
+			err = validator.UnmarshalText([]byte(vd[0]))
+			if err != nil {
+				fmt.Printf("failed to deserialize validator address")
+				return false
+			}
+			delegator := keys.Address{}
+			err = delegator.UnmarshalText([]byte(vd[1]))
+			if err != nil {
+				fmt.Printf("failed to deserialize delegator address")
+				return false
+			}
+			return fn(validator, delegator, amt)
+		},
+	)
+}
+
+//-----------------------------Dump/Load chain state
+//
+type DelegationAmount struct {
+	Address keys.Address    `json:"address"`
+	Amount  *balance.Amount `json:"amount"`
+}
+
+type ValidatorDelegationAmount struct {
+	Validator keys.Address    `json:"validator"`
+	Delegator keys.Address    `json:"delegator"`
+	Amount    *balance.Amount `json:"amount"`
+}
+
+type DelegationState struct {
+	ValidatorAmounts           []*DelegationAmount          `json:"validatorAmounts"`
+	ValidatorDelegationAmounts []*ValidatorDelegationAmount `json:"validatorDelegationAmounts"`
+	DelegatorEffectiveAmounts  []*DelegationAmount          `json:"delegatorEffectiveAmounts"`
+	DelegatorBoundedAmounts    []*DelegationAmount          `json:"delegatorBoundedAmounts"`
+	MatureAmounts              []*MatureData                `json:"matureAmounts"`
+}
+
+func NewDelegationState() *DelegationState {
+	return &DelegationState{
+		ValidatorAmounts:           []*DelegationAmount{},
+		ValidatorDelegationAmounts: []*ValidatorDelegationAmount{},
+		DelegatorEffectiveAmounts:  []*DelegationAmount{},
+		DelegatorBoundedAmounts:    []*DelegationAmount{},
+		MatureAmounts:              []*MatureData{},
+	}
+}
+
+func (st *DelegationStore) DumpState(options *Options) (state *DelegationState, succeed bool) {
+	state = NewDelegationState()
+
+	// dump each validator's total amount
+	st.iterate("_t_", func(addr keys.Address, amt *balance.Amount) bool {
+		dm := &DelegationAmount{
+			Address: addr,
+			Amount:  amt,
+		}
+		state.ValidatorAmounts = append(state.ValidatorAmounts, dm)
+		return false
+	})
+	// dump each validator_delegator amount
+	st.iterateVD("_e_", func(validator keys.Address, delegator keys.Address, amt *balance.Amount) bool {
+		vdm := &ValidatorDelegationAmount{
+			Validator: validator,
+			Delegator: delegator,
+			Amount:    amt,
+		}
+		state.ValidatorDelegationAmounts = append(state.ValidatorDelegationAmounts, vdm)
+		return false
+	})
+	// dump each delegator effective amount
+	st.iterate("_d_e_", func(addr keys.Address, amt *balance.Amount) bool {
+		dm := &DelegationAmount{
+			Address: addr,
+			Amount:  amt,
+		}
+		state.DelegatorEffectiveAmounts = append(state.DelegatorEffectiveAmounts, dm)
+		return false
+	})
+	// dump each delegator bounded amount
+	st.iterate("_d_b_", func(addr keys.Address, amt *balance.Amount) bool {
+		dm := &DelegationAmount{
+			Address: addr,
+			Amount:  amt,
+		}
+		state.DelegatorBoundedAmounts = append(state.DelegatorBoundedAmounts, dm)
+		return false
+	})
+	// dump pending mature amount
+	version := st.state.Version()
+	matureAmounts := st.GetMaturedPendingAmount(keys.Address{}, version, options.MaturityTime+1)
+	state.MatureAmounts = append(state.MatureAmounts, matureAmounts...)
+
+	succeed = true
+	return
+}
+
+func (st *DelegationStore) LoadState(state DelegationState) (succeed bool) {
+	// load each validator's total amount
+	for _, dm := range state.ValidatorAmounts {
+		err := st.SetValidatorAmount(dm.Address, *dm.Amount)
+		if err != nil {
+			return
+		}
+	}
+	// load each validator_delegator amount
+	for _, vdm := range state.ValidatorDelegationAmounts {
+		err := st.SetValidatorDelegationAmount(vdm.Validator, vdm.Delegator, *vdm.Amount)
+		if err != nil {
+			return
+		}
+	}
+	// load each delegator effective amount
+	for _, dm := range state.DelegatorEffectiveAmounts {
+		err := st.SetDelegatorEffectiveAmount(dm.Address, *dm.Amount)
+		if err != nil {
+			return
+		}
+	}
+	// load each delegator bounded amount
+	for _, dm := range state.DelegatorBoundedAmounts {
+		err := st.SetDelegatorBoundedAmount(dm.Address, *dm.Amount)
+		if err != nil {
+			return
+		}
+	}
+	// load pending mature amount
+	blocks := make(map[int64]*MatureBlock)
+	for _, data := range state.MatureAmounts {
+		blk, ok := blocks[data.Height]
+		if !ok {
+			blocks[data.Height] = &MatureBlock{
+				Height: data.Height,
+				Data:   []*MatureData{data},
+			}
+		} else {
+			blk.Data = append(blk.Data, data)
+		}
+	}
+
+	succeed = true
+	return
 }
