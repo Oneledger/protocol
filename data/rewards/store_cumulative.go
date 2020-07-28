@@ -8,9 +8,6 @@ import (
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
-
-	"github.com/pkg/errors"
-	tmstore "github.com/tendermint/tendermint/store"
 )
 
 type RewardCumulativeStore struct {

@@ -29,6 +29,12 @@ func (c *ServiceClient) Balance(addr keys.Address) (out BalanceReply, err error)
 	return
 }
 
+func (c *ServiceClient) BalancePool(poolname string) (out BalanceReply, err error) {
+	request := BalancePoolRequest{poolname}
+	err = c.Call("query.BalancePool", &request, &out)
+	return
+}
+
 func (c *ServiceClient) ValidatorStatus(request ValidatorStatusRequest) (out ValidatorStatusReply, err error) {
 	err = c.Call("query.ValidatorStatus", &request, &out)
 	return
@@ -68,15 +74,6 @@ func (c *ServiceClient) SendTx(req SendTxRequest) (out CreateTxReply, err error)
 		err = c.Call("tx.SendTx", req, &out)
 	} else {
 		err = errors.New("SendTx disabled")
-	}
-	return
-}
-
-func (c *ServiceClient) SendToPoolTx(req SendPoolTxRequest) (out CreateTxReply, err error) {
-	if os.Getenv("OLTEST") == "1" {
-		err = c.Call("tx.SendPoolTx", req, &out) // Add service First
-	} else {
-		err = errors.New("SendPoolTx disabled")
 	}
 	return
 }
@@ -141,6 +138,11 @@ func (c *ServiceClient) ONS_CreateRawSend(req ONSSendRequest) (out CreateTxReply
 
 func (c *ServiceClient) CreateRawSend(req SendTxRequest) (out *CreateTxReply, err error) {
 	err = c.Call("tx.CreateRawSend", req, &out)
+	return
+}
+
+func (c *ServiceClient) CreateRawSendPool(req SendPoolTxRequest) (out *CreateTxReply, err error) {
+	err = c.Call("tx.CreateRawSendPool", req, &out)
 	return
 }
 
