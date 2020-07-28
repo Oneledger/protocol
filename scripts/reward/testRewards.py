@@ -1,4 +1,5 @@
 from time import sleep
+
 from sdk.common import *
 
 # test only 50 blocks to save time
@@ -14,7 +15,8 @@ _rewards_share_power_1 = 187945205479452054767
 _rewards_share_power_2 = 375890410958904109583
 _rewards_share_power_3 = 563835616438356164350
 _rewards_share_power_4 = 751780821917808219166
-_rewards_share_expected = [_rewards_share_power_1, _rewards_share_power_2, _rewards_share_power_3, _rewards_share_power_4]
+_rewards_share_expected = [_rewards_share_power_1, _rewards_share_power_2, _rewards_share_power_3,
+                           _rewards_share_power_4]
 _fault_tolerance = 1000
 
 addr_list = addresses()
@@ -35,7 +37,7 @@ def testRewardsDistribution():
     if abs(total - _total_rewards) > _fault_tolerance:
         print "totalRewards incorrect"
         sys.exit(-1)
-    
+
     validators = sorted(rewards['validators'], key=rewardkey)
     validator_addresses = []
     for i, v in enumerate(validators):
@@ -49,27 +51,12 @@ def testRewardsDistribution():
     print bcolors.OKGREEN + "#### test block rewards distribution succeed" + bcolors.ENDC
     return validator_addresses
 
-def testRewardsWithdraw(validators):
-    # query balance before
-    account = addr_list[1][3:]
-    balance_before = query_balance(account)
-
-    # query balance after
-    args = ['olclient', 'rewards', 'withdraw', '--root', node_0, '--address', account, '--amount', '12000000000', '--password', 'pass']
-    dir = "/home/charlie/go/protocol"
-    process = subprocess.Popen(args, cwd=dir)
-    process.wait()
-    balance_after = query_balance(account)
-
-    # check banalce
-    reward = query_rewards(validators[0])
-    amount = int(reward['withdrawnAmount'])
-    print amount
 
 if __name__ == "__main__":
     # send some funds to pool through olclient
     account = addr_list[0][3:]
-    args = ['olclient', 'sendpool', '--root', node_0, '--amount', '10000', '--party', account, '--poolName', 'RewardsPool', '--fee', '0.0001']
+    args = ['olclient', 'sendpool', '--root', node_0, '--amount', '10000', '--party', account, '--poolName',
+            'RewardsPool', '--fee', '0.0001']
     process = subprocess.Popen(args)
     process.wait()
 
@@ -77,6 +64,6 @@ if __name__ == "__main__":
     validators = testRewardsDistribution()
 
     # test rewards withdraw
-    testRewardsWithdraw(validators)
+    # testRewardsWithdraw(validators)
 
 print bcolors.OKGREEN + "#### Verify block rewards succeed" + bcolors.ENDC
