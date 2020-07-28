@@ -84,16 +84,16 @@ if __name__ == "__main__":
     validatorAccounts = addValidatorAccounts(4)
 
     # send some funds to pool through olclient
-    args = ['olclient', 'sendpool', '--amount', '1000000', '--party', validatorAccounts[0],
-            '--poolName',
-            'RewardsPool', '--fee', '0.0001']
+    args = ['olclient', 'sendpool', '--amount', '100000', '--party', validatorAccounts[0],
+            '--poolname', 'RewardsPool', '--fee', '0.0001', '--password', '1234']
     process = subprocess.Popen(args, cwd=node_0, stdout=subprocess.PIPE)
     process.wait()
-    output = process.stdout.readlines()
-    if not success in output[1]:
+    output = process.stdout.read()
+    if not success in output:
         print "Send to pool was not successful"
         sys.exit(-1)
     print bcolors.OKGREEN + "#### Success for send to pool" + bcolors.ENDC
+    time.sleep(1)
 
     # Withdraw from all four validators
     testrewardswithdraw(validatorAccounts, True, "No Error")
