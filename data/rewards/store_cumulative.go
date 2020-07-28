@@ -1,12 +1,13 @@
 package rewards
 
 import (
+	"github.com/pkg/errors"
+	tmstore "github.com/tendermint/tendermint/store"
+
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
-	"github.com/pkg/errors"
-	tmstore "github.com/tendermint/tendermint/store"
 )
 
 type RewardCumulativeStore struct {
@@ -57,14 +58,14 @@ func (rws *RewardCumulativeStore) PullRewards(height int64, poolAmt *balance.Amo
 	// print each cycle's distribution
 	if (height-1)%rws.rewardOptions.BlockSpeedCalculateCycle == 0 {
 		cycleNo := rws.calculator.cached.cycleNo
-		logger.Infof("Rewards cycle started, cycleNo = %v, amount = %s, height = %v", cycleNo, amount, height)
+		logger.Detailf("Rewards cycle started, cycleNo = %v, amount = %s, height = %v", cycleNo, amount, height)
 		for y, r := range rewardYears.Years {
-			logger.Infof("Rewards year-%v, distributed: %s", y+1, r.Distributed)
+			logger.Detailf("Rewards year-%v, distributed: %s", y+1, r.Distributed)
 		}
 	}
 
 	// print this block's distribution
-	logger.Infof("Rewards pulled,   amount = %s, height = %v", amount, height)
+	logger.Detailf("Rewards pulled,   amount = %s, height = %v", amount, height)
 	return
 }
 
@@ -79,10 +80,11 @@ func (rws *RewardCumulativeStore) ConsumeRewards(consumed *balance.Amount) error
 	// accumulates year distributed rewards
 	calc := rws.calculator
 	if !calc.cached.burnedout {
-		err = rws.addYearDistributedRewards(calc.cached.year, consumed)
+		_, _, lastInCycle := rws.calculator.getCycleNo()
+		err = rws.addYearDistributedRewards(calc.cached.year, consumed, lastInCycle)
 	}
 
-	logger.Infof("Rewards consumed, amount = %s, year = %v", consumed, calc.cached.year+1)
+	logger.Detailf("Rewards consumed, amount = %s, year = %v", consumed, calc.cached.year+1)
 	return err
 }
 
@@ -261,9 +263,10 @@ func (rws *RewardCumulativeStore) initRewardYears(key storage.StoreKey) (rewards
 	for i := 0; i < numofYears; i++ {
 		tClose := tStart.AddDate(1, 0, 0).UTC()
 		reward := RewardYear{
-			StartTime:   tStart,
-			CloseTime:   tClose,
-			Distributed: balance.NewAmount(0),
+			StartTime:     tStart,
+			CloseTime:     tClose,
+			Distributed:   balance.NewAmount(0),
+			TillLastCycle: balance.NewAmount(0),
 		}
 		logger.Infof("Initial year-%v [start: %s], [close: %s]", i+1, tStart, tClose)
 		tStart = tClose
@@ -312,13 +315,19 @@ func (rws *RewardCumulativeStore) addTotalDistributedRewards(amount *balance.Amo
 }
 
 // Add to total year distributed rewards
-func (rws *RewardCumulativeStore) addYearDistributedRewards(year int, amount *balance.Amount) error {
+func (rws *RewardCumulativeStore) addYearDistributedRewards(year int, amount *balance.Amount, lastInCycle bool) error {
 	rewardYears, err := rws.GetYearDistributedRewards()
 	if err != nil {
 		return err
 	}
+
+	// save total distributed amount of the cycle if cycle is ending
 	yearDist := rewardYears.Years[year].Distributed
 	rewardYears.Years[year].Distributed = yearDist.Plus(*amount)
+	if lastInCycle {
+		rewardYears.Years[year].TillLastCycle = rewardYears.Years[year].Distributed
+		logger.Infof("Rewards till last cycle, amount = %s", rewardYears.Years[year].TillLastCycle)
+	}
 	key := rws.getYearDistributedKey()
 	err = rws.set(key, rewardYears)
 	return err

@@ -103,9 +103,9 @@ func TestProposalFundStore_GetFundsForProposalID(t *testing.T) {
 	//fmt.Println("Get Funders for ID :  ", ID1)
 	funds := store.GetFundsForProposalID(ID1, func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund {
 		return ProposalFund{
-			id:            proposalID,
-			address:       fundingAddr,
-			fundingAmount: amt,
+			Id:            proposalID,
+			Address:       fundingAddr,
+			FundingAmount: amt,
 		}
 	})
 	//for _, fund := range funds {
@@ -120,9 +120,9 @@ func TestProposalFundStore_GetProposalForFunder(t *testing.T) {
 
 	funds := store.GetProposalsForFunder(address2, func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund {
 		return ProposalFund{
-			id:            proposalID,
-			address:       fundingAddr,
-			fundingAmount: amt,
+			Id:            proposalID,
+			Address:       fundingAddr,
+			FundingAmount: amt,
 		}
 	})
 	//for _, fund := range funds {
