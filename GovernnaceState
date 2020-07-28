@@ -1,0 +1,128 @@
+(governance.GovernanceState) {
+	FeeOption: (fees.FeeOption) {
+		FeeCurrency: (balance.Currency) {
+			Id: (int64) 0,
+			Name: (string) (len=3) "OLT",
+			Chain: (chain.Type) OneLedger,
+			Decimal: (int64) 18,
+			Unit: (string) (len=3) "nue"
+		},
+		MinFeeDecimal: (int64) 9,
+		minimalFee: (*balance.Coin)(<nil>)
+	},
+	ETHCDOption: (ethereum.ChainDriverOption) {
+		ContractABI: (string) "",
+		ContractAddress: (common.Address) (len=20 cap=20) 0x0000000000000000000000000000000000000000,
+		TokenList: ([]ethereum.ERC20Token) <nil>,
+		ERCContractABI: (string) "",
+		ERCContractAddress: (common.Address) (len=20 cap=20) 0x0000000000000000000000000000000000000000,
+		TotalSupply: (string) "",
+		TotalSupplyAddr: (string) "",
+		BlockConfirmation: (int64) 0
+	},
+	BTCCDOption: (bitcoin.ChainDriverOption) {
+		ChainType: (string) (len=8) "testnet3",
+		TotalSupply: (string) (len=10) "1000000000",
+		TotalSupplyAddr: (string) (len=22) "oneledgerSupplyAddress",
+		BlockConfirmation: (int64) 6
+	},
+	ONSOptions: (ons.Options) {
+		Currency: (string) (len=3) "OLT",
+		PerBlockFees: (balance.Amount) 100000000000000,
+		BaseDomainPrice: (balance.Amount) 1000000000000000000000,
+		FirstLevelDomains: ([]string) (len=1 cap=1) {
+			(string) (len=2) "ol"
+		},
+		firstLevel: (map[string]bool) <nil>,
+		protocols: (map[string]bool) <nil>
+	},
+	PropOptions: (governance.ProposalOptionSet) {
+		ConfigUpdate: (governance.ProposalOption) {
+			InitialFunding: (*balance.Amount)(0xc00014e9e0)(1000000000),
+			FundingGoal: (*balance.Amount)(0xc00014ea60)(10000000000),
+			FundingDeadline: (int64) 100,
+			VotingDeadline: (int64) 12,
+			PassPercentage: (int) 51,
+			PassedFundDistribution: (governance.ProposalFundDistribution) {
+				Validators: (float64) 18,
+				FeePool: (float64) 18,
+				Burn: (float64) 18,
+				ExecutionCost: (float64) 18,
+				BountyPool: (float64) 10,
+				ProposerReward: (float64) 18
+			},
+			FailedFundDistribution: (governance.ProposalFundDistribution) {
+				Validators: (float64) 10,
+				FeePool: (float64) 10,
+				Burn: (float64) 10,
+				ExecutionCost: (float64) 20,
+				BountyPool: (float64) 50,
+				ProposerReward: (float64) 0
+			},
+			ProposalExecutionCost: (string) (len=19) "executionCostConfig"
+		},
+		CodeChange: (governance.ProposalOption) {
+			InitialFunding: (*balance.Amount)(0xc00014e9e0)(1000000000),
+			FundingGoal: (*balance.Amount)(0xc00014ea60)(10000000000),
+			FundingDeadline: (int64) 100,
+			VotingDeadline: (int64) 12,
+			PassPercentage: (int) 51,
+			PassedFundDistribution: (governance.ProposalFundDistribution) {
+				Validators: (float64) 18,
+				FeePool: (float64) 18,
+				Burn: (float64) 18,
+				ExecutionCost: (float64) 18,
+				BountyPool: (float64) 10,
+				ProposerReward: (float64) 18
+			},
+			FailedFundDistribution: (governance.ProposalFundDistribution) {
+				Validators: (float64) 10,
+				FeePool: (float64) 10,
+				Burn: (float64) 10,
+				ExecutionCost: (float64) 20,
+				BountyPool: (float64) 50,
+				ProposerReward: (float64) 0
+			},
+			ProposalExecutionCost: (string) (len=23) "executionCostCodeChange"
+		},
+		General: (governance.ProposalOption) {
+			InitialFunding: (*balance.Amount)(0xc00014e9e0)(1000000000),
+			FundingGoal: (*balance.Amount)(0xc00014ea60)(10000000000),
+			FundingDeadline: (int64) 100,
+			VotingDeadline: (int64) 12,
+			PassPercentage: (int) 51,
+			PassedFundDistribution: (governance.ProposalFundDistribution) {
+				Validators: (float64) 18,
+				FeePool: (float64) 18,
+				Burn: (float64) 18,
+				ExecutionCost: (float64) 18,
+				BountyPool: (float64) 10,
+				ProposerReward: (float64) 18
+			},
+			FailedFundDistribution: (governance.ProposalFundDistribution) {
+				Validators: (float64) 10,
+				FeePool: (float64) 10,
+				Burn: (float64) 10,
+				ExecutionCost: (float64) 20,
+				BountyPool: (float64) 50,
+				ProposerReward: (float64) 0
+			},
+			ProposalExecutionCost: (string) (len=20) "executionCostGeneral"
+		},
+		BountyProgramAddr: (string) (len=22) "oneledgerBountyProgram"
+	},
+	StakingOptions: (delegation.Options) {
+		MinSelfDelegationAmount: (balance.Amount) 1,
+		MinDelegationAmount: (balance.Amount) 1,
+		TopValidatorCount: (int64) 3,
+		MaturityTime: (int64) 10
+	},
+	RewardOptions: (rewards.Options) {
+		RewardInterval: (int64) 150,
+		RewardPoolAddress: (string) (len=10) "rewardpool",
+		RewardCurrency: (string) (len=3) "OLT",
+		CalculateInterval: (int64) 1000,
+		AnnualSupply: (balance.Amount) 50000000000000000000000000,
+		YearsOfSupply: (int64) 5
+	}
+}

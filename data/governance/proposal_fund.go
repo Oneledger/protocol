@@ -8,13 +8,13 @@ import (
 )
 
 type ProposalFund struct {
-	id            ProposalID
-	address       keys.Address
-	fundingAmount *balance.Amount
+	Id            ProposalID      `json:"id"`
+	Address       keys.Address    `json:"address"`
+	FundingAmount *balance.Amount `json:"fundingAmount"`
 }
 
 func (fund *ProposalFund) Print() {
-	fmt.Printf("Proposal ID : %s | Funding Address : %s  | Funding Amount  : %s \n", fund.id, fund.address.String(), fund.fundingAmount.String())
+	fmt.Printf("Proposal ID : %s | Funding Address : %s  | Funding Amount  : %s \n", fund.Id, fund.Address.String(), fund.FundingAmount.String())
 }
 
 func (pf *ProposalFundStore) DeleteAllFunds(id ProposalID) error {

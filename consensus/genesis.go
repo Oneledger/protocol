@@ -84,6 +84,7 @@ type AppState struct {
 	Domains    []DomainState              `json:"domains"`
 	Trackers   []Tracker                  `json:"trackers"`
 	Fees       []BalanceState             `json:"fees"`
+	Proposals  []governance.GovProposal   `json:"proposals"`
 }
 
 func NewAppState(currencies balance.Currencies,

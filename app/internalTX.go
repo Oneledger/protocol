@@ -121,7 +121,9 @@ func FinalizeProposals(header *Header, ctx *context, logger *log.Logger) {
 		finalizeProposals = append(finalizeProposals, *tx)
 		return false
 	})
+
 	for _, proposal := range finalizeProposals {
+		ctx.deliver.BeginTxSession()
 		actionctx := ctx.Action(header, ctx.deliver)
 		txData := proposal.Tx
 		newFinalize := gov_action.FinalizeProposal{}
@@ -140,10 +142,12 @@ func FinalizeProposals(header *Header, ctx *context, logger *log.Logger) {
 		ok, _ := newFinalize.ProcessDeliver(actionctx, rawTx)
 		if !ok {
 			logger.Error("Failed to Finalize : ", txData, "Error : ", err)
+			ctx.deliver.DiscardTxSession()
 			continue
 		}
-		ctx.deliver.Commit()
+		ctx.deliver.CommitTxSession()
 	}
+
 	//Delete all proposals
 	ctx.transaction.IterateFinalized(func(key string, tx *abciTypes.RequestDeliverTx) bool {
 		ok, err := ctx.transaction.DeleteFinalized(key)
@@ -162,7 +166,9 @@ func ExpireProposals(header *Header, ctx *context, logger *log.Logger) {
 		expiredProposals = append(expiredProposals, *tx)
 		return false
 	})
+
 	for _, proposal := range expiredProposals {
+		ctx.deliver.BeginTxSession()
 		actionctx := ctx.Action(header, ctx.deliver)
 		txData := proposal.Tx
 		newExpire := gov_action.ExpireVotes{}
@@ -181,9 +187,10 @@ func ExpireProposals(header *Header, ctx *context, logger *log.Logger) {
 		ok, _ := newExpire.ProcessDeliver(actionctx, rawTx)
 		if !ok {
 			logger.Error("Failed to Expire : ", txData, "Error : ", err)
+			ctx.deliver.DiscardTxSession()
 			continue
 		}
-		ctx.deliver.Commit()
+		ctx.deliver.CommitTxSession()
 	}
 	ctx.transaction.IterateExpired(func(key string, tx *abciTypes.RequestDeliverTx) bool {
 		ok, err := ctx.transaction.DeleteExpired(key)
