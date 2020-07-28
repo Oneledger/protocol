@@ -3,8 +3,6 @@ from time import sleep
 from sdk.common import *
 
 tolerance = 1
-stake_error = "stake address does not match"
-success = "Returned Successfully"
 
 
 def testrewardswithdraw(validatorAccounts, result, error_message):
@@ -37,30 +35,6 @@ def testrewardswithdraw(validatorAccounts, result, error_message):
         del balance_before
         del balance_after
         print "Withdrawn :" + str(withdrawAmount) + "| To address :", str(validatorAccounts[i])
-
-
-def addValidatorAccounts(numofValidators):
-    validatorAcounts = []
-    for i in range(numofValidators):
-        args = ['olclient', 'show_node_id']
-        node = str(i) + "-Node"
-        nodedir = os.path.join(devnet, node)
-        process = subprocess.Popen(args, cwd=nodedir, stdout=subprocess.PIPE)
-        process.wait()
-        output = process.stdout.readlines()
-        sleep(1)
-        pubKey = output[0].split(",")[0].split(":")[1].strip()
-        f = open(os.path.join(nodedir, "consensus", "config", "node_key.json"), "r")
-        contents = json.loads(f.read())
-        privKey = contents['priv_key']['value']
-        args = ['olclient', 'account', 'add', '--privkey', privKey, '--pubkey', pubKey, "--password", '1234']
-        process = subprocess.Popen(args, cwd=nodedir, stdout=subprocess.PIPE)
-        process.wait()
-        output = process.stdout.readlines()
-        sleep(1)
-        validatorAcounts.append(output[1].split(":")[1].strip()[3:])
-    return validatorAcounts
-
 
 def addNewAccount():
     args = ['olclient', 'account', 'add', "--password", '1234']

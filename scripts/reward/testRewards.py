@@ -21,8 +21,10 @@ _fault_tolerance = 1000
 
 addr_list = addresses()
 
+
 def rewardkey(validator):
     return validator['totalAmount']
+
 
 def testRewardsDistribution():
     while True:
@@ -55,11 +57,16 @@ def testRewardsDistribution():
 if __name__ == "__main__":
     # send some funds to pool through olclient
     account = addr_list[0][3:]
-    # args = ['olclient', 'sendpool', '--root', node_0, '--amount', '10000', '--party', account, '--poolname',
-    #         'RewardsPool', '--fee', '0.0001']
-    # process = subprocess.Popen(args)
-    # process.wait()
-
+    validatorAccounts = addValidatorAccounts(4)
+    args = ['olclient', 'sendpool', '--amount', '10000', '--party', validatorAccounts[0], '--poolname',
+            'RewardsPool', '--fee', '0.0001', '--password', '1234']
+    process = subprocess.Popen(args, cwd=node_0, stdout=subprocess.PIPE)
+    process.wait()
+    output = process.stdout.read()
+    if not success in output:
+        print "Send to pool was not successful"
+        sys.exit(-1)
+    print bcolors.OKGREEN + "#### Success for send to pool" + bcolors.ENDC
     # test rewards distribution
     validators = testRewardsDistribution()
 
