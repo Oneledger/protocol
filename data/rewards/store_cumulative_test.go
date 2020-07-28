@@ -115,9 +115,10 @@ func setupRewardYears(tStart time.Time) RewardYears {
 	for i := 0; i < numofYears; i++ {
 		tClose := tStart.AddDate(1, 0, 0).UTC()
 		reward := RewardYear{
-			StartTime:   tStart,
-			CloseTime:   tClose,
-			Distributed: balance.NewAmount(0),
+			StartTime:     tStart,
+			CloseTime:     tClose,
+			Distributed:   balance.NewAmount(0),
+			TillLastCycle: balance.NewAmount(0),
 		}
 		tStart = tClose
 		rewards.Years = append(rewards.Years, reward)
@@ -214,6 +215,9 @@ func TestRewardsCumulativeStore_PullRewards(t *testing.T) {
 		calc := store.calculator
 		year := calc.cached.year
 		years.Years[year].Distributed = years.Years[year].Distributed.Plus(*amount)
+		if (height)%store.rewardOptions.BlockSpeedCalculateCycle == 0 {
+			years.Years[year].TillLastCycle = years.Years[year].Distributed
+		}
 		assert.Equal(t, years, rewardYears)
 	}
 
