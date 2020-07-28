@@ -9,9 +9,10 @@ import (
 )
 
 type RewardYear struct {
-	StartTime   time.Time
-	CloseTime   time.Time
-	Distributed *balance.Amount
+	StartTime     time.Time
+	CloseTime     time.Time
+	Distributed   *balance.Amount
+	TillLastCycle *balance.Amount // distributed till last cycle
 }
 
 type RewardYears struct {
@@ -33,6 +34,11 @@ func NewRewardCached() RewardCached {
 		burnedout: false,
 		amount:    balance.NewAmount(0),
 	}
+}
+
+func (cache *RewardCached) available() bool {
+	// we can always recalculate. This is just for performance purpose.
+	return cache.cycleNo > 0
 }
 
 type RewardCalculator struct {
@@ -60,19 +66,22 @@ func (calc *RewardCalculator) Burnedout() bool {
 }
 
 func (calc *RewardCalculator) Calculate() (amt *balance.Amount, err error) {
-	// return if all reward years already passed
+	// set cached amount if available
 	amt = balance.NewAmount(0)
-	*amt = *calc.cached.amount
-	if calc.cached.burnedout {
-		return
+	cycleNo, firstInCycle, _ := calc.getCycleNo()
+	if calc.cached.available() {
+		*amt = *calc.cached.amount
+		// return if all reward years already passed
+		if calc.cached.burnedout {
+			return
+		}
+		// recalculation is not needed if it's in the same cycle
+		if !firstInCycle {
+			return
+		}
 	}
 
-	// calculate again only at the beginning of a new cycle
-	cycleNo, isNew := calc.enterNewCycle()
-	if !isNew {
-		return
-	}
-
+	// calculate cached result again only when starting a new cycle or starting to catch up
 	// forcast how many more blocks can be generated before year close
 	options := calc.options
 	numofMoreBlocks, year := calc.numofMoreBlocksBeforeYearClose()
@@ -84,10 +93,10 @@ func (calc *RewardCalculator) Calculate() (amt *balance.Amount, err error) {
 
 	// how much rewards left before year close
 	yearSupply := options.YearBlockRewardShares[year]
-	yearDistributed := calc.rewardYears.Years[year].Distributed
+	yearDistributed := calc.rewardYears.Years[year].TillLastCycle
 	yearLeft, err := yearSupply.Minus(*yearDistributed)
 	if err != nil {
-		// shouldn't happen by design
+		// never happen by design
 		logger.Errorf("Year rewards burned out unexpectedly, year= %v", year+1)
 		return
 	}
@@ -138,13 +147,11 @@ func (calc *RewardCalculator) numofMoreBlocksBeforeYearClose() (int64, int) {
 	return numofMoreBlocks, yearIndex
 }
 
-// see if we entered a new cycle
-func (calc *RewardCalculator) enterNewCycle() (cycleNo int64, isNew bool) {
-	isNew = false
+// get cycleNo and see if we are at the first or last block of the cycle
+func (calc *RewardCalculator) getCycleNo() (cycleNo int64, firstInCycle bool, lastInCycle bool) {
+	firstInCycle = ((calc.height-1)%calc.options.BlockSpeedCalculateCycle == 0)
+	lastInCycle = ((calc.height)%calc.options.BlockSpeedCalculateCycle == 0)
 	cycleNo = (calc.height-1)/calc.options.BlockSpeedCalculateCycle + 1
-	if cycleNo > calc.cached.cycleNo {
-		isNew = true
-	}
 	return
 }
 
