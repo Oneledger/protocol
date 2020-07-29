@@ -105,7 +105,7 @@ func (a Amount) BigFloat() *big.Float {
 	return new(big.Float).SetInt(a.BigInt())
 }
 
-func (a *Amount) CheckRange(min Amount, max Amount) (bool, error) {
+func (a *Amount) CheckInRange(min Amount, max Amount) (bool, error) {
 	base := big.NewInt(0)
 	base = base.Sub(a.BigInt(), min.BigInt())
 	if base.Cmp(big.NewInt(0)) == -1 {

@@ -19,31 +19,35 @@ import (
 
 var (
 	blocksPerDay               = int64(5200)
-	infiniteMaxBalance         = balance.NewAmountFromInt(math.MaxInt64)
+	infiniteInt                = int64(math.MaxInt64)
+	infiniteMaxBalance         = balance.NewAmountFromInt(infiniteInt)
 	initialFundingConfigMin    = balance.NewAmountFromInt(1)
-	initialFundingConfigMax    = balance.NewAmountFromInt(100000)
-	initialFundingCodeMin      = balance.NewAmountFromInt(1000000)
+	initialFundingConfigMax    = infiniteMaxBalance
+	initialFundingCodeMin      = balance.NewAmountFromInt(1)
 	initialFundingCodeMax      = infiniteMaxBalance
 	initialFundingGeneralMin   = balance.NewAmountFromInt(10000)
 	initialFundingGeneralMax   = infiniteMaxBalance
 	initialToFundingMultiplier = int64(3)
-	minDeadlineFundingConfig   = getDeadline(7)
-	maxDeadlineFundingConfig   = getDeadline(30)
-	minDeadlineVotingeConfig   = getDeadline(7)
-	maxDeadlineVotingConfig    = getDeadline(30)
-	minDeadlineFundingCode     = getDeadline(30)
-	maxDeadlineFundingCode     = getDeadline(30 * 6)
-	minDeadlineVotingCode      = getDeadline(30)
-	maxDeadlineVotingCode      = getDeadline(30 * 3)
-	minDeadlineFundingGeneral  = getDeadline(14)
-	maxDeadlineFundingGeneral  = getDeadline(30)
-	minDeadlineVotingeGeneral  = getDeadline(14)
-	maxDeadlineVotingGeneral   = getDeadline(30)
+	minDeadlineFundingConfig   = getDeadline(10000)
+	maxDeadlineFundingConfig   = getDeadline(infiniteInt)
+	minDeadlineVotingConfig    = getDeadline(10000)
+	maxDeadlineVotingConfig    = getDeadline(infiniteInt)
+	minDeadlineFundingCode     = getDeadline(10000)
+	maxDeadlineFundingCode     = getDeadline(infiniteInt)
+	minDeadlineVotingCode      = getDeadline(150000)
+	maxDeadlineVotingCode      = getDeadline(450000)
+	minDeadlineFundingGeneral  = getDeadline(75000)
+	maxDeadlineFundingGeneral  = getDeadline(150000)
+	minDeadlineVotingeGeneral  = getDeadline(75000)
+	maxDeadlineVotingGeneral   = getDeadline(150000)
 	minPassPercentage          = int64(51)
 	maxPassPercentage          = int64(67)
 	decimalsAllowed            = 2
 	//ONS
-	minBaseDomainPrice = int64(0)
+	minPerBlockFee     = balance.NewAmountFromInt(0)
+	maxPerBlockFee     = infiniteMaxBalance
+	minBaseDomainPrice = balance.NewAmountFromInt(0)
+	maxBaseDomainPrice = infiniteMaxBalance
 	//FEE
 	minFeeDecimal = int64(0)
 	maxFeeDecimal = int64(18)
@@ -102,9 +106,13 @@ func (st *Store) ValidateONS(opt *ons.Options) (bool, error) {
 	if !reflect.DeepEqual(oldOptions.FirstLevelDomains, opt.FirstLevelDomains) {
 		return false, errors.New("first level domains cannot be changed")
 	}
-
-	if opt.BaseDomainPrice.BigInt().Int64() < minBaseDomainPrice {
-		return false, errors.New("base domain price needs to be greater than 0 ")
+	ok, err := opt.PerBlockFees.CheckInRange(*minPerBlockFee, *maxPerBlockFee)
+	if err != nil || !ok {
+		return false, errors.Wrap(err, "Per Block Fee")
+	}
+	ok, err = opt.BaseDomainPrice.CheckInRange(*minBaseDomainPrice, *maxBaseDomainPrice)
+	if err != nil || !ok {
+		return false, errors.Wrap(err, "Base Domain Price")
 	}
 
 	return true, nil
@@ -125,7 +133,7 @@ func (st *Store) ValidateFee(opt *fees.FeeOption) (bool, error) {
 }
 
 func (st *Store) ValidateStaking(opt *delegation.Options) (bool, error) {
-	ok, err := opt.MinSelfDelegationAmount.CheckRange(*minSelfDelegationAmount, *maxSelfDelegationAmount)
+	ok, err := opt.MinSelfDelegationAmount.CheckInRange(*minSelfDelegationAmount, *maxSelfDelegationAmount)
 	if err != nil || !ok {
 		return false, errors.Wrap(err, "Min Delegation Amount")
 	}
@@ -181,15 +189,15 @@ func (st *Store) ValidateProposal(opt *ProposalOptionSet) (bool, error) {
 	general := opt.General
 	oldOptions, err := st.GetProposalOptions()
 	// Verify Initial Funding
-	ok, err := config.InitialFunding.CheckRange(*initialFundingConfigMin, *initialFundingConfigMax)
+	ok, err := config.InitialFunding.CheckInRange(*initialFundingConfigMin, *initialFundingConfigMax)
 	if err != nil || !ok {
 		return false, err
 	}
-	ok, err = code.InitialFunding.CheckRange(*initialFundingCodeMin, *initialFundingCodeMax)
+	ok, err = code.InitialFunding.CheckInRange(*initialFundingCodeMin, *initialFundingCodeMax)
 	if err != nil || !ok {
 		return false, err
 	}
-	ok, err = general.InitialFunding.CheckRange(*initialFundingGeneralMin, *initialFundingGeneralMax)
+	ok, err = general.InitialFunding.CheckInRange(*initialFundingGeneralMin, *initialFundingGeneralMax)
 	if err != nil || !ok {
 		return false, err
 	}
@@ -210,7 +218,7 @@ func (st *Store) ValidateProposal(opt *ProposalOptionSet) (bool, error) {
 	if !verifyRangeInt64(config.FundingDeadline, minDeadlineFundingConfig, maxDeadlineFundingConfig) {
 		return false, errors.New("funding deadline for Config update is not within range")
 	}
-	if !verifyRangeInt64(config.VotingDeadline, minDeadlineVotingeConfig, maxDeadlineVotingConfig) {
+	if !verifyRangeInt64(config.VotingDeadline, minDeadlineVotingConfig, maxDeadlineVotingConfig) {
 		return false, errors.New("funding deadline for Config update is not within range")
 	}
 	if !verifyRangeInt64(code.FundingDeadline, minDeadlineFundingCode, maxDeadlineFundingCode) {
@@ -284,7 +292,7 @@ func (st *Store) ValidateRewards(opt *rewards.Options) (bool, error) {
 func verifyMinFunding(intialFunding *balance.Amount, fundingGoal *balance.Amount) (bool, error) {
 	minFundingGoalConfig := big.NewInt(0)
 	minFundingGoalConfig = minFundingGoalConfig.Mul(intialFunding.BigInt(), big.NewInt(initialToFundingMultiplier))
-	return fundingGoal.CheckRange(*balance.NewAmountFromBigInt(minFundingGoalConfig), *infiniteMaxBalance)
+	return fundingGoal.CheckInRange(*balance.NewAmountFromBigInt(minFundingGoalConfig), *infiniteMaxBalance)
 }
 
 func verifyRangeInt64(value int64, min int64, max int64) bool {
@@ -310,6 +318,6 @@ func checkDecimalPlaces(value float64) bool {
 	return extra == 0
 }
 
-func getDeadline(nofodays int64) int64 {
-	return nofodays * blocksPerDay
+func getDeadline(numberofblocks int64) int64 {
+	return numberofblocks
 }
