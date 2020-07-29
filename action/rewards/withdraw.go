@@ -1,6 +1,7 @@
 package rewards
 
 import (
+	"bytes"
 	"encoding/json"
 
 	"github.com/pkg/errors"
@@ -72,9 +73,6 @@ func (withdrawTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool,
 	if err != nil {
 		return false, err
 	}
-	if !ctx.Validators.IsValidatorAddress(withdraw.ValidatorAddress) {
-		return false, action.ErrInvalidValidatorAddr
-	}
 
 	currency, ok := ctx.Currencies.GetCurrencyByName("OLT")
 	if !ok {
@@ -123,17 +121,31 @@ func runWithdraw(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return helpers.LogAndReturnFalse(ctx.Logger, rewards.UnableToWithdraw, withdraw.Tags(), err)
 	}
 
+	if ctx.Validators.Exists(withdraw.ValidatorAddress) {
+		validator, err := ctx.Validators.Get(withdraw.ValidatorAddress)
+		if err != nil {
+			return helpers.LogAndReturnFalse(ctx.Logger, action.ErrInvalidValidatorAddr, withdraw.Tags(), err)
+		}
+		if !bytes.Equal(validator.StakeAddress, withdraw.SignerAddress) {
+			return helpers.LogAndReturnFalse(ctx.Logger, action.ErrStakeAddressMismatch, withdraw.Tags(), err)
+		}
+	}
+	if !ctx.Validators.Exists(withdraw.ValidatorAddress) {
+		ctx.Logger.Info("Validator Does not exist , Allowing withdraw to address :", withdraw.SignerAddress)
+	}
+
 	//6. Update the balance db with the withdrawn amount for that validator
-	withDrawCoin := withdraw.WithdrawAmount.ToCoin(ctx.Currencies)
+	withDrawCoin := withdraw.WithdrawAmount.ToCoinWithBase(ctx.Currencies)
 	rewardsPool := action.Address(ctx.RewardMasterStore.GetOptions().RewardPoolAddress)
+
 	err = ctx.Balances.MinusFromAddress(rewardsPool, withDrawCoin)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, balance.ErrBalanceErrorMinusFailed, withdraw.Tags(), err)
 	}
-	err = ctx.Balances.AddToAddress(withdraw.ValidatorAddress.Bytes(), withDrawCoin)
+	err = ctx.Balances.AddToAddress(withdraw.SignerAddress.Bytes(), withDrawCoin)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, balance.ErrBalanceErrorAddFailed, withdraw.Tags(), err)
 	}
-	ctx.Logger.Debugf("Successfully withdrawn %s to Validator Address %s", withDrawCoin, withdraw.ValidatorAddress.String())
+	ctx.Logger.Debugf("Successfully withdrawn %s to Address %s ", withDrawCoin, withdraw.SignerAddress.String())
 	return helpers.LogAndReturnTrue(ctx.Logger, withdraw.Tags(), "Success")
 }

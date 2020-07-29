@@ -256,6 +256,12 @@ func (app *App) setupState(stateBytes []byte) error {
 		}
 	}
 
+	//Setup Proposals
+	err = app.Context.proposalMaster.WithState(app.Context.deliver).LoadProposals(initial.Proposals)
+	if err != nil {
+		return errors.Wrap(err, "error setup proposal data")
+	}
+
 	app.Context.deliver.Write()
 	return nil
 }
