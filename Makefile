@@ -103,6 +103,10 @@ stakingtest: reset
 	python scripts/staking/self_staking.py
 	@./scripts/stopNodes
 
+transfertest: reset
+	python scripts/transfer/testSendPool.py
+	@./scripts/stopNodes
+
 # run rewards tests
 rewardtest: reset
 	@./scripts/testsend
@@ -167,3 +171,5 @@ testData:
 	python scripts/ons/renew_domain.py
 	python scripts/ons/buy_sell_domain.py
 	python scripts/ons/update_domain.py
+
+
