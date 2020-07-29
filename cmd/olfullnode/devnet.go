@@ -81,9 +81,22 @@ var (
 		ProposerReward: 00.00,
 	}
 
-	blockRewardsCalcInterval    = int64(1000)
-	annualBlockRewardsSupply, _ = balance.NewAmountFromString("50000000000000000000000000", 10)
-	yearsOfBlockRewardsSupply   = int64(5)
+	estimatedSecondsPerCycle  = int64(1728)
+	blockSpeedCalculateCycle  = int64(100)
+	burnoutRate, _            = balance.NewAmountFromString("5000000000000000000", 10)
+	yearCloseWindow           = int64(3600 * 24)
+	yearBlockRewardShare_1, _ = balance.NewAmountFromString("70000000000000000000000000", 10)
+	yearBlockRewardShare_2, _ = balance.NewAmountFromString("70000000000000000000000000", 10)
+	yearBlockRewardShare_3, _ = balance.NewAmountFromString("40000000000000000000000000", 10)
+	yearBlockRewardShare_4, _ = balance.NewAmountFromString("40000000000000000000000000", 10)
+	yearBlockRewardShare_5, _ = balance.NewAmountFromString("30000000000000000000000000", 10)
+	yearBlockRewardShares     = []balance.Amount{
+		*yearBlockRewardShare_1,
+		*yearBlockRewardShare_2,
+		*yearBlockRewardShare_3,
+		*yearBlockRewardShare_4,
+		*yearBlockRewardShare_5,
+	}
 
 	testnetArgs = &testnetConfig{}
 
@@ -290,6 +303,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		return err
 	}
 	// Create the GenesisValidator list and its key files priv_validator_key.json and node_key.json
+	validatorPower := int64(0)
 	for i := 0; i < totalNodes; i++ {
 		isValidator := i < args.numValidators
 		nodeName := ctx.names[i]
@@ -368,11 +382,13 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		// Save the nodes to a list so we can iterate again and
 		n := node{isValidator: isValidator, cfg: cfg, dir: nodeDir, key: nodeKey, esdcaPk: ecdsaPk}
 		if isValidator {
+			// each validator takes a different power
+			validatorPower++
 			validator := consensus.GenesisValidator{
 				Address: pvFile.GetAddress(),
 				PubKey:  pvFile.GetPubKey(),
 				Name:    nodeName,
-				Power:   1,
+				Power:   validatorPower,
 			}
 			validatorList[i] = validator
 			n.validator = validator
@@ -453,12 +469,14 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 	}
 
 	rewzOpt := rewards.Options{
-		RewardInterval:    args.rewardsInterval,
-		RewardPoolAddress: "rewardpool",
-		RewardCurrency:    "OLT",
-		CalculateInterval: blockRewardsCalcInterval,
-		AnnualSupply:      *annualBlockRewardsSupply,
-		YearsOfSupply:     yearsOfBlockRewardsSupply,
+		RewardInterval:           args.rewardsInterval,
+		RewardPoolAddress:        "rewardpool",
+		RewardCurrency:           "OLT",
+		EstimatedSecondsPerCycle: estimatedSecondsPerCycle,
+		BlockSpeedCalculateCycle: blockSpeedCalculateCycle,
+		YearCloseWindow:          yearCloseWindow,
+		YearBlockRewardShares:    yearBlockRewardShares,
+		BurnoutRate:              *burnoutRate,
 	}
 	states := initialState(args, nodeList, *cdo, *onsOp, btccdo, propOpt, reserveDomains, initialAddrs, rewzOpt)
 
@@ -508,6 +526,9 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 	}
 	balances := make([]consensus.BalanceState, 0, len(nodeList))
 	staking := make([]consensus.Stake, 0, len(nodeList))
+	rewards := rewards.RewardMasterState{
+		CumuState: rewards.NewRewardCumuState(),
+	}
 	domains := make([]consensus.DomainState, 0, len(nodeList))
 	fees_db := make([]consensus.BalanceState, 0, len(nodeList))
 	total := olt.NewCoinFromInt(args.totalFunds)
@@ -627,6 +648,7 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 		Currencies: currencies,
 		Balances:   balances,
 		Staking:    staking,
+		Rewards:    rewards,
 		Domains:    domains,
 		Fees:       fees_db,
 		Governance: governance.GovernanceState{

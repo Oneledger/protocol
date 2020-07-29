@@ -29,7 +29,7 @@ def create_some_proposals():
     time.sleep(1)
     fund_proposal(prop_0.pid, _big_funding, addr_list[1])
     vote_proposal(prop_0.pid, OPIN_NEGATIVE, url_0, addr_list[0])
-    vote_proposal(prop_0.pid, OPIN_NEGATIVE, url_1, addr_list[1])
+    vote_proposal(prop_0.pid, OPIN_NEGATIVE, url_3, addr_list[1])
     result_by_id[prop_0.pid] = (ProposalTypeGeneral, ProposalOutcomeCompletedNo, ProposalStatusCompleted, 0)
     result_by_proposer[_proposer_0].append(prop_0.pid)
     result_by_type[ProposalTypeGeneral].append(prop_0.pid)

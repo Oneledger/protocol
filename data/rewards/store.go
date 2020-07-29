@@ -30,6 +30,10 @@ func NewRewardStore(prefix string, intervalPrefix string, addrListPrefix string,
 	}
 }
 
+func (rs *RewardStore) GetState() *storage.State {
+	return rs.State
+}
+
 func (rs *RewardStore) WithState(state *storage.State) *RewardStore {
 	rs.State = state
 	return rs

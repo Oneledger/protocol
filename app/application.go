@@ -165,7 +165,6 @@ func (app *App) setupState(stateBytes []byte) error {
 		return errors.Wrap(err, "Setup FeeOptions Options")
 	}
 	app.Context.feePool.SetupOpt(&initial.Governance.FeeOption)
-	app.Context.rewardMaster.SetOptions(&initial.Governance.RewardOptions)
 
 	err = app.Context.govern.WithHeight(app.header.Height).SetLUH()
 	if err != nil {
@@ -198,6 +197,10 @@ func (app *App) setupState(stateBytes []byte) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to add initial ethereum witness")
 		}
+	}
+
+	if !app.Context.rewardMaster.WithState(app.Context.deliver).LoadState(initial.Rewards) {
+		return errors.Wrap(err, "failed to setup initial rewards")
 	}
 
 	for _, domain := range initial.Domains {
@@ -251,6 +254,12 @@ func (app *App) setupState(stateBytes []byte) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to setup initial Trackers")
 		}
+	}
+
+	//Setup Proposals
+	err = app.Context.proposalMaster.WithState(app.Context.deliver).LoadProposals(initial.Proposals)
+	if err != nil {
+		return errors.Wrap(err, "error setup proposal data")
 	}
 
 	app.Context.deliver.Write()
@@ -401,6 +410,9 @@ func (app *App) Prepare() error {
 
 	// Init witness store after genesis witnesses loaded in above NewNode
 	app.Context.witnesses.Init(chain.ETHEREUM, app.Context.node.ValidatorAddress())
+
+	// Init reward cumulative store
+	app.Context.rewardMaster.RewardCm.Init(app.node.BlockStore())
 
 	// Initialize internal Services
 	app.Context.internalService = event.NewService(app.Context.node,

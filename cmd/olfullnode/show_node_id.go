@@ -3,9 +3,11 @@ package main
 import (
 	"fmt"
 	"net/url"
+	"regexp"
 
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
+	"github.com/Oneledger/protocol/data/keys"
 	"github.com/spf13/cobra"
 	"github.com/tendermint/tendermint/p2p"
 )
@@ -56,14 +58,23 @@ func showNodeID(root string, shouldShowIP bool) (result string, err error) {
 		return result, err
 	}
 
+	// get public key text
+	pubKey, _ := keys.PubKeyFromTendermint(nodeKey.PubKey().Bytes())
+	encoded, _ := pubKey.GobEncode()
+	pubKeyText := string(encoded)
+	matches := regexp.MustCompile(`^{.*:.*,.*:"(.*)"}$`).FindStringSubmatch(pubKeyText)
+	if len(matches) > 1 {
+		pubKeyText = matches[1]
+	}
+
 	ip := configuration.CFG.P2P.ExternalAddress
 	if shouldShowIP {
 		u, err := url.Parse(ip)
 		if err != nil {
 			return result, err
 		}
-		return fmt.Sprintf("%s@%s", nodeKey.ID(), u.Host), nil
+		return fmt.Sprintf("publicKey: %s, id: %s@%s", pubKeyText, nodeKey.ID(), u.Host), nil
 	} else {
-		return string(nodeKey.ID()), nil
+		return fmt.Sprintf("publicKey: %s, id: %s", pubKeyText, nodeKey.ID()), nil
 	}
 }

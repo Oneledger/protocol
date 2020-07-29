@@ -141,7 +141,8 @@ type NodeIDRequest struct {
 	ShouldShowIP bool `json:"shouldShowIP,omitempty"`
 }
 type NodeIDReply struct {
-	Id string `json:"id"`
+	PublicKey string `json:"publicKey"`
+	Id        string `json:"id"`
 }
 
 type AddAccountRequest = accounts.Account

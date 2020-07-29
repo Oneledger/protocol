@@ -2,22 +2,42 @@ import sys
 
 from rpc_call import *
 
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
 
 def query_rewards(validator):
     req = {
         "validator": validator,
     }
 
-    resp = rpc_call('query.ListRewardsForValidator', req)
+    resp = rpc_call('query.GetTotalRewardsForValidator', req)
 
     if "result" in resp:
         result = resp["result"]
     else:
         result = ""
-
-    # print json.dumps(resp, indent=4)
     return result
 
+def query_balance(address):
+    req = {
+        "currency": "OLT",
+        "address": address
+    }
+    resp = rpc_call('query.CurrencyBalance', req)
+
+    if "result" in resp:
+        result = resp["result"]["balance"]
+    else:
+        result = ""
+    return int(float(result))
 
 def withdraw_rewards(validator):
     req = {
@@ -89,15 +109,7 @@ class Withdraw:
     def _withdraw_reward(self):
         req = {
             "validatorSigningAddress": self.address,
-            "withdrawAmount": {
-                "currency": "OLT",
-                "value": self.withdrawAmount,
-            },
-            "gasPrice": {
-                "currency": "OLT",
-                "value": "1000000000",
-            },
-            "gas": 40000,
+            "withdrawAmount": self.withdrawAmount,
         }
         resp = rpc_call('tx.WithdrawRewards', req)
         result = resp["result"]
@@ -125,7 +137,5 @@ def query_total_rewards():
         result = resp["result"]
     else:
         result = ""
-
-    print json.dumps(resp, indent=4)
 
     return result

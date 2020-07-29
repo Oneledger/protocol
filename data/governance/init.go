@@ -1,6 +1,8 @@
 package governance
 
 import (
+	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/keys"
 	"os"
 
 	"github.com/Oneledger/protocol/log"
@@ -63,6 +65,13 @@ const (
 	SHA256LENGTH int = 0x40
 )
 
+type GovProposal struct {
+	Prop          Proposal        `json:"proposal"`
+	ProposalVotes []*ProposalVote `json:"proposalVotes"`
+	ProposalFunds []ProposalFund  `json:"proposalFunds"`
+	State         ProposalState
+}
+
 type ProposalMasterStore struct {
 	Proposal     *ProposalStore
 	ProposalFund *ProposalFundStore
@@ -74,6 +83,52 @@ func (p *ProposalMasterStore) WithState(state *storage.State) *ProposalMasterSto
 	p.ProposalFund.WithState(state)
 	p.ProposalVote.WithState(state)
 	return p
+}
+
+func (p *ProposalMasterStore) GetProposalVotes(id ProposalID) []*ProposalVote {
+	_, votes, err := p.ProposalVote.GetVotesByID(id)
+	if err != nil {
+		return nil
+	}
+	return votes
+}
+
+func (p *ProposalMasterStore) GetProposalFunds(id ProposalID) []ProposalFund {
+	return p.ProposalFund.GetFundsForProposalID(id, func(proposalID ProposalID, fundingAddr keys.Address, amt *balance.Amount) ProposalFund {
+		propFund := ProposalFund{
+			Id:            proposalID,
+			Address:       fundingAddr,
+			FundingAmount: amt,
+		}
+		return propFund
+	})
+}
+
+func (p *ProposalMasterStore) LoadProposals(proposals []GovProposal) error {
+	for _, prop := range proposals {
+		p.Proposal.WithPrefixType(prop.State)
+		err := p.Proposal.Set(&prop.Prop)
+		if err != nil {
+			return err
+		}
+		for _, vote := range prop.ProposalVotes {
+			err = p.ProposalVote.Setup(prop.Prop.ProposalID, NewProposalVote(vote.Validator, OPIN_UNKNOWN, vote.Power))
+			if err != nil {
+				return err
+			}
+			err = p.ProposalVote.Update(prop.Prop.ProposalID, vote)
+			if err != nil {
+				return err
+			}
+		}
+		for _, fund := range prop.ProposalFunds {
+			err = p.ProposalFund.AddFunds(fund.Id, fund.Address, fund.FundingAmount)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func NewProposalMasterStore(p *ProposalStore, pf *ProposalFundStore, pv *ProposalVoteStore) *ProposalMasterStore {

@@ -27,6 +27,7 @@ import (
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/data/ons"
+	"github.com/Oneledger/protocol/data/rewards"
 	"github.com/Oneledger/protocol/log"
 )
 
@@ -481,6 +482,7 @@ func getInitialState(args *genesisArgument, nodeList []node, option ethchain.Cha
 		Currencies: currencies,
 		Balances:   balances,
 		Staking:    staking,
+		Rewards:    rewards.RewardMasterState{},
 		Domains:    domains,
 		Fees:       fees_db,
 		Governance: governance.GovernanceState{

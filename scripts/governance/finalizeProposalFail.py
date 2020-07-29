@@ -22,10 +22,10 @@ def test_pass_finalize_proposal():
 
 
     # 1st vote --> 25%
-    vote_proposal(encoded_pid, OPIN_NEGATIVE, url_0, addr_list[0])
+    vote_proposal(encoded_pid, OPIN_NEGATIVE, url_1, addr_list[0])
 
     # # 2nd vote --> 25%
-    vote_proposal(encoded_pid, OPIN_NEGATIVE, url_1, addr_list[0])
+    vote_proposal(encoded_pid, OPIN_NEGATIVE, url_2, addr_list[0])
 
     time.sleep(3)
     return encoded_pid

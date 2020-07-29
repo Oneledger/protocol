@@ -368,9 +368,9 @@ func (st *Store) GetProposalOptionsByType(ptype ProposalType) (*ProposalOption, 
 	case ProposalTypeConfigUpdate:
 		return &pOpts.ConfigUpdate, nil
 	case ProposalTypeCodeChange:
-		return &pOpts.ConfigUpdate, nil
+		return &pOpts.CodeChange, nil
 	case ProposalTypeGeneral:
-		return &pOpts.ConfigUpdate, nil
+		return &pOpts.General, nil
 	}
 	return nil, errors.New(fmt.Sprintf("Options of Type %s not found", ptype))
 }

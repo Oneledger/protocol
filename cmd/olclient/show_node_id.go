@@ -44,5 +44,5 @@ func showNodeID(_ *cobra.Command, _ []string) {
 		ctx.logger.Error("failed to get node ID", err)
 		return
 	}
-	fmt.Println(out)
+	fmt.Println(fmt.Sprintf("publicKey: %s, id: %s", out.PublicKey, out.Id))
 }

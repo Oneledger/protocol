@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math"
+	"math/big"
 	"runtime/debug"
 	"strconv"
 
@@ -127,10 +128,11 @@ func (app *App) blockBeginner() blockBeginner {
 		}
 
 		// update Block Rewards
-		//blockRewardEvent := handleBlockRewards(app.Context.validators, app.Context.rewardMaster.WithState(app.Context.deliver), req)
+		blockRewardEvent := handleBlockRewards(app.Context.validators, app.Context.balances,
+			app.Context.rewardMaster.WithState(app.Context.deliver), app.Context.currencies, req)
 
 		result := ResponseBeginBlock{
-			//Events: []abciTypes.Event{blockRewardEvent},
+			Events: []abciTypes.Event{blockRewardEvent},
 		}
 
 		//update the header to current block
@@ -425,9 +427,19 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 
 }
 
-func handleBlockRewards(validators *identity.ValidatorStore, rewardMaster *rewards.RewardMasterStore, block RequestBeginBlock) abciTypes.Event {
+//Get Individual Validator reward based on power
+func getRewardForValidator(totalPower int64, validatorPower int64, totalRewards *balance.Amount) *balance.Amount {
+	numerator := big.NewInt(0).Mul(totalRewards.BigInt(), big.NewInt(validatorPower))
+	reward := balance.NewAmountFromBigInt(big.NewInt(0).Div(numerator, big.NewInt(totalPower)))
+	return reward
+}
+
+func handleBlockRewards(validators *identity.ValidatorStore, balances *balance.Store, rewardMaster *rewards.RewardMasterStore,
+	currency *balance.CurrencySet, block RequestBeginBlock) abciTypes.Event {
+
 	votes := block.LastCommitInfo.Votes
 	lastHeight := block.GetHeader().Height
+	options := rewardMaster.Reward.GetOptions()
 
 	heightKey := "height"
 
@@ -449,7 +461,27 @@ func handleBlockRewards(validators *identity.ValidatorStore, rewardMaster *rewar
 		return false
 	})
 
+	//get total power of active validators
+	totalPower := int64(0)
+	for _, vote := range votes {
+		totalPower += vote.Validator.Power
+	}
+
+	//get total rewards for the block
+	rewardPoolBalance, err := balances.GetBalance(keys.Address(options.RewardPoolAddress), currency)
+	curr, ok := currency.GetCurrencyById(0)
+	if err != nil || !ok {
+		return abciTypes.Event{}
+	}
+	currency.GetCurrencyById(0)
+	coin := rewardPoolBalance.GetCoin(curr)
+	totalRewards, err := rewardMaster.RewardCm.PullRewards(lastHeight, coin.Amount)
+	if err != nil {
+		return abciTypes.Event{}
+	}
+
 	//Loop through all validators that participated in signing the last block
+	totalConsumed := balance.NewAmount(0)
 	for _, vote := range votes {
 		//Verify Validator Address
 		valAddress := keys.Address(vote.Validator.Address)
@@ -462,13 +494,13 @@ func handleBlockRewards(validators *identity.ValidatorStore, rewardMaster *rewar
 		}
 
 		if vote.GetSignedLastBlock() {
-			//Distribute Block Reward to Validator
-			//TODO: Calculate reward to be distributed
-			amount := balance.NewAmount(10)
+			amount := getRewardForValidator(totalPower, vote.Validator.Power, totalRewards)
 			err = rewardMaster.Reward.AddToAddress(valAddress, lastHeight, amount)
 			if err != nil {
 				continue
 			}
+			//Add to Consumed amount
+			totalConsumed = totalConsumed.Plus(*amount)
 
 			//Record Amount in kvMap
 			kvMap[valAddress.String()] = kv.Pair{
@@ -480,7 +512,6 @@ func handleBlockRewards(validators *identity.ValidatorStore, rewardMaster *rewar
 
 	//Update Matured Amount
 	rewardMaster.Reward.IterateAddrList(func(addr keys.Address) bool {
-		options := rewardMaster.Reward.GetOptions()
 		matured := lastHeight % options.RewardInterval
 		if matured == 0 {
 			//Add rewards at chunk n - 2 to cumulative store
@@ -495,6 +526,9 @@ func handleBlockRewards(validators *identity.ValidatorStore, rewardMaster *rewar
 		}
 		return false
 	})
+
+	//pass total consumed amount to cumulative db
+	_ = rewardMaster.RewardCm.ConsumeRewards(totalConsumed)
 
 	//Populate Event with validator rewards
 	result.Type = "block_rewards"

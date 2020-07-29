@@ -214,6 +214,8 @@ func writeListWithTag(ctx app.StorageCtx, writer io.Writer, tag string) bool {
 		DumpDomainToFile(ctx.Domains, ctx.Version, writer, writeStruct)
 	case "trackers":
 		DumpTrackerToFile(ctx.Trackers, writer, writeStruct)
+	case "proposals":
+		DumpGovProposalsToFile(ctx.ProposalMaster, writer, writeStruct)
 	case "fees":
 		DumpFeesToFile(ctx.FeePool, writer, writeStruct)
 		delimiter = ""
@@ -226,6 +228,19 @@ func writeListWithTag(ctx app.StorageCtx, writer io.Writer, tag string) bool {
 	}
 
 	return true
+}
+
+func writeStoreWithTag(ctx app.StorageCtx, writer io.Writer, tag string) (state interface{}, succeed bool) {
+	succeed = false
+	switch section := tag; section {
+	case "rewards":
+		state, succeed = ctx.RewardMaster.DumpState()
+	}
+	if !succeed {
+		return
+	}
+	succeed = writeStructWithTag(writer, state, tag)
+	return
 }
 
 func SaveChainState(application *app.App, filename string, directory string) error {
@@ -298,8 +313,10 @@ func SaveChainState(application *app.App, filename string, directory string) err
 	writeStructWithTag(writer, appState.Chain, "state")
 	writeListWithTag(ctx, writer, "balances")
 	writeListWithTag(ctx, writer, "staking")
+	writeStoreWithTag(ctx, writer, "rewards")
 	writeListWithTag(ctx, writer, "domains")
 	writeListWithTag(ctx, writer, "trackers")
+	writeListWithTag(ctx, writer, "proposals")
 	writeListWithTag(ctx, writer, "fees")
 	endBlock(writer)
 
@@ -543,4 +560,38 @@ func DumpValidatorsToFile(vs *identity.ValidatorStore, writer io.Writer, fn func
 	})
 
 	return
+}
+
+func DumpGovProposalsToFile(pm *governance.ProposalMasterStore, writer io.Writer, fn func(writer io.Writer, obj interface{}) bool) {
+	iterator := 0
+	delimiter := ","
+	stateList := []governance.ProposalState{governance.ProposalStateActive,
+		governance.ProposalStatePassed,
+		governance.ProposalStateFailed,
+		governance.ProposalStateFinalized,
+		governance.ProposalStateFinalizeFailed}
+
+	for _, state := range stateList {
+		pm.Proposal.WithPrefixType(state)
+		pm.Proposal.Iterate(func(id governance.ProposalID, proposal *governance.Proposal) bool {
+			if iterator != 0 {
+				_, err := writer.Write([]byte(delimiter))
+				if err != nil {
+					return true
+				}
+			}
+
+			govProp := governance.GovProposal{
+				Prop:          *proposal,
+				ProposalVotes: pm.GetProposalVotes(proposal.ProposalID),
+				ProposalFunds: pm.GetProposalFunds(proposal.ProposalID),
+				State:         state,
+			}
+
+			fn(writer, govProp)
+
+			iterator++
+			return false
+		})
+	}
 }

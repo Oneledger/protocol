@@ -9,9 +9,9 @@ import (
 )
 
 type ProposalVote struct {
-	Validator keys.Address	`json:"validator"`
-	Opinion   VoteOpinion	`json:"opinion"`
-	Power     int64			`json:"power"`
+	Validator keys.Address `json:"validator"`
+	Opinion   VoteOpinion  `json:"opinion"`
+	Power     int64        `json:"power"`
 }
 
 type VoteStatus struct {

@@ -7,4 +7,5 @@ import (
 var (
 	UnableToGetMaturedAmount = codes.ProtocolError{codes.RewardsUnableToGetMaturedAmount, "failed to get matured balance"}
 	UnableToWithdraw         = codes.ProtocolError{codes.RewardsUnableToWithdraw, "Unable to withdraw"}
+	YearRewardsMissing       = codes.ProtocolError{codes.RewardsYearRewardsMissing, "Year rewards missing"}
 )
