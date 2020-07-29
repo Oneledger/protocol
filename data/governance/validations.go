@@ -216,6 +216,7 @@ func (st *Store) ValidateProposal(opt *ProposalOptionSet) (bool, error) {
 	}
 	// Verify Funding and Voting Deadlines
 	if !verifyRangeInt64(config.FundingDeadline, minDeadlineFundingConfig, maxDeadlineFundingConfig) {
+
 		return false, errors.New("funding deadline for Config update is not within range")
 	}
 	if !verifyRangeInt64(config.VotingDeadline, minDeadlineVotingConfig, maxDeadlineVotingConfig) {
