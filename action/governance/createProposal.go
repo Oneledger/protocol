@@ -272,8 +272,3 @@ func (c CreateProposal) Marshal() ([]byte, error) {
 func (c *CreateProposal) Unmarshal(bytes []byte) error {
 	return json.Unmarshal(bytes, c)
 }
-
-func validateConfig(ctx *action.Context, proposal CreateProposal) (error, bool) {
-
-	return nil, true
-}

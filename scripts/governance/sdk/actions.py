@@ -57,6 +57,7 @@ class Proposal:
         self.des = description
         self.proposer = proposer
         self.init_fund = init_fund
+        self.configupdate = self.default_gov_state()
 
     def _calculate_proposal_info(self, assign_funding_deadline):
         query_options = query_proposal_options()
@@ -103,131 +104,7 @@ class Proposal:
             "fundingDeadline": _proposal_info.funding_deadline,
             "votingDeadline": _proposal_info.voting_deadline,
             "passPercentage": _proposal_info.pass_percentage,
-            "configUpdate": {
-                "bitcoinChainDriverOption": {
-                    "TotalSupply": "1000000000",
-                    "BlockConfirmation": 6,
-                    "ChainType": "testnet3",
-                    "TotalSupplyAddr": "oneledgerSupplyAddress"
-                },
-                "ethchaindriverOption": {
-                    "ERCContractAddress": "0x0000000000000000000000000000000000000000",
-                    "ContractAddress": "0x0000000000000000000000000000000000000000",
-                    "BlockConfirmation": 12,
-                    "ERCContractABI": "",
-                    "TotalSupply": "",
-                    "TokenList": [],
-                    "ContractABI": "",
-                    "TotalSupplyAddr": ""
-                },
-                "feeOption": {
-                    "feeCurrency": {
-                        "decimal": 18,
-                        "unit": "nue",
-                        "id": 0,
-                        "chain": 0,
-                        "name": "OLT"
-                    },
-                    "minFeeDecimal": 9
-                },
-                "rewardOptions": {
-                    "rewardPoolAddress": "rewardpool",
-                    "rewardInterval": 1,
-                    "rewardCurrency": "OLT",
-                    "calculateInterval": 1000,
-                    "annualSupply": "50000000000000000000000000",
-                    "yearsOfSupply": 5
-                },
-                "stakingOptions": {
-                    "minSelfDelegationAmount": "3000000",
-                    "minDelegationAmount": "1",
-                    "topValidatorCount": 8,
-                    "maturityTime": 109200
-                },
-                "propOptions": {
-                    "configUpdate": {
-                        "passedFundDistribution": {
-                            "burn": 18,
-                            "executionCost": 18,
-                            "bountyPool": 10,
-                            "validators": 18,
-                            "proposerReward": 18,
-                            "feePool": 18
-                        },
-                        "failedFundDistribution": {
-                            "burn": 10,
-                            "executionCost": 20,
-                            "bountyPool": 50,
-                            "validators": 10,
-                            "proposerReward": 0,
-                            "feePool": 10
-                        },
-                        "fundingGoal": "10000000000",
-                        "proposalExecutionCost": "executionCostConfig",
-                        "votingDeadline": 36400,
-                        "initialFunding": "5000",
-                        "fundingDeadline": 36400,
-                        "passPercentage": 51
-                    },
-                    "bountyProgramAddr": "oneledgerBountyProgram",
-                    "codeChange": {
-                        "passedFundDistribution": {
-                            "burn": 18,
-                            "executionCost": 18,
-                            "bountyPool": 10,
-                            "validators": 18,
-                            "proposerReward": 18,
-                            "feePool": 18
-                        },
-                        "failedFundDistribution": {
-                            "burn": 10,
-                            "executionCost": 20,
-                            "bountyPool": 50,
-                            "validators": 10,
-                            "proposerReward": 0,
-                            "feePool": 10
-                        },
-                        "fundingGoal": "10000000000",
-                        "proposalExecutionCost": "executionCostCodeChange",
-                        "votingDeadline": 156000,
-                        "initialFunding": "1000000000",
-                        "fundingDeadline": 156000,
-                        "passPercentage": 51
-                    },
-                    "general": {
-                        "passedFundDistribution": {
-                            "burn": 18,
-                            "executionCost": 18,
-                            "bountyPool": 10,
-                            "validators": 18,
-                            "proposerReward": 18,
-                            "feePool": 18
-                        },
-                        "failedFundDistribution": {
-                            "burn": 10,
-                            "executionCost": 20,
-                            "bountyPool": 50,
-                            "validators": 10,
-                            "proposerReward": 0,
-                            "feePool": 10
-                        },
-                        "fundingGoal": "10000000000",
-                        "proposalExecutionCost": "executionCostGeneral",
-                        "votingDeadline": 72800,
-                        "initialFunding": "1000000000",
-                        "fundingDeadline": 72800,
-                        "passPercentage": 51
-                    }
-                },
-                "onsOptions": {
-                    "currency": "OLT",
-                    "firstLevelDomains": [
-                        "ol"
-                    ],
-                    "baseDomainPrice": "1000000000000000000000",
-                    "perBlockFees": "100000000000000"
-                },
-            },
+            "configUpdate": self.configupdate,
             "gasPrice": {
                 "currency": "OLT",
                 "value": "1000000000",
@@ -312,6 +189,141 @@ class Proposal:
     def tx_created(self):
         resp = tx_by_hash(self.txHash)
         return resp["result"]["tx_result"]
+
+    def default_gov_state(self):
+        govstate = {"bitcoinChainDriverOption": {
+            "TotalSupply": "1000000000",
+            "BlockConfirmation": 6,
+            "ChainType": "testnet3",
+            "TotalSupplyAddr": "oneledgerSupplyAddress"
+        },
+            "ethchaindriverOption": {
+                "ERCContractAddress": "0x0000000000000000000000000000000000000000",
+                "ContractAddress": "0x0000000000000000000000000000000000000000",
+                "BlockConfirmation": 12,
+                "ERCContractABI": "",
+                "TotalSupply": "",
+                "TokenList": [],
+                "ContractABI": "",
+                "TotalSupplyAddr": ""
+            },
+            "feeOption": {
+                "feeCurrency": {
+                    "decimal": 18,
+                    "unit": "nue",
+                    "id": 0,
+                    "chain": 0,
+                    "name": "OLT"
+                },
+                "minFeeDecimal": 9
+            },
+            "rewardOptions": {
+                "rewardInterval": 1,
+                "rewardPoolAddress": "rewardpool",
+                "rewardCurrency": "OLT",
+                "estimatedSecondsPerCycle": 1728,
+                "blockSpeedCalculateCycle": 100,
+                "yearCloseWindow": 86400,
+                "yearBlockRewardShares": [
+                    "70000000000000000000000000",
+                    "70000000000000000000000000",
+                    "40000000000000000000000000",
+                    "40000000000000000000000000",
+                    "30000000000000000000000000"
+                ],
+                "burnoutRate": "5000000000000000000"
+            },
+            "stakingOptions": {
+                "minSelfDelegationAmount": "3000000",
+                "minDelegationAmount": "1",
+                "topValidatorCount": 8,
+                "maturityTime": 109200
+            },
+            "propOptions": {
+                "configUpdate": {
+                    "passedFundDistribution": {
+                        "burn": 18,
+                        "executionCost": 18,
+                        "bountyPool": 10,
+                        "validators": 18,
+                        "proposerReward": 18,
+                        "feePool": 18
+                    },
+                    "failedFundDistribution": {
+                        "burn": 10,
+                        "executionCost": 20,
+                        "bountyPool": 50,
+                        "validators": 10,
+                        "proposerReward": 0,
+                        "feePool": 10
+                    },
+                    "fundingGoal": "10000000000",
+                    "proposalExecutionCost": "executionCostConfig",
+                    "votingDeadline": 36400,
+                    "initialFunding": "1000000000",
+                    "fundingDeadline": 36400,
+                    "passPercentage": 51
+                },
+                "bountyProgramAddr": "oneledgerBountyProgram",
+                "codeChange": {
+                    "passedFundDistribution": {
+                        "burn": 18,
+                        "executionCost": 18,
+                        "bountyPool": 10,
+                        "validators": 18,
+                        "proposerReward": 18,
+                        "feePool": 18
+                    },
+                    "failedFundDistribution": {
+                        "burn": 10,
+                        "executionCost": 20,
+                        "bountyPool": 50,
+                        "validators": 10,
+                        "proposerReward": 0,
+                        "feePool": 10
+                    },
+                    "fundingGoal": "10000000000",
+                    "proposalExecutionCost": "executionCostCodeChange",
+                    "votingDeadline": 156000,
+                    "initialFunding": "1000000000",
+                    "fundingDeadline": 156000,
+                    "passPercentage": 51
+                },
+                "general": {
+                    "passedFundDistribution": {
+                        "burn": 18,
+                        "executionCost": 18,
+                        "bountyPool": 10,
+                        "validators": 18,
+                        "proposerReward": 18,
+                        "feePool": 18
+                    },
+                    "failedFundDistribution": {
+                        "burn": 10,
+                        "executionCost": 20,
+                        "bountyPool": 50,
+                        "validators": 10,
+                        "proposerReward": 0,
+                        "feePool": 10
+                    },
+                    "fundingGoal": "10000000000",
+                    "proposalExecutionCost": "executionCostGeneral",
+                    "votingDeadline": 75000,
+                    "initialFunding": "1000000000",
+                    "fundingDeadline": 75000,
+                    "passPercentage": 51
+                }
+            },
+            "onsOptions": {
+                "currency": "OLT",
+                "firstLevelDomains": [
+                    "ol"
+                ],
+                "baseDomainPrice": "1000000000000000000000",
+                "perBlockFees": "100000000000000"
+            },
+        }
+        return govstate
 
 
 class ProposalInfo:

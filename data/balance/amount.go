@@ -2,6 +2,7 @@ package balance
 
 import (
 	"encoding/json"
+	"math"
 	"math/big"
 	"strconv"
 	"strings"
@@ -120,8 +121,10 @@ func (a *Amount) CheckInRange(min Amount, max Amount) (bool, error) {
 	}
 	base = big.NewInt(0)
 	base = base.Sub(max.BigInt(), a.BigInt())
-	if base.Cmp(big.NewInt(0)) == -1 {
-		return false, errors.New("Amount is more than max range")
+	if max.BigInt().Int64() != math.MaxInt64 {
+		if base.Cmp(big.NewInt(0)) == -1 {
+			return false, errors.New("Amount is more than max range")
+		}
 	}
 	return true, nil
 }

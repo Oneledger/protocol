@@ -2,6 +2,7 @@ package governance
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
@@ -170,10 +171,15 @@ func runFundProposal(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		//6. If the proposal moves into Voting state, take a snap shot of Validator Set,
 		//at that instant and add entries for each and every validator at the point into the Proposal_Vote_Store.
 		//In the value, we will just update the Voting power. The vote / opinion field remains empty for now
-		validatorList, err := ctx.Validators.GetValidatorSet()
+		stakingOptions, err := ctx.GovernanceStore.GetStakingOptions()
+		if err != nil {
+			return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrGetStakingOptions, fundProposal.Tags(), err)
+		}
+		validatorList, err := ctx.Validators.GetActiveValidatorList(stakingOptions)
 		if err != nil {
 			return helpers.LogAndReturnFalse(ctx.Logger, action.ErrGettingValidatorList, fundProposal.Tags(), err)
 		}
+		fmt.Println(validatorList)
 		for _, v := range validatorList {
 			vote := governance.NewProposalVote(v.Address, governance.OPIN_UNKNOWN, v.Power)
 			err = ctx.ProposalMasterStore.ProposalVote.Setup(proposal.ProposalID, vote)
