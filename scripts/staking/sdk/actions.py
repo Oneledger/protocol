@@ -38,16 +38,13 @@ class Staking:
 
         # Fund this account for future staking
         args = ['olclient', 'send', '--party', self.staking_address, '--counterparty', new_staking_address, '--amount',
-                '500000', '--fee', '0.0001', "--password", 'pass']
+                '5000000', '--fee', '0.0001', "--password", 'pass']
         process = subprocess.Popen(args, cwd=self.node, stdout=subprocess.PIPE)
-        output = process.stdout.readlines()
-        print output
         process.wait()
         return new_staking_address
 
     def stake(self, amount, expect_success, secs=1):
-        print self.staking_address
-        print self.node
+
         args = ['olclient', 'delegation', 'stake', '--amount', amount, '--address',
                 self.staking_address,
                 '--password', 'pass']
@@ -131,12 +128,10 @@ class Staking:
         process.wait()
         output = process.stdout.readlines()
         time.sleep(secs)
-        print output
         # check return code
         if process.returncode != 0:
             print "olclient check status failed returncode"
             sys.exit(-1)
-        print output
 
         # check effective delegation amount in output
         target_regex = r"Effective delegation amount: " + str(delegation_amount) + r"$"

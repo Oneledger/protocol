@@ -15,9 +15,9 @@ if __name__ == "__main__":
     time.sleep(2)
 
     # unstake
-    staking_test.unstake('1000000', True)
-    staking_test.checkStatus(3000000, 0, True)
-    staking_test.checkValidatorSet(4, True, 3000000)
+    staking_test.unstake('500000', True)
+    staking_test.checkStatus(3500000, 0, True)
+    staking_test.checkValidatorSet(4, True, 3500000)
     time.sleep(2)
 
     # stake from different address, should fail due to stake address mismatch
@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
     # unstake all
     staking_test.staking_address = original_staking_address
-    staking_test.unstake('3000000', True)
+    staking_test.unstake('3500000', True)
     staking_test.checkStatus(0, 0, True)
     staking_test.checkValidatorSet(4, False, 0)
 
