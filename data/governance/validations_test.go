@@ -45,10 +45,10 @@ var (
 		ProposerReward: 00.00,
 	}
 
-	blockRewardsCalcInterval    = int64(1000)
-	annualBlockRewardsSupply, _ = balance.NewAmountFromString("50000000000000000000000000", 10)
-	yearsOfBlockRewardsSupply   = int64(5)
-	vStore                      *Store
+	bal7m, _ = balance.NewAmountFromString("70000000000000000000000000", 10)
+	bal4m, _ = balance.NewAmountFromString("40000000000000000000000000", 10)
+	bal3m, _ = balance.NewAmountFromString("30000000000000000000000000", 10)
+	vStore   *Store
 )
 
 func init() {
@@ -74,8 +74,8 @@ func TestStore_ValidateProposal(t *testing.T) {
 	updates := generateGov()
 	updates.PropOptions.ConfigUpdate.InitialFunding = balance.NewAmountFromInt(1000000)
 	ok, err := vStore.ValidateProposal(&updates.PropOptions)
-	assert.Error(t, err, "Initial Funding too high")
-	assert.False(t, ok)
+	assert.NoError(t, err, "Initial Funding max is infinite")
+	assert.True(t, ok)
 	updates.PropOptions.ConfigUpdate.InitialFunding = balance.NewAmountFromInt(0)
 	ok, err = vStore.ValidateProposal(&updates.PropOptions)
 	assert.Error(t, err, "Initial Funding too low")
@@ -106,8 +106,8 @@ func TestStore_ValidateProposal(t *testing.T) {
 	updates = generateGov()
 	updates.PropOptions.ConfigUpdate.FundingDeadline = int64(156001)
 	ok, err = vStore.ValidateProposal(&updates.PropOptions)
-	assert.Error(t, err, "Funding Deadline is too high")
-	assert.False(t, ok)
+	assert.NoError(t, err, "Max Funding Deadline is infinite")
+	assert.True(t, ok)
 	updates.PropOptions.ConfigUpdate.VotingDeadline = int64(15)
 	ok, err = vStore.ValidateProposal(&updates.PropOptions)
 	assert.Error(t, err, "Voting Deadline is too low")
@@ -334,10 +334,10 @@ func generateGov() *GovernanceState {
 
 	propOpt := ProposalOptionSet{
 		ConfigUpdate: ProposalOption{
-			InitialFunding:         balance.NewAmountFromInt(5000),
+			InitialFunding:         balance.NewAmountFromInt(1000000000),
 			FundingGoal:            proposalFundingGoal,
-			FundingDeadline:        getDeadline(7),
-			VotingDeadline:         getDeadline(7),
+			FundingDeadline:        getDeadline(36400),
+			VotingDeadline:         getDeadline(36400),
 			PassPercentage:         proposalPassPercentage,
 			PassedFundDistribution: passedProposalDistribution,
 			FailedFundDistribution: failedProposalDistribution,
@@ -346,8 +346,8 @@ func generateGov() *GovernanceState {
 		CodeChange: ProposalOption{
 			InitialFunding:         proposalInitialFunding,
 			FundingGoal:            proposalFundingGoal,
-			FundingDeadline:        getDeadline(30),
-			VotingDeadline:         getDeadline(30),
+			FundingDeadline:        getDeadline(156000),
+			VotingDeadline:         getDeadline(156000),
 			PassPercentage:         proposalPassPercentage,
 			PassedFundDistribution: passedProposalDistribution,
 			FailedFundDistribution: failedProposalDistribution,
@@ -356,8 +356,8 @@ func generateGov() *GovernanceState {
 		General: ProposalOption{
 			InitialFunding:         proposalInitialFunding,
 			FundingGoal:            proposalFundingGoal,
-			FundingDeadline:        getDeadline(14),
-			VotingDeadline:         getDeadline(14),
+			FundingDeadline:        getDeadline(75000),
+			VotingDeadline:         getDeadline(75000),
 			PassPercentage:         proposalPassPercentage,
 			PassedFundDistribution: passedProposalDistribution,
 			FailedFundDistribution: failedProposalDistribution,
@@ -367,12 +367,20 @@ func generateGov() *GovernanceState {
 	}
 
 	rewzOpt := rewards.Options{
-		RewardInterval:    150,
-		RewardPoolAddress: "rewardpool",
-		RewardCurrency:    "OLT",
-		CalculateInterval: blockRewardsCalcInterval,
-		AnnualSupply:      *annualBlockRewardsSupply,
-		YearsOfSupply:     yearsOfBlockRewardsSupply,
+		RewardInterval:           1,
+		RewardPoolAddress:        "rewardpool",
+		RewardCurrency:           "OLT",
+		EstimatedSecondsPerCycle: 1728,
+		BlockSpeedCalculateCycle: 100,
+		YearCloseWindow:          86400,
+		YearBlockRewardShares: []balance.Amount{
+			*bal7m,
+			*bal7m,
+			*bal4m,
+			*bal4m,
+			*bal3m,
+		},
+		BurnoutRate: *balance.NewAmount(5000000000000000000),
 	}
 	stakingOption := delegation.Options{
 		MinSelfDelegationAmount: *balance.NewAmount(3000000),
