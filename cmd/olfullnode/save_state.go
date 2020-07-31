@@ -233,6 +233,12 @@ func writeListWithTag(ctx app.StorageCtx, writer io.Writer, tag string) bool {
 func writeStoreWithTag(ctx app.StorageCtx, writer io.Writer, tag string) (state interface{}, succeed bool) {
 	succeed = false
 	switch section := tag; section {
+	case "delegation":
+		options, err := ctx.Govern.GetStakingOptions()
+		if err != nil {
+			return
+		}
+		state, succeed = ctx.Delegators.DumpState(options)
 	case "rewards":
 		state, succeed = ctx.RewardMaster.DumpState()
 	}
@@ -313,6 +319,7 @@ func SaveChainState(application *app.App, filename string, directory string) err
 	writeStructWithTag(writer, appState.Chain, "state")
 	writeListWithTag(ctx, writer, "balances")
 	writeListWithTag(ctx, writer, "staking")
+	writeStoreWithTag(ctx, writer, "delegation")
 	writeStoreWithTag(ctx, writer, "rewards")
 	writeListWithTag(ctx, writer, "domains")
 	writeListWithTag(ctx, writer, "trackers")

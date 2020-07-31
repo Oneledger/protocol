@@ -113,10 +113,6 @@ func (rws *RewardCumulativeStore) GetMaturedBalance(validator keys.Address) (amt
 	return
 }
 
-func (rws *RewardCumulativeStore) IterateMaturedBalances(fn func(validator keys.Address, amt *balance.Amount) bool) (stopped bool) {
-	return rws.iterate("balance_", fn)
-}
-
 // Add an 'amount' of matured rewards to rewards balance
 func (rws *RewardCumulativeStore) AddMaturedBalance(validator keys.Address, amount *balance.Amount) error {
 	key := rws.getBalanceKey(validator)
@@ -152,10 +148,6 @@ func (rws *RewardCumulativeStore) GetWithdrawnRewards(validator keys.Address) (a
 	key := rws.getWithdrawnKey(validator)
 	amt, err = rws.get(key)
 	return
-}
-
-func (rws *RewardCumulativeStore) IterateWithdrawnRewards(fn func(validator keys.Address, amt *balance.Amount) bool) (stopped bool) {
-	return rws.iterate("withdrawn_", fn)
 }
 
 // Withdraw an 'amount' of rewards from rewards balance
@@ -228,7 +220,13 @@ func (rws *RewardCumulativeStore) iterate(subkey string, fn func(validator keys.
 				logger.Error("failed to deserialize cumulative amount")
 				return false
 			}
-			addr := key[len(prefix):]
+			addr := keys.Address{}
+			bytesText := key[len(prefix):]
+			err = addr.UnmarshalText(bytesText)
+			if err != nil {
+				logger.Error("failed to deserialize validator address")
+				return false
+			}
 			return fn(addr, amt)
 		},
 	)
@@ -387,7 +385,7 @@ func NewRewardCumuState() *RewardCumuState {
 
 func (rws *RewardCumulativeStore) dumpState() (state *RewardCumuState, err error) {
 	// dump total distributed rewards
-	state = &RewardCumuState{}
+	state = NewRewardCumuState()
 	state.TotalDistributed, err = rws.GetTotalDistributedRewards()
 	if err != nil {
 		return
