@@ -1,6 +1,11 @@
 package rewards
 
 import (
+	"encoding/json"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"sort"
 	"testing"
 
 	"github.com/Oneledger/protocol/data/balance"
@@ -16,6 +21,7 @@ const (
 	rewardsAddrList       = "rewAddr"
 	numPrivateKeys        = 6
 	rewardInterval        = 15
+	rewardIntervalNew     = 10
 )
 
 var (
@@ -34,6 +40,11 @@ func init() {
 		h, _ := pub.GetHandler()
 		validatorList = append(validatorList, h.Address())
 	}
+
+	// Sort validator address ANSC
+	sort.Slice(validatorList, func(i, j int) bool {
+		return validatorList[i].String() < validatorList[j].String()
+	})
 
 	//Create Test DB
 	newDB := db.NewDB("test", db.MemDBBackend, "")
@@ -85,8 +96,8 @@ func TestRewardStore_AddToAddress(t *testing.T) {
 func TestRewardStore_Iterate(t *testing.T) {
 	rewardStore.State.Commit()
 	var amts []*balance.Amount
-	rewardStore.Iterate(validatorList[0], func(c string, amt balance.Amount) bool {
-		amts = append(amts, &amt)
+	rewardStore.Iterate(validatorList[0], func(addr keys.Address, index int64, amt *balance.Amount) bool {
+		amts = append(amts, amt)
 		return false
 	})
 	assert.Equal(t, len(amts), 2)
@@ -252,4 +263,87 @@ func TestRewardStore_IterateAddrList(t *testing.T) {
 		return false
 	})
 	assert.Equal(t, count, 6)
+}
+
+func TestRewardStore_DumpLoadState(t *testing.T) {
+	//Create Test DB
+	newDB := db.NewDB("test", db.MemDBBackend, "")
+	cs := storage.NewState(storage.NewChainState("chainstate", newDB))
+
+	rewardStore = NewRewardStore(rewardsPrefix, rewardsIntervalPrefix, rewardsAddrList, cs)
+	rewardStore.SetOptions(&rewardOptions)
+	rewardStore.WithState(cs)
+
+	//Add amounts
+	for i := 0; i < rewardInterval; i++ {
+		err := rewardStore.AddToAddress(validatorList[0], int64(i), balance.NewAmount(1))
+		assert.Equal(t, err, nil)
+		err = rewardStore.AddToAddress(validatorList[1], int64(i), balance.NewAmount(2))
+		assert.Equal(t, err, nil)
+	}
+	//Add amounts
+	for i := rewardInterval; i < 2*rewardInterval; i++ {
+		err := rewardStore.AddToAddress(validatorList[0], int64(i), balance.NewAmount(2))
+		assert.Equal(t, err, nil)
+		err = rewardStore.AddToAddress(validatorList[1], int64(i), balance.NewAmount(2))
+		assert.Equal(t, err, nil)
+	}
+	// set new interval
+	newOptions := Options{RewardInterval: rewardIntervalNew}
+	err := rewardStore.UpdateOptions(2*rewardInterval-1, &newOptions)
+	assert.Equal(t, err, nil)
+	rewardStore.State.Commit()
+
+	// state expected
+	expected := NewRewardState()
+	expected.Rewards = append(expected.Rewards, IntervalReward{
+		Address: validatorList[0],
+		Index:   1,
+		Amount:  balance.NewAmount(1 * rewardInterval),
+	})
+	expected.Rewards = append(expected.Rewards, IntervalReward{
+		Address: validatorList[0],
+		Index:   2,
+		Amount:  balance.NewAmount(2 * rewardInterval),
+	})
+	expected.Rewards = append(expected.Rewards, IntervalReward{
+		Address: validatorList[1],
+		Index:   1,
+		Amount:  balance.NewAmount(2 * rewardInterval),
+	})
+	expected.Rewards = append(expected.Rewards, IntervalReward{
+		Address: validatorList[1],
+		Index:   2,
+		Amount:  balance.NewAmount(2 * rewardInterval),
+	})
+	expected.Intervals = append(expected.Intervals, Interval{LastIndex: 1, LastHeight: 2*rewardInterval - 1})
+	expected.AddrList = append(expected.AddrList, validatorList[0])
+	expected.AddrList = append(expected.AddrList, validatorList[1])
+
+	// prepare to dump
+	dir, _ := os.Getwd()
+	file := filepath.Join(dir, "genesis.json")
+	writer, err := os.Create(file)
+	assert.Equal(t, err, nil)
+	defer func() { _ = os.Remove(file) }()
+	state, err := rewardStore.dumpState()
+	assert.Equal(t, err, nil)
+	assert.Equal(t, state, expected)
+
+	// dump to Genesis
+	str, err := json.MarshalIndent(state, "", " ")
+	assert.Equal(t, err, nil)
+	_, err = writer.Write(str)
+	assert.Equal(t, err, nil)
+	err = writer.Close()
+	assert.Equal(t, err, nil)
+
+	// load from Genesis
+	reader, err := os.Open(file)
+	stateBytes, _ := ioutil.ReadAll(reader)
+	assert.Equal(t, err, nil)
+	stateLoaded := NewRewardState()
+	err = json.Unmarshal(stateBytes, stateLoaded)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, stateLoaded, expected)
 }
