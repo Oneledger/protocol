@@ -114,6 +114,10 @@ func (s stakeTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error)
 	if err != nil {
 		return false, action.ErrNotEnoughFund
 	}
+
+	if ctx.EvidenceStore.IsFrozenValidator(st.ValidatorAddress) {
+		return false, action.ErrFrozenValidator
+	}
 	return true, nil
 }
 

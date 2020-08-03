@@ -22,6 +22,11 @@ const (
 	UNSTAKE  Type = 0x12
 	WITHDRAW Type = 0x13
 
+	//penalization
+	RELEASE         Type = 0x51
+	ALLEGATION      Type = 0x52
+	ALLEGATION_VOTE Type = 0x53
+
 	//ons related transaction
 	DOMAIN_CREATE     Type = 0x21
 	DOMAIN_UPDATE     Type = 0x22
@@ -71,7 +76,7 @@ func init() {
 
 	serialize.RegisterInterface(new(Msg))
 	logger = log.NewLoggerWithPrefix(os.Stdout, "action")
-	txTypeMap  = TxTypeMap{}
+	txTypeMap = TxTypeMap{}
 	RegisterTxType(SEND, "SEND")
 	RegisterTxType(SENDPOOL, "SENDPOOL")
 
@@ -110,9 +115,13 @@ func init() {
 	RegisterTxType(PROPOSAL_WITHDRAW_FUNDS, "PROPOSAL_WITHDRAW_FUNDS")
 
 	RegisterTxType(WITHDRAW_REWARD, "WITHDRAW_REWARD")
+
+	RegisterTxType(RELEASE, "RELEASE")
+	RegisterTxType(ALLEGATION, "ALLEGATION")
+	RegisterTxType(ALLEGATION_VOTE, "ALLEGATION_VOTE")
 }
 
-func RegisterTxType(value Type, name string, ) {
+func RegisterTxType(value Type, name string) {
 	if dupName, ok := txTypeMap[value]; ok {
 		logger.Errorf("Trying to register tx type %s failed, type value conflicts with existing type: %d: %s", value, dupName)
 		return

@@ -20,6 +20,7 @@ import (
 	"github.com/Oneledger/protocol/action/eth"
 	action_gov "github.com/Oneledger/protocol/action/governance"
 	action_ons "github.com/Oneledger/protocol/action/ons"
+	action_pen "github.com/Oneledger/protocol/action/penalization"
 	action_rewards "github.com/Oneledger/protocol/action/rewards"
 	"github.com/Oneledger/protocol/action/staking"
 	"github.com/Oneledger/protocol/action/transfer"
@@ -31,6 +32,7 @@ import (
 	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/data/delegation"
 	"github.com/Oneledger/protocol/data/ethereum"
+	"github.com/Oneledger/protocol/data/evidence"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/jobs"
@@ -77,6 +79,7 @@ type context struct {
 	jobBus          *event.JobBus
 	proposalMaster  *governance.ProposalMasterStore
 	delegators      *delegation.DelegationStore
+	evidenceStore   *evidence.EvidenceStore
 	rewardMaster    *rewards.RewardMasterStore
 	transaction     *transactions.TransactionStore
 	logWriter       io.Writer
@@ -118,6 +121,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.govern = governance.NewStore("g", storage.NewState(ctx.chainstate))
 	ctx.proposalMaster = NewProposalMasterStore(ctx.chainstate)
 	ctx.delegators = delegation.NewDelegationStore("st", storage.NewState(ctx.chainstate))
+	ctx.evidenceStore = evidence.NewEvidenceStore("es", storage.NewState(ctx.chainstate))
 	ctx.rewardMaster = NewRewardMasterStore(ctx.chainstate)
 	ctx.btcTrackers = bitcoin.NewTrackerStore("btct", storage.NewState(ctx.chainstate))
 	//Separate DB and chainstate
@@ -172,6 +176,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	_ = action_gov.EnableGovernance(ctx.actionRouter)
 	_ = action_gov.EnableInternalGovernance(ctx.internalRouter)
 	_ = staking.EnableStaking(ctx.actionRouter)
+	_ = action_pen.EnablePenalization(ctx.actionRouter)
 
 	return ctx, nil
 }
@@ -207,6 +212,7 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.witnesses.WithState(state),
 		ctx.domains.WithState(state),
 		ctx.delegators.WithState(state),
+		ctx.evidenceStore.WithState(state),
 		ctx.btcTrackers.WithState(state),
 		ctx.ethTrackers.WithState(state),
 		ctx.jobStore,
@@ -232,7 +238,10 @@ func (ctx *context) ValidatorCtx() *identity.ValidatorContext {
 		ctx.balances.WithState(ctx.deliver),
 		ctx.feePool.WithState(ctx.deliver),
 		ctx.delegators.WithState(ctx.deliver),
+		ctx.evidenceStore.WithState(ctx.deliver),
 		ctx.govern.WithState(ctx.deliver),
+		ctx.currencies,
+		ctx.validators.WithState(ctx.deliver),
 	)
 }
 
@@ -279,6 +288,7 @@ func (ctx *context) Services() (service.Map, error) {
 		Domains:        onsStore,
 		Delegators:     delegation.NewDelegationStore("st", storage.NewState(ctx.chainstate)),
 		ProposalMaster: proposalMaster,
+		EvidenceStore:  ctx.evidenceStore,
 		RewardMaster:   rewardMaster,
 		ExtStores:      ctx.extStores,
 		ExtServiceMap:  ctx.extServiceMap,

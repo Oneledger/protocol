@@ -18,6 +18,9 @@ var (
 	ErrNotEnoughFund      = codes.ProtocolError{codes.TxErrInsufficientFunds, "not enough fund"}
 	ErrGasOverflow        = codes.ProtocolError{codes.TxErrGasOverflow, "gas used exceed limit"}
 	ErrInvalidExtTx       = codes.ProtocolError{codes.TxErrInvalidExtTx, "invalid external tx"}
+	ErrFrozenValidator    = codes.ProtocolError{codes.TxErrInvalidExtTx, "frozen validator"}
+	ErrNonFrozenValidator = codes.ProtocolError{codes.TxErrInvalidExtTx, "non frozen validator"}
+	ErrNonActiveValidator = codes.ProtocolError{codes.TxErrInvalidPubKey, "non active validator"}
 
 	ErrInvalidAddress          = codes.ErrBadAddress
 	ErrInvalidCurrency         = codes.ProtocolError{codes.TxErrInvalidFeeCurrency, "invalid amount"}

@@ -170,6 +170,14 @@ func (svc *Service) GetGovernanceOptionsForHeight(req client.GovernanceOptionsRe
 	if err != nil {
 		return err
 	}
+	stakingOpt, err := svc.governance.GetStakingOptions()
+	if err != nil {
+		return err
+	}
+	evidenceOpt, err := svc.governance.GetEvidenceOptions()
+	if err != nil {
+		return err
+	}
 	*reply = client.GovernanceOptionsReply{
 		GovOptions: governance.GovernanceState{
 			FeeOption:       *feeOpt,

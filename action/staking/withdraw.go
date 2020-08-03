@@ -104,6 +104,9 @@ func (withdrawTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error
 		return false, action.ErrInvalidAmount
 	}
 
+	if ctx.EvidenceStore.IsFrozenValidator(draw.ValidatorAddress) {
+		return false, action.ErrFrozenValidator
+	}
 	return true, nil
 }
 

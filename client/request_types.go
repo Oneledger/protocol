@@ -12,6 +12,7 @@ package client
 import (
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/delegation"
+	"github.com/Oneledger/protocol/data/evidence"
 
 	"github.com/tendermint/tendermint/libs/bytes"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
@@ -52,6 +53,14 @@ type BalanceReply struct {
 	Balance string `json:"balance"`
 	// The height when this balance was recorded
 	Height int64 `json:"height"`
+}
+
+type VoteRequestRequest struct {
+	Address keys.Address `json:"address"`
+}
+
+type VoteRequestReply struct {
+	Requests []evidence.AllegationRequest
 }
 
 type ValidatorStatusRequest struct {
@@ -98,6 +107,35 @@ type SendPoolTxRequest struct {
 }
 
 type CreateTxReply struct {
+	RawTx []byte `json:"rawTx"`
+}
+
+type ReleaseRequest struct {
+	Address keys.Address `json:"address"`
+}
+
+type ReleaseReply struct {
+	RawTx []byte `json:"rawTx"`
+}
+
+type VoteRequest struct {
+	Address   keys.Address `json:"address"`
+	RequestID int64        `json:"requestID"`
+	Choice    int8         `json:"choice"`
+}
+
+type VoteReply struct {
+	RawTx []byte `json:"rawTx"`
+}
+
+type AllegationRequest struct {
+	Address          keys.Address `json:"address"`
+	MaliciousAddress keys.Address `json:"maliciousAddress"`
+	BlockHeight      int64        `json:"blockHeight"`
+	ProofMsg         string       `json:"proofMsg"`
+}
+
+type AllegationReply struct {
 	RawTx []byte `json:"rawTx"`
 }
 
@@ -182,6 +220,7 @@ type ListValidatorsReply struct {
 	// Height at which this validator set was active
 	Height int64           `json:"height"`
 	VMap   map[string]bool `json:"vmap"`
+	FMap   map[string]bool `json:"fmap"`
 }
 
 type ListWitnessesRequest struct {

@@ -3,11 +3,12 @@ package app
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/Oneledger/protocol/external_apps/common"
 	"math"
 	"math/big"
 	"runtime/debug"
 	"strconv"
+
+	"github.com/Oneledger/protocol/external_apps/common"
 
 	"github.com/tendermint/tendermint/libs/kv"
 
@@ -127,12 +128,28 @@ func (app *App) blockBeginner() blockBeginner {
 			app.logger.Error("failed to get feeOption", err)
 		}
 		app.Context.feePool.SetupOpt(feeOpt)
+
+		err = ManageVotes(&req, &app.Context, app.logger)
+		if err != nil {
+			app.logger.Error("manage votes error", err)
+		}
+
 		// update the validator set
 		err = app.Context.validators.Setup(req, app.Context.node.ValidatorAddress())
 		if err != nil {
 			app.logger.Error("validator set with error", err)
 		}
 
+		// update malicious list
+		err = app.Context.validators.CheckMaliciousValidators(
+			app.Context.evidenceStore.WithState(app.Context.deliver),
+			app.Context.govern.WithState(app.Context.deliver),
+		)
+		if err != nil {
+			app.logger.Error("malicious set with error", err)
+		}
+
+		// update Block Rewards
 		blockRewardEvent := handleBlockRewards(app.Context.validators, app.Context.balances,
 			app.Context.rewardMaster.WithState(app.Context.deliver), app.Context.currencies, req)
 
@@ -293,6 +310,11 @@ func (app *App) blockEnder() blockEnder {
 		updates := app.Context.validators.WithState(app.Context.deliver).GetEndBlockUpdate(app.Context.ValidatorCtx(), req)
 		app.logger.Detailf("Sending updates with nodes to tendermint: %+v\n", updates)
 
+		events := app.Context.validators.WithState(app.Context.deliver).GetEvents()
+		app.logger.Detailf("Sending events with nodes to tendermint: %+v\n", events)
+
+		app.Context.validators.WithState(app.Context.deliver).ClearEvents()
+
 		ethTrackerlog := log.NewLoggerWithPrefix(app.Context.logWriter, "ethtracker").WithLevel(log.Level(app.Context.cfg.Node.LogLevel))
 		doTransitions(app.Context.jobStore, app.Context.btcTrackers.WithState(app.Context.deliver), app.Context.validators)
 		doEthTransitions(app.Context.jobStore, app.Context.ethTrackers, app.Context.node.ValidatorAddress(), ethTrackerlog, app.Context.witnesses, app.Context.deliver)
@@ -318,6 +340,7 @@ func (app *App) blockEnder() blockEnder {
 		}
 		result := ResponseEndBlock{
 			ValidatorUpdates: updates,
+			Events:           events,
 		}
 		app.logger.Detail("End Block: ", result, "height:", req.Height)
 
@@ -598,4 +621,28 @@ func marshalLog(ok bool, response action.Response, feeResponse action.Response) 
 
 	return errorObj.Marshal()
 
+}
+
+func ManageVotes(req *RequestBeginBlock, ctx *context, logger *log.Logger) error {
+	eopts, err := ctx.govern.WithState(ctx.deliver).GetEvidenceOptions()
+	if err != nil {
+		logger.Error("error in GetEvidenceOptions")
+		return err
+	}
+	err = ctx.evidenceStore.WithState(ctx.deliver).SetVoteBlock(req.Header.GetHeight(), req.LastCommitInfo.Votes)
+	if err != nil {
+		logger.Error("error in SetVoteBlock")
+		return err
+	}
+	cv, err := ctx.evidenceStore.WithState(ctx.deliver).GetCumulativeVote()
+	if err != nil {
+		logger.Error("error in GetCumulativeVote")
+		return err
+	}
+	err = ctx.evidenceStore.WithState(ctx.deliver).SetCumulativeVote(cv, req.Header.GetHeight(), eopts.BlockVotesDiff)
+	if err != nil {
+		logger.Error("error in SetCumulativeVote")
+		return err
+	}
+	return nil
 }

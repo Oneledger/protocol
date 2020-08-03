@@ -302,21 +302,6 @@ func (st *Store) GetStakingOptions() (*delegation.Options, error) {
 	return r, nil
 }
 
-func (st *Store) SetStakingOptions(opt delegation.Options) error {
-
-	bytes, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(opt)
-	if err != nil {
-		return errors.Wrap(err, "failed to serialize staking options")
-	}
-
-	err = st.Set(ADMIN_STAKING_OPTION, bytes)
-	if err != nil {
-		return errors.Wrap(err, "failed to set the staking options")
-	}
-
-	return nil
-}
-
 func (st *Store) SetEvidenceOptions(opt evidence.Options) error {
 
 	bytes, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(opt)
@@ -346,6 +331,21 @@ func (st *Store) GetEvidenceOptions() (*evidence.Options, error) {
 	}
 
 	return r, nil
+}
+
+func (st *Store) SetStakingOptions(opt delegation.Options) error {
+
+	bytes, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(opt)
+	if err != nil {
+		return errors.Wrap(err, "failed to serialize staking options")
+	}
+
+	err = st.Set(ADMIN_STAKING_OPTION, bytes)
+	if err != nil {
+		return errors.Wrap(err, "failed to set the staking options")
+	}
+
+	return nil
 }
 
 func (st *Store) GetETHChainDriverOption() (*ethchain.ChainDriverOption, error) {

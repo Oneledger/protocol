@@ -91,7 +91,7 @@ func setup() {
 
 		header := &abci.Header{Height: 0}
 		ctx = action.NewContext(nil, header, cs, nil, bs, currencies,
-			feeOpt, feePool, nil, ds, nil, nil, nil, nil,
+			feeOpt, feePool, nil, ds, nil, nil, nil, nil, nil,
 			nil, "", "", logger, opt)
 	}
 }

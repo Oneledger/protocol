@@ -52,7 +52,9 @@ func WrapError(err error, code int, msg string) *ProtocolError {
 
 */
 var (
-	ErrSerialization = ProtocolError{InternalErrorSerialization, "error in serialization"}
+	ErrSerialization      = ProtocolError{InternalErrorSerialization, "error in serialization"}
+	ErrFrozenValidator    = ProtocolError{InternalErrorSerialization, "error frozen validator"}
+	ErrNonFrozenValidator = ProtocolError{InternalErrorSerialization, "error non frozen validator"}
 
 	ErrLoadingNodeKey = ProtocolError{IOErrorNodeKey, "error reading node key file"}
 	ErrParsingAddress = ProtocolError{ParseErrorAddress, "error parsing address"}

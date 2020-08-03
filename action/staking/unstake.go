@@ -101,6 +101,9 @@ func (us unstakeTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, err
 		return false, action.ErrInvalidCurrency
 	}
 
+	if ctx.EvidenceStore.IsFrozenValidator(ust.ValidatorAddress) {
+		return false, action.ErrFrozenValidator
+	}
 	return true, nil
 }
 

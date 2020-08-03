@@ -5,14 +5,16 @@ import (
 	"fmt"
 	"math/big"
 	"sort"
+	"time"
 
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/abci/types"
+	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/data/balance"
-	"github.com/Oneledger/protocol/data/delegation"
+	"github.com/Oneledger/protocol/data/evidence"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
@@ -21,28 +23,36 @@ import (
 )
 
 type ValidatorStore struct {
-	prefix      []byte
-	prefixPurge []byte
-	store       *storage.State
-	proposer    keys.Address
-	queue       ValidatorQueue
-	byzantine   []Validator
-	lastActive  map[string]int64
-	totalPower  int64
-	isValidator bool
+	prefix              []byte
+	prefixPurge         []byte
+	store               *storage.State
+	proposer            keys.Address
+	queue               ValidatorQueue
+	byzantine           []Validator
+	lastActive          map[string]int64
+	totalPower          int64
+	isValidator         bool
+	maliciousValidators map[string]*evidence.LastValidatorHistory
+	lastHeight          int64
+	lastBlockTime       *time.Time
+	pendingEvents       []types.Event
 }
 
 func NewValidatorStore(prefix string, prefixPurge string, state *storage.State) *ValidatorStore {
 	// TODO: get the genesis validators when start the node
 	return &ValidatorStore{
-		prefix:      storage.Prefix(prefix),
-		prefixPurge: storage.Prefix(prefixPurge),
-		store:       state,
-		proposer:    []byte(nil),
-		queue:       ValidatorQueue{PriorityQueue: make(utils.PriorityQueue, 0, 100)},
-		byzantine:   make([]Validator, 0),
-		lastActive:  make(map[string]int64),
-		totalPower:  0,
+		prefix:              storage.Prefix(prefix),
+		prefixPurge:         storage.Prefix(prefixPurge),
+		store:               state,
+		proposer:            []byte(nil),
+		queue:               ValidatorQueue{PriorityQueue: make(utils.PriorityQueue, 0, 100)},
+		byzantine:           make([]Validator, 0),
+		lastActive:          make(map[string]int64),
+		totalPower:          0,
+		maliciousValidators: make(map[string]*evidence.LastValidatorHistory),
+		lastHeight:          0,
+		lastBlockTime:       nil,
+		pendingEvents:       make([]types.Event, 0),
 	}
 }
 
@@ -78,6 +88,19 @@ func (vs *ValidatorStore) set(validator Validator) error {
 	value := (validator).Bytes()
 	vkey := append(vs.prefix, validator.Address.Bytes()...)
 	err := vs.store.Set(vkey, value)
+	if err != nil {
+		return errors.Wrap(err, "failed to set validator for stake")
+	}
+	return nil
+}
+
+func (vs *ValidatorStore) setWithState(validator Validator, state *storage.State) error {
+	value := (validator).Bytes()
+	vkey := append(vs.prefix, validator.Address.Bytes()...)
+	if state == nil {
+		state = vs.store
+	}
+	err := state.Set(vkey, value)
 	if err != nil {
 		return errors.Wrap(err, "failed to set validator for stake")
 	}
@@ -131,7 +154,10 @@ func (vs *ValidatorStore) Init(req types.RequestInitChain, currencies *balance.C
 }
 
 // setup the validators according to begin block
-func (vs *ValidatorStore) Setup(req types.RequestBeginBlock, nodeValidatorAddress keys.Address) error {
+func (vs *ValidatorStore) Setup(req types.RequestBeginBlock, nodeValidatorAddress keys.Address, writeState *storage.State) error {
+	vs.lastHeight = req.Header.GetHeight()
+	createdTime := req.Header.GetTime()
+	vs.lastBlockTime = &createdTime
 	vs.proposer = req.Header.GetProposerAddress()
 	var def error
 	// update the byzantine node that need to be slashed
@@ -149,20 +175,21 @@ func (vs *ValidatorStore) Setup(req types.RequestBeginBlock, nodeValidatorAddres
 		logger.Infof("slashed byzantine validator, address = %s", remove.Address)
 	}
 
-	vs.InitValidatorQueue(nodeValidatorAddress, req.GetHeader().Height)
+	vs.fetchPostponedUnstakes(writeState)
+	vs.InitValidatorQueue(nodeValidatorAddress)
 	vs.cacheActiveValidators(req.LastCommitInfo)
 
 	return def
 }
 
-func (vs *ValidatorStore) InitValidatorQueue(nodeValidatorAddress keys.Address, height int64) {
+func (vs *ValidatorStore) InitValidatorQueue(nodeValidatorAddress keys.Address) {
 	// initialize the queue for validators
 	vs.queue.PriorityQueue = make(utils.PriorityQueue, 0, 100)
 	i := 0
 	vs.totalPower = 0
 	vs.Iterate(func(addr keys.Address, validator *Validator) bool {
 		key := append(vs.prefix, addr...)
-		data := vs.store.GetVersioned(height-1, key)
+		data := vs.store.GetVersioned(vs.lastHeight-1, key)
 		if len(data) == 0 {
 			logger.Errorf("Previous state data not found for address: %s", keys.Address(addr).Humanize())
 			return false
@@ -196,7 +223,6 @@ func (vs *ValidatorStore) cacheActiveValidators(lastCommit types.LastCommitInfo)
 
 // get validators set
 func (vs *ValidatorStore) GetValidatorSet() ([]Validator, error) {
-
 	validatorSet := make([]Validator, 0)
 	vs.Iterate(func(addr keys.Address, validator *Validator) bool {
 		validatorSet = append(validatorSet, *validator)
@@ -205,43 +231,13 @@ func (vs *ValidatorStore) GetValidatorSet() ([]Validator, error) {
 	return validatorSet, nil
 }
 
-func (vs *ValidatorStore) GetValidatorMap(stakingOptions *delegation.Options) map[string]bool {
-	vMap := make(map[string]bool)
-	cnt := int64(0)
-
-	i := 0
-	queue := &ValidatorQueue{PriorityQueue: make(utils.PriorityQueue, 0, 100)}
-	vs.Iterate(func(addr keys.Address, validator *Validator) bool {
-		queued := utils.NewQueued(addr, validator.Power, i)
-		queue.Push(queued)
-		i++
-		return false
-	})
-	queue.Init()
-
-	for queue.Len() > 0 && cnt < stakingOptions.TopValidatorCount {
-		queued := queue.Pop()
-		addr := queued.Value()
-		validator, err := vs.Get(addr)
-		if err != nil {
-			continue
-		}
-		if validator.Power < stakingOptions.MinSelfDelegationAmount.BigInt().Int64() {
-			break
-		}
-		vMap[validator.Address.String()] = true
-		cnt++
-	}
-	return vMap
-}
-
-func (vs *ValidatorStore) GetActiveValidatorList(stakingOptions *delegation.Options) ([]Validator, error) {
+func (vs *ValidatorStore) GetActiveValidatorList(es *evidence.EvidenceStore) ([]Validator, error) {
 	activeList := []Validator{}
 	validators, err := vs.GetValidatorSet()
 	if err != nil {
 		return activeList, err
 	}
-	vMap := vs.GetValidatorMap(stakingOptions)
+	vMap := es.GetValidatorMap()
 	for _, v := range validators {
 		isActive := vMap[v.Address.String()]
 		if isActive {
@@ -253,7 +249,6 @@ func (vs *ValidatorStore) GetActiveValidatorList(stakingOptions *delegation.Opti
 
 // get validators set
 func (vs *ValidatorStore) GetValidatorsAddress() ([]keys.Address, error) {
-
 	validatorAddress := make([]keys.Address, 0)
 	vs.Iterate(func(addr keys.Address, validator *Validator) bool {
 		validatorAddress = append(validatorAddress, addr)
@@ -422,6 +417,9 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 	}
 
 	minSelfDelegationAmount := stakingOptions.MinSelfDelegationAmount.BigInt().Int64()
+
+	activeCount := int64(0)
+
 	if height > 1 || (len(vs.byzantine) > 0) {
 		// map for non top-power validators
 		nonTopValidators := make(map[string]types.PubKey)
@@ -445,10 +443,33 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 				continue
 			}
 			updateTendermint := false
+			isMalicious := false
 
 			if validator.Power >= minSelfDelegationAmount && cnt < stakingOptions.TopValidatorCount {
-				updateTendermint = true
-				cnt++
+				_, isMalicious = vs.maliciousValidators[validator.Address.String()]
+				if !isMalicious {
+					updateTendermint = true
+					cnt++
+					activeCount++
+				}
+			}
+
+			requiredStatusUpdate := false
+			validatorStatus, _ := ctx.EvidenceStore.GetValidatorStatus(validator.Address)
+			if validatorStatus == nil {
+				requiredStatusUpdate = true
+				logger.Infof("Creating status for validator: %s as: %t\n", validator.Address, updateTendermint)
+			} else if validatorStatus.IsActive != updateTendermint {
+				requiredStatusUpdate = true
+				logger.Infof("Updating status for validator: %s (was: %t, new: %t)\n", validator.Address, validatorStatus.IsActive, updateTendermint)
+			}
+
+			if requiredStatusUpdate {
+				err := ctx.EvidenceStore.SetValidatorStatus(validator.Address, updateTendermint, height)
+				if err != nil {
+					logger.Errorf("Failed to update validator status: %s\n", validator.Address)
+					continue
+				}
 			}
 
 			// delete validator who's power is 0
@@ -464,7 +485,7 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 
 			// append to update list
 			if updateTendermint {
-				logger.Detailf("Validator for update ready: %s - with power: %d\n", addrHuman, validator.Power)
+				logger.Infof("Validator for update ready: %s - with power: %d\n", addrHuman, validator.Power)
 				validatorUpdates = append(validatorUpdates, types.ValidatorUpdate{
 					PubKey: validator.PubKey.GetABCIPubKey(),
 					Power:  validator.Power,
@@ -525,12 +546,12 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 			}
 
 		}
-
 		// delegation
 		ctx.Delegators.UpdateWithdrawReward(height)
-
+		// vote requests check
+		vs.ExecuteAllegationTracker(ctx, activeCount)
 	}
-	logger.Detailf("GetEndBlockUpdate end at block: %d\n", height)
+	logger.Infof("GetEndBlockUpdate end at block: %d\n", height)
 
 	// TODO : get the final updates from vs.cached
 
@@ -563,4 +584,19 @@ func (vs *ValidatorStore) GetBitcoinKeys(net *chaincfg.Params) (list []*btcutil.
 	})
 
 	return
+}
+
+func (vs *ValidatorStore) PushEvent(typeName string, attrs []kv.Pair) {
+	vs.pendingEvents = append(vs.pendingEvents, types.Event{
+		Type:       typeName,
+		Attributes: attrs,
+	})
+}
+
+func (vs *ValidatorStore) GetEvents() []types.Event {
+	return vs.pendingEvents
+}
+
+func (vs *ValidatorStore) ClearEvents() {
+	vs.pendingEvents = make([]types.Event, 0)
 }
