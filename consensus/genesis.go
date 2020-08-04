@@ -9,6 +9,7 @@ import (
 
 	ethchain "github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/delegation"
 	ethData "github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
@@ -80,6 +81,7 @@ type AppState struct {
 	Chain      ChainState                 `json:"state"`
 	Balances   []BalanceState             `json:"balances"`
 	Staking    []Stake                    `json:"staking"`
+	Delegation delegation.DelegationState `json:"delegation"`
 	Rewards    rewards.RewardMasterState  `json:"rewards"`
 	Domains    []DomainState              `json:"domains"`
 	Trackers   []Tracker                  `json:"trackers"`
@@ -90,6 +92,7 @@ type AppState struct {
 func NewAppState(currencies balance.Currencies,
 	balances []BalanceState,
 	staking []Stake,
+	delegation delegation.DelegationState,
 	rewards rewards.RewardMasterState,
 	domains []DomainState,
 	fees []BalanceState,
@@ -99,6 +102,7 @@ func NewAppState(currencies balance.Currencies,
 		Currencies: currencies,
 		Balances:   balances,
 		Staking:    staking,
+		Delegation: delegation,
 		Rewards:    rewards,
 		Domains:    domains,
 		Fees:       fees,
