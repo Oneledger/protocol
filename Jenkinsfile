@@ -54,13 +54,13 @@ pipeline {
             }
         }
         
-        stage('withdraw test') {
+        stage('rewards test') {
             steps {
                 script {
                     try {
-                        sh 'make withdrawtest'
+                        sh 'make rewardtest'
                     } catch (e) {
-                        unstable('withdraw test stage failed!')
+                        unstable('reward test stage failed!')
                         sh 'exit 0'
                     }
                 }
