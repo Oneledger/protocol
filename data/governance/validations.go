@@ -155,7 +155,7 @@ func (st *Store) ValidateETH(opt *ethchain.ChainDriverOption) (bool, error) {
 	if oldOptions.ContractABI != opt.ContractABI {
 		return false, errors.New("contract abi cannot be changed")
 	}
-	if oldOptions.ERCContractABI != opt.ContractABI {
+	if oldOptions.ERCContractABI != opt.ERCContractABI {
 		return false, errors.New("erc contract abi cannot be changed")
 	}
 	if oldOptions.TotalSupply != opt.TotalSupply {
