@@ -17,21 +17,18 @@ type Type string
 
 // Router interface supplies functionality to add a function to the blockender and blockbeginner
 type Router interface {
-	AddBlockBeginner(Type, func(app *App)) error
-	GetBlockBeginner(Type) (func(app *App), error)
-	AddBlockEnder(Type, func(app *App)) error
-	GetBlockEnder(Type) (func(app *App), error)
-	IterateBlockBeginner() []func(app *App)
+	AddBlockBeginner(Type, func(app interface{})) error
+	IterateBlockBeginner() []func(interface{})
 }
 
 // router is an implementation of a Router interface
 type router struct {
-	blockbeginnerFn map[Type]func(app *App)
-	blockenderFn    map[Type]func(app *App)
+	blockbeginnerFn map[Type]func(interface{})
+	blockenderFn    map[Type]func(interface{})
 	logger          *log.Logger
 }
 
-func (r router) AddBlockBeginner(t Type, i func(app *App)) error {
+func (r router) AddBlockBeginner(t Type, i func(app interface{})) error {
 	if t == "" || i == nil {
 		return errInvalidInput
 	}
@@ -39,30 +36,30 @@ func (r router) AddBlockBeginner(t Type, i func(app *App)) error {
 	return nil
 }
 
-func (r router) GetBlockBeginner(t Type) (func(app *App), error) {
-	if store, ok := r.blockbeginnerFn[t]; ok {
-		return store, nil
-	}
-	return nil, errKeyNotFound
-}
+//func (r router) GetBlockBeginner(t Type) (func(app *App), error) {
+//	if store, ok := r.blockbeginnerFn[t]; ok {
+//		return store, nil
+//	}
+//	return nil, errKeyNotFound
+//}
+//
+//func (r router) AddBlockEnder(t Type, i func(app *App)) error {
+//	if t == "" || i == nil {
+//		return errInvalidInput
+//	}
+//	r.blockenderFn[t] = i
+//	return nil
+//}
+//
+//func (r router) GetBlockEnder(t Type) (func(app *App), error) {
+//	if store, ok := r.blockbeginnerFn[t]; ok {
+//		return store, nil
+//	}
+//	return nil, errKeyNotFound
+//}
 
-func (r router) AddBlockEnder(t Type, i func(app *App)) error {
-	if t == "" || i == nil {
-		return errInvalidInput
-	}
-	r.blockenderFn[t] = i
-	return nil
-}
-
-func (r router) GetBlockEnder(t Type) (func(app *App), error) {
-	if store, ok := r.blockbeginnerFn[t]; ok {
-		return store, nil
-	}
-	return nil, errKeyNotFound
-}
-
-func (r router) IterateBlockBeginner() []func(app *App) {
-	var functionlist []func(app *App)
+func (r router) IterateBlockBeginner() []func(interface{}) {
+	var functionlist []func(interface{})
 	for _, v := range r.blockbeginnerFn {
 		functionlist = append(functionlist, v)
 	}
@@ -71,8 +68,8 @@ func (r router) IterateBlockBeginner() []func(app *App) {
 
 func NewRouter() router {
 	return router{
-		blockbeginnerFn: make(map[Type]func(app *App)),
-		blockenderFn:    make(map[Type]func(app *App)),
+		blockbeginnerFn: make(map[Type]func(interface{})),
+		blockenderFn:    make(map[Type]func(interface{})),
 		logger:          log.NewLoggerWithPrefix(os.Stdout, "app/router"),
 	}
 }

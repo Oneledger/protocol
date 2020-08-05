@@ -9,18 +9,24 @@ import (
 
 var (
 	cRouter Router
-	app     *App
+	app     parameterStruct
 )
 
-func internalTX1(app *App) {
-	fmt.Println("INTERNALTX1 ", app.name)
+type parameterStruct struct {
+	name string
 }
-func internalTX2(app *App) {
-	fmt.Println("INTERNALTX2 ", app.name)
+
+func internalTX1(i interface{}) {
+	param := i.(*parameterStruct)
+	fmt.Println("INTERNALTX1 ", param.name)
+}
+func internalTX2(i interface{}) {
+	param := i.(*parameterStruct)
+	fmt.Println("INTERNALTX2 ", param.name)
 }
 
 func init() {
-	app = &App{
+	app = parameterStruct{
 		name: "Test App",
 	}
 	cRouter = NewRouter()
