@@ -10,69 +10,45 @@ import (
 
 var (
 	errInvalidInput = errors.New("invalid store type or interface")
-	errKeyNotFound  = errors.New("store does not exist for key")
 )
 
-type Type string
+type txblock int8
+
+const (
+	BlockBeginner = 1
+	BlockEnder    = 2
+)
 
 // Router interface supplies functionality to add a function to the blockender and blockbeginner
 type Router interface {
-	AddBlockBeginner(Type, func(app interface{})) error
-	IterateBlockBeginner() []func(interface{})
+	Add(txblock, func(app interface{})) error
+	Iterate(txblock) []func(interface{})
 }
 
 // router is an implementation of a Router interface
-type router struct {
-	blockbeginnerFn map[Type]func(interface{})
-	blockenderFn    map[Type]func(interface{})
-	logger          *log.Logger
+type ControllerRouter struct {
+	functionlist map[txblock][]func(interface{})
+	logger       *log.Logger
 }
 
-func (r router) AddBlockBeginner(t Type, i func(app interface{})) error {
-	if t == "" || i == nil {
+func (r ControllerRouter) Add(t txblock, i func(app interface{})) error {
+	if t != 1 && t != 2 || i == nil {
 		return errInvalidInput
 	}
-	r.blockbeginnerFn[t] = i
+	r.functionlist[t] = append(r.functionlist[t], i)
 	return nil
 }
 
-//func (r router) GetBlockBeginner(t Type) (func(app *App), error) {
-//	if store, ok := r.blockbeginnerFn[t]; ok {
-//		return store, nil
-//	}
-//	return nil, errKeyNotFound
-//}
-//
-//func (r router) AddBlockEnder(t Type, i func(app *App)) error {
-//	if t == "" || i == nil {
-//		return errInvalidInput
-//	}
-//	r.blockenderFn[t] = i
-//	return nil
-//}
-//
-//func (r router) GetBlockEnder(t Type) (func(app *App), error) {
-//	if store, ok := r.blockbeginnerFn[t]; ok {
-//		return store, nil
-//	}
-//	return nil, errKeyNotFound
-//}
-
-func (r router) IterateBlockBeginner() []func(interface{}) {
-	var functionlist []func(interface{})
-	for _, v := range r.blockbeginnerFn {
-		functionlist = append(functionlist, v)
-	}
-	return functionlist
+func (r ControllerRouter) Iterate(t txblock) []func(interface{}) {
+	return r.functionlist[t]
 }
 
-func NewRouter() router {
-	return router{
-		blockbeginnerFn: make(map[Type]func(interface{})),
-		blockenderFn:    make(map[Type]func(interface{})),
-		logger:          log.NewLoggerWithPrefix(os.Stdout, "app/router"),
+func NewRouter() ControllerRouter {
+	return ControllerRouter{
+		functionlist: make(map[txblock][]func(interface{})),
+		logger:       log.NewLoggerWithPrefix(os.Stdout, "app/router"),
 	}
 }
 
 // router implements Router
-var _ Router = &router{}
+var _ Router = &ControllerRouter{}
