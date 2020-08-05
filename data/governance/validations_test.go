@@ -293,6 +293,12 @@ func TestStore_ValidateETH(t *testing.T) {
 	assert.False(t, ok)
 
 	updates = generateGov()
+	updates.ETHCDOption.BlockConfirmation = int64(10)
+	ok, err = vStore.ValidateETH(&updates.ETHCDOption)
+	assert.Error(t, err, "Block Confirmation cannot be changed")
+	assert.False(t, ok)
+
+	updates = generateGov()
 	ok, err = vStore.ValidateETH(&updates.ETHCDOption)
 	assert.NoError(t, err, "Should Pass")
 	assert.True(t, ok)

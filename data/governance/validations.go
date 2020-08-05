@@ -18,31 +18,37 @@ import (
 )
 
 var (
-	blocksPerDay               = int64(5200)
-	infiniteInt                = int64(math.MaxInt64)
-	infiniteMaxBalance         = balance.NewAmountFromInt(infiniteInt)
-	initialFundingConfigMin    = balance.NewAmountFromInt(1)
-	initialFundingConfigMax    = infiniteMaxBalance
-	initialFundingCodeMin      = balance.NewAmountFromInt(1)
-	initialFundingCodeMax      = infiniteMaxBalance
-	initialFundingGeneralMin   = balance.NewAmountFromInt(10000)
-	initialFundingGeneralMax   = infiniteMaxBalance
+	infiniteInt        = int64(math.MaxInt64)
+	infiniteMaxBalance = balance.NewAmountFromInt(infiniteInt)
+	//Proposal
+	//Initial Funding
+	initialFundingConfigMin  = balance.NewAmountFromInt(1)
+	initialFundingConfigMax  = infiniteMaxBalance
+	initialFundingCodeMin    = balance.NewAmountFromInt(1)
+	initialFundingCodeMax    = infiniteMaxBalance
+	initialFundingGeneralMin = balance.NewAmountFromInt(10000)
+	initialFundingGeneralMax = infiniteMaxBalance
+	//Funding for execution
 	initialToFundingMultiplier = int64(3)
-	minDeadlineFundingConfig   = getDeadline(10000)
-	maxDeadlineFundingConfig   = getDeadline(infiniteInt)
-	minDeadlineVotingConfig    = getDeadline(10000)
-	maxDeadlineVotingConfig    = getDeadline(infiniteInt)
-	minDeadlineFundingCode     = getDeadline(10000)
-	maxDeadlineFundingCode     = getDeadline(infiniteInt)
-	minDeadlineVotingCode      = getDeadline(150000)
-	maxDeadlineVotingCode      = getDeadline(450000)
-	minDeadlineFundingGeneral  = getDeadline(75000)
-	maxDeadlineFundingGeneral  = getDeadline(150000)
-	minDeadlineVotingeGeneral  = getDeadline(75000)
-	maxDeadlineVotingGeneral   = getDeadline(150000)
-	minPassPercentage          = int64(51)
-	maxPassPercentage          = int64(67)
-	decimalsAllowed            = 2
+	//Deadlines in number of blocks
+	//Config
+	minDeadlineFundingConfig = getDeadline(10000)
+	maxDeadlineFundingConfig = getDeadline(infiniteInt)
+	minDeadlineVotingConfig  = getDeadline(10000)
+	maxDeadlineVotingConfig  = getDeadline(infiniteInt)
+	//Code Change
+	minDeadlineFundingCode = getDeadline(10000)
+	maxDeadlineFundingCode = getDeadline(infiniteInt)
+	minDeadlineVotingCode  = getDeadline(150000)
+	maxDeadlineVotingCode  = getDeadline(450000)
+	//General
+	minDeadlineFundingGeneral = getDeadline(75000)
+	maxDeadlineFundingGeneral = getDeadline(150000)
+	minDeadlineVotingeGeneral = getDeadline(75000)
+	maxDeadlineVotingGeneral  = getDeadline(150000)
+	minPassPercentage         = int64(51)
+	maxPassPercentage         = int64(67)
+	decimalsAllowed           = 2
 	//ONS
 	minPerBlockFee     = balance.NewAmountFromInt(0)
 	maxPerBlockFee     = infiniteMaxBalance
@@ -55,7 +61,7 @@ var (
 	minBlockConfirmation = int64(0)
 	maxBlockConfirmation = int64(50)
 	//Staking
-	minSelfDelegationAmount = balance.NewAmountFromInt(3000000)
+	minSelfDelegationAmount = balance.NewAmountFromInt(1000000)
 	maxSelfDelegationAmount = balance.NewAmountFromInt(10000000)
 	minValidatorCount       = int64(8)
 	maxValidatorCount       = int64(64)
@@ -170,9 +176,12 @@ func (st *Store) ValidateETH(opt *ethchain.ChainDriverOption) (bool, error) {
 	if !bytes.Equal(opt.ERCContractAddress.Bytes(), oldOptions.ERCContractAddress.Bytes()) {
 		return false, errors.New("ERC20 smart contract address cannot be changed")
 	}
-	if !verifyRangeInt64(opt.BlockConfirmation, minBlockConfirmation, maxBlockConfirmation) {
-		return false, errors.New("BlockConfirmations should be between 0 and 50")
+	if oldOptions.BlockConfirmation != opt.BlockConfirmation {
+		return false, errors.New("BlockConfirmations cannot be changed")
 	}
+	//if !verifyRangeInt64(opt.BlockConfirmation, minBlockConfirmation, maxBlockConfirmation) {
+	//	return false, errors.New("BlockConfirmations should be between 0 and 50")
+	//}
 	return true, nil
 }
 
