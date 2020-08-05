@@ -133,8 +133,8 @@ func setArgs(command *cobra.Command, sendArgs *SendArguments) {
 
 func setSendPoolArgs(command *cobra.Command, sendArgs *SendPoolArguments) {
 	// Transaction Parameters
-	command.Flags().BytesHexVar(&sendArgs.Party, "party", []byte{}, "send sender")
-	command.Flags().StringVar(&sendArgs.PoolName, "poolName", "", "send recipient")
+	command.Flags().BytesHexVar(&sendArgs.Party, "party", []byte{}, "sender address")
+	command.Flags().StringVar(&sendArgs.PoolName, "poolname", "", "name of pool ")
 	command.Flags().StringVar(&sendArgs.Amount, "amount", "0", "specify an amount")
 	command.Flags().StringVar(&sendArgs.Currency, "currency", "OLT", "the currency")
 	command.Flags().StringVar(&sendArgs.Fee, "fee", "0", "include a fee in OLT")

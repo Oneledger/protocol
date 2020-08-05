@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 
+	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/data/delegation"
 	"github.com/Oneledger/protocol/data/rewards"
 
@@ -333,7 +334,6 @@ func (st *Store) GetONSOptions() (*ons.Options, error) {
 }
 
 func (st *Store) SetProposalOptions(propOpt ProposalOptionSet) error {
-	//TODO :Add Validations for proposal options . EX : Sum of proposal fund distribution must be 100
 	bytes, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(propOpt)
 	if err != nil {
 		return errors.Wrap(err, "failed to serialize proposal options")
@@ -399,4 +399,20 @@ func (st *Store) GetRewardOptions() (*rewards.Options, error) {
 		return nil, errors.Wrap(err, "failed to deserialize reward options")
 	}
 	return rewardOptions, nil
+}
+
+func (st *Store) GetPoolList() (map[string]keys.Address, error) {
+	poolList := map[string]keys.Address{}
+	propOpt, err := st.GetProposalOptions()
+	if err != nil {
+		return nil, err
+	}
+	rewardOpt, err := st.GetRewardOptions()
+	if err != nil {
+		return nil, err
+	}
+	poolList["BountyPool"] = keys.Address(propOpt.BountyProgramAddr)
+	poolList["FeePool"] = keys.Address(fees.POOL_KEY)
+	poolList["RewardsPool"] = keys.Address(rewardOpt.RewardPoolAddress)
+	return poolList, nil
 }

@@ -1,9 +1,10 @@
 package governance
 
 import (
+	"os"
+
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
-	"os"
 
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/storage"

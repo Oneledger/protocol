@@ -199,6 +199,10 @@ func (app *App) setupState(stateBytes []byte) error {
 		}
 	}
 
+	if !app.Context.delegators.WithState(app.Context.deliver).LoadState(initial.Delegation) {
+		return errors.Wrap(err, "failed to setup initial delegation")
+	}
+
 	if !app.Context.rewardMaster.WithState(app.Context.deliver).LoadState(initial.Rewards) {
 		return errors.Wrap(err, "failed to setup initial rewards")
 	}
