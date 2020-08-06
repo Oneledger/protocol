@@ -11,8 +11,8 @@ var (
 type txblock int8
 
 const (
-	BlockBeginner = 1
-	BlockEnder    = 2
+	BlockBeginner txblock = 1
+	BlockEnder    txblock = 2
 )
 
 // Router interface supplies functionality to add a function to the blockender and blockbeginner
