@@ -277,16 +277,16 @@ func (st *Store) ValidateProposal(opt *ProposalOptionSet) (bool, error) {
 		return false, err
 	}
 	if code.ProposalExecutionCost != oldOptions.CodeChange.ProposalExecutionCost {
-		return false, errors.New("OnLedger Address cannot me changed code update execution cost")
+		return false, errors.New("OneLedger Address cannot be changed | Code change proposal execution cost address")
 	}
 	if config.ProposalExecutionCost != oldOptions.ConfigUpdate.ProposalExecutionCost {
-		return false, errors.New("OnLedger Address cannot me changed config update execution cost")
+		return false, errors.New("OneLedger Address cannot be changed | Config update proposal execution cost address")
 	}
 	if general.ProposalExecutionCost != oldOptions.General.ProposalExecutionCost {
-		return false, errors.New("OnLedger Address cannot me changed general update execution cost")
+		return false, errors.New("OneLedger Address cannot be changed  | General proposal execution cost address")
 	}
 	if opt.BountyProgramAddr != oldOptions.BountyProgramAddr {
-		return false, errors.New("OnLedger Address cannot me changed Bounty Program address")
+		return false, errors.New("OneLedger Address cannot be changed | Bounty Program address")
 	}
 	return true, nil
 }
