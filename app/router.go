@@ -22,7 +22,7 @@ const (
 // Router interface supplies functionality to add a function to the blockender and blockbeginner
 type Router interface {
 	Add(txblock, func(interface{})) error
-	Iterate(txblock) []func(interface{})
+	Iterate(txblock) ([]func(interface{}), error)
 }
 
 type ControllerRouter struct {
@@ -38,8 +38,11 @@ func (r ControllerRouter) Add(t txblock, i func(interface{})) error {
 	return nil
 }
 
-func (r ControllerRouter) Iterate(t txblock) []func(interface{}) {
-	return r.functionlist[t]
+func (r ControllerRouter) Iterate(t txblock) ([]func(interface{}), error) {
+	if t != 1 && t != 2 {
+		return nil, errInvalidInput
+	}
+	return r.functionlist[t], nil
 }
 
 func NewRouter() ControllerRouter {
