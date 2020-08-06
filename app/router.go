@@ -25,7 +25,6 @@ type Router interface {
 	Iterate(txblock) []func(interface{})
 }
 
-// router is an implementation of a Router interface
 type ControllerRouter struct {
 	functionlist map[txblock][]func(interface{})
 	logger       *log.Logger
@@ -50,5 +49,4 @@ func NewRouter() ControllerRouter {
 	}
 }
 
-// router implements Router
 var _ Router = &ControllerRouter{}
