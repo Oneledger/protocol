@@ -45,7 +45,7 @@ func (rs *RewardStore) generateMaturedKey(address keys.Address, height int64, in
 	lastInterval := rs.GetInterval(height)
 	index := lastInterval.LastIndex + int64((height-lastInterval.LastHeight)/interval) + 1
 	if index >= 2 {
-		Key = storage.StoreKey(address.String() + storage.DB_PREFIX + string(index-2))
+		Key = storage.StoreKey(address.String() + storage.DB_PREFIX + strconv.FormatInt(index-2, 10))
 	}
 	return
 }
@@ -54,14 +54,14 @@ func (rs *RewardStore) generatePreviousKey(address keys.Address, height int64, i
 	Key = nil
 	lastInterval := rs.GetInterval(height)
 	index := lastInterval.LastIndex + int64((height-lastInterval.LastHeight)/interval)
-	Key = storage.StoreKey(address.String() + storage.DB_PREFIX + string(index))
+	Key = storage.StoreKey(address.String() + storage.DB_PREFIX + strconv.FormatInt(index, 10))
 	return
 }
 
 func (rs *RewardStore) generateKey(address keys.Address, height int64, interval int64) (Key storage.StoreKey) {
 	lastInterval := rs.GetInterval(height)
 	index := lastInterval.LastIndex + int64((height-lastInterval.LastHeight)/interval) + 1
-	Key = storage.StoreKey(address.String() + storage.DB_PREFIX + string(index))
+	Key = storage.StoreKey(address.String() + storage.DB_PREFIX + strconv.FormatInt(index, 10))
 	return
 }
 
@@ -101,7 +101,7 @@ func (rs *RewardStore) SetInterval(height int64) error {
 	LastInterval := rs.GetInterval(height)
 	diff := height - LastInterval.LastHeight
 
-	key := append(rs.prefixIntervals, storage.StoreKey(storage.DB_PREFIX+strconv.FormatInt(height, 10))...)
+	key := append(rs.prefixIntervals, storage.StoreKey(strconv.FormatInt(height, 10))...)
 	interval := &Interval{
 		LastIndex:  LastInterval.LastIndex + int64(diff/rs.rewardOptions.RewardInterval),
 		LastHeight: height,
@@ -167,7 +167,7 @@ func (rs *RewardStore) IterateAddrList(fn func(key keys.Address) bool) bool {
 }
 
 func (rs *RewardStore) AddAddressToList(address keys.Address) {
-	key := append(rs.prefixAddrList, storage.StoreKey(storage.DB_PREFIX+address.String())...)
+	key := append(rs.prefixAddrList, storage.StoreKey(address.String())...)
 	if !rs.State.Exists(key) {
 		_ = rs.State.Set(key, []byte("active"))
 	}
@@ -185,21 +185,35 @@ func (rs *RewardStore) AddToAddress(address keys.Address, height int64, amount *
 }
 
 //Iterate through all reward records for a given Address
-func (rs *RewardStore) Iterate(addr keys.Address, fn func(c string, amt balance.Amount) bool) bool {
+func (rs *RewardStore) Iterate(addr keys.Address, fn func(addr keys.Address, index int64, amt *balance.Amount) bool) bool {
 	return rs.State.IterateRange(
 		append(rs.prefix, addr.String()...),
 		storage.Rangefix(string(append(rs.prefix, addr.String()...))),
 		true,
 		func(key, value []byte) bool {
 			amt := balance.NewAmount(0)
-
-			err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(value, amt)
+			err := rs.szlr.Deserialize(value, amt)
 			if err != nil {
 				return true
 			}
 
-			arr := strings.Split(string(key), storage.DB_PREFIX)
-			return fn(arr[len(arr)-1], *amt)
+			// key in format "validator_index"
+			keyStr := string(key[len(rs.prefix):])
+			vi := strings.Split(keyStr, storage.DB_PREFIX)
+			if len(vi) != 2 {
+				return true
+			}
+			// parse address and index
+			address := keys.Address{}
+			err = address.UnmarshalText([]byte(vi[0]))
+			if err != nil {
+				return true
+			}
+			index, err := strconv.ParseInt(vi[1], 10, 64)
+			if err != nil {
+				return true
+			}
+			return fn(address, index, amt)
 		},
 	)
 }
@@ -243,4 +257,93 @@ func (rs *RewardStore) GetLastTwoChunks(address keys.Address) (*balance.Amount, 
 	}
 
 	return amount.Plus(*previousAmount), nil
+}
+
+//-----------------------------Dump/Load chain state
+//
+type IntervalReward struct {
+	Address keys.Address    `json:"address"`
+	Index   int64           `json:"index"`
+	Amount  *balance.Amount `json:"amount"`
+}
+
+type RewardState struct {
+	Rewards   []IntervalReward `json:"rewards"`
+	Intervals []Interval       `json:"intervals"`
+	AddrList  []keys.Address   `json:"addrList"`
+}
+
+func NewRewardState() *RewardState {
+	return &RewardState{
+		Rewards:   []IntervalReward{},
+		Intervals: []Interval{},
+		AddrList:  []keys.Address{},
+	}
+}
+
+func (rs *RewardStore) dumpState() (state *RewardState, err error) {
+	// dump rewards
+	state = NewRewardState()
+	rs.Iterate(keys.Address{}, func(addr keys.Address, index int64, amt *balance.Amount) bool {
+		reward := IntervalReward{
+			Address: addr,
+			Index:   index,
+			Amount:  amt,
+		}
+		state.Rewards = append(state.Rewards, reward)
+		return false
+	})
+	// dump intervals
+	rs.State.IterateRange(
+		rs.prefixIntervals,
+		storage.Rangefix(string(rs.prefixIntervals)),
+		true,
+		func(key, value []byte) bool {
+			interval := &Interval{}
+			err = rs.szlr.Deserialize(value, interval)
+			if err != nil {
+				return true
+			}
+			state.Intervals = append(state.Intervals, *interval)
+			return false
+		},
+	)
+	// dump validator address list
+	rs.IterateAddrList(func(addr keys.Address) bool {
+		state.AddrList = append(state.AddrList, addr)
+		return false
+	})
+	return
+}
+
+func (rs *RewardStore) loadState(state *RewardState) error {
+	// load rewards
+	for _, reward := range state.Rewards {
+		key := append(rs.prefix, storage.StoreKey(reward.Address.String()+storage.DB_PREFIX+string(reward.Index))...)
+		data, err := rs.szlr.Serialize(reward.Amount)
+		if err != nil {
+			return err
+		}
+		err = rs.State.Set(key, data)
+		if err != nil {
+			return err
+		}
+	}
+	// load intervals
+	for _, interval := range state.Intervals {
+		key := append(rs.prefixIntervals, storage.StoreKey(strconv.FormatInt(interval.LastHeight, 10))...)
+		data, err := rs.szlr.Serialize(interval)
+		if err != nil {
+			return err
+		}
+		err = rs.State.Set(key, data)
+		if err != nil {
+			return err
+		}
+	}
+	// dump validator address list
+	for _, addr := range state.AddrList {
+		rs.AddAddressToList(addr)
+	}
+	return nil
 }
