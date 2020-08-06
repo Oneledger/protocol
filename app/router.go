@@ -1,11 +1,7 @@
 package app
 
 import (
-	"os"
-
 	"github.com/pkg/errors"
-
-	"github.com/Oneledger/protocol/log"
 )
 
 var (
@@ -27,11 +23,10 @@ type Router interface {
 
 type ControllerRouter struct {
 	functionlist map[txblock][]func(interface{})
-	logger       *log.Logger
 }
 
 func (r ControllerRouter) Add(t txblock, i func(interface{})) error {
-	if t != 1 && t != 2 || i == nil {
+	if t != BlockBeginner && t != BlockEnder || i == nil {
 		return errInvalidInput
 	}
 	r.functionlist[t] = append(r.functionlist[t], i)
@@ -39,7 +34,7 @@ func (r ControllerRouter) Add(t txblock, i func(interface{})) error {
 }
 
 func (r ControllerRouter) Iterate(t txblock) ([]func(interface{}), error) {
-	if t != 1 && t != 2 {
+	if t != BlockBeginner && t != BlockEnder {
 		return nil, errInvalidInput
 	}
 	return r.functionlist[t], nil
@@ -48,7 +43,6 @@ func (r ControllerRouter) Iterate(t txblock) ([]func(interface{}), error) {
 func NewRouter() ControllerRouter {
 	return ControllerRouter{
 		functionlist: make(map[txblock][]func(interface{})),
-		logger:       log.NewLoggerWithPrefix(os.Stdout, "app/router"),
 	}
 }
 
