@@ -115,13 +115,13 @@ func (bos *BidOfferStore) GetActiveOfferForBidConvId(id BidConvId) (*BidOffer, e
 	return bidOffer, nil
 }
 
-func assembleBidOfferKey(bidConvId BidConvId, offerTime int64) storage.StoreKey {
-	key := storage.StoreKey(storage.DB_PREFIX + string(bidConvId) + storage.DB_PREFIX + string(offerTime))
+func assembleBidOfferKey(bidConvId BidConvId, offerType BidOfferType, offerTime int64) storage.StoreKey {
+	key := storage.StoreKey(storage.DB_PREFIX + string(bidConvId) + storage.DB_PREFIX + string(offerType) + storage.DB_PREFIX + string(offerTime))
 	return key
 }
 
-func (bos *BidOfferStore) AddOffer(bidConvId BidConvId, offerTime int64, offer BidOffer) error {
-	key := assembleBidOfferKey(bidConvId, offerTime)
+func (bos *BidOfferStore) AddOffer(bidConvId BidConvId, offerType BidOfferType, offerTime int64, offer BidOffer) error {
+	key := assembleBidOfferKey(bidConvId, offerType, offerTime)
 	err := bos.set(key, offer)
 	if err != nil {
 		return err

@@ -39,11 +39,11 @@ const (
 	BidOfferRejected    BidOfferStatus = false
 
 	//Bid Offer Type
-	TypeOffer         BidOfferType = true
-	TypeCounterOffer  BidOfferType= false
+	TypeOffer         BidOfferType = 0x11
+	TypeCounterOffer  BidOfferType= 0x12
 
 	//Bid Asset Type
-	BidAssetOns BidAssetType = 0x11
+	BidAssetOns BidAssetType = 0x21
 
 	//Bid Id length based on hash algorithm
 	SHA256LENGTH int = 0x40
