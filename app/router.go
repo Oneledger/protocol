@@ -30,7 +30,7 @@ type ControllerRouter struct {
 	logger       *log.Logger
 }
 
-func (r ControllerRouter) Add(t txblock, i func(app interface{})) error {
+func (r ControllerRouter) Add(t txblock, i func(interface{})) error {
 	if t != 1 && t != 2 || i == nil {
 		return errInvalidInput
 	}
