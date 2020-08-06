@@ -21,7 +21,7 @@ const (
 
 // Router interface supplies functionality to add a function to the blockender and blockbeginner
 type Router interface {
-	Add(txblock, func(app interface{})) error
+	Add(txblock, func(interface{})) error
 	Iterate(txblock) []func(interface{})
 }
 
