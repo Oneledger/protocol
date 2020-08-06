@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/Oneledger/protocol/data/bidding"
 	"io"
 	"os"
 	"path/filepath"
@@ -130,6 +131,10 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.actionRouter = action.NewRouter("action")
 	ctx.internalRouter = action.NewRouter("internal")
 	ctx.extStores = data.NewStorageRouter()
+	err = ctx.AddExternalStore("bidConv", NewBidMasterStore(ctx.chainstate))
+	if err != nil {
+		return ctx, errors.Wrap(err, "add OnsBid to external stores failed")
+	}
 
 	testEnv := os.Getenv("OLTEST")
 
@@ -175,6 +180,12 @@ func NewRewardMasterStore(chainstate *storage.ChainState) *rewards.RewardMasterS
 	reward := rewards.NewRewardStore("rwz", "ri", "rwaddr", storage.NewState(chainstate))
 	rewardCumula := rewards.NewRewardCumulativeStore("rwcum", storage.NewState(chainstate))
 	return rewards.NewRewardMasterStore(reward, rewardCumula)
+}
+
+func NewBidMasterStore(chainstate *storage.ChainState) *bidding.BidMasterStore {
+	bidConv := bidding.NewBidConvStore("bidConvActive", "bidConvSucceed", "bidConvCancelled", "bidConvExpired", "bidConvExpiredFailed", storage.NewState(chainstate))
+	bidOffer := bidding.NewBidOfferStore("bidOffer", storage.NewState(chainstate))
+	return bidding.NewBidMasterStore(bidConv, bidOffer)
 }
 
 func (ctx context) dbDir() string {

@@ -170,7 +170,7 @@ func (bcs *BidConvStore) GetIdForBidConv(bidState BidConvState, owner keys.Addre
 
 	bidConvs := bcs.FilterBidConvs(bidState, owner, asset, assetType, bidder)
 	if len(bidConvs) > 1 || len(bidConvs) == 0 {
-		return "", errTooManyActiveBidConvs
+		return "", errors.New("errTooManyActiveBidConvs")
 	}
 	return bidConvs[0].BidId, nil
 }

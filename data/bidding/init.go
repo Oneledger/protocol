@@ -45,6 +45,10 @@ const (
 	//Bid Asset Type
 	BidAssetOns BidAssetType = 0x11
 
+	//Bid Id length based on hash algorithm
+	SHA256LENGTH int = 0x40
+
+
 )
 
 type BidMasterStore struct {

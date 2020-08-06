@@ -110,7 +110,7 @@ func (bos *BidOfferStore) GetActiveOfferForBidConvId(id BidConvId) (*BidOffer, e
 		return BidOffer{}
 	})
 	if bidOffer == nil {
-		return nil, errNoActiveBidOffer
+		return nil, errors.New("errNoActiveBidOffer")
 	}
 	return bidOffer, nil
 }

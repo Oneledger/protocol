@@ -2,8 +2,6 @@ package bidding
 
 import (
 	"errors"
-	"github.com/Oneledger/protocol/data/balance"
-	"google.golang.org/genproto/googleapis/type/date"
 )
 
 type (
