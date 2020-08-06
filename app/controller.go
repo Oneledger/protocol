@@ -142,7 +142,7 @@ func (app *App) blockBeginner() blockBeginner {
 		AddInternalTX(app.Context.proposalMaster, app.Context.node.ValidatorAddress(), app.header.Height, app.Context.transaction, app.logger)
 
 		functionList, err := app.Context.controllerFunctions.Iterate(BlockBeginner)
-		if err != nil {
+		if err == nil {
 			for _, function := range functionList {
 				function(app)
 			}
@@ -291,7 +291,7 @@ func (app *App) blockEnder() blockEnder {
 		FinalizeProposals(&app.header, &app.Context, app.logger)
 
 		functionList, err := app.Context.controllerFunctions.Iterate(BlockEnder)
-		if err != nil {
+		if err == nil {
 			for _, function := range functionList {
 				function(app)
 			}
