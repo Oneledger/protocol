@@ -57,14 +57,14 @@ func (pvs *ProposalVoteStore) Update(proposalID ProposalID, vote *ProposalVote) 
 	msg, err := pvs.store.Get(key)
 	if err != nil {
 		logger.Errorf("%v, can't participate in voting", info)
-		return ErrSetupVotingValidator
+		return err
 	}
 
 	// Deserialize it
 	pv, err := (&ProposalVote{}).FromBytes(msg)
 	if err != nil {
 		logger.Errorf("%v, deserialize proposal vote failed", info)
-		return ErrSetupVotingValidator
+		return err
 	}
 
 	// Update opinion field only
@@ -73,7 +73,7 @@ func (pvs *ProposalVoteStore) Update(proposalID ProposalID, vote *ProposalVote) 
 	err = pvs.store.Set(key, value)
 	if err != nil {
 		logger.Errorf("%v, storage failure", info)
-		return ErrSetupVotingValidator
+		return err
 	}
 	logger.Detail(info)
 
