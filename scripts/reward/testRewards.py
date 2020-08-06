@@ -58,9 +58,9 @@ if __name__ == "__main__":
     # send some funds to pool through olclient
     account = addr_list[0][3:]
     validatorAccounts = addValidatorAccounts(4)
-    args = ['olclient', 'sendpool', '--amount', '10000', '--party', validatorAccounts[0], '--poolname',
+    args = ['olclient', 'sendpool', '--root', node_0, '--amount', '10000', '--party', validatorAccounts[0], '--poolname',
             'RewardsPool', '--fee', '0.0001', '--password', '1234']
-    process = subprocess.Popen(args, cwd=node_0, stdout=subprocess.PIPE)
+    process = subprocess.Popen(args, cwd=os.getcwd(), stdout=subprocess.PIPE)
     process.wait()
     output = process.stdout.read()
     if not success in output:
