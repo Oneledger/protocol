@@ -527,7 +527,8 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 	balances := make([]consensus.BalanceState, 0, len(nodeList))
 	staking := make([]consensus.Stake, 0, len(nodeList))
 	rewards := rewards.RewardMasterState{
-		CumuState: rewards.NewRewardCumuState(),
+		RewardState: rewards.NewRewardState(),
+		CumuState:   rewards.NewRewardCumuState(),
 	}
 	domains := make([]consensus.DomainState, 0, len(nodeList))
 	fees_db := make([]consensus.BalanceState, 0, len(nodeList))
