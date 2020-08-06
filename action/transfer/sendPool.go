@@ -9,7 +9,6 @@ import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/Oneledger/protocol/data/balance"
-	"github.com/Oneledger/protocol/data/fees"
 	gov "github.com/Oneledger/protocol/data/governance"
 )
 
@@ -97,8 +96,11 @@ func (sendPoolTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool,
 		return false, action.ErrInvalidAddress
 	}
 
-	poolList := getPoolList(ctx)
-	if poolList[sendPool.PoolName] == nil {
+	poolList, err := ctx.GovernanceStore.GetPoolList()
+	if err != nil {
+		return false, err
+	}
+	if _, ok := poolList[sendPool.PoolName]; !ok {
 		return false, action.ErrPoolDoesNotExist
 	}
 
@@ -134,7 +136,15 @@ func runSendPool(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return helpers.LogAndReturnFalse(ctx.Logger, balance.ErrBalanceErrorMinusFailed, sendPool.Tags(), err)
 	}
 	// Get Pool Address
-	toPool := getPoolList(ctx)[sendPool.PoolName]
+	poolList, err := ctx.GovernanceStore.GetPoolList()
+	if err != nil {
+		return helpers.LogAndReturnFalse(ctx.Logger, gov.ErrPoolList, sendPool.Tags(), err)
+	}
+	if _, ok := poolList[sendPool.PoolName]; !ok {
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrPoolDoesNotExist, sendPool.Tags(), err)
+	}
+
+	toPool := poolList[sendPool.PoolName]
 
 	//Calculate Updated Balance for Log
 	currencyOlt, _ := ctx.Currencies.GetCurrencyByName(sendPool.Amount.Currency)
@@ -150,12 +160,4 @@ func runSendPool(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	}
 	ctx.Logger.Debug("Adding To Pool : ", sendPool.PoolName, "| Updated Balance :", updatedBalance.String())
 	return helpers.LogAndReturnTrue(ctx.Logger, sendPool.Tags(), "Send to Pool Success")
-}
-
-func getPoolList(ctx *action.Context) map[string]action.Address {
-	poolList := map[string]action.Address{}
-	poolList["BountyPool"] = action.Address(ctx.ProposalMasterStore.Proposal.GetOptions().BountyProgramAddr)
-	poolList["FeePool"] = action.Address(fees.POOL_KEY)
-	poolList["RewardsPool"] = action.Address(ctx.RewardMasterStore.GetOptions().RewardPoolAddress)
-	return poolList
 }

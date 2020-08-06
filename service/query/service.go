@@ -84,6 +84,29 @@ func (svc *Service) Balance(req client.BalanceRequest, resp *client.BalanceReply
 	return nil
 }
 
+func (svc *Service) BalancePool(req client.BalancePoolRequest, resp *client.BalanceReply) error {
+
+	poolname := req.Poolname
+	poolList, err := svc.governance.GetPoolList()
+	if err != nil {
+		return err
+	}
+	bal := &balance.Balance{}
+	if pool, ok := poolList[poolname]; ok {
+		bal, err = svc.balances.GetBalance(pool, svc.currencies)
+		if err != nil {
+			svc.logger.Error("error getting balance", err)
+			return codes.ErrGettingBalance
+		}
+	}
+
+	*resp = client.BalanceReply{
+		Balance: bal.String(),
+		Height:  svc.balances.State.Version(),
+	}
+	return nil
+}
+
 // ListValidator returns a list of all validator
 func (svc *Service) ListValidators(_ client.ListValidatorsRequest, reply *client.ListValidatorsReply) error {
 	validators, err := svc.validators.GetValidatorSet()

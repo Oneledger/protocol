@@ -42,6 +42,10 @@ Services:
 type BalanceRequest struct {
 	Address keys.Address `json:"address"`
 }
+
+type BalancePoolRequest struct {
+	Poolname string `json:"poolname"`
+}
 type BalanceReply struct {
 	// The balance of the account. Returns an empty balance
 	// if the account is not found
