@@ -57,16 +57,17 @@ type context struct {
 	check      *storage.State
 	deliver    *storage.State
 
-	extStores   data.Router //External Stores
-	balances    *balance.Store
-	domains     *ons.DomainStore
-	validators  *identity.ValidatorStore // Set of validators currently active
-	witnesses   *identity.WitnessStore   // Set of witnesses currently active
-	feePool     *fees.Store
-	govern      *governance.Store
-	btcTrackers *bitcoin.TrackerStore  // tracker for bitcoin balance UTXO
-	ethTrackers *ethereum.TrackerStore // Tracker store for ongoing ethereum trackers
-	currencies  *balance.CurrencySet
+	extStores           data.Router
+	controllerFunctions Router //External Stores
+	balances            *balance.Store
+	domains             *ons.DomainStore
+	validators          *identity.ValidatorStore // Set of validators currently active
+	witnesses           *identity.WitnessStore   // Set of witnesses currently active
+	feePool             *fees.Store
+	govern              *governance.Store
+	btcTrackers         *bitcoin.TrackerStore  // tracker for bitcoin balance UTXO
+	ethTrackers         *ethereum.TrackerStore // Tracker store for ongoing ethereum trackers
+	currencies          *balance.CurrencySet
 	//storage which is not a chain state
 	accounts accounts.Wallet
 
@@ -131,11 +132,13 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.actionRouter = action.NewRouter("action")
 	ctx.internalRouter = action.NewRouter("internal")
 	ctx.extStores = data.NewStorageRouter()
-	err = ctx.AddExternalStore("bidConv", NewBidMasterStore(ctx.chainstate))
+	err = ctx.AddExternalStore("bidMaster", NewBidMasterStore(ctx.chainstate))
 	if err != nil {
-		return ctx, errors.Wrap(err, "add OnsBid to external stores failed")
+		return ctx, errors.Wrap(err, "add bid master store to external stores failed")
 	}
-
+	ctx.controllerFunctions = NewRouter()
+	ctx.controllerFunctions.Add(BlockBeginner, AddBiddingTXtoQueue)
+	ctx.controllerFunctions.Add(BlockEnder, PopBiddingTXfromQueue)
 	testEnv := os.Getenv("OLTEST")
 
 	btime := 600 * time.Second
