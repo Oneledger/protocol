@@ -39,16 +39,18 @@ func TestRouter_AddBlockBeginner(t *testing.T) {
 	assert.NoError(t, err)
 	err = cRouter.Add(BlockEnder, internalTX2)
 	assert.NoError(t, err)
+	err = cRouter.Add(3, internalTX2)
+	assert.Error(t, err)
+	err = cRouter.Add(BlockBeginner, nil)
+	assert.Error(t, err)
 }
 
 func TestRouter_IterateBlockBeginner(t *testing.T) {
-	fmt.Println("Iterating Block Beginner")
 	functionlist := cRouter.Iterate(BlockBeginner)
 	assert.Len(t, functionlist, 2)
 	for _, function := range functionlist {
 		function(app)
 	}
-	fmt.Println("Iterating Block Ender")
 	functionlist = cRouter.Iterate(BlockEnder)
 	assert.Len(t, functionlist, 1)
 	for _, function := range functionlist {
