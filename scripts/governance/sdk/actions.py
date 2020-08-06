@@ -200,7 +200,7 @@ class Proposal:
             "ethchaindriverOption": {
                 "ERCContractAddress": "0x0000000000000000000000000000000000000000",
                 "ContractAddress": "0x0000000000000000000000000000000000000000",
-                "BlockConfirmation": 12,
+                "BlockConfirmation": 0,
                 "ERCContractABI": "",
                 "TotalSupply": "",
                 "TokenList": [],
