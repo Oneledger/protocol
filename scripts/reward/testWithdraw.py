@@ -73,7 +73,7 @@ if __name__ == "__main__":
     testrewardswithdraw(validatorAccounts, True, "No Error")
     print bcolors.OKGREEN + "#### Success for withdraw to Staking address" + bcolors.ENDC
     # Unstaking from 0-Node
-    args = ['olclient', 'delegation', 'unstake', '--address', validatorAccounts[0], '--amount', '1', '--password',
+    args = ['olclient', 'delegation', 'unstake', '--address', validatorAccounts[0], '--amount', '3000000', '--password',
             '1234']
     process = subprocess.Popen(args, cwd=node_0, stdout=subprocess.PIPE)
     process.wait()

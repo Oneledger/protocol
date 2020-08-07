@@ -303,7 +303,8 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		return err
 	}
 	// Create the GenesisValidator list and its key files priv_validator_key.json and node_key.json
-	validatorPower := int64(0)
+	minSelfStaking := int64(3000000)
+	validatorCount := int64(0)
 	for i := 0; i < totalNodes; i++ {
 		isValidator := i < args.numValidators
 		nodeName := ctx.names[i]
@@ -383,12 +384,12 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		n := node{isValidator: isValidator, cfg: cfg, dir: nodeDir, key: nodeKey, esdcaPk: ecdsaPk}
 		if isValidator {
 			// each validator takes a different power
-			validatorPower++
+			validatorCount++
 			validator := consensus.GenesisValidator{
 				Address: pvFile.GetAddress(),
 				PubKey:  pvFile.GetPubKey(),
 				Name:    nodeName,
-				Power:   validatorPower,
+				Power:   minSelfStaking * validatorCount,
 			}
 			validatorList[i] = validator
 			n.validator = validator
@@ -583,7 +584,7 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 			Pubkey:           pubkey,
 			ECDSAPubKey:      h.PubKey(),
 			Name:             node.validator.Name,
-			Amount:           *balance.NewAmountFromInt(3000000), //*vt.NewCoinFromInt(node.validator.Power).Amount,
+			Amount:           *balance.NewAmountFromInt(node.validator.Power),
 		}
 		staking = append(staking, st)
 	}
