@@ -30,13 +30,21 @@ type Interval struct {
 	LastHeight int64 `json:"lastHeight"`
 }
 
+type RewardMasterState struct {
+	RewardState *RewardState     `json:"rewardState"`
+	CumuState   *RewardCumuState `json:"cumuState"`
+}
+
+func NewRewardMasterState() *RewardMasterState {
+	return &RewardMasterState{
+		RewardState: NewRewardState(),
+		CumuState:   NewRewardCumuState(),
+	}
+}
+
 type RewardMasterStore struct {
 	Reward   *RewardStore
 	RewardCm *RewardCumulativeStore
-}
-
-type RewardMasterState struct {
-	CumuState *RewardCumuState `json:"cumuState"`
 }
 
 func NewRewardMasterStore(rwz *RewardStore, rwzc *RewardCumulativeStore) *RewardMasterStore {
@@ -61,26 +69,31 @@ func (rwz *RewardMasterStore) GetOptions() *Options {
 	return rwz.Reward.GetOptions()
 }
 
-func (rwz *RewardMasterStore) DumpState() (masterState RewardMasterState, succeed bool) {
-	masterState = RewardMasterState{}
-	succeed = false
+func (rwz *RewardMasterStore) DumpState() (masterState *RewardMasterState, succeed bool) {
+	masterState = NewRewardMasterState()
+	rwdState, err := rwz.Reward.dumpState()
+	if err != nil {
+		return
+	}
 	cumuState, err := rwz.RewardCm.dumpState()
 	if err != nil {
 		return
 	}
-
+	masterState.RewardState = rwdState
 	masterState.CumuState = cumuState
 	succeed = true
 	return
 }
 
 func (rwz *RewardMasterStore) LoadState(masterState RewardMasterState) (succeed bool) {
-	succeed = false
-	err := rwz.RewardCm.loadState(masterState.CumuState)
+	err := rwz.Reward.loadState(masterState.RewardState)
 	if err != nil {
 		return
 	}
-
+	err = rwz.RewardCm.loadState(masterState.CumuState)
+	if err != nil {
+		return
+	}
 	succeed = true
 	return
 }

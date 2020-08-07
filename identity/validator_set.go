@@ -11,6 +11,7 @@ import (
 	"github.com/tendermint/tendermint/abci/types"
 
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/delegation"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
@@ -201,6 +202,52 @@ func (vs *ValidatorStore) GetValidatorSet() ([]Validator, error) {
 		return false
 	})
 	return validatorSet, nil
+}
+
+func (vs *ValidatorStore) GetValidatorMap(stakingOptions *delegation.Options) map[string]bool {
+	vMap := make(map[string]bool)
+	cnt := int64(0)
+
+	i := 0
+	queue := &ValidatorQueue{PriorityQueue: make(utils.PriorityQueue, 0, 100)}
+	vs.Iterate(func(addr keys.Address, validator *Validator) bool {
+		queued := utils.NewQueued(addr, validator.Power, i)
+		queue.Push(queued)
+		i++
+		return false
+	})
+	queue.Init()
+
+	for queue.Len() > 0 && cnt < stakingOptions.TopValidatorCount {
+		queued := queue.Pop()
+		addr := queued.Value()
+		validator, err := vs.Get(addr)
+		if err != nil {
+			continue
+		}
+		if validator.Power < stakingOptions.MinSelfDelegationAmount.BigInt().Int64() {
+			break
+		}
+		vMap[validator.Address.String()] = true
+		cnt++
+	}
+	return vMap
+}
+
+func (vs *ValidatorStore) GetActiveValidatorList(stakingOptions *delegation.Options) ([]Validator, error) {
+	activeList := []Validator{}
+	validators, err := vs.GetValidatorSet()
+	if err != nil {
+		return activeList, err
+	}
+	vMap := vs.GetValidatorMap(stakingOptions)
+	for _, v := range validators {
+		isActive := vMap[v.Address.String()]
+		if isActive {
+			activeList = append(activeList, v)
+		}
+	}
+	return activeList, nil
 }
 
 // get validators set

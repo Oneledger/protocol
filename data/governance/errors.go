@@ -11,7 +11,9 @@ var (
 	ErrGetRewardOptions   = codes.ProtocolError{codes.TxErrGettingRewardsOptions, "failed to get Reward options"}
 	ErrGetONSOptions      = codes.ProtocolError{codes.TxErrGettingONSOptions, "failed to get ONS options"}
 	ErrGetEthOptions      = codes.ProtocolError{codes.TxErrGettingETHOptions, "failed to get ETH options"}
+	ErrGetStakingOptions  = codes.ProtocolError{codes.TxErrGetStakingOptions, "failed to get Staking options"}
 	ErrGetBtcOptions      = codes.ProtocolError{codes.TxErrGettingBTCOptions, "failed to get BTC options"}
+	ErrValidateGovState   = codes.ProtocolError{codes.TxErrValidateGovState, "failed to validate gov state"}
 	ErrPoolList           = codes.ProtocolError{codes.GovErrErrGettingPoolList, "failed to get poollist from gov store"}
 
 	//Proposal

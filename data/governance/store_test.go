@@ -123,7 +123,6 @@ func TestStoreGetAndSet(t *testing.T) {
 		height, err := gStore.GetLUH()
 		assert.NoError(t, err, "No error Expected")
 		assert.EqualValues(t, h, height, "")
-		fmt.Println("Testing passed for height : ", h)
 	}
 
 }

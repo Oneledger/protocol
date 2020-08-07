@@ -527,7 +527,8 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 	balances := make([]consensus.BalanceState, 0, len(nodeList))
 	staking := make([]consensus.Stake, 0, len(nodeList))
 	rewards := rewards.RewardMasterState{
-		CumuState: rewards.NewRewardCumuState(),
+		RewardState: rewards.NewRewardState(),
+		CumuState:   rewards.NewRewardCumuState(),
 	}
 	domains := make([]consensus.DomainState, 0, len(nodeList))
 	fees_db := make([]consensus.BalanceState, 0, len(nodeList))
@@ -535,7 +536,7 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 
 	// staking
 	stakingOption := delegation.Options{
-		MinSelfDelegationAmount: *balance.NewAmount(1),
+		MinSelfDelegationAmount: *balance.NewAmount(3000000),
 		MinDelegationAmount:     *balance.NewAmount(1),
 		TopValidatorCount:       4,
 		MaturityTime:            10,
@@ -582,7 +583,7 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 			Pubkey:           pubkey,
 			ECDSAPubKey:      h.PubKey(),
 			Name:             node.validator.Name,
-			Amount:           *vt.NewCoinFromInt(node.validator.Power).Amount,
+			Amount:           *balance.NewAmountFromInt(3000000), //*vt.NewCoinFromInt(node.validator.Power).Amount,
 		}
 		staking = append(staking, st)
 	}
