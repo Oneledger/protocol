@@ -12,17 +12,12 @@ _funding_goal_general = (int("10") * 10 ** 9)
 _initial_funding_too_less = 5000
 
 
-def test_catchup():
-    # Create Proposal should Fail becuase funding is too less
-    _prop = Proposal(_pid_fail, "configUpdate", "proposal for vote", "Headline", _proposer, _initial_funding_too_less)
-    _prop.send_create()
-    time.sleep(3)
-
-    # Update Proposal to decrese initial funding
+def update_options():
+    # Update Proposal to increse top validator count
     _prop = Proposal(_pid_pass, "configUpdate", "proposal for vote", "Headline", _proposer, _initial_funding)
-    state = _prop.default_gov_state()
-    state['propOptions']['configUpdate']['initialFunding'] = "5000"
-    _prop.configupdate = state
+    # state = _prop.default_gov_state()
+    # state['stakingOptions']['topValidatorCount'] = 8
+    # _prop.configupdate = state
     _prop.send_create()
     time.sleep(3)
     encoded_pid = _prop.pid
@@ -47,11 +42,35 @@ def test_catchup():
 
     time.sleep(3)
 
-    # Create propsal with lesser funding amount should now pass
-    _prop = Proposal(_pid_fail, "configUpdate", "proposal for vote", "Headline", _proposer, _initial_funding_too_less)
-    _prop.send_create()
-    time.sleep(3)
+
+def stake_genesis_initialValidators():
+    stake(node_0)
+    stake(node_1)
+    stake(node_2)
+    stake(node_3)
+
+
+def stake_new_validators():
+    stake(node_4)
+    stake(node_5)
+    stake(node_6)
+    stake(node_7)
 
 
 if __name__ == "__main__":
-    test_catchup()
+    if getActiveValidators() != 4:
+        sys.exit(-1)
+    print bcolors.OKBLUE + "#### Initial Active Validator count is 4 " + bcolors.ENDC
+    #  Increasing the Staking of genesis validators so that they stay on top
+    stake_genesis_initialValidators()
+    #  Staking of genesis validators so that they stay on top
+    stake_new_validators()
+    time.sleep(1)
+    print bcolors.OKBLUE + "#### Active Validator count : " + str(getActiveValidators()) + bcolors.ENDC
+    update_options()
+    time.sleep(1)
+    opt = query_governanceState()
+    print "Last Update Height:" + str(opt["lastUpdateHeight"])
+    print bcolors.OKBLUE + "#### Top Validator count updated to  8 " + bcolors.ENDC
+    time.sleep(1)
+    print bcolors.OKBLUE + "#### Active Validator count : " + str(getActiveValidators()) + bcolors.ENDC

@@ -111,6 +111,8 @@ transfertest: reset
 rewardtest: reset
 	@./scripts/testsend
 	python scripts/reward/testRewards.py
+	make reset
+	python scripts/reward/testWithdraw.py
 	python scripts/reward/listRewards.py
 	@./scripts/stopNodes
 
