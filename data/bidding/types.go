@@ -7,7 +7,6 @@ import (
 type (
 	BidConvId       string
 	BidConvState    int
-	BidAsset        interface{}
 	BidAssetType	int
 	BidConvStatus   bool
 	BidOfferStatus  bool
@@ -22,4 +21,8 @@ func (id BidConvId) Err() error {
 		return errors.New("bid id length is incorrect")
 	}
 	return nil
+}
+
+type BidAsset interface {
+	ToString() string
 }

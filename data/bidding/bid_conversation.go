@@ -1,6 +1,8 @@
 package bidding
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"github.com/Oneledger/protocol/data/keys"
 )
 
@@ -16,10 +18,19 @@ type BidConv struct {
 	BidCounterOffers 	[]BidOffer	 	`json:"bidCounterOffers"`
 }
 
+func generateBidConvID(key string) BidConvId {
+	uniqueKey := key + string(BlockTime)
+	hashHandler := sha256.New()
+	_, err := hashHandler.Write([]byte(uniqueKey))
+	if err != nil {
+		return EmptyStr
+	}
+	return BidConvId(hex.EncodeToString(hashHandler.Sum(nil)))
+}
 
-func NewBidConv(bidId BidConvId, owner keys.Address, asset BidAsset, assetType BidAssetType, bidder keys.Address, deadline int64) *BidConv {
+func NewBidConv(owner keys.Address, asset BidAsset, assetType BidAssetType, bidder keys.Address, deadline int64) *BidConv {
 	return &BidConv{
-		BidId:         		bidId,
+		BidId:         		generateBidConvID(owner.String() + asset.ToString() + bidder.String()),
 		AssetOwner:    		owner,
 		Asset:         		asset,
 		AssetType:			assetType,

@@ -48,6 +48,9 @@ const (
 	//Bid Id length based on hash algorithm
 	SHA256LENGTH int = 0x40
 
+	//todo turn this to real block time
+	BlockTime int64 = 1596763561
+
 
 )
 
