@@ -12,7 +12,6 @@ import (
 	"github.com/Oneledger/protocol/data/delegation"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/governance"
-	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
@@ -121,33 +120,7 @@ func (svc *Service) ListValidators(_ client.ListValidatorsRequest, reply *client
 		return codes.ErrListValidators
 	}
 
-	vMap := make(map[string]bool)
-	cnt := int64(0)
-
-	i := 0
-	queue := &identity.ValidatorQueue{PriorityQueue: make(utils.PriorityQueue, 0, 100)}
-	svc.validators.Iterate(func(addr keys.Address, validator *identity.Validator) bool {
-		queued := utils.NewQueued(addr, validator.Power, i)
-		queue.Push(queued)
-		i++
-		return false
-	})
-	queue.Init()
-
-	for queue.Len() > 0 && cnt < stakingOptions.TopValidatorCount {
-		queued := queue.Pop()
-		addr := queued.Value()
-		validator, err := svc.validators.Get(addr)
-		if err != nil {
-			svc.logger.Error(err, "error deserialize validator")
-			continue
-		}
-		if validator.Power < stakingOptions.MinSelfDelegationAmount.BigInt().Int64() {
-			break
-		}
-		vMap[validator.Address.String()] = true
-		cnt++
-	}
+	vMap := svc.validators.GetValidatorMap(stakingOptions)
 
 	*reply = client.ListValidatorsReply{
 		Validators: validators,

@@ -536,7 +536,7 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 
 	// staking
 	stakingOption := delegation.Options{
-		MinSelfDelegationAmount: *balance.NewAmount(1),
+		MinSelfDelegationAmount: *balance.NewAmount(3000000),
 		MinDelegationAmount:     *balance.NewAmount(1),
 		TopValidatorCount:       4,
 		MaturityTime:            10,
@@ -583,7 +583,7 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 			Pubkey:           pubkey,
 			ECDSAPubKey:      h.PubKey(),
 			Name:             node.validator.Name,
-			Amount:           *vt.NewCoinFromInt(node.validator.Power).Amount,
+			Amount:           *balance.NewAmountFromInt(3000000), //*vt.NewCoinFromInt(node.validator.Power).Amount,
 		}
 		staking = append(staking, st)
 	}
