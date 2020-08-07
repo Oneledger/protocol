@@ -132,8 +132,6 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.internalRouter = action.NewRouter("internal")
 	ctx.extStores = data.NewStorageRouter()
 	ctx.controllerFunctions = NewRouter()
-	ctx.controllerFunctions.Add(BlockBeginner, AddBiddingTXtoQueue)
-	ctx.controllerFunctions.Add(BlockEnder, PopBiddingTXfromQueue)
 	testEnv := os.Getenv("OLTEST")
 
 	btime := 600 * time.Second
