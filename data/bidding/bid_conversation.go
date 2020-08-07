@@ -14,8 +14,6 @@ type BidConv struct {
 	Bidder     			keys.Address 	`json:"bidder"`
 	Deadline   			int64    		`json:"deadline"`
 	Status     			BidConvStatus   `json:"status"`
-	BidOffers   	 	[]BidOffer	 	`json:"bidOffers"`
-	BidCounterOffers 	[]BidOffer	 	`json:"bidCounterOffers"`
 }
 
 func generateBidConvID(key string) BidConvId {
@@ -37,7 +35,5 @@ func NewBidConv(owner keys.Address, asset BidAsset, assetType BidAssetType, bidd
 		Bidder:        		bidder,
 		Deadline: 	   		deadline,
 		Status:		   		BidConvOpen,
-		BidOffers:        	[]BidOffer{},
-		BidCounterOffers: 	[]BidOffer{},
 	}
 }

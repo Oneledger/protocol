@@ -50,7 +50,7 @@ func (bos *BidOfferStore) delete(key storage.StoreKey) (bool, error) {
 	return res, err
 }
 
-func (bos *BidOfferStore) iterate(fn func(bidConvId BidConvId, offerTime int64, bidOffer BidOffer) bool) bool {
+func (bos *BidOfferStore) iterate(fn func(bidConvId BidConvId, offerType BidOfferType, offerTime int64) bool) bool {
 	return bos.State.IterateRange(
 		bos.prefix,
 		storage.Rangefix(string(bos.prefix)),
@@ -65,15 +65,20 @@ func (bos *BidOfferStore) iterate(fn func(bidConvId BidConvId, offerTime int64, 
 			fmt.Println("key: ", key)
 			fmt.Println("arr: ", arr)
 			fmt.Println("arr[1]: ", arr[1])
-			// key example: bidOffer_bidConvId_offerTime
+			// key example: bidOffer_bidConvId_offerType_offerTime
 			bidConvId := arr[1]
 			fmt.Println("bidConvId: ", bidConvId)
+			offerType, err := strconv.ParseInt(arr[2], 10, 64)
+			if err != nil {
+				fmt.Println("Error Parsing Offer Type", err)
+				return true
+			}
 			offerTime, err := strconv.ParseInt(arr[len(arr)-1], 10, 64)
 			if err != nil {
 				fmt.Println("Error Parsing Offer Time", err)
 				return true
 			}
-			return fn(BidConvId(bidConvId), offerTime, *offer)
+			return fn(BidConvId(bidConvId), BidOfferType(offerType), offerTime)
 		},
 	)
 }
@@ -90,11 +95,11 @@ func NewBidOfferStore(prefix string, state *storage.State) *BidOfferStore {
 	}
 }
 
-func (bos *BidOfferStore) GetOffersForBidConvId(id BidConvId, fn func(bidConvId BidConvId, offerTime int64, bidOffer BidOffer) BidOffer) []BidOffer {
+func (bos *BidOfferStore) GetOffersForBidConvId(id BidConvId, fn func(bidConvId BidConvId, offerType BidOfferType, offerTime int64) BidOffer) []BidOffer {
 	var bidOffers []BidOffer
-	bos.iterate(func(bidConvId BidConvId, offerTime int64, offer BidOffer) bool {
+	bos.iterate(func(bidConvId BidConvId, offerType BidOfferType, offerTime int64) bool {
 		if bidConvId == id {
-			bidOffers = append(bidOffers, fn(bidConvId, offerTime, offer))
+			bidOffers = append(bidOffers, fn(bidConvId, offerType, offerTime))
 		}
 		return false
 	})
@@ -102,17 +107,22 @@ func (bos *BidOfferStore) GetOffersForBidConvId(id BidConvId, fn func(bidConvId 
 }
 
 func (bos *BidOfferStore) GetActiveOfferForBidConvId(id BidConvId) (*BidOffer, error) {
-	var bidOffer *BidOffer
-	bos.GetOffersForBidConvId(id, func(bidConvId BidConvId, offerTime int64, offer BidOffer) BidOffer {
+	bidOffers := bos.GetOffersForBidConvId(id, func(bidConvId BidConvId, offerType BidOfferType, offerTime int64) BidOffer {
+		bidOffer, err := bos.get(assembleBidOfferKey(bidConvId, offerType, offerTime))
+		if err != nil {
+			return BidOffer{}
+		}
 		if bidOffer.OfferStatus == BidOfferActive {
-			bidOffer = &offer
+			return *bidOffer
 		}
 		return BidOffer{}
 	})
-	if bidOffer == nil {
+	if len(bidOffers) == 0 {
 		return nil, errors.New("errNoActiveBidOffer")
+	} else if len(bidOffers) > 1 {
+		return nil, errors.New("errTooManyActiveBidOffer")
 	}
-	return bidOffer, nil
+	return &bidOffers[0], nil
 }
 
 func assembleBidOfferKey(bidConvId BidConvId, offerType BidOfferType, offerTime int64) storage.StoreKey {
@@ -120,8 +130,8 @@ func assembleBidOfferKey(bidConvId BidConvId, offerType BidOfferType, offerTime 
 	return key
 }
 
-func (bos *BidOfferStore) AddOffer(bidConvId BidConvId, offerType BidOfferType, offerTime int64, offer BidOffer) error {
-	key := assembleBidOfferKey(bidConvId, offerType, offerTime)
+func (bos *BidOfferStore) AddOffer(offer BidOffer) error {
+	key := assembleBidOfferKey(offer.BidId, offer.OfferType, offer.OfferTime)
 	err := bos.set(key, offer)
 	if err != nil {
 		return err
