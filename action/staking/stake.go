@@ -123,21 +123,21 @@ func (s stakeTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error)
 }
 
 func (s stakeTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (ok bool, result action.Response) {
-	ctx.Logger.Debug("Processing Apply stake Transaction for ProcessCheck", tx)
+	ctx.Logger.Detail("Processing Apply stake Transaction for ProcessCheck", tx)
 	ok, result = runCheckStake(ctx, tx)
-	ctx.Logger.Debug("Result Apply stake Transaction for ProcessCheck", ok, result)
+	ctx.Logger.Detail("Result Apply stake Transaction for ProcessCheck", ok, result)
 	return
 }
 
 func (s stakeTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (ok bool, result action.Response) {
-	ctx.Logger.Debug("Processing Apply stake Transaction for ProcessDeliver", tx)
+	ctx.Logger.Detail("Processing Apply stake Transaction for ProcessDeliver", tx)
 	ok, result = runCheckStake(ctx, tx)
-	ctx.Logger.Debug("Result Apply stake Transaction for ProcessDeliver", ok, result)
+	ctx.Logger.Detail("Result Apply stake Transaction for ProcessDeliver", ok, result)
 	return
 }
 
 func (s stakeTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
-	ctx.Logger.Debug("Processing Apply stake Transaction for ProcessFee", signedTx)
+	ctx.Logger.Detail("Processing Apply stake Transaction for ProcessFee", signedTx)
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 2)
 }
 
