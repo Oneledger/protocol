@@ -37,7 +37,7 @@ def vote_proposal_cli(pid, opinion, node, address, secs=1):
     args = ['olclient', 'gov', 'vote', '--root', node, '--id', pid, '--address', address[3:], '--opinion', opinion, '--password', 'pass', '--gasprice', '0.00001', '--gas', '40000']
 
     # set cwd for the purpose of wallet path
-    process = subprocess.Popen(args, cwd=os.getcwd())
+    process = subprocess.Popen(args, cwd=nodedir)
     process.wait()
     time.sleep(secs)
 

@@ -28,7 +28,7 @@ def addValidatorAccounts(numofValidators):
         contents = json.loads(f.read())
         privKey = contents['priv_key']['value']
         args = ['olclient', 'account', 'add', '--privkey', privKey, '--pubkey', pubKey, "--password", '1234']
-        process = subprocess.Popen(args, cwd=os.getcwd(), stdout=subprocess.PIPE)
+        process = subprocess.Popen(args, cwd=nodedir, stdout=subprocess.PIPE)
         process.wait()
         output = process.stdout.readlines()
         validatorAcounts.append(output[1].split(":")[1].strip()[3:])

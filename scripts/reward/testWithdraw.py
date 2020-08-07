@@ -13,9 +13,9 @@ def testrewardswithdraw(validatorAccounts, result, error_message):
         nodedir = os.path.join(devnet, node)
         # query balance after
         withdrawAmount = 12000
-        args = ['olclient', 'rewards', '--root', nodedir, 'withdraw', '--address', validatorAccounts[i], '--amount', str(withdrawAmount),
+        args = ['olclient', 'rewards', 'withdraw', '--address', validatorAccounts[i], '--amount', str(withdrawAmount),
                 '--password', '1234']
-        process = subprocess.Popen(args, cwd=os.getcwd(), stdout=subprocess.PIPE)
+        process = subprocess.Popen(args, cwd=nodedir, stdout=subprocess.PIPE)
         process.wait()
         output = process.stdout.readlines()
         time.sleep(1)
@@ -37,8 +37,8 @@ def testrewardswithdraw(validatorAccounts, result, error_message):
         print "Withdrawn :" + str(withdrawAmount) + "| To address :", str(validatorAccounts[i])
 
 def addNewAccount():
-    args = ['olclient', '--root', node_0, 'account', 'add', "--password", '1234']
-    process = subprocess.Popen(args, cwd=os.getcwd(), stdout=subprocess.PIPE)
+    args = ['olclient', 'account', 'add', "--password", '1234']
+    process = subprocess.Popen(args, cwd=node_0, stdout=subprocess.PIPE)
     process.wait()
     output = process.stdout.readlines()
     sleep(1)
@@ -58,9 +58,9 @@ if __name__ == "__main__":
     validatorAccounts = addValidatorAccounts(4)
 
     # send some funds to pool through olclient
-    args = ['olclient', 'sendpool', '--root', node_0, '--amount', '100000', '--party', validatorAccounts[0],
+    args = ['olclient', 'sendpool', '--amount', '100000', '--party', validatorAccounts[0],
             '--poolname', 'RewardsPool', '--fee', '0.0001', '--password', '1234']
-    process = subprocess.Popen(args, cwd=os.getcwd(), stdout=subprocess.PIPE)
+    process = subprocess.Popen(args, cwd=node_0, stdout=subprocess.PIPE)
     process.wait()
     output = process.stdout.read()
     if not success in output:
@@ -73,9 +73,9 @@ if __name__ == "__main__":
     testrewardswithdraw(validatorAccounts, True, "No Error")
     print bcolors.OKGREEN + "#### Success for withdraw to Staking address" + bcolors.ENDC
     # Unstaking from 0-Node
-    args = ['olclient', 'delegation', '--root', node_0, 'unstake', '--address', validatorAccounts[0], '--amount', '1', '--password',
+    args = ['olclient', 'delegation', 'unstake', '--address', validatorAccounts[0], '--amount', '1', '--password',
             '1234']
-    process = subprocess.Popen(args, cwd=os.getcwd(), stdout=subprocess.PIPE)
+    process = subprocess.Popen(args, cwd=node_0, stdout=subprocess.PIPE)
     process.wait()
     output = process.stdout.readlines()
     if not success in output[1]:
