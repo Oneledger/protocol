@@ -12,6 +12,7 @@ pipeline {
 
         stage('clean up') {
             steps {
+                sh 'cd /var/lib/jenkins/workspace'
                 sh 'ls'
             }
         }
