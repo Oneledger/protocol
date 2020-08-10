@@ -8,9 +8,15 @@ pipeline {
         PATH="${GOPATH}/bin:${PATH}"
         OLTEST="1"
     }
-        node {
-        customWorkspace "/home/jenkins/jenkins_workspace/${JOB_NAME}_${BUILD_NUMBER}"
+       stages{
+
+        stage('clean up') {
+            steps {
+                sh 'ls'
+            }
         }
+
+}
     post {
         cleanup {
             /* clean up our workspace */
