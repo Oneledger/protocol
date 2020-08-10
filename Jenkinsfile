@@ -8,23 +8,23 @@ pipeline {
         PATH="${GOPATH}/bin:${PATH}"
         OLTEST="1"
     }
-    stages{     
-
-        stage('clean up') {
-            steps {
-                sh 'cd /var/lib/jenkins/workspace'
-                sh 'ls'
-            }
+        node {
+        customWorkspace "/home/jenkins/jenkins_workspace/${JOB_NAME}_${BUILD_NUMBER}"
         }
-
-}
     post {
         cleanup {
-            echo 'One way or another, I have finished'
-            deleteDir() /* clean up our workspace */
-               }
-           }
-            
+            /* clean up our workspace */
+            deleteDir()
+            /* clean up tmp directory */
+            dir("${workspace}@tmp") {
+                deleteDir()
+            }
+            /* clean up script directory */
+            dir("${workspace}@script") {
+                deleteDir()
+            }
         }
-   
+    }
+}
+
 
