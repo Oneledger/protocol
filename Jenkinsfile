@@ -54,13 +54,13 @@ pipeline {
             }
         }
         
-        stage('withdraw test') {
+        stage('reward test') {
             steps {
                 script {
                     try {
-                        sh 'make withdrawtest'
+                        sh 'make rewardtest'
                     } catch (e) {
-                        unstable('withdraw test stage failed!')
+                        unstable('reward test stage failed!')
                         sh 'exit 0'
                     }
                 }
@@ -131,6 +131,14 @@ pipeline {
 
              } 
            }
+        
+        stage('clean up') {
+            steps {
+                        sh 'cd /var/lib/jenkins/workspace'
+                        sh 'rm -rf *'
+                    }
+                }
+            
         }
    
 }
