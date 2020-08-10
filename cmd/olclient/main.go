@@ -16,11 +16,14 @@ package main
 
 import (
 	"fmt"
-	"golang.org/x/crypto/ssh/terminal"
 	"os"
 	"path/filepath"
 	"strings"
 	"syscall"
+
+	"golang.org/x/crypto/ssh/terminal"
+
+	"github.com/spf13/cobra"
 
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/config"
@@ -63,8 +66,21 @@ func NewContext() *Context {
 	return Ctx
 }
 
-func main() {
+var DelegationCmd = &cobra.Command{
+	Use:   "delegation",
+	Short: "OneLedger delegation",
+	Long:  "Delegation module for OneLedger chain",
+}
 
+var RewardsCmd = &cobra.Command{
+	Use:   "rewards",
+	Short: "OneLedger rewards",
+	Long:  "Rewards module for OneLedger chain",
+}
+
+func main() {
+	RootCmd.AddCommand(DelegationCmd)
+	RootCmd.AddCommand(RewardsCmd)
 	Execute()
 }
 

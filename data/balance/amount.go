@@ -2,12 +2,14 @@ package balance
 
 import (
 	"encoding/json"
+	"math"
 	"math/big"
 	"strconv"
 	"strings"
 
-	"github.com/Oneledger/protocol/utils"
 	"github.com/pkg/errors"
+
+	"github.com/Oneledger/protocol/utils"
 )
 
 // Amount represents an amount of a currency
@@ -76,4 +78,53 @@ func (a *Amount) BigInt() *big.Int {
 
 func (a Amount) String() string {
 	return a.BigInt().String()
+}
+
+func (a *Amount) Plus(value Amount) *Amount {
+	base := big.NewInt(0)
+	base = base.Add(a.BigInt(), value.BigInt())
+	return NewAmountFromBigInt(base)
+}
+
+func (a *Amount) Minus(value Amount) (*Amount, error) {
+	base := big.NewInt(0)
+	base = base.Sub(a.BigInt(), value.BigInt())
+	if base.Cmp(big.NewInt(0)) == -1 {
+		return NewAmountFromBigInt(base), ErrInsufficientBalance
+	}
+	return NewAmountFromBigInt(base), nil
+}
+
+func (a *Amount) Equals(value Amount) bool {
+	if a.BigInt().Cmp(value.BigInt()) == 0 {
+		return true
+	}
+	return false
+}
+
+func (a *Amount) LessThan(value Amount) bool {
+	if a.BigInt().Cmp(value.BigInt()) == -1 {
+		return true
+	}
+	return false
+}
+
+func (a Amount) BigFloat() *big.Float {
+	return new(big.Float).SetInt(a.BigInt())
+}
+
+func (a *Amount) CheckInRange(min Amount, max Amount) (bool, error) {
+	base := big.NewInt(0)
+	base = base.Sub(a.BigInt(), min.BigInt())
+	if base.Cmp(big.NewInt(0)) == -1 {
+		return false, errors.New("Amount less that min range")
+	}
+	base = big.NewInt(0)
+	base = base.Sub(max.BigInt(), a.BigInt())
+	if max.BigInt().Int64() != math.MaxInt64 {
+		if base.Cmp(big.NewInt(0)) == -1 {
+			return false, errors.New("Amount is more than max range")
+		}
+	}
+	return true, nil
 }

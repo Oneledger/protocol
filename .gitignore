@@ -2,6 +2,7 @@ vendor
 .glide
 *.sw[op]
 .idea/
+.vscode/
 VOLUME/
 .DS_Store
 olvm/interpreter/bin/
@@ -12,3 +13,5 @@ venv/
 *.pyc
 data/bitcoin/tmp
 /scripts/ons/sdk/__pycache__
+python-venv/
+.vscode/

@@ -2,12 +2,13 @@ package query
 
 import (
 	"github.com/Oneledger/protocol/client"
+	gov "github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/ons"
 	codes "github.com/Oneledger/protocol/status_codes"
 )
 
-func (sv *Service) ONS_GetDomainByName(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsReply) error {
-	domains := sv.ons
+func (svc *Service) ONS_GetDomainByName(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsReply) error {
+	domains := svc.ons
 	if len(req.Name) <= 0 {
 		return codes.ErrBadName
 	}
@@ -23,14 +24,14 @@ func (sv *Service) ONS_GetDomainByName(req client.ONSGetDomainsRequest, reply *c
 
 	*reply = client.ONSGetDomainsReply{
 		Domains: ds,
-		Height:  sv.balances.State.Version(),
+		Height:  svc.ons.State.Version(),
 	}
 
 	return nil
 }
 
-func (sv *Service) ONS_GetDomainByOwner(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsReply) error {
-	domains := sv.ons
+func (svc *Service) ONS_GetDomainByOwner(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsReply) error {
+	domains := svc.ons
 	if req.Owner == nil {
 		return codes.ErrBadOwner
 	}
@@ -49,14 +50,78 @@ func (sv *Service) ONS_GetDomainByOwner(req client.ONSGetDomainsRequest, reply *
 
 	*reply = client.ONSGetDomainsReply{
 		Domains: ds,
-		Height:  sv.balances.State.Version(),
+		Height:  svc.ons.State.Version(),
 	}
 
 	return nil
 }
 
-func (sv *Service) ONS_GetDomainOnSale(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsOnSaleReply) error {
-	domains := sv.ons
+func (svc *Service) ONS_GetParentDomainByOwner(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsReply) error {
+	domains := svc.ons
+	if req.Owner == nil {
+		return codes.ErrBadOwner
+	}
+	ds := make([]ons.Domain, 0)
+
+	domains.Iterate(func(name ons.Name, domain *ons.Domain) bool {
+
+		if domain.Owner.Equal(req.Owner) {
+			if req.OnSale && !domain.OnSaleFlag {
+				return false
+			}
+			if domain.Name.IsSub() {
+				return false
+			}
+			ds = append(ds, *domain)
+		}
+		return false
+	})
+
+	*reply = client.ONSGetDomainsReply{
+		Domains: ds,
+		Height:  svc.ons.State.Version(),
+	}
+
+	return nil
+}
+
+func (svc *Service) ONS_GetSubDomainByName(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsReply) error {
+	domains := svc.ons
+	if len(req.Name) <= 0 {
+		return codes.ErrBadName
+	}
+
+	_, err := domains.Get(ons.Name(req.Name))
+	if err != nil {
+		return codes.ErrDomainNotFound
+	}
+
+	reqName := ons.GetNameFromString(req.Name)
+
+	ds := make([]ons.Domain, 0)
+
+	domains.Iterate(func(name ons.Name, domain *ons.Domain) bool {
+
+		if !domain.Name.IsSub() {
+			return false
+		}
+		if !domain.Name.EqualTo(reqName) && domain.Name.IsSubTo(reqName) {
+			ds = append(ds, *domain)
+		}
+
+		return false
+	})
+
+	*reply = client.ONSGetDomainsReply{
+		Domains: ds,
+		Height:  svc.ons.State.Version(),
+	}
+
+	return nil
+}
+
+func (svc *Service) ONS_GetDomainOnSale(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsReply) error {
+	domains := svc.ons
 	if req.OnSale == false {
 		return codes.ErrFlagNotSet
 	}
@@ -69,15 +134,15 @@ func (sv *Service) ONS_GetDomainOnSale(req client.ONSGetDomainsRequest, reply *c
 		return false
 	})
 
-	*reply = client.ONSGetDomainsOnSaleReply{
+	*reply = client.ONSGetDomainsReply{
 		Domains: ds,
-		Height:  sv.balances.State.Version(),
+		Height:  svc.ons.State.Version(),
 	}
 	return nil
 }
 
-func (sv *Service) ONS_GetDomainByBeneficiary(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsOnSaleReply) error {
-	domains := sv.ons
+func (svc *Service) ONS_GetDomainByBeneficiary(req client.ONSGetDomainsRequest, reply *client.ONSGetDomainsReply) error {
+	domains := svc.ons
 	if req.Beneficiary == nil {
 		return codes.ErrBadAddress
 	}
@@ -90,17 +155,20 @@ func (sv *Service) ONS_GetDomainByBeneficiary(req client.ONSGetDomainsRequest, r
 		return false
 	})
 
-	*reply = client.ONSGetDomainsOnSaleReply{
+	*reply = client.ONSGetDomainsReply{
 		Domains: ds,
-		Height:  sv.balances.State.Version(),
+		Height:  svc.ons.State.Version(),
 	}
 	return nil
 }
 
 func (svc *Service) ONS_GetOptions(_ struct{}, reply *client.ONSGetOptionsReply) error {
-
+	onsOpt, err := svc.governance.GetONSOptions()
+	if err != nil {
+		return gov.ErrGetONSOptions
+	}
 	*reply = client.ONSGetOptionsReply{
-		Options: *svc.ons.GetOptions(),
+		Options: *onsOpt,
 	}
 	return nil
 }

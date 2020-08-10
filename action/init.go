@@ -10,12 +10,13 @@ import (
 type Type int
 
 const (
-	SEND Type = 0x01
+	SEND     Type = 0x01
+	SENDPOOL Type = 0x02
 
 	//staking related transaction
-	APPLYVALIDATOR Type = 0x11
-	WITHDRAW       Type = 0x12
-	PURGE          Type = 0x13
+	STAKE    Type = 0x11
+	UNSTAKE  Type = 0x12
+	WITHDRAW Type = 0x13
 
 	//ons related transaction
 	DOMAIN_CREATE     Type = 0x21
@@ -41,6 +42,18 @@ const (
 	ERC20_LOCK               Type = 0x94
 	ERC20_REDEEM             Type = 0x95
 
+	//Governance Action
+	PROPOSAL_CREATE         Type = 0x30
+	PROPOSAL_CANCEL         Type = 0x31
+	PROPOSAL_FUND           Type = 0x32
+	PROPOSAL_VOTE           Type = 0x33
+	PROPOSAL_FINALIZE       Type = 0x34
+	EXPIRE_VOTES            Type = 0x35
+	PROPOSAL_WITHDRAW_FUNDS Type = 0x36
+
+	//Rewards
+	WITHDRAW_REWARD Type = 0x41
+
 	//EOF here Only used as a marker to mark the end of Type list
 	//So that the query for Types can return all Types dynamically
 	//, when there is a change made in Type list
@@ -60,8 +73,12 @@ func (t Type) String() string {
 	switch t {
 	case SEND:
 		return "SEND"
-	case APPLYVALIDATOR:
-		return "APPLY_VALIDATOR"
+	case STAKE:
+		return "STAKE"
+	case UNSTAKE:
+		return "UNSTAKE"
+	case SENDPOOL:
+		return "SENDPOOL"
 	case WITHDRAW:
 		return "WITHDRAW"
 	case DOMAIN_CREATE:
@@ -105,6 +122,21 @@ func (t Type) String() string {
 	case ERC20_REDEEM:
 		return "ERC20_REDEEM"
 
+	case PROPOSAL_CREATE:
+		return "PROPOSAL_CREATE"
+	case PROPOSAL_CANCEL:
+		return "PROPOSAL_CANCEL"
+	case PROPOSAL_FUND:
+		return "PROPOSAL_FUND"
+	case PROPOSAL_VOTE:
+		return "PROPOSAL_VOTE"
+	case PROPOSAL_FINALIZE:
+		return "PROPOSAL_FINALIZE"
+
+	case PROPOSAL_WITHDRAW_FUNDS:
+		return "PROPOSAL_WITHDRAW_FUNDS"
+	case EXPIRE_VOTES:
+		return "EXPIRE_VOTES"
 	default:
 		return "UNKNOWN"
 	}

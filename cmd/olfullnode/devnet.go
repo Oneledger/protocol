@@ -14,6 +14,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/Oneledger/protocol/data/governance"
+	"github.com/Oneledger/protocol/data/rewards"
+
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -32,6 +35,7 @@ import (
 	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/chain"
+	"github.com/Oneledger/protocol/data/delegation"
 	"github.com/Oneledger/protocol/data/ons"
 
 	"github.com/Oneledger/protocol/data/fees"
@@ -47,6 +51,60 @@ var (
 	totalTTCSupply     = "2000000000000000000" // 2 Token
 	totalBTCSupply     = "1000000000"          // 10 BTC
 	lockBalanceAddress = "oneledgerSupplyAddress"
+
+	ethBlockConfirmation = int64(12)
+	btcBlockConfirmation = int64(6)
+
+	proposalInitialFunding, _   = balance.NewAmountFromString("1000000000", 10)
+	proposalFundingGoal, _      = balance.NewAmountFromString("10000000000", 10)
+	proposalFundingDeadline     = int64(100)
+	proposalVotingDeadline      = int64(12)
+	proposalPassPercentage      = 51
+	bountyProgramAddr           = "oneledgerBountyProgram"
+	executionCostAddrConfig     = "executionCostConfig"
+	executionCostAddrCodeChange = "executionCostCodeChange"
+	executionCostAddrGeneral    = "executionCostGeneral"
+	passedProposalDistribution  = governance.ProposalFundDistribution{
+		Validators:     18.00,
+		FeePool:        18.00,
+		Burn:           18.00,
+		ExecutionCost:  18.00,
+		BountyPool:     10.00,
+		ProposerReward: 18.00,
+	}
+	failedProposalDistribution = governance.ProposalFundDistribution{
+		Validators:     10.00,
+		FeePool:        10.00,
+		Burn:           10.00,
+		ExecutionCost:  20.00,
+		BountyPool:     50.00,
+		ProposerReward: 00.00,
+	}
+
+	estimatedSecondsPerCycle  = int64(1728)
+	blockSpeedCalculateCycle  = int64(100)
+	burnoutRate, _            = balance.NewAmountFromString("5000000000000000000", 10)
+	yearCloseWindow           = int64(3600 * 24)
+	yearBlockRewardShare_1, _ = balance.NewAmountFromString("70000000000000000000000000", 10)
+	yearBlockRewardShare_2, _ = balance.NewAmountFromString("70000000000000000000000000", 10)
+	yearBlockRewardShare_3, _ = balance.NewAmountFromString("40000000000000000000000000", 10)
+	yearBlockRewardShare_4, _ = balance.NewAmountFromString("40000000000000000000000000", 10)
+	yearBlockRewardShare_5, _ = balance.NewAmountFromString("30000000000000000000000000", 10)
+	yearBlockRewardShares     = []balance.Amount{
+		*yearBlockRewardShare_1,
+		*yearBlockRewardShare_2,
+		*yearBlockRewardShare_3,
+		*yearBlockRewardShare_4,
+		*yearBlockRewardShare_5,
+	}
+
+	testnetArgs = &testnetConfig{}
+
+	testnetCmd = &cobra.Command{
+		Use:   "devnet",
+		Short: "Initializes files for a devnet",
+		RunE:  runDevnet,
+	}
 )
 
 type testnetConfig struct {
@@ -67,18 +125,8 @@ type testnetConfig struct {
 	deploySmartcontracts bool
 	cloud                bool
 	loglevel             int
+	rewardsInterval      int64
 	reserved_domains     string
-}
-
-var ethBlockConfirmation = int64(12)
-var btcBlockConfirmation = int64(6)
-
-var testnetArgs = &testnetConfig{}
-
-var testnetCmd = &cobra.Command{
-	Use:   "devnet",
-	Short: "Initializes files for a devnet",
-	RunE:  runDevnet,
 }
 
 func init() {
@@ -97,6 +145,7 @@ func init() {
 	testnetCmd.Flags().BoolVar(&testnetArgs.deploySmartcontracts, "deploy_smart_contracts", false, "deploy eth contracts")
 	testnetCmd.Flags().BoolVar(&testnetArgs.cloud, "cloud_deploy", false, "set true for deploying on cloud")
 	testnetCmd.Flags().IntVar(&testnetArgs.loglevel, "loglevel", 3, "Specify the log level for olfullnode. 0: Fatal, 1: Error, 2: Warning, 3: Info, 4: Debug, 5: Detail")
+	testnetCmd.Flags().Int64Var(&testnetArgs.rewardsInterval, "rewards_interval", 1, "Block rewards interval")
 	testnetCmd.Flags().StringVar(&testnetArgs.reserved_domains, "reserved_domains", "", "Directory which contains Reserved domains list")
 
 }
@@ -254,6 +303,8 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		return err
 	}
 	// Create the GenesisValidator list and its key files priv_validator_key.json and node_key.json
+	minSelfStaking := int64(3000000)
+	validatorCount := int64(0)
 	for i := 0; i < totalNodes; i++ {
 		isValidator := i < args.numValidators
 		nodeName := ctx.names[i]
@@ -332,11 +383,13 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		// Save the nodes to a list so we can iterate again and
 		n := node{isValidator: isValidator, cfg: cfg, dir: nodeDir, key: nodeKey, esdcaPk: ecdsaPk}
 		if isValidator {
+			// each validator takes a different power
+			validatorCount++
 			validator := consensus.GenesisValidator{
 				Address: pvFile.GetAddress(),
 				PubKey:  pvFile.GetPubKey(),
 				Name:    nodeName,
-				Power:   1,
+				Power:   minSelfStaking * validatorCount,
 			}
 			validatorList[i] = validator
 			n.validator = validator
@@ -382,7 +435,51 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		btcBlockConfirmation,
 	}
 
-	states := initialState(args, nodeList, *cdo, *onsOp, btccdo, reserveDomains, initialAddrs)
+	propOpt := governance.ProposalOptionSet{
+		ConfigUpdate: governance.ProposalOption{
+			InitialFunding:         proposalInitialFunding,
+			FundingGoal:            proposalFundingGoal,
+			FundingDeadline:        proposalFundingDeadline,
+			VotingDeadline:         proposalVotingDeadline,
+			PassPercentage:         proposalPassPercentage,
+			PassedFundDistribution: passedProposalDistribution,
+			FailedFundDistribution: failedProposalDistribution,
+			ProposalExecutionCost:  executionCostAddrConfig,
+		},
+		CodeChange: governance.ProposalOption{
+			InitialFunding:         proposalInitialFunding,
+			FundingGoal:            proposalFundingGoal,
+			FundingDeadline:        proposalFundingDeadline,
+			VotingDeadline:         proposalVotingDeadline,
+			PassPercentage:         proposalPassPercentage,
+			PassedFundDistribution: passedProposalDistribution,
+			FailedFundDistribution: failedProposalDistribution,
+			ProposalExecutionCost:  executionCostAddrCodeChange,
+		},
+		General: governance.ProposalOption{
+			InitialFunding:         proposalInitialFunding,
+			FundingGoal:            proposalFundingGoal,
+			FundingDeadline:        proposalFundingDeadline,
+			VotingDeadline:         proposalVotingDeadline,
+			PassPercentage:         proposalPassPercentage,
+			PassedFundDistribution: passedProposalDistribution,
+			FailedFundDistribution: failedProposalDistribution,
+			ProposalExecutionCost:  executionCostAddrGeneral,
+		},
+		BountyProgramAddr: bountyProgramAddr,
+	}
+
+	rewzOpt := rewards.Options{
+		RewardInterval:           args.rewardsInterval,
+		RewardPoolAddress:        "rewardpool",
+		RewardCurrency:           "OLT",
+		EstimatedSecondsPerCycle: estimatedSecondsPerCycle,
+		BlockSpeedCalculateCycle: blockSpeedCalculateCycle,
+		YearCloseWindow:          yearCloseWindow,
+		YearBlockRewardShares:    yearBlockRewardShares,
+		BurnoutRate:              *burnoutRate,
+	}
+	states := initialState(args, nodeList, *cdo, *onsOp, btccdo, propOpt, reserveDomains, initialAddrs, rewzOpt)
 
 	genesisDoc, err := consensus.NewGenesisDoc(chainID, states)
 	if err != nil {
@@ -416,7 +513,8 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 }
 
 func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDriverOption, onsOption ons.Options,
-	btcOption bitcoin.ChainDriverOption, reservedDomains []reservedDomain, initialAddrs []keys.Address) consensus.AppState {
+	btcOption bitcoin.ChainDriverOption, propOpt governance.ProposalOptionSet, reservedDomains []reservedDomain, initialAddrs []keys.Address, rewardOpt rewards.Options) consensus.AppState {
+
 	olt := balance.Currency{Id: 0, Name: "OLT", Chain: chain.ONELEDGER, Decimal: 18, Unit: "nue"}
 	vt := balance.Currency{Id: 1, Name: "VT", Chain: chain.ONELEDGER, Unit: "vt"}
 	obtc := balance.Currency{Id: 2, Name: "BTC", Chain: chain.BITCOIN, Decimal: 8, Unit: "satoshi"}
@@ -429,9 +527,21 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 	}
 	balances := make([]consensus.BalanceState, 0, len(nodeList))
 	staking := make([]consensus.Stake, 0, len(nodeList))
+	rewards := rewards.RewardMasterState{
+		RewardState: rewards.NewRewardState(),
+		CumuState:   rewards.NewRewardCumuState(),
+	}
 	domains := make([]consensus.DomainState, 0, len(nodeList))
 	fees_db := make([]consensus.BalanceState, 0, len(nodeList))
 	total := olt.NewCoinFromInt(args.totalFunds)
+
+	// staking
+	stakingOption := delegation.Options{
+		MinSelfDelegationAmount: *balance.NewAmount(3000000),
+		MinDelegationAmount:     *balance.NewAmount(1),
+		TopValidatorCount:       4,
+		MaturityTime:            10,
+	}
 
 	//var initialAddrs []keys.Address
 	initAddrIndex := 0
@@ -474,7 +584,7 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 			Pubkey:           pubkey,
 			ECDSAPubKey:      h.PubKey(),
 			Name:             node.validator.Name,
-			Amount:           *vt.NewCoinFromInt(node.validator.Power).Amount,
+			Amount:           *balance.NewAmountFromInt(node.validator.Power),
 		}
 		staking = append(staking, st)
 	}
@@ -540,13 +650,17 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 		Currencies: currencies,
 		Balances:   balances,
 		Staking:    staking,
+		Rewards:    rewards,
 		Domains:    domains,
 		Fees:       fees_db,
-		Governance: consensus.GovernanceState{
-			FeeOption:   feeOpt,
-			ETHCDOption: option,
-			BTCCDOption: btcOption,
-			ONSOptions:  onsOption,
+		Governance: governance.GovernanceState{
+			FeeOption:      feeOpt,
+			ETHCDOption:    option,
+			BTCCDOption:    btcOption,
+			ONSOptions:     onsOption,
+			PropOptions:    propOpt,
+			StakingOptions: stakingOption,
+			RewardOptions:  rewardOpt,
 		},
 	}
 }

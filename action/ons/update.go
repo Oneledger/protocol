@@ -5,12 +5,16 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/tendermint/tendermint/libs/kv"
 
-	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/data/ons"
 	"github.com/pkg/errors"
+
+	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/action/helpers"
+	gov "github.com/Oneledger/protocol/data/governance"
+	"github.com/Oneledger/protocol/data/ons"
 )
 
 var _ Ons = &DomainUpdate{}
@@ -76,7 +80,11 @@ func (domainUpdateTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, e
 		return false, err
 	}
 
-	err = action.ValidateFee(ctx.FeePool.GetOpt(), tx.Fee)
+	feeOpt, err := ctx.GovernanceStore.GetFeeOption()
+	if err != nil {
+		return false, gov.ErrGetFeeOptions
+	}
+	err = action.ValidateFee(feeOpt, tx.Fee)
 	if err != nil {
 		return false, err
 	}
@@ -155,7 +163,10 @@ func runUpdate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	}
 
 	d.SetLastUpdatedHeight(ctx.Header.Height)
-	opt := ctx.Domains.GetOptions()
+	opt, err := ctx.GovernanceStore.GetONSOptions()
+	if err != nil {
+		return helpers.LogAndReturnFalse(ctx.Logger, gov.ErrGetONSOptions, update.Tags(), err)
+	}
 	if len(update.Uri) > 0 {
 		ok := opt.IsValidURI(update.Uri)
 		if !ok {
@@ -164,6 +175,9 @@ func runUpdate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 			}
 		}
 		d.URI = update.Uri
+	} else if strings.Compare(update.Uri, "") == 0 {
+		// reset uri
+		d.URI = ""
 	}
 
 	err = ctx.Domains.Set(d)
