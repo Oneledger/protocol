@@ -16,6 +16,7 @@ pipeline {
             }
         }
 
+}
     post {
         cleanup {
             echo 'One way or another, I have finished'
@@ -25,4 +26,4 @@ pipeline {
             
         }
    
-}
+
