@@ -15,12 +15,17 @@ Copyright 2017 - 2019 OneLedger
 package balance
 
 import (
+	"github.com/Oneledger/protocol/data/keys"
 	"testing"
 
 	"github.com/tendermint/tm-db"
 
 	"github.com/Oneledger/protocol/storage"
 	"github.com/stretchr/testify/assert"
+)
+
+const (
+	numPrivateKeys = 300
 )
 
 func TestNewStore(t *testing.T) {
@@ -70,4 +75,37 @@ func TestNewStore(t *testing.T) {
 		return false
 	})
 	assert.Equal(t, 1, cnt)
+}
+
+func TestStore_IterateAll(t *testing.T) {
+	olt := Currency{
+		Id:      0,
+		Name:    "OLT",
+		Chain:   0,
+		Decimal: 18,
+		Unit:    "nue",
+	}
+	db := db.NewDB("test", db.MemDBBackend, "")
+	cs := storage.NewState(storage.NewChainState("balance", db))
+	store := NewStore("b", cs)
+	currencies := NewCurrencySet()
+	err := currencies.Register(olt)
+	assert.NoError(t, err)
+
+	//Generate key pairs for Addresses
+	for i := 0; i < numPrivateKeys; i++ {
+		pub, _, _ := keys.NewKeyPairFromTendermint()
+		h, _ := pub.GetHandler()
+		//addrList = append(addrList, h.Address())
+
+		coin := olt.NewCoinFromInt(10)
+		err = store.AddToAddress(h.Address(), coin)
+		assert.NoError(t, err)
+		cs.Commit()
+	}
+
+	store.IterateAll(func(addr keys.Address, coin string, amt Amount) bool {
+		assert.NoError(t, addr.Err())
+		return false
+	})
 }
