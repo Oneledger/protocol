@@ -134,9 +134,14 @@ pipeline {
         
         stage('clean up') {
             steps {
-                        sh 'cd /var/lib/jenkins/workspace'
-                        sh 'sudo rm -rf *'
-                    }
+                 
+                  post {
+                     always {
+                       deleteDir()
+                            }
+                          }
+                       }
+
                 }
             
         }
