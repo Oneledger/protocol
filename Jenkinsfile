@@ -135,7 +135,7 @@ pipeline {
         stage('clean up') {
             steps {
                         sh 'cd /var/lib/jenkins/workspace'
-                        sh 'rm -rf *'
+                        sh 'sudo rm -rf *'
                     }
                 }
             
