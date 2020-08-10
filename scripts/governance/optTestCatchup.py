@@ -2,9 +2,9 @@ from sdk import *
 
 addr_list = addresses()
 
-_pid_fail = "id_40061"
-_pid_pass = "id_40063"
-_pid_pass2 = "id_40064"
+_pid_fail = "id_50061"
+_pid_pass = "id_50063"
+_pid_pass2 = "id_50064"
 _proposer = addr_list[0]
 _initial_funding = 1000000000
 _each_funding = (int("5") * 10 ** 9)
