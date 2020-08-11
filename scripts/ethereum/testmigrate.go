@@ -42,26 +42,26 @@ import (
 )
 
 var (
-	lockRedeemABI          = contract.LockRedeemABI
-	lockRedeemFutureABI    = contract.LockRedeemFutureABI
-	lockRedeemContractAddr = "0x3A15Be9D65cF8f6f966672Ff4606cF7D07A651A8"
-	newSmartcontract       = "0x4610C5CfF3bDb7C013e4729787149A127B740B03"
+	lockRedeemABI                 = contract.LockRedeemABI
+	lockRedeemKratosABI           = contract.LockRedeemKratosABI
+	lockRedeemContractAddr        = "0x3432b6878a7488EDdF51d1c9e53E7A75815fE923"
+	lockRedeem_KratosContractAddr = "0x193E63287dd3EFd005FdEF9Ac9fDDd2894A8A221"
 	//cfg = config.DefaultEthConfig("rinkeby", "de5e96cbb6284d5ea1341bf6cb7fa401")
-	Cfg                     = config.DefaultEthConfig("rinkeby", "de5e96cbb6284d5ea1341bf6cb7fa401")
-	Log                     = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
-	Client                  *ethclient.Client
-	ContractAbi             abi.ABI
-	FutureContractAbi       abi.ABI
-	OldSmartContractAddress = common.HexToAddress(lockRedeemContractAddr)
-	NEWsmartContract        = common.HexToAddress(newSmartcontract)
-	readDir                 = "/home/tanmay/Codebase/Test/devnet/"
+	Cfg                        = config.DefaultEthConfig("rinkeby", "de5e96cbb6284d5ea1341bf6cb7fa401")
+	Log                        = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
+	Client                     *ethclient.Client
+	ContractAbi                abi.ABI
+	KratosContractAbi          abi.ABI
+	OldSmartContractAddress    = common.HexToAddress(lockRedeemContractAddr)
+	KratosSmartContractAddress = common.HexToAddress(lockRedeem_KratosContractAddr)
+	oldValidatorsDir           = "/home/tanmay/Codebase/Test/devnet/"
 )
 
 func init() {
 
 	Client, _ = ethclient.Dial(Cfg.Connection)
 	ContractAbi, _ = abi.JSON(strings.NewReader(lockRedeemABI))
-	FutureContractAbi, _ = abi.JSON(strings.NewReader(lockRedeemFutureABI))
+	KratosContractAbi, _ = abi.JSON(strings.NewReader(lockRedeemKratosABI))
 }
 
 // Redeem locked if tracker fails . User redeems more funds than he has .
@@ -73,8 +73,26 @@ func main() {
 	fmt.Println("NEW contract isActive : ", checkIsActive())
 }
 
+// Stop Kainos network
+// Dump genesis ( Old genesis has 8 Validator address)
+// Keep a copy of the PrivateKeys_ecdsa for old validators.
+// Edit the Genesis  (Manual)
+// Add new validator address  -> 2 ? ( Add public key and address to genesis , use privatekey_ecdsa for  sc deployment)
+// Use PrivateKey_ecdsa of these new validators to deploy LockRedeem_Kratos (New Validators become witnesses in Kratos)
+// Add smart contract address to genesis
+// Witness list does not change with stake / unstake
+// Run migrate script  (Separate ,not part of olclient )
+// Inputs  ->  old privatekeys-ecdsa , old smart contract address ,new smart contract address
+// Outcome -> Balance transferred to new smart contract
+// OLD smart contract ACTIVE = False   , NEW smart contract ACTIVE = True
+
+// Test
+// Lock some ether on current devnet
+// Do the steps mentioned above
+// Redeem from new network which has the new smart contract address
+
 func checkIsActive() bool {
-	ctrct, err := contract.NewLockRedeemFuture(NEWsmartContract, Client)
+	ctrct, err := contract.NewLockRedeemKratos(KratosSmartContractAddress, Client)
 	if err != nil {
 		Log.Fatal("Unable to get LOCKREDEEM FUTURE")
 	}
@@ -83,7 +101,8 @@ func checkIsActive() bool {
 		BlockNumber: nil,
 		Context:     context.Background(),
 	}
-	bool, err := ctrct.IsActive(callopts)
+
+	bool, err := ctrct.ActiveStatus(callopts)
 	if err != nil {
 		Log.Fatal("Unable to check contract status")
 		return false
@@ -94,12 +113,12 @@ func checkIsActive() bool {
 func migrateContract() {
 	for i := 0; i < 4; i++ {
 
-		bytesData, err := ContractAbi.Pack("migrate", NEWsmartContract)
+		bytesData, err := ContractAbi.Pack("migrate", KratosSmartContractAddress)
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
-		folder := readDir + strconv.Itoa(i) + "-Node/consensus/config/"
+		folder := oldValidatorsDir + strconv.Itoa(i) + "-Node/consensus/config/"
 		ecdspkbytes, err := ioutil.ReadFile(filepath.Join(folder, "priv_validator_key_ecdsa.json"))
 		if err != nil {
 			Log.Fatal(err)

@@ -52,10 +52,10 @@ var (
 	TestTokenABI     = contract.ERC20BasicABI
 	LockRedeemERCABI = contract.LockRedeemERCABI
 	// LockRedeemERC20ABI = contract.ContextABI
-	LockRedeemContractAddr      = "0x99e709597677ea3FB5160E46E8eA3d4989F8dFc0"
+	LockRedeemContractAddr      = "0x3432b6878a7488EDdF51d1c9e53E7A75815fE923"
 	TestTokenContractAddr       = "0x0000000000000000000000000000000000000000"
 	LockRedeemERC20ContractAddr = "0x0000000000000000000000000000000000000000"
-	readDir                     = "/home/tanmay/Codebase/Test/Pk-dev3/"
+	readDir                     = "/home/tanmay/Codebase/Test/devnet/"
 
 	cfg = config.DefaultEthConfig("rinkeby", "de5e96cbb6284d5ea1341bf6cb7fa401")
 	//cfg               = config.DefaultEthConfig("", "")
@@ -142,18 +142,18 @@ func init() {
 //InsufficientFunds(50% Validators) + Panic (50 % Validators): Refund
 func main() {
 	//ethManualDeploy()
-	getstatus(lock())
+	//getstatus(lock())
 	//time.Sleep(time.Second * 5)
 	//getstatus(redeem())
 	//sendTrasactions(12)
 	//erc20lock()
 	///time.Sleep(10 * time.Second)
 	//erc20Redeem()
-	//takeValidatorFunds()
+	takeValidatorFunds()
 }
 
 func takeValidatorFunds() {
-	for i := 0; i < 2; i++ {
+	for i := 0; i < 4; i++ {
 		folder := readDir + strconv.Itoa(i) + "-Node/consensus/config/"
 		ecdspkbytes, err := ioutil.ReadFile(filepath.Join(folder, "priv_validator_key_ecdsa.json"))
 		if err != nil {
