@@ -141,6 +141,12 @@ func (app *App) blockBeginner() blockBeginner {
 		//Transaction store is not part of chainstate ,it just maintains a list of proposals from BlockBeginner to BlockEnder .Gets cleared at each Block Ender
 		AddInternalTX(app.Context.proposalMaster, app.Context.node.ValidatorAddress(), app.header.Height, app.Context.transaction, app.logger)
 
+		functionList, err := app.Context.controllerFunctions.Iterate(BlockBeginner)
+		if err == nil {
+			for _, function := range functionList {
+				function(app)
+			}
+		}
 		app.logger.Detail("Begin Block:", result, "height:", req.Header.Height, "AppHash:", hex.EncodeToString(req.Header.AppHash))
 		return result
 	}
@@ -284,6 +290,12 @@ func (app *App) blockEnder() blockEnder {
 		ExpireProposals(&app.header, &app.Context, app.logger)
 		FinalizeProposals(&app.header, &app.Context, app.logger)
 
+		functionList, err := app.Context.controllerFunctions.Iterate(BlockEnder)
+		if err == nil {
+			for _, function := range functionList {
+				function(app)
+			}
+		}
 		result := ResponseEndBlock{
 			ValidatorUpdates: updates,
 		}
