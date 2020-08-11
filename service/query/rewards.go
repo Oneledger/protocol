@@ -13,8 +13,8 @@ func (svc *Service) ListRewardsForValidator(req client.RewardsRequest, resp *cli
 		return err
 	}
 	var rewards []balance.Amount
-	svc.rewardMaster.Reward.Iterate(validatorAddr, func(c string, amt balance.Amount) bool {
-		rewards = append(rewards, amt)
+	svc.rewardMaster.Reward.Iterate(validatorAddr, func(addr keys.Address, index int64, amt *balance.Amount) bool {
+		rewards = append(rewards, *amt)
 		return false
 	})
 

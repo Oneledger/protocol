@@ -482,7 +482,8 @@ func getInitialState(args *genesisArgument, nodeList []node, option ethchain.Cha
 		Currencies: currencies,
 		Balances:   balances,
 		Staking:    staking,
-		Rewards:    rewards.RewardMasterState{},
+		Delegation: *delegation.NewDelegationState(),
+		Rewards:    *rewards.NewRewardMasterState(),
 		Domains:    domains,
 		Fees:       fees_db,
 		Governance: governance.GovernanceState{

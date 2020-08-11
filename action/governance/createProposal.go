@@ -158,9 +158,13 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	//if err != nil {
 	//	helpers.LogAndReturnFalse(ctx.Logger, governance.ErrGetProposalOptions, createProposal.Tags(), err)
 	//}
-	//TODO implement validattions for all stores
 	if createProposal.ProposalType == governance.ProposalTypeConfigUpdate {
-		validateConfig(ctx, createProposal)
+		ctx.Logger.Info("Auto update disabled")
+		//ok, err := ctx.GovernanceStore.ValidateGov(createProposal.ConfigUpdate)
+		//if err != nil || !ok {
+		//	return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrValidateGovState, createProposal.Tags(), err)
+		//}
+
 	}
 
 	//Create Proposal and save to Proposal Store
@@ -267,9 +271,4 @@ func (c CreateProposal) Marshal() ([]byte, error) {
 
 func (c *CreateProposal) Unmarshal(bytes []byte) error {
 	return json.Unmarshal(bytes, c)
-}
-
-func validateConfig(ctx *action.Context, proposal CreateProposal) (error, bool) {
-
-	return nil, true
 }
