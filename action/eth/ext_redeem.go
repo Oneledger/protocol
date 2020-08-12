@@ -184,7 +184,7 @@ func runRedeem(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, trackerlib.ErrETHTrackerUnableToSet, redeem.Tags(), err)
 	}
-	ctx.Logger.Debug("Redeem Tracked set jobs in progress")
+	ctx.Logger.Debug("Redeem Tracker set | Jobs Starting now")
 	return true, action.Response{
 		Data:      nil,
 		Log:       "",
