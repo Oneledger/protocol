@@ -108,12 +108,14 @@ func (ethRedeemTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool
 
 // ProcessCheck runs checks on the transaction without commiting it .
 func (ethRedeemTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	ctx.Logger.Debug("Executing Processcheck for ETH REDEEM")
 	return runRedeem(ctx, tx)
 
 }
 
 // ProcessDeliver run checks on transaction and commits it to a new block
 func (ethRedeemTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	ctx.Logger.Debug("Executing Processdeliver for ETH REDEEM")
 	return runRedeem(ctx, tx)
 }
 
@@ -132,35 +134,36 @@ func runRedeem(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	}
 	req, err := ethereum.ParseRedeem(redeem.ETHTxn, ethOptions.ContractABI)
 	if err != nil {
-		return false, action.Response{Log: (errors.Wrap(action.ErrInvalidExtTx, err.Error())).Error()}
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrInvalidExtTx, redeem.Tags(), err)
 	}
 
 	c, ok := ctx.Currencies.GetCurrencyByName("ETH")
 	if !ok {
-		return false, action.Response{Log: "ETH not registered"}
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrInvalidCurrency, redeem.Tags(), err)
 	}
 
 	coin := c.NewCoinFromAmount(*balance.NewAmountFromBigInt(req.Amount))
 	err = ctx.Balances.MinusFromAddress(redeem.Owner, coin)
 	if err != nil {
-		return false, action.Response{Log: (errors.Wrap(action.ErrNotEnoughFund, err.Error())).Error()}
+		return helpers.LogAndReturnFalse(ctx.Logger, balance.ErrBalanceErrorMinusFailed, redeem.Tags(), err)
 	}
 	// Subtracting from common address to maintain count of the total oEth minted
 	ethSupply := keys.Address(ethOptions.TotalSupplyAddr)
 	err = ctx.Balances.MinusFromAddress(ethSupply, coin)
 	if err != nil {
-		return false, action.Response{Log: (errors.Wrap(action.ErrNotEnoughFund, err.Error())).Error()}
+		return helpers.LogAndReturnFalse(ctx.Logger, balance.ErrBalanceErrorMinusFailed, redeem.Tags(), err)
 	}
 
 	witnesses, err := ctx.Witnesses.GetWitnessAddresses(chain.ETHEREUM)
 	if err != nil {
-		return false, action.Response{Log: "error in getting validator addresses" + err.Error()}
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrGettingWitnessList, redeem.Tags(), err)
 	}
 	name := ethcommon.BytesToHash(redeem.ETHTxn)
 	if ctx.ETHTrackers.WithPrefixType(trackerlib.PrefixOngoing).Exists(name) || ctx.ETHTrackers.WithPrefixType(trackerlib.PrefixFailed).Exists(name) || ctx.ETHTrackers.WithPrefixType(trackerlib.PrefixPassed).Exists(name) {
-		return false, action.Response{
-			Log: "Tracker already exists",
-		}
+		return helpers.LogAndReturnFalse(ctx.Logger, trackerlib.ErrETHTrackerExists, redeem.Tags(), errors.New("Tracker with same TXHASH already exists"))
+		//return false, action.Response{
+		//	Log: "Tracker already exists",
+		//}
 	}
 
 	tracker := trackerlib.NewTracker(
@@ -178,6 +181,10 @@ func runRedeem(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
 	// Save eth Tracker
 	err = ctx.ETHTrackers.WithPrefixType(trackerlib.PrefixOngoing).Set(tracker)
+	if err != nil {
+		return helpers.LogAndReturnFalse(ctx.Logger, trackerlib.ErrETHTrackerUnableToSet, redeem.Tags(), err)
+	}
+	ctx.Logger.Debug("Redeem Tracked set jobs in progress")
 	return true, action.Response{
 		Data:      nil,
 		Log:       "",
