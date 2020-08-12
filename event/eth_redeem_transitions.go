@@ -88,12 +88,13 @@ func Signing(ctx interface{}) error {
 	if context.Witnesses.IsETHWitness() {
 
 		job := NewETHSignRedeem(tracker.TrackerName, ethereum.BusyBroadcasting)
+
 		err := context.JobStore.SaveJob(job)
 		if err != nil {
 
 			return errors.Wrap(errors.New("job serialization failed err: "), err.Error())
 		}
-
+		context.Logger.Debug("Signing Job Created")
 	}
 
 	return nil
@@ -122,6 +123,7 @@ func VerifyRedeem(ctx interface{}) error {
 			if err != nil {
 				return errors.Wrap(err, "Failed to save job")
 			}
+			context.Logger.Debug("Verify Job Created")
 		}
 	}
 	context.Tracker = tracker
@@ -147,6 +149,7 @@ func RedeemConfirmed(ctx interface{}) error {
 				if err != nil {
 					return errors.Wrap(err, "Failed to save job")
 				}
+				context.Logger.Debug("Verify Job Created")
 			}
 		}
 	}

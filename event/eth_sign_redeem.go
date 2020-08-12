@@ -38,16 +38,14 @@ func (j *JobETHSignRedeem) DoMyJob(ctx interface{}) {
 	if j.Status == jobs.Completed {
 		return
 	}
-	//if j.RetryCount > jobs.Max_Retry_Count {
-	//	j.Status = jobs.Failed
-	//	//BroadcastReportFinalityETHTx(ctx.(*JobsContext), j.TrackerName, j.JobID, false)
-	//}
+
 	if j.Status == jobs.New {
 		j.Status = jobs.InProgress
 	}
 
 	ethCtx, _ := ctx.(*JobsContext)
 	trackerStore := ethCtx.EthereumTrackers
+	ethCtx.Logger.Debug("Executing Validator Job To Sign Ethereum Smart Contract")
 	tracker, err := trackerStore.WithPrefixType(trackerlib.PrefixOngoing).Get(j.TrackerName)
 	if err != nil {
 		ethCtx.Logger.Error("err trying to deserialize tracker: ", j.TrackerName, err)
