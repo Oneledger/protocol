@@ -161,9 +161,6 @@ func runRedeem(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	name := ethcommon.BytesToHash(redeem.ETHTxn)
 	if ctx.ETHTrackers.WithPrefixType(trackerlib.PrefixOngoing).Exists(name) || ctx.ETHTrackers.WithPrefixType(trackerlib.PrefixFailed).Exists(name) || ctx.ETHTrackers.WithPrefixType(trackerlib.PrefixPassed).Exists(name) {
 		return helpers.LogAndReturnFalse(ctx.Logger, trackerlib.ErrETHTrackerExists, redeem.Tags(), errors.New("Tracker with same TXHASH already exists"))
-		//return false, action.Response{
-		//	Log: "Tracker already exists",
-		//}
 	}
 
 	tracker := trackerlib.NewTracker(

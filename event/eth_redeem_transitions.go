@@ -82,7 +82,7 @@ func Signing(ctx interface{}) error {
 
 	if tracker.State != ethereum.New {
 		err := errors.New("Cannot Start Sign and Broadcast from Current State")
-		return errors.Wrap(err, string(rune((tracker).State)))
+		return err
 	}
 	tracker.State = ethereum.BusyBroadcasting
 	if context.Witnesses.IsETHWitness() {
