@@ -213,10 +213,10 @@ func (c *ServiceClient) GetTracker(name string) (out BTCGetTrackerReply, err err
 	return
 }
 
-func (c *ServiceClient) CheckCommitResult(hash string, prove bool) (reply *TxResponse, err error) {
+func (c *ServiceClient) CheckCommitResult(hash string, prove bool) (reply TxResponse, err error) {
 	request := &TxRequest{Hash: hash, Prove: prove}
 
-	err = c.Call("query.Tx", request, reply)
+	err = c.Call("query.Tx", request, &reply)
 
 	return
 }

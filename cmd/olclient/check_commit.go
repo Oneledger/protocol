@@ -20,7 +20,7 @@ import (
 )
 
 type CheckCommit struct {
-	hash string
+	hash  string
 	prove bool
 }
 
@@ -47,9 +47,11 @@ func CheckTransaction(cmd *cobra.Command, args []string) {
 	fullnode := Ctx.clCtx.FullNodeClient()
 	result, err := fullnode.CheckCommitResult(checkCommit.hash, checkCommit.prove)
 	if err != nil {
-		fmt.Print(err)
+		fmt.Println(err)
 	}
-	fmt.Print(result.Result)
-
+	fmt.Println("Hash:", result.Result.Hash)
+	fmt.Println("Height:", result.Result.Height)
+	fmt.Println("Index:", result.Result.Index)
+	fmt.Println("Proof:", result.Result.Proof)
+	fmt.Println("TX Result:", result.Result.TxResult.Code)
 }
-
