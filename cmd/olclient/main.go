@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 
 	"golang.org/x/crypto/ssh/terminal"
 
@@ -119,4 +120,30 @@ func BroadcastStatusSync(ctx *Context, result *ctypes.ResultBroadcastTx) {
 		ctx.logger.Infof("Returned Successfully %#v", result)
 		ctx.logger.Info("Result Data", "data", string(result.Data))
 	}
+}
+
+func checkTransactionResult(ctx *Context, hash string, prove bool) (*ctypes.ResultTx, bool) {
+	fullnode := ctx.clCtx.FullNodeClient()
+	result, err := fullnode.CheckCommitResult(hash, prove)
+	if err != nil {
+		return nil, false
+	}
+	return &result.Result, true
+}
+
+
+func PoolTxResult(ctx *Context, hash string) bool {
+	wait := 5
+	interval := 3
+	fmt.Println("Checking the transaction result...")
+	for i := 0; i < wait; i++ {
+		time.Sleep(time.Duration(interval) * 1000 * time.Millisecond)
+		result, b := checkTransactionResult(ctx, hash, true)
+		if result != nil && b == true {
+			fmt.Println("Transaction is committed!")
+			return true
+		}
+	}
+	fmt.Println("Transaction failed to be committed!")
+	return false
 }

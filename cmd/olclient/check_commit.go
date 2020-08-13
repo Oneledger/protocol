@@ -44,14 +44,14 @@ func init() {
 // IssueRequest sends out a sendTx to all of the nodes in the chain
 func CheckTransaction(cmd *cobra.Command, args []string) {
 	Ctx := NewContext()
-	fullnode := Ctx.clCtx.FullNodeClient()
-	result, err := fullnode.CheckCommitResult(checkCommit.hash, checkCommit.prove)
-	if err != nil {
-		fmt.Println(err)
+	result, b := checkTransactionResult(Ctx, checkCommit.hash, checkCommit.prove)
+	if result == nil || b == false {
+		fmt.Print("Tx has not been commited yet, please try again later")
+		return
 	}
-	fmt.Println("Hash:", result.Result.Hash)
-	fmt.Println("Height:", result.Result.Height)
-	fmt.Println("Index:", result.Result.Index)
-	fmt.Println("Proof:", result.Result.Proof)
-	fmt.Println("TX Result:", result.Result.TxResult.Code)
+	fmt.Println("Hash:", result.Hash)
+	fmt.Println("Height:", result.Height)
+	fmt.Println("Index:", result.Index)
+	fmt.Println("Proof:", result.Proof)
+	fmt.Println("TX Result:", result.TxResult.Code)
 }
