@@ -34,6 +34,8 @@ import (
 
 const (
 	keyStorePath = "keystore/"
+	queryTxInternal = 4
+	queryTxTimes = 5
 )
 
 var logger = log.NewLoggerWithPrefix(os.Stdout, "olclient")
@@ -133,17 +135,15 @@ func checkTransactionResult(ctx *Context, hash string, prove bool) (*ctypes.Resu
 
 
 func PoolTxResult(ctx *Context, hash string) bool {
-	wait := 5
-	interval := 4
 	fmt.Println("Checking the transaction result...")
-	for i := 0; i < wait; i++ {
-		time.Sleep(time.Duration(interval) * 1000 * time.Millisecond)
+	for i := 0; i < queryTxTimes; i++ {
+		time.Sleep(time.Duration(queryTxInternal) * 1000 * time.Millisecond)
 		result, b := checkTransactionResult(ctx, hash, true)
 		if result != nil && b == true {
 			fmt.Println("Transaction is committed!")
 			return true
 		}
 	}
-	fmt.Println("Transaction failed to be committed!")
+	fmt.Println("Transaction failed to be committed in time! Please check later!")
 	return false
 }

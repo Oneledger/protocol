@@ -35,7 +35,6 @@ var checkCommit = &CheckCommit{}
 func init() {
 	RootCmd.AddCommand(checkCmd)
 
-	// TODO: I want to have a default account?
 	// Transaction Parameters
 	checkCmd.Flags().StringVar(&checkCommit.hash, "hash", "", "tx hash")
 	checkCmd.Flags().BoolVar(&checkCommit.prove, "prove", true, "prove")
