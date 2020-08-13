@@ -16,6 +16,7 @@ package main
 
 import (
 	"fmt"
+	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	"os"
 	"path/filepath"
 	"strings"
@@ -100,4 +101,22 @@ func PromptForPassword() string {
 
 	password := string(bytePassword)
 	return strings.TrimSpace(password)
+}
+
+func BroadcastStatusSync(ctx *Context, result *ctypes.ResultBroadcastTx) {
+	if result == nil {
+		ctx.logger.Error("Invalid Transaction")
+
+	} else if result.Code != 0 {
+		if result.Code == 200 {
+			ctx.logger.Info("Returned Successfully(fullnode query)", result)
+			ctx.logger.Info("Result Data", "data", string(result.Data))
+		} else {
+			ctx.logger.Error("Syntax, CheckTx Failed", result)
+		}
+
+	} else {
+		ctx.logger.Infof("Returned Successfully %#v", result)
+		ctx.logger.Info("Result Data", "data", string(result.Data))
+	}
 }
