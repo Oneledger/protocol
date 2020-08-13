@@ -134,7 +134,7 @@ func checkTransactionResult(ctx *Context, hash string, prove bool) (*ctypes.Resu
 
 func PoolTxResult(ctx *Context, hash string) bool {
 	wait := 5
-	interval := 3
+	interval := 4
 	fmt.Println("Checking the transaction result...")
 	for i := 0; i < wait; i++ {
 		time.Sleep(time.Duration(interval) * 1000 * time.Millisecond)
