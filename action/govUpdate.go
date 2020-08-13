@@ -27,12 +27,110 @@ func NewGovUpdate() *GovernaceUpdateAndValidate {
 }
 
 func (g GovernaceUpdateAndValidate) inititalizize() {
-	g.GovernanceUpdateFunction["feeOption.minFeeDecimal"] = updateMinDecimal
-	g.GovernanceUpdateFunction["onsOptions.perBlockFees"] = updatePerBlockFee
-	g.GovernanceUpdateFunction["onsOptions.baseDomainPrice"] = updateBaseDomainPrice
+	g.GovernanceUpdateFunction["feeOption.minFeeDecimal"] = feeOptionminFeeDecimal
+	g.GovernanceUpdateFunction["onsOptions.perBlockFees"] = onsOptionsperBlockFees
+	g.GovernanceUpdateFunction["onsOptions.baseDomainPrice"] = onsOptionsbaseDomainPrice
+	g.GovernanceUpdateFunction["stakingOptions.minSelfDelegationAmount"] = stakingOptionsminSelfDelegationAmount
+	g.GovernanceUpdateFunction["stakingOptions.topValidatorCount"] = stakingOptionstopValidatorCount
+	g.GovernanceUpdateFunction["stakingOptions.maturityTime"] = stakingOptionsmaturityTime
+	// Initial Funding Updates may also include updates for funding goal
+	g.GovernanceUpdateFunction["propOptions.configUpdate.initialFunding"] = propOptionsconfigUpdateinitialFunding
+	g.GovernanceUpdateFunction["propOptions.codeChange.initialFunding"] = propOptionscodeChangeinitialFunding
+	g.GovernanceUpdateFunction["propOptions.general.initialFunding"] = propOptionsgeneralinitialFunding
+	g.GovernanceUpdateFunction["propOptions.configUpdate.fundingGoal"] = propOptionsconfigUpdatefundingGoal
+	g.GovernanceUpdateFunction["propOptions.codeChange.fundingGoal"] = propOptionscodeChangefundingGoal
+	g.GovernanceUpdateFunction["propOptions.general.fundingGoal"] = propOptionsgeneralfundingGoal
+	g.GovernanceUpdateFunction["propOptions.configUpdate.votingDeadline"] = propOptionsconfigUpdatevotingDeadline
+	g.GovernanceUpdateFunction["propOptions.codeChange.votingDeadline"] = propOptionscodeChangevotingDeadline
+	g.GovernanceUpdateFunction["propOptions.general.votingDeadline"] = propOptionsgeneralvotingDeadline
+	g.GovernanceUpdateFunction["propOptions.configUpdate.fundingDeadline"] = propOptionsconfigUpdatefundingDeadline
+	g.GovernanceUpdateFunction["propOptions.codeChange.fundingDeadline"] = propOptionscodeChangefundingDeadline
+	g.GovernanceUpdateFunction["propOptions.general.fundingDeadline"] = propOptionsgeneralfundingDeadline
+	g.GovernanceUpdateFunction["propOptions.configUpdate.passPercentage"] = propOptionsconfigUpdatepassPercentage
+	g.GovernanceUpdateFunction["propOptions.codeChange.passPercentage"] = propOptionscodeChangepassPercentage
+	g.GovernanceUpdateFunction["propOptions.general.passPercentage"] = propOptionsgeneralpassPercentage
+	g.GovernanceUpdateFunction["propOptions.configUpdate.passedFundDistribution"] = propOptionsconfigUpdatepassedFundDistribution
+	g.GovernanceUpdateFunction["propOptions.codeChange.passedFundDistribution"] = propOptionscodeChangepassedFundDistribution
+	g.GovernanceUpdateFunction["propOptions.general.passedFundDistribution"] = propOptionsgeneralpassedFundDistribution
+	g.GovernanceUpdateFunction["propOptions.configUpdate.failedFundDistribution"] = propOptionsconfigUpdatefailedFundDistribution
+	g.GovernanceUpdateFunction["propOptions.codeChange.failedFundDistribution"] = propOptionscodeChangefailedFundDistribution
+	g.GovernanceUpdateFunction["propOptions.general.failedFundDistribution"] = propOptionsgeneralfailedFundDistribution
+
+}
+func stakingOptionsminSelfDelegationAmount(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	return true, nil
+}
+func stakingOptionstopValidatorCount(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	return true, nil
+}
+func stakingOptionsmaturityTime(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	return true, nil
+}
+func propOptionsconfigUpdateinitialFunding(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	return true, nil
+}
+func propOptionscodeChangeinitialFunding(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	return true, nil
+}
+func propOptionsgeneralinitialFunding(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	return true, nil
+}
+func propOptionsconfigUpdatefundingGoal(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	return true, nil
+}
+func propOptionscodeChangefundingGoal(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	return true, nil
+}
+func propOptionsgeneralfundingGoal(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	return true, nil
+}
+func propOptionsconfigUpdatevotingDeadline(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	return true, nil
+}
+func propOptionscodeChangevotingDeadline(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	return true, nil
+}
+func propOptionsgeneralvotingDeadline(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	return true, nil
+}
+func propOptionsconfigUpdatefundingDeadline(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	return true, nil
+}
+func propOptionscodeChangefundingDeadline(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	return true, nil
+}
+func propOptionsgeneralfundingDeadline(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	return true, nil
+}
+func propOptionsconfigUpdatepassPercentage(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	return true, nil
+}
+func propOptionscodeChangepassPercentage(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	return true, nil
+}
+func propOptionsgeneralpassPercentage(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	return true, nil
+}
+func propOptionsconfigUpdatepassedFundDistribution(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	return true, nil
+}
+func propOptionscodeChangepassedFundDistribution(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	return true, nil
+}
+func propOptionsgeneralpassedFundDistribution(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	return true, nil
+}
+func propOptionsconfigUpdatefailedFundDistribution(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	return true, nil
+}
+func propOptionscodeChangefailedFundDistribution(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	return true, nil
+}
+func propOptionsgeneralfailedFundDistribution(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	return true, nil
 }
 
-func updatePerBlockFee(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+func onsOptionsperBlockFees(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
 	onsOptions, err := ctx.GovernanceStore.GetONSOptions()
 	if err != nil {
 		return false, err
@@ -62,7 +160,7 @@ func updatePerBlockFee(newstate *governance.GovernanceState, ctx *Context, valid
 	return true, nil
 }
 
-func updateBaseDomainPrice(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+func onsOptionsbaseDomainPrice(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
 	onsOptions, err := ctx.GovernanceStore.GetONSOptions()
 	if err != nil {
 		return false, err
@@ -92,7 +190,7 @@ func updateBaseDomainPrice(newstate *governance.GovernanceState, ctx *Context, v
 	return true, nil
 }
 
-func updateMinDecimal(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+func feeOptionminFeeDecimal(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
 	feeOptions, err := ctx.GovernanceStore.GetFeeOption()
 	if err != nil {
 		return false, err
