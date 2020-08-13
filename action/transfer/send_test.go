@@ -177,7 +177,7 @@ func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, se
 	ctx.GovernanceStore.WithHeight(0).SetFeeOption(*ctx.FeeOpt)
 	ctx.GovernanceStore.WithHeight(0).SetProposalOptions(pOpt)
 	ctx.GovernanceStore.WithHeight(0).SetRewardOptions(rewardOptions)
-	ctx.GovernanceStore.WithHeight(0).SetLUH()
+	ctx.GovernanceStore.WithHeight(0).SetAllLUH()
 	return ctx
 }
 

@@ -50,13 +50,14 @@ class bcolors:
 
 
 class Proposal:
-    def __init__(self, pid, pType, description, headline, proposer, init_fund):
+    def __init__(self, pid, pType, description, headline, proposer, init_fund, updatepath="feeOption.minFeeDecimal"):
         self.pid = pid
         self.pty = pType
         self.headline = headline
         self.des = description
         self.proposer = proposer
         self.init_fund = init_fund
+        self.updatepath = updatepath
         self.configupdate = self.default_gov_state()
 
     def _calculate_proposal_info(self, assign_funding_deadline):
@@ -104,6 +105,7 @@ class Proposal:
             "fundingDeadline": _proposal_info.funding_deadline,
             "votingDeadline": _proposal_info.voting_deadline,
             "passPercentage": _proposal_info.pass_percentage,
+            "configUpdatePAth": self.updatepath,
             "configUpdate": self.configupdate,
             "gasPrice": {
                 "currency": "OLT",
@@ -660,6 +662,7 @@ def query_balance(address):
 def query_proposal_options():
     req = {}
     resp = rpc_call('query.GetProposalOptions', req)
+
     if "result" not in resp:
         sys.exit(-1)
     if "proposalOptions" not in resp["result"]:

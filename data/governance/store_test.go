@@ -102,14 +102,24 @@ func TestStore_GetProposalOptions(t *testing.T) {
 }
 
 func TestStore_SetLUH(t *testing.T) {
-	err := gStore.WithHeight(1000).SetLUH()
+	err := gStore.WithHeight(1000).SetLUH(LAST_UPDATE_HEIGHT)
+	assert.NoError(t, err, "No error Expected")
+	err = gStore.WithHeight(1001).SetLUH(LAST_UPDATE_HEIGHT_FEE)
+	assert.NoError(t, err, "No error Expected")
+	err = gStore.WithHeight(1002).SetLUH(LAST_UPDATE_HEIGHT_STAKING)
 	assert.NoError(t, err, "No error Expected")
 }
 
 func TestStore_GetLUH(t *testing.T) {
-	height, err := gStore.GetLUH()
+	height, err := gStore.GetLUH(LAST_UPDATE_HEIGHT)
 	assert.NoError(t, err, "No error Expected")
 	assert.EqualValues(t, 1000, height, "Expected height is 1000 from Line 99")
+	height, err = gStore.GetLUH(LAST_UPDATE_HEIGHT_FEE)
+	assert.NoError(t, err, "No error Expected")
+	assert.EqualValues(t, 1001, height, "Expected height is 1000 from Line 99")
+	height, err = gStore.GetLUH(LAST_UPDATE_HEIGHT_STAKING)
+	assert.NoError(t, err, "No error Expected")
+	assert.EqualValues(t, 1002, height, "Expected height is 1000 from Line 99")
 }
 
 func TestStoreGetAndSet(t *testing.T) {
@@ -118,9 +128,9 @@ func TestStoreGetAndSet(t *testing.T) {
 	max := 300000
 	for i := 0; i < 30; i++ {
 		h := rand.Intn(max-min+1) + min
-		err := gStore.WithHeight(int64(h)).SetLUH()
+		err := gStore.WithHeight(int64(h)).SetAllLUH()
 		assert.NoError(t, err, "No error Expected")
-		height, err := gStore.GetLUH()
+		height, err := gStore.GetLUH(LAST_UPDATE_HEIGHT)
 		assert.NoError(t, err, "No error Expected")
 		assert.EqualValues(t, h, height, "")
 	}

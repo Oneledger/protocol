@@ -2,6 +2,7 @@ package governance
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
@@ -157,11 +158,21 @@ func runFinalizeProposal(ctx *action.Context, tx action.RawTx) (bool, action.Res
 		}
 
 		if proposal.Type == governance.ProposalTypeConfigUpdate {
-			ctx.Logger.Info("Auto Update of Governance State is disabled")
-			//err := executeConfigUpdate(ctx, proposal)
-			//if err != nil {
-			//	return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrFinalizeConfigUpdateFailed, finalizedProposal.Tags(), err)
-			//}
+			updatefunc, ok := ctx.GovUpdate.GovernanceUpdateFunction[proposal.GovernanaceUpdatePath]
+			if !ok {
+				return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrFinalizeConfigUpdateFailed, finalizedProposal.Tags(), err)
+			}
+			//False to signify this is validation and update
+			ok, err = updatefunc(&proposal.GovernanceStateUpdate, ctx, action.ValidateAndUpdate)
+			if err != nil {
+				ctx.Logger.Debug("Governance auto update failed ", err)
+				err = setToFinalizeFailed(ctx, proposal)
+				if err != nil {
+					return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrStatusUnableToSetFinalizeFailed, finalizedProposal.Tags(), err)
+				}
+
+				return helpers.LogAndReturnTrue(ctx.Logger, finalizedProposal.Tags(), fmt.Sprintf("ConfigUpdate_Validation_Failed | %s", proposal.ProposalID))
+			}
 		}
 		err = setToFinalizeFromPassed(ctx, proposal)
 		if err != nil {
@@ -317,7 +328,7 @@ func executeConfigUpdate(ctx *action.Context, proposal *governance.Proposal) err
 	}
 
 	//Set Last Update Height
-	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetLUH()
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetAllLUH()
 	if err != nil {
 		return errors.Wrap(err, "Unable to set last Update height ")
 	}

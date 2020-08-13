@@ -9,9 +9,13 @@ _each_funding = (int("5") * 10 ** 9)
 _funding_goal_general = (int("10") * 10 ** 9)
 
 
-def test_change_gov_options():
-    _prop = Proposal(_pid_pass, "configUpdate", "proposal for vote", "Headline", _proposer, _initial_funding)
+def test_change_gov_options(update_param):
+    _prop = Proposal(_pid_pass, "configUpdate", "proposal for vote", "Headline", _proposer, _initial_funding,
+                     "feeOption.minFeeDecimal")
     # create proposal
+    state = _prop.default_gov_state()
+    state['feeOption']['minFeeDecimal'] = update_param
+    _prop.configupdate = state
     _prop.send_create()
     time.sleep(3)
     encoded_pid = _prop.pid
@@ -39,16 +43,19 @@ def test_change_gov_options():
 
 
 if __name__ == "__main__":
-    print "#### Governance State Before : ####"
+    update_param = 8
     opt = query_governanceState()
-    print "Last Update Height:" + str(opt["lastUpdateHeight"])
-    test_change_gov_options()
-    #
-    # print "#### FINALIZED PROPOSALS: ####"
-    # proposalstats = query_proposals(0X34)
-    print "#### Governance State After : ####"
+    old_height = opt["lastUpdateHeight"]["fee"]
+    test_change_gov_options(update_param)
     opt = query_governanceState()
-    print "Last Update Height:" + str(opt["lastUpdateHeight"])
+    new_height = opt["lastUpdateHeight"]["fee"]
+    if opt["govOptions"]["feeOption"]["minFeeDecimal"] != update_param:
+        print "Value not updated"
+        sys.exit(-1)
+    if new_height - old_height <= 0:
+        print "Height not changed"
+        sys.exit(-1)
+    print bcolors.OKBLUE + "Option Update Successful" + bcolors.ENDC
 
 #
 # print proposalstats["height"]

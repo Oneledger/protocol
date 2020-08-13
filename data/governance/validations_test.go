@@ -437,7 +437,7 @@ func generateGov() *GovernanceState {
 	if err != nil {
 		fmt.Println(err)
 	}
-	err = vStore.WithHeight(0).SetLUH()
+	err = vStore.WithHeight(0).SetAllLUH()
 	if err != nil {
 		fmt.Println(err)
 	}

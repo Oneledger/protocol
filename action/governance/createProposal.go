@@ -7,6 +7,7 @@ import (
 	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
@@ -15,17 +16,18 @@ import (
 var _ action.Msg = &CreateProposal{}
 
 type CreateProposal struct {
-	ProposalID      governance.ProposalID      `json:"proposalId"`
-	ProposalType    governance.ProposalType    `json:"proposalType"`
-	Headline        string                     `json:"proposalHeadline"`
-	Description     string                     `json:"proposalDescription"`
-	Proposer        keys.Address               `json:"proposerAddress"`
-	InitialFunding  action.Amount              `json:"initialFunding"`
-	FundingDeadline int64                      `json:"fundingDeadline"`
-	FundingGoal     *balance.Amount            `json:"fundingGoal"`
-	VotingDeadline  int64                      `json:"votingDeadline"`
-	PassPercentage  int                        `json:"passPercentage"`
-	ConfigUpdate    governance.GovernanceState `json:"configUpdate"`
+	ProposalID       governance.ProposalID      `json:"proposalId"`
+	ProposalType     governance.ProposalType    `json:"proposalType"`
+	Headline         string                     `json:"proposalHeadline"`
+	Description      string                     `json:"proposalDescription"`
+	Proposer         keys.Address               `json:"proposerAddress"`
+	InitialFunding   action.Amount              `json:"initialFunding"`
+	FundingDeadline  int64                      `json:"fundingDeadline"`
+	FundingGoal      *balance.Amount            `json:"fundingGoal"`
+	VotingDeadline   int64                      `json:"votingDeadline"`
+	PassPercentage   int                        `json:"passPercentage"`
+	ConfigUpdatePath string                     `json:"configUpdatePath"`
+	ConfigUpdate     governance.GovernanceState `json:"configUpdate"`
 }
 
 func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
@@ -159,11 +161,14 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	//	helpers.LogAndReturnFalse(ctx.Logger, governance.ErrGetProposalOptions, createProposal.Tags(), err)
 	//}
 	if createProposal.ProposalType == governance.ProposalTypeConfigUpdate {
-		ctx.Logger.Info("Auto update disabled")
-		//ok, err := ctx.GovernanceStore.ValidateGov(createProposal.ConfigUpdate)
-		//if err != nil || !ok {
-		//	return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrValidateGovState, createProposal.Tags(), err)
-		//}
+		updateFunc, ok := ctx.GovUpdate.GovernanceUpdateFunction[createProposal.ConfigUpdatePath]
+		if !ok {
+			return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrValidateGovState, createProposal.Tags(), errors.New("Update "+createProposal.ConfigUpdatePath+" Not allowed"))
+		}
+		ok, err = updateFunc(&createProposal.ConfigUpdate, ctx, action.ValidateOnly)
+		if err != nil || !ok {
+			return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrValidateGovState, createProposal.Tags(), err)
+		}
 
 	}
 
@@ -178,6 +183,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		createProposal.FundingGoal,
 		createProposal.VotingDeadline,
 		createProposal.PassPercentage,
+		createProposal.ConfigUpdatePath,
 		createProposal.ConfigUpdate)
 
 	//Check if Proposal already exists
