@@ -18,7 +18,7 @@ var (
 	ID1      BidConvId
 	ID2      BidConvId
 	offerTimes []int64
-	offerTime1 int64 = 1596701481
+	offerTime int64 = 1596701481
 	offerTimeCount = 7
 
 )
@@ -45,7 +45,7 @@ func generateAddresses() {
 
 func generateOfferTimes() {
 	for i := 0; i < offerTimeCount; i++ {
-		offerTimes[i] = offerTime1 + int64(i * 20)
+		offerTimes = append(offerTimes, offerTime + int64(i * 20))
 	}
 }
 
@@ -107,6 +107,7 @@ func TestBidOfferStore_GetOffersForBidConvId(t *testing.T) {
 //
 func TestBidOfferStore_GetActiveOfferForBidConvId(t *testing.T) {
 	//fmt.Println("Get active offer for id :")
+	//todo manually turn other offers to inactive
 
 	offer, err := bidOfferStore.GetActiveOfferForBidConvId(ID1)
 	assert.NoError(t, err, "")

@@ -68,7 +68,7 @@ func (bos *BidOfferStore) iterate(fn func(bidConvId BidConvId, offerType BidOffe
 			// key example: bidOffer_bidConvId_offerType_offerTime
 			bidConvId := arr[1]
 			fmt.Println("bidConvId: ", bidConvId)
-			offerType, err := strconv.ParseInt(arr[2], 10, 64)
+			offerType, err := strconv.Atoi(arr[2])
 			if err != nil {
 				fmt.Println("Error Parsing Offer Type", err)
 				return true
@@ -78,7 +78,7 @@ func (bos *BidOfferStore) iterate(fn func(bidConvId BidConvId, offerType BidOffe
 				fmt.Println("Error Parsing Offer Time", err)
 				return true
 			}
-			return fn(BidConvId(bidConvId), BidOfferType(offerType), offerTime)
+			return fn(BidConvId(bidConvId), BidOfferType(offerType), int64(offerTime))
 		},
 	)
 }
@@ -126,7 +126,7 @@ func (bos *BidOfferStore) GetActiveOfferForBidConvId(id BidConvId) (*BidOffer, e
 }
 
 func assembleBidOfferKey(bidConvId BidConvId, offerType BidOfferType, offerTime int64) storage.StoreKey {
-	key := storage.StoreKey(storage.DB_PREFIX + string(bidConvId) + storage.DB_PREFIX + string(offerType) + storage.DB_PREFIX + string(offerTime))
+	key := storage.StoreKey(string(bidConvId) + storage.DB_PREFIX + strconv.Itoa(int(offerType)) + storage.DB_PREFIX + strconv.FormatInt(offerTime, 10))
 	return key
 }
 

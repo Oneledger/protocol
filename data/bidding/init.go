@@ -2,6 +2,7 @@ package bidding
 
 import (
 	"github.com/Oneledger/protocol/log"
+	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
 	"os"
 )
@@ -10,6 +11,8 @@ var logger *log.Logger
 
 func init() {
 	logger = log.NewDefaultLogger(os.Stdout).WithPrefix("ons_bid")
+	serialize.RegisterConcrete(new(DomainAsset), "domain_asset")
+	serialize.RegisterConcrete(new(TestAsset), "test_asset")
 }
 
 const (

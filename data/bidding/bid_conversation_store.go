@@ -152,9 +152,9 @@ func (bcs *BidConvStore) FilterBidConvs(bidState BidConvState, owner keys.Addres
 		if len(bidder) != 0 && !bidConv.Bidder.Equal(bidder) {
 			return false
 		}
-		if bidConv.Asset != asset {
-			return false
-		}
+		//if bidConv.Asset != asset {
+		//	return false
+		//}
 		if bidConv.AssetType != assetType {
 			return false
 		}
@@ -178,7 +178,7 @@ func (bcs *BidConvStore) GetIdForBidConv(bidState BidConvState, owner keys.Addre
 func NewBidConvStore(prefixActive string, prefixSucceed string, prefixCancelled string, prefixExpired string, prefixExpiredFailed string, state *storage.State) *BidConvStore {
 	return &BidConvStore{
 		state:                state,
-		szlr:                 serialize.GetSerializer(serialize.PERSISTENT),
+		szlr:                 serialize.GetSerializer(serialize.LOCAL),
 		prefix:               []byte(prefixActive),
 		prefixActive:         []byte(prefixActive),
 		prefixSucceed:        []byte(prefixSucceed),

@@ -40,7 +40,7 @@ func init() {
 		k := numPrivateKeys - 1 - j //bidder address list ranges from 9 - 5
 
 		owner := addrList[j]
-		asset := NewDomainAsset("test" + strconv.Itoa(i) + ".ol")
+		asset := NewTestAsset("test" + strconv.Itoa(i) + ".ol")
 		bidder := addrList[k]
 
 		bidConvs = append(bidConvs, NewBidConv(owner, asset, BidAssetOns,
