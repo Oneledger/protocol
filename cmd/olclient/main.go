@@ -16,10 +16,12 @@ package main
 
 import (
 	"fmt"
+	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	"os"
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 
 	"golang.org/x/crypto/ssh/terminal"
 
@@ -32,6 +34,8 @@ import (
 
 const (
 	keyStorePath = "keystore/"
+	queryTxInternal = 4
+	queryTxTimes = 5
 )
 
 var logger = log.NewLoggerWithPrefix(os.Stdout, "olclient")
@@ -100,4 +104,46 @@ func PromptForPassword() string {
 
 	password := string(bytePassword)
 	return strings.TrimSpace(password)
+}
+
+func BroadcastStatusSync(ctx *Context, result *ctypes.ResultBroadcastTx) {
+	if result == nil {
+		ctx.logger.Error("Invalid Transaction")
+
+	} else if result.Code != 0 {
+		if result.Code == 200 {
+			ctx.logger.Info("Returned Successfully(fullnode query)", result)
+			ctx.logger.Info("Result Data", "data", string(result.Data))
+		} else {
+			ctx.logger.Error("Syntax, CheckTx Failed", result)
+		}
+
+	} else {
+		ctx.logger.Infof("Returned Successfully %#v", result)
+		ctx.logger.Info("Result Data", "data", string(result.Data))
+	}
+}
+
+func checkTransactionResult(ctx *Context, hash string, prove bool) (*ctypes.ResultTx, bool) {
+	fullnode := ctx.clCtx.FullNodeClient()
+	result, err := fullnode.CheckCommitResult(hash, prove)
+	if err != nil {
+		return nil, false
+	}
+	return &result.Result, true
+}
+
+
+func PollTxResult(ctx *Context, hash string) bool {
+	fmt.Println("Checking the transaction result...")
+	for i := 0; i < queryTxTimes; i++ {
+		time.Sleep(time.Duration(queryTxInternal) * 1000 * time.Millisecond)
+		result, b := checkTransactionResult(ctx, hash, true)
+		if result != nil && b == true {
+			fmt.Println("Transaction is committed!")
+			return true
+		}
+	}
+	fmt.Println("Transaction failed to be committed in time! Please check later with command: [olclient check_commit] with tx hash")
+	return false
 }

@@ -185,12 +185,13 @@ func voteProposal(cmd *cobra.Command, args []string) error {
 	}
 
 	// Broadcast Tx
-	result, err := ctx.clCtx.BroadcastTxCommit(packet)
+	result, err := ctx.clCtx.BroadcastTxSync(packet)
 	if err != nil {
-		ctx.logger.Error("error in BroadcastTxCommit", err)
+		ctx.logger.Error("error in BroadcastTxSync", err)
 	}
 
-	BroadcastStatus(ctx, result)
+	BroadcastStatusSync(ctx, result)
+	PollTxResult(ctx, result.Hash.String())
 
 	return nil
 }
