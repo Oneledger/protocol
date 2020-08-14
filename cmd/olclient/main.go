@@ -144,6 +144,6 @@ func PollTxResult(ctx *Context, hash string) bool {
 			return true
 		}
 	}
-	fmt.Println("Transaction failed to be committed in time! Please check later!")
+	fmt.Println("Transaction failed to be committed in time! Please check later with command: [olclient check_commit] with tx hash")
 	return false
 }
