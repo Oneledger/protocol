@@ -17,13 +17,12 @@ package main
 import (
 	"fmt"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
+	"golang.org/x/crypto/ssh/terminal"
 	"os"
 	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
-
-	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/spf13/cobra"
 
@@ -106,21 +105,25 @@ func PromptForPassword() string {
 	return strings.TrimSpace(password)
 }
 
-func BroadcastStatusSync(ctx *Context, result *ctypes.ResultBroadcastTx) {
+func BroadcastStatusSync(ctx *Context, result *ctypes.ResultBroadcastTx) bool {
 	if result == nil {
 		ctx.logger.Error("Invalid Transaction")
+		return false
 
 	} else if result.Code != 0 {
 		if result.Code == 200 {
 			ctx.logger.Info("Returned Successfully(fullnode query)", result)
 			ctx.logger.Info("Result Data", "data", string(result.Data))
+			return true
 		} else {
 			ctx.logger.Error("Syntax, CheckTx Failed", result)
+			return false
 		}
 
 	} else {
 		ctx.logger.Infof("Returned Successfully %#v", result)
 		ctx.logger.Info("Result Data", "data", string(result.Data))
+		return true
 	}
 }
 
@@ -137,12 +140,12 @@ func checkTransactionResult(ctx *Context, hash string, prove bool) (*ctypes.Resu
 func PollTxResult(ctx *Context, hash string) bool {
 	fmt.Println("Checking the transaction result...")
 	for i := 0; i < queryTxTimes; i++ {
-		time.Sleep(time.Duration(queryTxInternal) * 1000 * time.Millisecond)
 		result, b := checkTransactionResult(ctx, hash, true)
 		if result != nil && b == true {
 			fmt.Println("Transaction is committed!")
 			return true
 		}
+		time.Sleep(time.Duration(queryTxInternal) * 1000 * time.Millisecond)
 	}
 	fmt.Println("Transaction failed to be committed in time! Please check later with command: [olclient check_commit] with tx hash")
 	return false

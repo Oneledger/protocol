@@ -132,8 +132,9 @@ func withdrawRewards(cmd *cobra.Command, args []string) error {
 		ctx.logger.Error("error in BroadcastTxSync", err)
 	}
 
-	BroadcastStatusSync(ctx, result)
-	PollTxResult(ctx, result.Hash.String())
+	if BroadcastStatusSync(ctx, result) {
+		PollTxResult(ctx, result.Hash.String())
+	}
 
 	return nil
 }
