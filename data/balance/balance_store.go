@@ -65,8 +65,8 @@ func (st *Store) set(key storage.StoreKey, amt Amount) error {
 
 func (st *Store) iterate(addr keys.Address, fn func(c string, amt Amount) bool) bool {
 	return st.State.IterateRange(
-		append(st.prefix, addr...),
-		storage.Rangefix(string(append(st.prefix, addr...))),
+		append(st.prefix, addr.String()...),
+		storage.Rangefix(string(append(st.prefix, addr.String()...))),
 		true,
 		func(key, value []byte) bool {
 			amt := NewAmount(0)
@@ -91,8 +91,14 @@ func (st *Store) IterateAll(fn func(addr keys.Address, c string, amt Amount) boo
 			if err != nil {
 				return true
 			}
+
 			arr := strings.Split(string(key), storage.DB_PREFIX)
-			addr := keys.Address(arr[1])
+			addr := keys.Address{}
+			err = addr.UnmarshalText([]byte(arr[1]))
+			if err != nil {
+				return true
+			}
+
 			curr := arr[len(arr)-1]
 			return fn(addr, curr, *amt)
 		},
@@ -106,12 +112,12 @@ func (st *Store) IterateAll(fn func(addr keys.Address, c string, amt Amount) boo
 //}
 
 func (st *Store) SetBalance(addr keys.Address, coin Coin) error {
-	key := storage.StoreKey(string(addr) + storage.DB_PREFIX + coin.Currency.Name)
+	key := storage.StoreKey(addr.String() + storage.DB_PREFIX + coin.Currency.Name)
 	return st.set(key, *coin.Amount)
 }
 
 func (st *Store) AddToAddress(addr keys.Address, coin Coin) error {
-	key := storage.StoreKey(string(addr) + storage.DB_PREFIX + coin.Currency.Name)
+	key := storage.StoreKey(addr.String() + storage.DB_PREFIX + coin.Currency.Name)
 
 	amt, err := st.get(key)
 	if err != nil {
@@ -127,7 +133,7 @@ func (st *Store) AddToAddress(addr keys.Address, coin Coin) error {
 }
 
 func (st *Store) MinusFromAddress(addr keys.Address, coin Coin) error {
-	key := storage.StoreKey(string(addr) + storage.DB_PREFIX + coin.Currency.Name)
+	key := storage.StoreKey(addr.String() + storage.DB_PREFIX + coin.Currency.Name)
 
 	amt, err := st.get(key)
 	if err != nil {
@@ -146,7 +152,7 @@ func (st *Store) MinusFromAddress(addr keys.Address, coin Coin) error {
 }
 
 func (st *Store) CheckBalanceFromAddress(addr keys.Address, coin Coin) error {
-	key := storage.StoreKey(string(addr) + storage.DB_PREFIX + coin.Currency.Name)
+	key := storage.StoreKey(addr.String() + storage.DB_PREFIX + coin.Currency.Name)
 
 	amt, err := st.get(key)
 	if err != nil {
@@ -185,7 +191,7 @@ func (st *Store) GetBalance(address keys.Address, list *CurrencySet) (balance *B
 
 func (st *Store) GetBalanceForCurr(address keys.Address, curr *Currency) (coin Coin, err error) {
 
-	key := storage.StoreKey(string(address) + storage.DB_PREFIX + curr.Name)
+	key := storage.StoreKey(address.String() + storage.DB_PREFIX + curr.Name)
 
 	amt, err := st.get(key)
 	if err != nil {

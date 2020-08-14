@@ -217,12 +217,13 @@ func IssueRequest(cmd *cobra.Command, args []string) {
 	}
 
 	//Broadcast Transaction
-	result, err := ctx.clCtx.BroadcastTxCommit(packet)
+	result, err := ctx.clCtx.BroadcastTxSync(packet)
 	if err != nil {
-		ctx.logger.Error("error in BroadcastTxCommit", err)
+		ctx.logger.Error("error in BroadcastTxSync", err)
 	}
 
-	BroadcastStatus(ctx, result)
+	BroadcastStatusSync(ctx, result)
+	PollTxResult(ctx, result.Hash.String())
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
@@ -249,12 +250,14 @@ func sendFunds(cmd *cobra.Command, args []string) error {
 	}
 	packet := reply.RawTx
 
-	result, err := ctx.clCtx.BroadcastTxCommit(packet)
+	result, err := ctx.clCtx.BroadcastTxSync(packet)
 	if err != nil {
-		ctx.logger.Error("error in BroadcastTxCommit", err)
+		ctx.logger.Error("error in BroadcastTxSync", err)
 	}
 
-	BroadcastStatus(ctx, result)
+	BroadcastStatusSync(ctx, result)
+
+	PollTxResult(ctx, result.Hash.String())
 
 	return nil
 }

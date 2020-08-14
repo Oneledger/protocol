@@ -46,6 +46,7 @@ func setupForTx() action.SignedTx {
 }
 
 func TestApp_infoServer(t *testing.T) {
+
 	app := setup(setupForGeneralInfo)
 	req := RequestInfo{}
 

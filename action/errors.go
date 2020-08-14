@@ -25,6 +25,7 @@ var (
 	ErrTransactionNotSupported = codes.ProtocolError{codes.ExternalTransactionNotSupported, "TX not supported"}
 
 	ErrGettingValidatorList = codes.ProtocolError{codes.GovErrGettingValidatorList, "fund proposal failed in getting validator list"}
+	ErrGettingWitnessList   = codes.ProtocolError{codes.GovErrGettingWitnessList, "failed in getting witness list"}
 
 	ErrInvalidValidatorAddr = codes.ProtocolError{codes.GovErrInvalidValidatorAddr, "invalid validator address"}
 	ErrStakeAddressInUse    = codes.ProtocolError{codes.DelgErrStakeAddressInUse, "current stake address is in use"}

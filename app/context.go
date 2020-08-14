@@ -56,16 +56,17 @@ type context struct {
 	check      *storage.State
 	deliver    *storage.State
 
-	extStores   data.Router //External Stores
-	balances    *balance.Store
-	domains     *ons.DomainStore
-	validators  *identity.ValidatorStore // Set of validators currently active
-	witnesses   *identity.WitnessStore   // Set of witnesses currently active
-	feePool     *fees.Store
-	govern      *governance.Store
-	btcTrackers *bitcoin.TrackerStore  // tracker for bitcoin balance UTXO
-	ethTrackers *ethereum.TrackerStore // Tracker store for ongoing ethereum trackers
-	currencies  *balance.CurrencySet
+	extStores           data.Router
+	controllerFunctions Router //External Stores
+	balances            *balance.Store
+	domains             *ons.DomainStore
+	validators          *identity.ValidatorStore // Set of validators currently active
+	witnesses           *identity.WitnessStore   // Set of witnesses currently active
+	feePool             *fees.Store
+	govern              *governance.Store
+	btcTrackers         *bitcoin.TrackerStore  // tracker for bitcoin balance UTXO
+	ethTrackers         *ethereum.TrackerStore // Tracker store for ongoing ethereum trackers
+	currencies          *balance.CurrencySet
 	//storage which is not a chain state
 	accounts accounts.Wallet
 
@@ -130,7 +131,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.actionRouter = action.NewRouter("action")
 	ctx.internalRouter = action.NewRouter("internal")
 	ctx.extStores = data.NewStorageRouter()
-
+	ctx.controllerFunctions = NewRouter()
 	testEnv := os.Getenv("OLTEST")
 
 	btime := 600 * time.Second

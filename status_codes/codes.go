@@ -103,6 +103,8 @@ const (
 	ETHTrackerNotFoundFailed  = 600100
 	ETHTrackerNotFoundSuccess = 600101
 	ETHTrackerNotFoundOngoing = 600102
+	ETHTrackerExists          = 600103
+	ETHTrackerUnabletoSet     = 600104
 
 	DelgErr                     = 6003
 	DelgErrStakeAddressInUse    = 600301
@@ -126,6 +128,7 @@ const (
 	GovErrInvalidFunderAddr               = 700115
 	GovErrInvalidBeneficiaryAddr          = 700116
 	GovErrGettingValidatorList            = 700117
+	GovErrGettingWitnessList              = 700217
 	GovErrSetupVotingValidator            = 700118
 	GovErrProposalWithdrawNotEligible     = 700119
 	GovErrNoSuchFunder                    = 700120
@@ -172,4 +175,7 @@ const (
 	RewardsUnableToGetMaturedAmount = 800001
 	RewardsUnableToWithdraw         = 800002
 	RewardsYearRewardsMissing       = 800003
+
+	//Ethereum Errors
+
 )
