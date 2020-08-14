@@ -132,7 +132,7 @@ func delegateWithdraw(cmd *cobra.Command, args []string) error {
 	}
 
 	BroadcastStatusSync(ctx, result)
-	PoolTxResult(ctx, result.Hash.String())
+	PollTxResult(ctx, result.Hash.String())
 
 	return nil
 }

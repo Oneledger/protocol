@@ -223,7 +223,7 @@ func IssueRequest(cmd *cobra.Command, args []string) {
 	}
 
 	BroadcastStatusSync(ctx, result)
-	PoolTxResult(ctx, result.Hash.String())
+	PollTxResult(ctx, result.Hash.String())
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
@@ -257,7 +257,7 @@ func sendFunds(cmd *cobra.Command, args []string) error {
 
 	BroadcastStatusSync(ctx, result)
 
-	PoolTxResult(ctx, result.Hash.String())
+	PollTxResult(ctx, result.Hash.String())
 
 	return nil
 }
