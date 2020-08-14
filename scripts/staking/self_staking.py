@@ -31,7 +31,7 @@ if __name__ == "__main__":
     # unstake all
     staking_test.staking_address = original_staking_address
     staking_test.unstake('13500000', True)
-    staking_test.checkStatus(0, 0, True)
+    staking_test.checkStatus(0, 500000, True)
     staking_test.checkValidatorSet(4, False, 0)
 
     # stake again using new stake address.
