@@ -77,7 +77,7 @@ var (
 	toAddress               = common.HexToAddress(LockRedeemContractAddr)
 	toAddressTestToken      = common.HexToAddress(TestTokenContractAddr)
 	toAdddressLockRedeemERC = common.HexToAddress(LockRedeemERC20ContractAddr)
-	gasLimit                = uint64(70000)
+	gasLimit                = uint64(700000)
 )
 
 func createValue(str string) *big.Int {
@@ -152,8 +152,8 @@ func main() {
 	//takeValidatorFunds()
 }
 
-func takeValidatorFunds() {
-	for i := 0; i < 2; i++ {
+func takeValidatorFunds(noOfValidators int) {
+	for i := 0; i < noOfValidators; i++ {
 		folder := readDir + strconv.Itoa(i) + "-Node/consensus/config/"
 		ecdspkbytes, err := ioutil.ReadFile(filepath.Join(folder, "priv_validator_key_ecdsa.json"))
 		if err != nil {
