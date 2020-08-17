@@ -33,7 +33,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 
 	"github.com/Oneledger/protocol/action"
@@ -53,7 +52,7 @@ var (
 	TestTokenABI     = contract.ERC20BasicABI
 	LockRedeemERCABI = contract.LockRedeemERCABI
 	// LockRedeemERC20ABI = contract.ContextABI
-	LockRedeemContractAddr      = "0x0543B77B4564d8ee663C305485859Ff1Fd9Cc966"
+	LockRedeemContractAddr      = "0xD2EefCfA1afa8050Bd26ac09fB431FEA2939aCb7"
 	TestTokenContractAddr       = "0x0000000000000000000000000000000000000000"
 	LockRedeemERC20ContractAddr = "0x0000000000000000000000000000000000000000"
 	readDir                     = "/home/tanmay/Codebase/Test/devnet/"
@@ -142,10 +141,9 @@ func init() {
 //Insufficient Funds    :Refund   ok
 //InsufficientFunds(50% Validators) + Panic (50 % Validators): Refund
 func main() {
-	//ethManualDeploy()
-	getstatus(lock())
+	//getstatus(lock())
 	//time.Sleep(time.Second * 5)
-	//getstatus(redeem())
+	getstatus(redeem())
 	//sendTrasactions(12)
 	//erc20lock()
 	///time.Sleep(10 * time.Second)
@@ -398,7 +396,7 @@ func redeem() []byte {
 	if err != nil {
 		log.Fatal(err)
 	}
-	nonce = 2024
+	nonce = 2069
 	gasLimit := gasLimit // in units
 
 	gasPrice, err := client.SuggestGasPrice(context.Background())
@@ -461,7 +459,7 @@ func redeem() []byte {
 	//acc := accReply.Accounts[0]
 
 	acc := keys.Address{}
-	err = acc.UnmarshalText([]byte("c2619af9511844b636d1809c4a646b32a26db5a9"))
+	err = acc.UnmarshalText([]byte("9f5b9fdc5db5c39ea1eaa7430e28abb76fab11d1"))
 	if err != nil {
 		return nil
 	}
@@ -855,142 +853,4 @@ func trackerSuccessStatus(rawTxBytes []byte) (string, error) {
 		return "nil", err
 	}
 	return trackerStatusReply.Status, nil
-}
-
-func ethManualDeploy() {
-	var validatorset []common.Address
-	for i := 0; i < 4; i++ {
-		folder := readDir + strconv.Itoa(i) + "-Node/consensus/config/"
-		ecdspkbytes, err := ioutil.ReadFile(filepath.Join(folder, "priv_validator_key_ecdsa.json"))
-		if err != nil {
-			log.Fatal(err)
-			return
-		}
-		ecdsPrivKey, err := base64.StdEncoding.DecodeString(string(ecdspkbytes))
-		if err != nil {
-			log.Fatal(err)
-			return
-		}
-		pkey, err := keys.GetPrivateKeyFromBytes(ecdsPrivKey[:], keys.SECP256K1)
-		if err != nil {
-			fmt.Println("Privatekey from String ", err)
-			return
-		}
-		privatekey := keys.ETHSECP256K1TOECDSA(pkey.Data)
-
-		publicKey := privatekey.Public()
-		publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
-		if !ok {
-			log.Fatal("error casting public key to ECDSA")
-			return
-		}
-		validatorAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-		validatorset = append(validatorset, validatorAddress)
-	}
-	for _, v := range validatorset {
-		fmt.Println(v.String())
-	}
-	err := deployethcdcontract(validatorset)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-}
-
-func deployethcdcontract(initialValidators []common.Address) error {
-	os.Setenv("ETHPKPATH", "/tmp/pkdata")
-	f, err := os.Open(os.Getenv("ETHPKPATH"))
-	if err != nil {
-		return errors.Wrap(err, "Error Reading File")
-	}
-	if err != nil {
-		return errors.Wrap(err, "Error Reading File Wallet Address")
-	}
-	b1 := make([]byte, 64)
-	pk, err := f.Read(b1)
-	if err != nil {
-		return errors.Wrap(err, "Error reading private key")
-	}
-	//fmt.Println("Private key used to deploy : ", string(b1[:pk]))
-	pkStr := string(b1[:pk])
-	privatekey, err := crypto.HexToECDSA(pkStr)
-
-	if err != nil {
-		return err
-	}
-	cli, err := ethclient.Dial(cfg.Connection)
-	if err != nil {
-		return err
-	}
-
-	publicKey := privatekey.Public()
-	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
-	if !ok {
-		return err
-	}
-
-	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-
-	gasLimit := uint64(6721974) // in units
-
-	auth := bind.NewKeyedTransactor(privatekey)
-	auth.Value = big.NewInt(0) // in wei
-	auth.GasLimit = gasLimit   // in units
-	auth.GasPrice = big.NewInt(18000000000)
-
-	initialValidatorList := make([]common.Address, 0, 10)
-	lock_period := big.NewInt(2500)
-	num_of_validators_old := big.NewInt(4)
-	oldsmartcontract := toAddress
-	tokenSupplyTestToken := new(big.Int)
-	validatorInitialFund := big.NewInt(30000000000000000) //300000000000000000
-	tokenSupplyTestToken, ok = tokenSupplyTestToken.SetString("1000000000000000000000", 10)
-	if !ok {
-		return errors.New("Unabe to create total supplu for token")
-	}
-	if !ok {
-		return errors.New("Unable to create wallet transfer amount")
-	}
-	for _, valAddr := range initialValidators {
-
-		nonce, err := cli.PendingNonceAt(context.Background(), fromAddress)
-		if err != nil {
-			return err
-		}
-
-		addr := valAddr
-
-		initialValidatorList = append(initialValidatorList, addr)
-		tx := types.NewTransaction(nonce, addr, validatorInitialFund, auth.GasLimit, auth.GasPrice, nil)
-		fmt.Println(addr.Hex(), ":", validatorInitialFund, "wei")
-		chainId, _ := cli.ChainID(context.Background())
-		signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainId), privatekey)
-		if err != nil {
-			return errors.Wrap(err, "signing tx")
-		}
-		err = cli.SendTransaction(context.Background(), signedTx)
-		if err != nil {
-			return errors.Wrap(err, "sending")
-		}
-		time.Sleep(1 * time.Second)
-	}
-
-	nonce, err := cli.PendingNonceAt(context.Background(), fromAddress)
-	if err != nil {
-		return err
-	}
-
-	auth.Nonce = big.NewInt(int64(nonce))
-
-	address, _, _, err := contract.DeployLockRedeemKratos(auth, cli, initialValidatorList, lock_period, oldsmartcontract, num_of_validators_old)
-	if err != nil {
-		return errors.Wrap(err, "Deployement Eth LockRedeem")
-	}
-	tokenAddress := common.Address{}
-	ercAddress := common.Address{}
-
-	fmt.Printf("LockRedeemContractKratosAddr = \"%v\"\n", address.Hex())
-	fmt.Printf("TestTokenContractAddr = \"%v\"\n", tokenAddress.Hex())
-	fmt.Printf("LockRedeemERC20ContractAddr = \"%v\"\n", ercAddress.Hex())
-	return nil
 }
