@@ -94,9 +94,14 @@ func (st *Store) IterateAll(fn func(addr keys.Address, c string, amt Amount) boo
 			}
 
 			//Parse Address
-			var address = make([]byte, 20)
-			addrIndex := bytes.IndexByte(key, storage.DB_PREFIX[0]) + 1
-			copy(address, key[addrIndex:addrIndex+20])
+			addrStartIndex := bytes.IndexByte(key, storage.DB_PREFIX[0]) + 1
+			addrEndIndex := bytes.LastIndexByte(key, storage.DB_PREFIX[0])
+			if addrStartIndex == -1 && addrEndIndex == -1 {
+				return true
+			}
+
+			var address = make([]byte, addrEndIndex-addrStartIndex, 100)
+			copy(address, key[addrStartIndex:addrEndIndex])
 
 			//Parse currency
 			arr := strings.Split(string(key), storage.DB_PREFIX)
