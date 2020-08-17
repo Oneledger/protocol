@@ -44,8 +44,8 @@ import (
 var (
 	lockRedeemABI                 = contract.LockRedeemABI
 	lockRedeemKratosABI           = contract.LockRedeemKratosABI
-	lockRedeemContractAddr        = "0x3432b6878a7488EDdF51d1c9e53E7A75815fE923"
-	lockRedeem_KratosContractAddr = "0x193E63287dd3EFd005FdEF9Ac9fDDd2894A8A221"
+	lockRedeemContractAddr        = "0x99e709597677ea3fb5160e46e8ea3d4989f8dfc0"
+	lockRedeem_KratosContractAddr = "0x6Cd9acb9dabB14D94559943879f7f5C24B699973"
 	//cfg = config.DefaultEthConfig("rinkeby", "de5e96cbb6284d5ea1341bf6cb7fa401")
 	Cfg                        = config.DefaultEthConfig("rinkeby", "de5e96cbb6284d5ea1341bf6cb7fa401")
 	Log                        = logger.NewDefaultLogger(os.Stdout).WithPrefix("testeth")
@@ -54,7 +54,7 @@ var (
 	KratosContractAbi          abi.ABI
 	OldSmartContractAddress    = common.HexToAddress(lockRedeemContractAddr)
 	KratosSmartContractAddress = common.HexToAddress(lockRedeem_KratosContractAddr)
-	oldValidatorsDir           = "/home/tanmay/Codebase/Test/devnet/"
+	oldValidatorsDir           = "/home/tanmay/Codebase/Test/Pk-dev3/"
 )
 
 func init() {

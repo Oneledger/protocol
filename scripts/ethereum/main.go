@@ -40,6 +40,7 @@ import (
 	"github.com/Oneledger/protocol/chains/ethereum/contract"
 	oclient "github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/config"
+	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 	logger "github.com/Oneledger/protocol/log"
@@ -52,7 +53,7 @@ var (
 	TestTokenABI     = contract.ERC20BasicABI
 	LockRedeemERCABI = contract.LockRedeemERCABI
 	// LockRedeemERC20ABI = contract.ContextABI
-	LockRedeemContractAddr      = "0x3432b6878a7488EDdF51d1c9e53E7A75815fE923"
+	LockRedeemContractAddr      = "0x0543B77B4564d8ee663C305485859Ff1Fd9Cc966"
 	TestTokenContractAddr       = "0x0000000000000000000000000000000000000000"
 	LockRedeemERC20ContractAddr = "0x0000000000000000000000000000000000000000"
 	readDir                     = "/home/tanmay/Codebase/Test/devnet/"
@@ -142,14 +143,14 @@ func init() {
 //InsufficientFunds(50% Validators) + Panic (50 % Validators): Refund
 func main() {
 	//ethManualDeploy()
-	//getstatus(lock())
+	getstatus(lock())
 	//time.Sleep(time.Second * 5)
 	//getstatus(redeem())
 	//sendTrasactions(12)
 	//erc20lock()
 	///time.Sleep(10 * time.Second)
 	//erc20Redeem()
-	takeValidatorFunds()
+	//takeValidatorFunds()
 }
 
 func takeValidatorFunds(noOfValidators int) {
@@ -397,7 +398,7 @@ func redeem() []byte {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	nonce = 2024
 	gasLimit := gasLimit // in units
 
 	gasPrice, err := client.SuggestGasPrice(context.Background())
@@ -437,10 +438,10 @@ func redeem() []byte {
 		fmt.Println(err)
 		return nil
 	}
-	err = client.SendTransaction(context.Background(), signedTx2)
-	if err != nil {
-		log.Fatal(err)
-	}
+	//err = client.SendTransaction(context.Background(), signedTx2)
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
 
 	//time.Sleep(time.Second * 15)
 
@@ -450,25 +451,27 @@ func redeem() []byte {
 		return nil
 	}
 
-	accReply := &oclient.ListAccountsReply{}
-	err = rpcclient.Call("owner.ListAccounts", struct{}{}, accReply)
+	//accReply := &oclient.ListAccountsReply{}
+	//err = rpcclient.Call("owner.ListAccounts", struct{}{}, accReply)
+	//if err != nil {
+	//	fmt.Println("query account failed", err)
+	//	return nil
+	//}
+
+	//acc := accReply.Accounts[0]
+
+	acc := keys.Address{}
+	err = acc.UnmarshalText([]byte("c2619af9511844b636d1809c4a646b32a26db5a9"))
 	if err != nil {
-		fmt.Println("query account failed", err)
 		return nil
 	}
+	wallet, err := accounts.NewWalletKeyStore("/home/tanmay/Codebase/Test/devnet/0-Node/keystore")
+	if err != nil {
+		return nil
+	}
+	wallet.Open(acc, "1234")
 
-	acc := accReply.Accounts[0]
-
-	//acc := keys.Address{}
-	//err = acc.UnmarshalText([]byte("0x416e9cc0abc4ea98b4066823a62bfa6515180582"))
-	//if err != nil {
-	//	return nil
-	//}
-	//wallet, err := accounts.NewWalletKeyStore("/home/tanmay/Codebase/Test/WalletStore/keystore")
-	//if err != nil {
-	//	return nil
-	//}
-	//wallet.Open(acc, "123")
+	addresslist, _ := wallet.ListAddresses()
 
 	result := &oclient.ListCurrenciesReply{}
 	err = rpcclient.Call("query.ListCurrencies", struct{}{}, result)
@@ -477,9 +480,8 @@ func redeem() []byte {
 		return nil
 	}
 	olt, _ := result.Currencies.GetCurrencySet().GetCurrencyByName("OLT")
-
 	rr := se.RedeemRequest{
-		acc.Address(),
+		addresslist[0],
 		common.BytesToAddress(redeemAddress),
 		rawTxBytes2,
 		action.Amount{Currency: olt.Name, Value: *balance.NewAmountFromInt(10000000000)},
@@ -489,21 +491,21 @@ func redeem() []byte {
 	reply := &se.OLTReply{}
 	err = rpcclient.Call("eth.CreateRawExtRedeem", rr, reply)
 
-	signReply := &oclient.SignRawTxResponse{}
-	err = rpcclient.Call("owner.SignWithAddress", oclient.SignRawTxRequest{
-		RawTx:   reply.RawTX,
-		Address: acc.Address(),
-	}, signReply)
-	if err != nil {
-		fmt.Println(err)
-		return nil
-	}
-
+	//signReply := &oclient.SignRawTxResponse{}
+	pubkey, signature, err := wallet.SignWithAddress(reply.RawTX, addresslist[0])
+	//err = rpcclient.Call("owner.SignWithAddress", oclient.SignRawTxRequest{
+	//	RawTx:   reply.RawTX,
+	//	Address: acc.Address(),
+	//}, signReply)
+	//if err != nil {
+	//	fmt.Println(err)
+	//	return nil
+	//}
 	bresult2 := &oclient.BroadcastReply{}
 	err = rpcclient.Call("broadcast.TxSync", oclient.BroadcastRequest{
 		RawTx:     reply.RawTX,
-		Signature: signReply.Signature.Signed,
-		PublicKey: signReply.Signature.Signer,
+		Signature: signature,
+		PublicKey: pubkey,
 	}, bresult2)
 	if err != nil {
 		fmt.Println(err)
@@ -888,14 +890,14 @@ func ethManualDeploy() {
 	for _, v := range validatorset {
 		fmt.Println(v.String())
 	}
-	err := deployethcdcontract("https://rinkeby.infura.io/v3/de5e96cbb6284d5ea1341bf6cb7fa401", validatorset)
+	err := deployethcdcontract(validatorset)
 	if err != nil {
 		fmt.Println(err)
 	}
 
 }
 
-func deployethcdcontract(conn string, initialValidators []common.Address) error {
+func deployethcdcontract(initialValidators []common.Address) error {
 	os.Setenv("ETHPKPATH", "/tmp/pkdata")
 	f, err := os.Open(os.Getenv("ETHPKPATH"))
 	if err != nil {
@@ -916,7 +918,7 @@ func deployethcdcontract(conn string, initialValidators []common.Address) error 
 	if err != nil {
 		return err
 	}
-	cli, err := ethclient.Dial(conn)
+	cli, err := ethclient.Dial(cfg.Connection)
 	if err != nil {
 		return err
 	}
@@ -938,7 +940,8 @@ func deployethcdcontract(conn string, initialValidators []common.Address) error 
 
 	initialValidatorList := make([]common.Address, 0, 10)
 	lock_period := big.NewInt(2500)
-
+	num_of_validators_old := big.NewInt(4)
+	oldsmartcontract := toAddress
 	tokenSupplyTestToken := new(big.Int)
 	validatorInitialFund := big.NewInt(30000000000000000) //300000000000000000
 	tokenSupplyTestToken, ok = tokenSupplyTestToken.SetString("1000000000000000000000", 10)
@@ -979,14 +982,14 @@ func deployethcdcontract(conn string, initialValidators []common.Address) error 
 
 	auth.Nonce = big.NewInt(int64(nonce))
 
-	address, _, _, err := contract.DeployLockRedeem(auth, cli, initialValidatorList, lock_period)
+	address, _, _, err := contract.DeployLockRedeemKratos(auth, cli, initialValidatorList, lock_period, oldsmartcontract, num_of_validators_old)
 	if err != nil {
 		return errors.Wrap(err, "Deployement Eth LockRedeem")
 	}
 	tokenAddress := common.Address{}
 	ercAddress := common.Address{}
 
-	fmt.Printf("LockRedeemContractAddr = \"%v\"\n", address.Hex())
+	fmt.Printf("LockRedeemContractKratosAddr = \"%v\"\n", address.Hex())
 	fmt.Printf("TestTokenContractAddr = \"%v\"\n", tokenAddress.Hex())
 	fmt.Printf("LockRedeemERC20ContractAddr = \"%v\"\n", ercAddress.Hex())
 	return nil
