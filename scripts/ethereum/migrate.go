@@ -44,17 +44,19 @@ import (
 )
 
 var (
-	lockRedeemABI                 = contract.LockRedeemABI
-	lockRedeemKratosABI           = contract.LockRedeemKratosABI
-	lockRedeemContractAddr        = "0x8aFcc96EE512f07713fEA148158fFE5fEBB91244"
-	lockRedeem_KratosContractAddr = "0xD2EefCfA1afa8050Bd26ac09fB431FEA2939aCb7"
-	numofValidatorsOld            = big.NewInt(4)
-	lock_period                   = big.NewInt(2500)
-	oldValidatorsDir              = "/home/tanmay/Codebase/Test/LocalDevnet/OLD network/"
-	newValidatorsDir              = "/home/tanmay/Codebase/Test/devnet/"
-	gasPrice                      = big.NewInt(18000000000) // Not Used currently multiplying suggested gas price
-	//cfg = config.DefaultEthConfig("rinkeby", "de5e96cbb6284d5ea1341bf6cb7fa401")
-	Cfg                        = config.DefaultEthConfig("rinkeby", "de5e96cbb6284d5ea1341bf6cb7fa401")
+	oldValidatorsDir              = ""
+	newValidatorsDir              = ""
+	lockRedeemContractAddr        = ""
+	lockRedeem_KratosContractAddr = ""
+	numofValidatorsOld            = big.NewInt(8)
+	lock_period                   = big.NewInt(0)
+	gasPriceM                     = big.NewInt(18000000000) // Not Used currently multiplying suggested gas price
+	gasLimitM                     = uint64(700000)
+	Cfg                           = config.DefaultEthConfig("rinkeby", "de5e96cbb6284d5ea1341bf6cb7fa401")
+
+	lockRedeemABI       = contract.LockRedeemABI
+	lockRedeemKratosABI = contract.LockRedeemKratosABI
+
 	Log                        = logger.NewDefaultLogger(os.Stdout).WithPrefix("testethMigrate")
 	Client                     *ethclient.Client
 	ContractAbi                abi.ABI
@@ -73,6 +75,10 @@ func init() {
 // Redeem locked if tracker fails . User redeems more funds than he has .
 
 func main() {
+	if lock_period.Int64() == 0 {
+		Log.Info("Lock Period is zero")
+		return
+	}
 	ethDeployKratoscontract()
 	//fmt.Println("NEW contract isActive : ", checkIsActive())
 	//migrateContract()
@@ -101,7 +107,7 @@ func main() {
 func checkIsActive() bool {
 	ctrct, err := contract.NewLockRedeemKratos(KratosSmartContractAddress, Client)
 	if err != nil {
-		Log.Fatal("Unable to get LOCKREDEEM FUTURE")
+		Log.Fatal("Unable to get LOCKREDEEM Kratos")
 	}
 	callopts := &ethereum.CallOpts{
 		Pending:     true,
@@ -109,12 +115,12 @@ func checkIsActive() bool {
 		Context:     context.Background(),
 	}
 
-	bool, err := ctrct.ActiveStatus(callopts)
+	ok, err := ctrct.ActiveStatus(callopts)
 	if err != nil {
 		Log.Fatal("Unable to check contract status")
 		return false
 	}
-	return bool
+	return ok
 }
 
 func migrateContract() {
@@ -156,7 +162,7 @@ func migrateContract() {
 			Log.Fatal(err)
 		}
 
-		gasLimit := uint64(700000) // in units
+		gasLimit := gasLimitM // in units
 		gasPrice, err := Client.SuggestGasPrice(context.Background())
 		if err != nil {
 			Log.Fatal(err)
@@ -223,7 +229,6 @@ func ethDeployKratoscontract() {
 	for _, v := range validatorset {
 		fmt.Println(v.String())
 	}
-	return
 	err := deployethcdcontract(validatorset)
 	if err != nil {
 		fmt.Println(err)
@@ -232,13 +237,14 @@ func ethDeployKratoscontract() {
 }
 
 func deployethcdcontract(initialValidators []common.Address) error {
-	os.Setenv("ETHPKPATH", "/tmp/pkdata")
+	err := os.Setenv("ETHPKPATH", "/tmp/pkdata")
+	if err != nil {
+		Log.Error("Unable to set ETHPKPATH")
+		return err
+	}
 	f, err := os.Open(os.Getenv("ETHPKPATH"))
 	if err != nil {
 		return errors.Wrap(err, "Error Reading File")
-	}
-	if err != nil {
-		return errors.Wrap(err, "Error Reading File Wallet Address")
 	}
 	b1 := make([]byte, 64)
 	pk, err := f.Read(b1)
@@ -280,13 +286,12 @@ func deployethcdcontract(initialValidators []common.Address) error {
 
 	tokenSupplyTestToken := new(big.Int)
 	validatorInitialFund := big.NewInt(30000000000000000) //300000000000000000
+
 	tokenSupplyTestToken, ok = tokenSupplyTestToken.SetString("1000000000000000000000", 10)
 	if !ok {
-		return errors.New("Unabe to create total supplu for token")
+		return errors.New("Unabe to create total supply for token")
 	}
-	if !ok {
-		return errors.New("Unable to create wallet transfer amount")
-	}
+
 	for _, valAddr := range initialValidators {
 
 		nonce, err := cli.PendingNonceAt(context.Background(), fromAddress)
@@ -320,7 +325,7 @@ func deployethcdcontract(initialValidators []common.Address) error {
 
 	address, _, _, err := contract.DeployLockRedeemKratos(auth, cli, initialValidatorList, lock_period, OldSmartContractAddress, numofValidatorsOld)
 	if err != nil {
-		return errors.Wrap(err, "Deployement Eth LockRedeem")
+		return errors.Wrap(err, "Deployement Eth LockRedeem Kratos")
 	}
 	tokenAddress := common.Address{}
 	ercAddress := common.Address{}
