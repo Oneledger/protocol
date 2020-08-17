@@ -54,7 +54,7 @@ var (
 	LockRedeemContractAddr      = "0xD2EefCfA1afa8050Bd26ac09fB431FEA2939aCb7"
 	TestTokenContractAddr       = "0x0000000000000000000000000000000000000000"
 	LockRedeemERC20ContractAddr = "0x0000000000000000000000000000000000000000"
-	readDir                     = "/home/tanmay/Codebase/Test/devnet/"
+	readDir                     = ""
 
 	cfg = config.DefaultEthConfig("rinkeby", "de5e96cbb6284d5ea1341bf6cb7fa401")
 	//cfg               = config.DefaultEthConfig("", "")
@@ -457,11 +457,11 @@ func redeem() []byte {
 	acc := accReply.Accounts[0]
 
 	//acc := keys.Address{}
-	//err = acc.UnmarshalText([]byte("9f5b9fdc5db5c39ea1eaa7430e28abb76fab11d1"))
+	//err = acc.UnmarshalText([]byte(""))
 	//if err != nil {
 	//	return nil
 	//}
-	//wallet, err := accounts.NewWalletKeyStore("/home/tanmay/Codebase/Test/devnet/0-Node/keystore")
+	//wallet, err := accounts.NewWalletKeyStore("")
 	//if err != nil {
 	//	return nil
 	//}
