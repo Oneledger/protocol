@@ -96,7 +96,7 @@ func (st *Store) IterateAll(fn func(addr keys.Address, c string, amt Amount) boo
 			//Parse Address
 			addrStartIndex := bytes.IndexByte(key, storage.DB_PREFIX[0]) + 1
 			addrEndIndex := bytes.LastIndexByte(key, storage.DB_PREFIX[0])
-			if addrStartIndex == -1 && addrEndIndex == -1 {
+			if addrStartIndex == -1 || addrEndIndex == -1 {
 				return true
 			}
 
