@@ -2,7 +2,7 @@ from sdk import *
 
 addr_list = addresses()
 
-_pid_pass = "id_20065"
+_pid_pass = "id_20067"
 _proposer = addr_list[0]
 _initial_funding = (int("2") * 10 ** 9)
 _each_funding = (int("5") * 10 ** 9)
@@ -10,12 +10,10 @@ _funding_goal_general = (int("10") * 10 ** 9)
 
 
 def test_change_gov_options(update_param):
+    update = {"propOptions.configUpdate.passedFundDistribution": update_param}
     _prop = Proposal(_pid_pass, "configUpdate", "proposal for vote", "Headline", _proposer, _initial_funding,
-                     "feeOption.minFeeDecimal")
+                     update)
     # create proposal
-    state = _prop.default_gov_state()
-    state['feeOption']['minFeeDecimal'] = update_param
-    _prop.configupdate = state
     _prop.send_create()
     time.sleep(3)
     encoded_pid = _prop.pid
@@ -43,12 +41,20 @@ def test_change_gov_options(update_param):
 
 
 if __name__ == "__main__":
-    update_param = 8
+    update_param = {
+        "burn": 10,
+        "executionCost": 20,
+        "bountyPool": 50,
+        "validators": 10,
+        "proposerReward": 0,
+        "feePool": 10
+    }
     opt = query_governanceState()
     old_height = opt["lastUpdateHeight"]["fee"]
     test_change_gov_options(update_param)
     opt = query_governanceState()
     new_height = opt["lastUpdateHeight"]["fee"]
+    print opt["govOptions"]["propOptions"]["configUpdate"]["passedFundDistribution"]
     if opt["govOptions"]["feeOption"]["minFeeDecimal"] != update_param:
         print "Value not updated"
         sys.exit(-1)
@@ -57,7 +63,6 @@ if __name__ == "__main__":
         sys.exit(-1)
     print bcolors.OKBLUE + "Option Update Successful" + bcolors.ENDC
 
-#
 # print proposalstats["height"]
 #
 # print "#### FINALIZEFAILED PROPOSALS: ####"

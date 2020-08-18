@@ -1,8 +1,10 @@
 package action
 
 import (
+	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 
+	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/governance"
 )
 
@@ -14,13 +16,13 @@ const (
 )
 
 type GovernaceUpdateAndValidate struct {
-	GovernanceUpdateFunction map[string]func(*governance.GovernanceState, *Context, FunctionBehaviour) (bool, error)
+	GovernanceUpdateFunction map[string]func(interface{}, *Context, FunctionBehaviour) (bool, error)
 }
 
 func NewGovUpdate() *GovernaceUpdateAndValidate {
 
 	newUpdateAndValidate := GovernaceUpdateAndValidate{
-		GovernanceUpdateFunction: make(map[string]func(*governance.GovernanceState, *Context, FunctionBehaviour) (bool, error)),
+		GovernanceUpdateFunction: make(map[string]func(interface{}, *Context, FunctionBehaviour) (bool, error)),
 	}
 	newUpdateAndValidate.inititalizize()
 	return &newUpdateAndValidate
@@ -57,85 +59,805 @@ func (g GovernaceUpdateAndValidate) inititalizize() {
 	g.GovernanceUpdateFunction["propOptions.general.failedFundDistribution"] = propOptionsgeneralfailedFundDistribution
 
 }
-func stakingOptionsminSelfDelegationAmount(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+func stakingOptionsminSelfDelegationAmount(value interface{}, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	Options, err := ctx.GovernanceStore.GetStakingOptions()
+	if err != nil {
+		return false, err
+	}
+	newValue, err := getNewValueInt64(value)
+	if err != nil {
+		return false, err
+	}
+	Options.MinSelfDelegationAmount = *balance.NewAmount(newValue)
+
+	ok, err := ctx.GovernanceStore.ValidateStaking(Options)
+	if err != nil {
+		return false, err
+	}
+	if !ok {
+		return false, errors.New("Validation Failed")
+	}
+	if validationOnly == ValidateOnly {
+		return true, nil
+	}
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetStakingOptions(*Options)
+	if err != nil {
+		return false, errors.Wrap(err, "Setup Staking Options")
+	}
+	//Staking not part of context
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetLUH(governance.LAST_UPDATE_HEIGHT_STAKING)
+	if err != nil {
+		return false, errors.Wrap(err, "Unable to set last Update height ")
+	}
+	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height, "| stakingOptions.minSelfDelegationAmount :", newValue)
 	return true, nil
 }
-func stakingOptionstopValidatorCount(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+func stakingOptionstopValidatorCount(value interface{}, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	Options, err := ctx.GovernanceStore.GetStakingOptions()
+	if err != nil {
+		return false, err
+	}
+	newValue, err := getNewValueInt64(value)
+	if err != nil {
+		return false, err
+	}
+
+	Options.TopValidatorCount = newValue
+
+	ok, err := ctx.GovernanceStore.ValidateStaking(Options)
+	if err != nil {
+		return false, err
+	}
+	if !ok {
+		return false, errors.New("Validation Failed")
+	}
+	if validationOnly == ValidateOnly {
+		return true, nil
+	}
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetStakingOptions(*Options)
+	if err != nil {
+		return false, errors.Wrap(err, "Setup Staking Options")
+	}
+	//Staking not part of context
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetLUH(governance.LAST_UPDATE_HEIGHT_STAKING)
+	if err != nil {
+		return false, errors.Wrap(err, "Unable to set last Update height ")
+	}
+	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height, "| takingOptions.topValidatorCount :", newValue)
 	return true, nil
 }
-func stakingOptionsmaturityTime(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+func stakingOptionsmaturityTime(value interface{}, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	Options, err := ctx.GovernanceStore.GetStakingOptions()
+	if err != nil {
+		return false, err
+	}
+	newValue, err := getNewValueInt64(value)
+	if err != nil {
+		return false, err
+	}
+
+	Options.MaturityTime = newValue
+
+	ok, err := ctx.GovernanceStore.ValidateStaking(Options)
+	if err != nil {
+		return false, err
+	}
+	if !ok {
+		return false, errors.New("Validation Failed")
+	}
+	if validationOnly == ValidateOnly {
+		return true, nil
+	}
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetStakingOptions(*Options)
+	if err != nil {
+		return false, errors.Wrap(err, "Setup Staking Options")
+	}
+	//Staking not part of context
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetLUH(governance.LAST_UPDATE_HEIGHT_STAKING)
+	if err != nil {
+		return false, errors.Wrap(err, "Unable to set last Update height ")
+	}
+	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height, "| stakingOptions.maturityTime :", newValue)
 	return true, nil
 }
-func propOptionsconfigUpdateinitialFunding(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+func propOptionsconfigUpdateinitialFunding(value interface{}, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	Options, err := ctx.GovernanceStore.GetProposalOptions()
+	if err != nil {
+		return false, err
+	}
+	newValue, err := getNewValueInt64(value)
+	if err != nil {
+		return false, err
+	}
+	Options.ConfigUpdate.InitialFunding = balance.NewAmount(newValue)
+
+	ok, err := ctx.GovernanceStore.ValidateProposal(Options)
+	if err != nil {
+		return false, err
+	}
+	if !ok {
+		return false, errors.New("Validation Failed")
+	}
+	if validationOnly == ValidateOnly {
+		return true, nil
+	}
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetProposalOptions(*Options)
+	if err != nil {
+		return false, errors.Wrap(err, "Setup Proposal Options")
+	}
+	ctx.ProposalMasterStore.Proposal.SetOptions(Options)
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetLUH(governance.LAST_UPDATE_HEIGHT_PROPOSAL)
+	if err != nil {
+		return false, errors.Wrap(err, "Unable to set last Update height ")
+	}
+	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height, "| propOptions.configUpdate.initialFunding :", newValue)
 	return true, nil
 }
-func propOptionscodeChangeinitialFunding(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+func propOptionscodeChangeinitialFunding(value interface{}, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	Options, err := ctx.GovernanceStore.GetProposalOptions()
+	if err != nil {
+		return false, err
+	}
+	newValue, err := getNewValueInt64(value)
+	if err != nil {
+		return false, err
+	}
+	Options.CodeChange.InitialFunding = balance.NewAmount(newValue)
+
+	ok, err := ctx.GovernanceStore.ValidateProposal(Options)
+	if err != nil {
+		return false, err
+	}
+	if !ok {
+		return false, errors.New("Validation Failed")
+	}
+	if validationOnly == ValidateOnly {
+		return true, nil
+	}
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetProposalOptions(*Options)
+	if err != nil {
+		return false, errors.Wrap(err, "Setup Proposal Options")
+	}
+	ctx.ProposalMasterStore.Proposal.SetOptions(Options)
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetLUH(governance.LAST_UPDATE_HEIGHT_PROPOSAL)
+	if err != nil {
+		return false, errors.Wrap(err, "Unable to set last Update height ")
+	}
+	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height, "| propOptions.codeChange.initialFunding :", newValue)
 	return true, nil
 }
-func propOptionsgeneralinitialFunding(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+func propOptionsgeneralinitialFunding(value interface{}, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	Options, err := ctx.GovernanceStore.GetProposalOptions()
+	if err != nil {
+		return false, err
+	}
+	newValue, err := getNewValueInt64(value)
+	if err != nil {
+		return false, err
+	}
+	Options.General.InitialFunding = balance.NewAmount(newValue)
+
+	ok, err := ctx.GovernanceStore.ValidateProposal(Options)
+	if err != nil {
+		return false, err
+	}
+	if !ok {
+		return false, errors.New("Validation Failed")
+	}
+	if validationOnly == ValidateOnly {
+		return true, nil
+	}
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetProposalOptions(*Options)
+	if err != nil {
+		return false, errors.Wrap(err, "Setup Proposal Options")
+	}
+	ctx.ProposalMasterStore.Proposal.SetOptions(Options)
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetLUH(governance.LAST_UPDATE_HEIGHT_PROPOSAL)
+	if err != nil {
+		return false, errors.Wrap(err, "Unable to set last Update height ")
+	}
+	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height, "| propOptions.general.initialFunding :", newValue)
 	return true, nil
 }
-func propOptionsconfigUpdatefundingGoal(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+func propOptionsconfigUpdatefundingGoal(value interface{}, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	Options, err := ctx.GovernanceStore.GetProposalOptions()
+	if err != nil {
+		return false, err
+	}
+	newValue, err := getNewValueInt64(value)
+	if err != nil {
+		return false, err
+	}
+	Options.ConfigUpdate.FundingGoal = balance.NewAmount(newValue)
+
+	ok, err := ctx.GovernanceStore.ValidateProposal(Options)
+	if err != nil {
+		return false, err
+	}
+	if !ok {
+		return false, errors.New("Validation Failed")
+	}
+	if validationOnly == ValidateOnly {
+		return true, nil
+	}
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetProposalOptions(*Options)
+	if err != nil {
+		return false, errors.Wrap(err, "Setup Proposal Options")
+	}
+	ctx.ProposalMasterStore.Proposal.SetOptions(Options)
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetLUH(governance.LAST_UPDATE_HEIGHT_PROPOSAL)
+	if err != nil {
+		return false, errors.Wrap(err, "Unable to set last Update height ")
+	}
+	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height, "| propOptions.configUpdate.fundingGoal :", newValue)
 	return true, nil
 }
-func propOptionscodeChangefundingGoal(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+func propOptionscodeChangefundingGoal(value interface{}, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	Options, err := ctx.GovernanceStore.GetProposalOptions()
+	if err != nil {
+		return false, err
+	}
+	newValue, err := getNewValueInt64(value)
+	if err != nil {
+		return false, err
+	}
+	Options.CodeChange.FundingGoal = balance.NewAmount(newValue)
+
+	ok, err := ctx.GovernanceStore.ValidateProposal(Options)
+	if err != nil {
+		return false, err
+	}
+	if !ok {
+		return false, errors.New("Validation Failed")
+	}
+	if validationOnly == ValidateOnly {
+		return true, nil
+	}
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetProposalOptions(*Options)
+	if err != nil {
+		return false, errors.Wrap(err, "Setup Proposal Options")
+	}
+	ctx.ProposalMasterStore.Proposal.SetOptions(Options)
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetLUH(governance.LAST_UPDATE_HEIGHT_PROPOSAL)
+	if err != nil {
+		return false, errors.Wrap(err, "Unable to set last Update height ")
+	}
+	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height, "| propOptions.codeChange.fundingGoal :", newValue)
 	return true, nil
 }
-func propOptionsgeneralfundingGoal(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+func propOptionsgeneralfundingGoal(value interface{}, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	Options, err := ctx.GovernanceStore.GetProposalOptions()
+	if err != nil {
+		return false, err
+	}
+	newValue, err := getNewValueInt64(value)
+	if err != nil {
+		return false, err
+	}
+	Options.General.FundingGoal = balance.NewAmount(newValue)
+
+	ok, err := ctx.GovernanceStore.ValidateProposal(Options)
+	if err != nil {
+		return false, err
+	}
+	if !ok {
+		return false, errors.New("Validation Failed")
+	}
+	if validationOnly == ValidateOnly {
+		return true, nil
+	}
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetProposalOptions(*Options)
+	if err != nil {
+		return false, errors.Wrap(err, "Setup Proposal Options")
+	}
+	ctx.ProposalMasterStore.Proposal.SetOptions(Options)
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetLUH(governance.LAST_UPDATE_HEIGHT_PROPOSAL)
+	if err != nil {
+		return false, errors.Wrap(err, "Unable to set last Update height ")
+	}
+	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height, "| propOptions.general.fundingGoal :", newValue)
 	return true, nil
 }
-func propOptionsconfigUpdatevotingDeadline(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+func propOptionsconfigUpdatevotingDeadline(value interface{}, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	Options, err := ctx.GovernanceStore.GetProposalOptions()
+	if err != nil {
+		return false, err
+	}
+	newValue, err := getNewValueInt64(value)
+	if err != nil {
+		return false, err
+	}
+	Options.ConfigUpdate.VotingDeadline = newValue
+
+	ok, err := ctx.GovernanceStore.ValidateProposal(Options)
+	if err != nil {
+		return false, err
+	}
+	if !ok {
+		return false, errors.New("Validation Failed")
+	}
+	if validationOnly == ValidateOnly {
+		return true, nil
+	}
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetProposalOptions(*Options)
+	if err != nil {
+		return false, errors.Wrap(err, "Setup Proposal Options")
+	}
+	ctx.ProposalMasterStore.Proposal.SetOptions(Options)
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetLUH(governance.LAST_UPDATE_HEIGHT_PROPOSAL)
+	if err != nil {
+		return false, errors.Wrap(err, "Unable to set last Update height ")
+	}
+	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height, "| propOptions.configUpdate.votingDeadline :", newValue)
 	return true, nil
 }
-func propOptionscodeChangevotingDeadline(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+func propOptionscodeChangevotingDeadline(value interface{}, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	Options, err := ctx.GovernanceStore.GetProposalOptions()
+	if err != nil {
+		return false, err
+	}
+	newValue, err := getNewValueInt64(value)
+	if err != nil {
+		return false, err
+	}
+	Options.CodeChange.VotingDeadline = newValue
+
+	ok, err := ctx.GovernanceStore.ValidateProposal(Options)
+	if err != nil {
+		return false, err
+	}
+	if !ok {
+		return false, errors.New("Validation Failed")
+	}
+	if validationOnly == ValidateOnly {
+		return true, nil
+	}
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetProposalOptions(*Options)
+	if err != nil {
+		return false, errors.Wrap(err, "Setup Proposal Options")
+	}
+	ctx.ProposalMasterStore.Proposal.SetOptions(Options)
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetLUH(governance.LAST_UPDATE_HEIGHT_PROPOSAL)
+	if err != nil {
+		return false, errors.Wrap(err, "Unable to set last Update height ")
+	}
+	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height, "| propOptions.codeChange.votingDeadline :", newValue)
 	return true, nil
 }
-func propOptionsgeneralvotingDeadline(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+func propOptionsgeneralvotingDeadline(value interface{}, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	Options, err := ctx.GovernanceStore.GetProposalOptions()
+	if err != nil {
+		return false, err
+	}
+	newValue, err := getNewValueInt64(value)
+	if err != nil {
+		return false, err
+	}
+	Options.General.VotingDeadline = newValue
+
+	ok, err := ctx.GovernanceStore.ValidateProposal(Options)
+	if err != nil {
+		return false, err
+	}
+	if !ok {
+		return false, errors.New("Validation Failed")
+	}
+	if validationOnly == ValidateOnly {
+		return true, nil
+	}
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetProposalOptions(*Options)
+	if err != nil {
+		return false, errors.Wrap(err, "Setup Proposal Options")
+	}
+	ctx.ProposalMasterStore.Proposal.SetOptions(Options)
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetLUH(governance.LAST_UPDATE_HEIGHT_PROPOSAL)
+	if err != nil {
+		return false, errors.Wrap(err, "Unable to set last Update height ")
+	}
+	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height, "| propOptions.general.votingDeadline :", newValue)
 	return true, nil
 }
-func propOptionsconfigUpdatefundingDeadline(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+func propOptionsconfigUpdatefundingDeadline(value interface{}, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	Options, err := ctx.GovernanceStore.GetProposalOptions()
+	if err != nil {
+		return false, err
+	}
+	newValue, err := getNewValueInt64(value)
+	if err != nil {
+		return false, err
+	}
+	Options.ConfigUpdate.FundingDeadline = newValue
+
+	ok, err := ctx.GovernanceStore.ValidateProposal(Options)
+	if err != nil {
+		return false, err
+	}
+	if !ok {
+		return false, errors.New("Validation Failed")
+	}
+	if validationOnly == ValidateOnly {
+		return true, nil
+	}
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetProposalOptions(*Options)
+	if err != nil {
+		return false, errors.Wrap(err, "Setup Proposal Options")
+	}
+	ctx.ProposalMasterStore.Proposal.SetOptions(Options)
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetLUH(governance.LAST_UPDATE_HEIGHT_PROPOSAL)
+	if err != nil {
+		return false, errors.Wrap(err, "Unable to set last Update height ")
+	}
+	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height, "| propOptions.configUpdate.fundingDeadline :", newValue)
 	return true, nil
 }
-func propOptionscodeChangefundingDeadline(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+func propOptionscodeChangefundingDeadline(value interface{}, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	Options, err := ctx.GovernanceStore.GetProposalOptions()
+	if err != nil {
+		return false, err
+	}
+	newValue, err := getNewValueInt64(value)
+	if err != nil {
+		return false, err
+	}
+	Options.CodeChange.FundingDeadline = newValue
+
+	ok, err := ctx.GovernanceStore.ValidateProposal(Options)
+	if err != nil {
+		return false, err
+	}
+	if !ok {
+		return false, errors.New("Validation Failed")
+	}
+	if validationOnly == ValidateOnly {
+		return true, nil
+	}
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetProposalOptions(*Options)
+	if err != nil {
+		return false, errors.Wrap(err, "Setup Proposal Options")
+	}
+	ctx.ProposalMasterStore.Proposal.SetOptions(Options)
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetLUH(governance.LAST_UPDATE_HEIGHT_PROPOSAL)
+	if err != nil {
+		return false, errors.Wrap(err, "Unable to set last Update height ")
+	}
+	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height, "| propOptions.codeChange.fundingDeadline :", newValue)
 	return true, nil
 }
-func propOptionsgeneralfundingDeadline(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+func propOptionsgeneralfundingDeadline(value interface{}, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	Options, err := ctx.GovernanceStore.GetProposalOptions()
+	if err != nil {
+		return false, err
+	}
+	newValue, err := getNewValueInt64(value)
+	if err != nil {
+		return false, err
+	}
+	Options.General.FundingDeadline = newValue
+
+	ok, err := ctx.GovernanceStore.ValidateProposal(Options)
+	if err != nil {
+		return false, err
+	}
+	if !ok {
+		return false, errors.New("Validation Failed")
+	}
+	if validationOnly == ValidateOnly {
+		return true, nil
+	}
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetProposalOptions(*Options)
+	if err != nil {
+		return false, errors.Wrap(err, "Setup Proposal Options")
+	}
+	ctx.ProposalMasterStore.Proposal.SetOptions(Options)
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetLUH(governance.LAST_UPDATE_HEIGHT_PROPOSAL)
+	if err != nil {
+		return false, errors.Wrap(err, "Unable to set last Update height ")
+	}
+	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height, "| propOptions.general.fundingDeadline :", newValue)
 	return true, nil
 }
-func propOptionsconfigUpdatepassPercentage(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+func propOptionsconfigUpdatepassPercentage(value interface{}, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	Options, err := ctx.GovernanceStore.GetProposalOptions()
+	if err != nil {
+		return false, err
+	}
+	newValue, err := getNewValueInt64(value)
+	if err != nil {
+		return false, err
+	}
+	Options.ConfigUpdate.PassPercentage = int(newValue)
+
+	ok, err := ctx.GovernanceStore.ValidateProposal(Options)
+	if err != nil {
+		return false, err
+	}
+	if !ok {
+		return false, errors.New("Validation Failed")
+	}
+	if validationOnly == ValidateOnly {
+		return true, nil
+	}
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetProposalOptions(*Options)
+	if err != nil {
+		return false, errors.Wrap(err, "Setup Proposal Options")
+	}
+	ctx.ProposalMasterStore.Proposal.SetOptions(Options)
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetLUH(governance.LAST_UPDATE_HEIGHT_PROPOSAL)
+	if err != nil {
+		return false, errors.Wrap(err, "Unable to set last Update height ")
+	}
+	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height, "| propOptions.configUpdate.passPercentage :", newValue)
 	return true, nil
 }
-func propOptionscodeChangepassPercentage(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+func propOptionscodeChangepassPercentage(value interface{}, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	Options, err := ctx.GovernanceStore.GetProposalOptions()
+	if err != nil {
+		return false, err
+	}
+	newValue, err := getNewValueInt64(value)
+	if err != nil {
+		return false, err
+	}
+	Options.CodeChange.PassPercentage = int(newValue)
+
+	ok, err := ctx.GovernanceStore.ValidateProposal(Options)
+	if err != nil {
+		return false, err
+	}
+	if !ok {
+		return false, errors.New("Validation Failed")
+	}
+	if validationOnly == ValidateOnly {
+		return true, nil
+	}
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetProposalOptions(*Options)
+	if err != nil {
+		return false, errors.Wrap(err, "Setup Proposal Options")
+	}
+	ctx.ProposalMasterStore.Proposal.SetOptions(Options)
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetLUH(governance.LAST_UPDATE_HEIGHT_PROPOSAL)
+	if err != nil {
+		return false, errors.Wrap(err, "Unable to set last Update height ")
+	}
+	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height, "| propOptions.codeChange.passPercentage :", newValue)
 	return true, nil
 }
-func propOptionsgeneralpassPercentage(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+func propOptionsgeneralpassPercentage(value interface{}, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	Options, err := ctx.GovernanceStore.GetProposalOptions()
+	if err != nil {
+		return false, err
+	}
+	newValue, err := getNewValueInt64(value)
+	if err != nil {
+		return false, err
+	}
+	Options.General.PassPercentage = int(newValue)
+
+	ok, err := ctx.GovernanceStore.ValidateProposal(Options)
+	if err != nil {
+		return false, err
+	}
+	if !ok {
+		return false, errors.New("Validation Failed")
+	}
+	if validationOnly == ValidateOnly {
+		return true, nil
+	}
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetProposalOptions(*Options)
+	if err != nil {
+		return false, errors.Wrap(err, "Setup Proposal Options")
+	}
+	ctx.ProposalMasterStore.Proposal.SetOptions(Options)
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetLUH(governance.LAST_UPDATE_HEIGHT_PROPOSAL)
+	if err != nil {
+		return false, errors.Wrap(err, "Unable to set last Update height ")
+	}
+	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height, "| propOptions.general.passPercentage :", newValue)
 	return true, nil
 }
-func propOptionsconfigUpdatepassedFundDistribution(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+func propOptionsconfigUpdatepassedFundDistribution(value interface{}, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	Options, err := ctx.GovernanceStore.GetProposalOptions()
+	if err != nil {
+		return false, err
+	}
+	newDistribution, err := getDistribution(value)
+	if err != nil {
+		return false, err
+	}
+	Options.ConfigUpdate.PassedFundDistribution = newDistribution
+	ok, err := ctx.GovernanceStore.ValidateProposal(Options)
+	if err != nil {
+		return false, err
+	}
+	if !ok {
+		return false, errors.New("Validation Failed")
+	}
+	if validationOnly == ValidateOnly {
+		return true, nil
+	}
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetProposalOptions(*Options)
+	if err != nil {
+		return false, errors.Wrap(err, "Setup Proposal Options")
+	}
+	ctx.ProposalMasterStore.Proposal.SetOptions(Options)
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetLUH(governance.LAST_UPDATE_HEIGHT_PROPOSAL)
+	if err != nil {
+		return false, errors.Wrap(err, "Unable to set last Update height ")
+	}
+	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height, "| propOptions.configUpdate.passedFundDistribution :", newDistribution)
 	return true, nil
 }
-func propOptionscodeChangepassedFundDistribution(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+func propOptionscodeChangepassedFundDistribution(value interface{}, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	Options, err := ctx.GovernanceStore.GetProposalOptions()
+	if err != nil {
+		return false, err
+	}
+	newDistribution, err := getDistribution(value)
+	if err != nil {
+		return false, err
+	}
+	Options.CodeChange.PassedFundDistribution = newDistribution
+	ok, err := ctx.GovernanceStore.ValidateProposal(Options)
+	if err != nil {
+		return false, err
+	}
+	if !ok {
+		return false, errors.New("Validation Failed")
+	}
+	if validationOnly == ValidateOnly {
+		return true, nil
+	}
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetProposalOptions(*Options)
+	if err != nil {
+		return false, errors.Wrap(err, "Setup Proposal Options")
+	}
+	ctx.ProposalMasterStore.Proposal.SetOptions(Options)
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetLUH(governance.LAST_UPDATE_HEIGHT_PROPOSAL)
+	if err != nil {
+		return false, errors.Wrap(err, "Unable to set last Update height ")
+	}
+	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height, "| propOptions.codeChange.passedFundDistribution :", newDistribution)
 	return true, nil
 }
-func propOptionsgeneralpassedFundDistribution(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+func propOptionsgeneralpassedFundDistribution(value interface{}, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	Options, err := ctx.GovernanceStore.GetProposalOptions()
+	if err != nil {
+		return false, err
+	}
+	newDistribution, err := getDistribution(value)
+	if err != nil {
+		return false, err
+	}
+	Options.General.PassedFundDistribution = newDistribution
+	ok, err := ctx.GovernanceStore.ValidateProposal(Options)
+	if err != nil {
+		return false, err
+	}
+	if !ok {
+		return false, errors.New("Validation Failed")
+	}
+	if validationOnly == ValidateOnly {
+		return true, nil
+	}
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetProposalOptions(*Options)
+	if err != nil {
+		return false, errors.Wrap(err, "Setup Proposal Options")
+	}
+	ctx.ProposalMasterStore.Proposal.SetOptions(Options)
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetLUH(governance.LAST_UPDATE_HEIGHT_PROPOSAL)
+	if err != nil {
+		return false, errors.Wrap(err, "Unable to set last Update height ")
+	}
+	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height, "| propOptions.general.passedFundDistribution :", newDistribution)
 	return true, nil
 }
-func propOptionsconfigUpdatefailedFundDistribution(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+func propOptionsconfigUpdatefailedFundDistribution(value interface{}, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	Options, err := ctx.GovernanceStore.GetProposalOptions()
+	if err != nil {
+		return false, err
+	}
+	newDistribution, err := getDistribution(value)
+	if err != nil {
+		return false, err
+	}
+	Options.ConfigUpdate.FailedFundDistribution = newDistribution
+	ok, err := ctx.GovernanceStore.ValidateProposal(Options)
+	if err != nil {
+		return false, err
+	}
+	if !ok {
+		return false, errors.New("Validation Failed")
+	}
+	if validationOnly == ValidateOnly {
+		return true, nil
+	}
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetProposalOptions(*Options)
+	if err != nil {
+		return false, errors.Wrap(err, "Setup Proposal Options")
+	}
+	ctx.ProposalMasterStore.Proposal.SetOptions(Options)
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetLUH(governance.LAST_UPDATE_HEIGHT_PROPOSAL)
+	if err != nil {
+		return false, errors.Wrap(err, "Unable to set last Update height ")
+	}
+	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height, "| propOptions.configUpdate.failedFundDistribution :", newDistribution)
 	return true, nil
 }
-func propOptionscodeChangefailedFundDistribution(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+func propOptionscodeChangefailedFundDistribution(value interface{}, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	Options, err := ctx.GovernanceStore.GetProposalOptions()
+	if err != nil {
+		return false, err
+	}
+	newDistribution, err := getDistribution(value)
+	if err != nil {
+		return false, err
+	}
+	Options.CodeChange.FailedFundDistribution = newDistribution
+	ok, err := ctx.GovernanceStore.ValidateProposal(Options)
+	if err != nil {
+		return false, err
+	}
+	if !ok {
+		return false, errors.New("Validation Failed")
+	}
+	if validationOnly == ValidateOnly {
+		return true, nil
+	}
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetProposalOptions(*Options)
+	if err != nil {
+		return false, errors.Wrap(err, "Setup Proposal Options")
+	}
+	ctx.ProposalMasterStore.Proposal.SetOptions(Options)
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetLUH(governance.LAST_UPDATE_HEIGHT_PROPOSAL)
+	if err != nil {
+		return false, errors.Wrap(err, "Unable to set last Update height ")
+	}
+	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height, "| propOptions.codeChange.failedFundDistribution :", newDistribution)
 	return true, nil
 }
-func propOptionsgeneralfailedFundDistribution(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+func propOptionsgeneralfailedFundDistribution(value interface{}, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	Options, err := ctx.GovernanceStore.GetProposalOptions()
+	if err != nil {
+		return false, err
+	}
+	newDistribution, err := getDistribution(value)
+	if err != nil {
+		return false, err
+	}
+	Options.General.FailedFundDistribution = newDistribution
+	ok, err := ctx.GovernanceStore.ValidateProposal(Options)
+	if err != nil {
+		return false, err
+	}
+	if !ok {
+		return false, errors.New("Validation Failed")
+	}
+	if validationOnly == ValidateOnly {
+		return true, nil
+	}
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetProposalOptions(*Options)
+	if err != nil {
+		return false, errors.Wrap(err, "Setup Proposal Options")
+	}
+	ctx.ProposalMasterStore.Proposal.SetOptions(Options)
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetLUH(governance.LAST_UPDATE_HEIGHT_PROPOSAL)
+	if err != nil {
+		return false, errors.Wrap(err, "Unable to set last Update height ")
+	}
+	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height, "| propOptions.general.failedFundDistribution :", newDistribution)
 	return true, nil
 }
 
-func onsOptionsperBlockFees(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+func onsOptionsperBlockFees(value interface{}, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
 	onsOptions, err := ctx.GovernanceStore.GetONSOptions()
 	if err != nil {
 		return false, err
 	}
-	onsOptions.PerBlockFees = newstate.ONSOptions.PerBlockFees
+	newValue, err := getNewValueInt64(value)
+	if err != nil {
+		return false, err
+	}
+	onsOptions.PerBlockFees = *balance.NewAmount(newValue)
 
 	ok, err := ctx.GovernanceStore.ValidateONS(onsOptions)
 	if err != nil {
@@ -156,16 +878,20 @@ func onsOptionsperBlockFees(newstate *governance.GovernanceState, ctx *Context, 
 	if err != nil {
 		return false, errors.Wrap(err, "Unable to set last Update height ")
 	}
-	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height, "| onsOptions.perBlockFees :", newstate.ONSOptions.PerBlockFees)
+	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height, "| onsOptions.perBlockFees :", newValue)
 	return true, nil
 }
 
-func onsOptionsbaseDomainPrice(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+func onsOptionsbaseDomainPrice(value interface{}, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
 	onsOptions, err := ctx.GovernanceStore.GetONSOptions()
 	if err != nil {
 		return false, err
 	}
-	onsOptions.BaseDomainPrice = newstate.ONSOptions.BaseDomainPrice
+	newValue, err := getNewValueInt64(value)
+	if err != nil {
+		return false, err
+	}
+	onsOptions.BaseDomainPrice = *balance.NewAmount(newValue)
 
 	ok, err := ctx.GovernanceStore.ValidateONS(onsOptions)
 	if err != nil {
@@ -186,16 +912,20 @@ func onsOptionsbaseDomainPrice(newstate *governance.GovernanceState, ctx *Contex
 	if err != nil {
 		return false, errors.Wrap(err, "Unable to set last Update height ")
 	}
-	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height, "| onsOptions.baseDomainPrice :", newstate.ONSOptions.BaseDomainPrice)
+	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height, "| onsOptions.baseDomainPrice :", newValue)
 	return true, nil
 }
 
-func feeOptionminFeeDecimal(newstate *governance.GovernanceState, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+func feeOptionminFeeDecimal(value interface{}, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
 	feeOptions, err := ctx.GovernanceStore.GetFeeOption()
 	if err != nil {
 		return false, err
 	}
-	feeOptions.MinFeeDecimal = newstate.FeeOption.MinFeeDecimal
+	newValue, err := getNewValueInt64(value)
+	if err != nil {
+		return false, err
+	}
+	feeOptions.MinFeeDecimal = newValue
 
 	ok, err := ctx.GovernanceStore.ValidateFee(feeOptions)
 	if err != nil {
@@ -216,6 +946,26 @@ func feeOptionminFeeDecimal(newstate *governance.GovernanceState, ctx *Context, 
 	if err != nil {
 		return false, errors.Wrap(err, "Unable to set last Update height ")
 	}
-	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height, "feeOption.minFeeDecimal :", newstate.FeeOption.MinFeeDecimal)
+	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height, "feeOption.minFeeDecimal :", newValue)
 	return true, nil
+}
+
+func getNewValueInt64(value interface{}) (int64, error) {
+	newValue, ok := value.(float64)
+	if !ok {
+		return 0, errors.New("Type assertion failed")
+	}
+	return int64(newValue), nil
+}
+
+func getDistribution(value interface{}) (newDistribution governance.ProposalFundDistribution, err error) {
+	newValue, ok := value.(map[string]interface{})
+	if !ok {
+		return
+	}
+	err = mapstructure.Decode(newValue, &newDistribution)
+	if err != nil {
+		return
+	}
+	return
 }

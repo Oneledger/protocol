@@ -229,19 +229,19 @@ func (st *Store) ValidateProposal(opt *ProposalOptionSet) (bool, error) {
 		return false, errors.New("funding deadline for Config update is not within range")
 	}
 	if !verifyRangeInt64(config.VotingDeadline, minDeadlineVotingConfig, maxDeadlineVotingConfig) {
-		return false, errors.New("funding deadline for Config update is not within range")
+		return false, errors.New("voting deadline for Config update is not within range")
 	}
 	if !verifyRangeInt64(code.FundingDeadline, minDeadlineFundingCode, maxDeadlineFundingCode) {
 		return false, errors.New("funding deadline for code update is not within range")
 	}
 	if !verifyRangeInt64(code.VotingDeadline, minDeadlineVotingCode, maxDeadlineVotingCode) {
-		return false, errors.New("funding deadline for code update is not within range")
+		return false, errors.New("voting deadline for code update is not within range")
 	}
 	if !verifyRangeInt64(general.FundingDeadline, minDeadlineFundingGeneral, maxDeadlineFundingGeneral) {
 		return false, errors.New("funding deadline for general update is not within range")
 	}
 	if !verifyRangeInt64(general.VotingDeadline, minDeadlineVotingeGeneral, maxDeadlineVotingGeneral) {
-		return false, errors.New("funding deadline for general update is not within range")
+		return false, errors.New("voting deadline for general update is not within range")
 	}
 	if !verifyRangeInt64(int64(config.PassPercentage), minPassPercentage, maxPassPercentage) {
 		return false, errors.New("pass percentage for config update is not within range")

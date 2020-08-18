@@ -50,15 +50,16 @@ class bcolors:
 
 
 class Proposal:
-    def __init__(self, pid, pType, description, headline, proposer, init_fund, updatepath="feeOption.minFeeDecimal"):
+    def __init__(self, pid, pType, description, headline, proposer, init_fund, updatevalue=None):
+        if updatevalue is None:
+            updatevalue = {"feeOption.minFeeDecimal": 9}
         self.pid = pid
         self.pty = pType
         self.headline = headline
         self.des = description
         self.proposer = proposer
         self.init_fund = init_fund
-        self.updatepath = updatepath
-        self.configupdate = self.default_gov_state()
+        self.configupdate = updatevalue
 
     def _calculate_proposal_info(self, assign_funding_deadline):
         query_options = query_proposal_options()
@@ -105,7 +106,6 @@ class Proposal:
             "fundingDeadline": _proposal_info.funding_deadline,
             "votingDeadline": _proposal_info.voting_deadline,
             "passPercentage": _proposal_info.pass_percentage,
-            "configUpdatePAth": self.updatepath,
             "configUpdate": self.configupdate,
             "gasPrice": {
                 "currency": "OLT",

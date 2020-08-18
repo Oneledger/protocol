@@ -20,18 +20,17 @@ func (s *Service) CreateProposal(args client.CreateProposalRequest, reply *clien
 	}
 
 	createProposal := gov.CreateProposal{
-		ProposalID:       governance.ProposalID(args.ProposalID),
-		ProposalType:     proposalType,
-		Description:      args.Description,
-		Headline:         args.Headline,
-		Proposer:         args.Proposer,
-		InitialFunding:   args.InitialFunding,
-		FundingGoal:      args.FundingGoal,
-		FundingDeadline:  args.FundingDeadline,
-		VotingDeadline:   args.VotingDeadline,
-		PassPercentage:   args.PassPercentage,
-		ConfigUpdatePath: args.ConfigUpdatePath,
-		ConfigUpdate:     args.ConfigUpdate,
+		ProposalID:      governance.ProposalID(args.ProposalID),
+		ProposalType:    proposalType,
+		Description:     args.Description,
+		Headline:        args.Headline,
+		Proposer:        args.Proposer,
+		InitialFunding:  args.InitialFunding,
+		FundingGoal:     args.FundingGoal,
+		FundingDeadline: args.FundingDeadline,
+		VotingDeadline:  args.VotingDeadline,
+		PassPercentage:  args.PassPercentage,
+		ConfigUpdate:    args.ConfigUpdate,
 	}
 
 	data, err := createProposal.Marshal()

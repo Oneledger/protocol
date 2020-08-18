@@ -16,18 +16,17 @@ import (
 var _ action.Msg = &CreateProposal{}
 
 type CreateProposal struct {
-	ProposalID       governance.ProposalID      `json:"proposalId"`
-	ProposalType     governance.ProposalType    `json:"proposalType"`
-	Headline         string                     `json:"proposalHeadline"`
-	Description      string                     `json:"proposalDescription"`
-	Proposer         keys.Address               `json:"proposerAddress"`
-	InitialFunding   action.Amount              `json:"initialFunding"`
-	FundingDeadline  int64                      `json:"fundingDeadline"`
-	FundingGoal      *balance.Amount            `json:"fundingGoal"`
-	VotingDeadline   int64                      `json:"votingDeadline"`
-	PassPercentage   int                        `json:"passPercentage"`
-	ConfigUpdatePath string                     `json:"configUpdatePath"`
-	ConfigUpdate     governance.GovernanceState `json:"configUpdate"`
+	ProposalID      governance.ProposalID   `json:"proposalId"`
+	ProposalType    governance.ProposalType `json:"proposalType"`
+	Headline        string                  `json:"proposalHeadline"`
+	Description     string                  `json:"proposalDescription"`
+	Proposer        keys.Address            `json:"proposerAddress"`
+	InitialFunding  action.Amount           `json:"initialFunding"`
+	FundingDeadline int64                   `json:"fundingDeadline"`
+	FundingGoal     *balance.Amount         `json:"fundingGoal"`
+	VotingDeadline  int64                   `json:"votingDeadline"`
+	PassPercentage  int                     `json:"passPercentage"`
+	ConfigUpdate    interface{}             `json:"configUpdate"`
 }
 
 func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
@@ -161,13 +160,19 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	//	helpers.LogAndReturnFalse(ctx.Logger, governance.ErrGetProposalOptions, createProposal.Tags(), err)
 	//}
 	if createProposal.ProposalType == governance.ProposalTypeConfigUpdate {
-		updateFunc, ok := ctx.GovUpdate.GovernanceUpdateFunction[createProposal.ConfigUpdatePath]
+		updates, ok := createProposal.ConfigUpdate.(map[string]interface{})
 		if !ok {
-			return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrValidateGovState, createProposal.Tags(), errors.New("Update "+createProposal.ConfigUpdatePath+" Not allowed"))
+			return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrValidateGovState, createProposal.Tags(), errors.New("Invalide Update Object"))
 		}
-		ok, err = updateFunc(&createProposal.ConfigUpdate, ctx, action.ValidateOnly)
-		if err != nil || !ok {
-			return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrValidateGovState, createProposal.Tags(), err)
+		for configUpdatePath, updateValue := range updates {
+			updateFunc, ok := ctx.GovUpdate.GovernanceUpdateFunction[configUpdatePath]
+			if !ok {
+				return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrValidateGovState, createProposal.Tags(), errors.New("Update "+configUpdatePath+" Not allowed"))
+			}
+			ok, err = updateFunc(updateValue, ctx, action.ValidateOnly)
+			if err != nil || !ok {
+				return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrValidateGovState, createProposal.Tags(), err)
+			}
 		}
 
 	}
@@ -183,7 +188,6 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		createProposal.FundingGoal,
 		createProposal.VotingDeadline,
 		createProposal.PassPercentage,
-		createProposal.ConfigUpdatePath,
 		createProposal.ConfigUpdate)
 
 	//Check if Proposal already exists

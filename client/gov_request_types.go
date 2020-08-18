@@ -8,20 +8,19 @@ import (
 )
 
 type CreateProposalRequest struct {
-	ProposalID       string                     `json:"proposalId"`
-	ProposalType     string                     `json:"proposalType"`
-	Headline         string                     `json:"headline"`
-	Description      string                     `json:"description"`
-	Proposer         keys.Address               `json:"proposer"`
-	InitialFunding   action.Amount              `json:"initialFunding"`
-	GasPrice         action.Amount              `json:"gasPrice"`
-	Gas              int64                      `json:"gas"`
-	FundingDeadline  int64                      `json:"fundingDeadline"`
-	FundingGoal      *balance.Amount            `json:"fundingGoal"`
-	VotingDeadline   int64                      `json:"votingDeadline"`
-	PassPercentage   int                        `json:"passPercentage"`
-	ConfigUpdatePath string                     `json:"configUpdatePath"`
-	ConfigUpdate     governance.GovernanceState `json:"configUpdate"`
+	ProposalID      string          `json:"proposalId"`
+	ProposalType    string          `json:"proposalType"`
+	Headline        string          `json:"headline"`
+	Description     string          `json:"description"`
+	Proposer        keys.Address    `json:"proposer"`
+	InitialFunding  action.Amount   `json:"initialFunding"`
+	GasPrice        action.Amount   `json:"gasPrice"`
+	Gas             int64           `json:"gas"`
+	FundingDeadline int64           `json:"fundingDeadline"`
+	FundingGoal     *balance.Amount `json:"fundingGoal"`
+	VotingDeadline  int64           `json:"votingDeadline"`
+	PassPercentage  int             `json:"passPercentage"`
+	ConfigUpdate    interface{}     `json:"configUpdate"`
 }
 
 type ListProposalRequest struct {
