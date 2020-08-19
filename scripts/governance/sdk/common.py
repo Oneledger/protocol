@@ -90,6 +90,18 @@ def getActiveValidators():
     return active_count
 
 
+def getAllValidators():
+    args = ['olclient', 'validatorset']
+    process = subprocess.Popen(args, cwd=node_0, stdout=subprocess.PIPE)
+    process.wait()
+    output = process.stdout.readlines()
+    active_count = 0
+    for out in output:
+        if "Active" in out:
+            active_count = active_count + 1
+    return active_count
+
+
 def addValidatorAccounts(node):
     args = ['olclient', 'show_node_id']
     process = subprocess.Popen(args, cwd=node, stdout=subprocess.PIPE)
@@ -108,7 +120,7 @@ def addValidatorAccounts(node):
     return output[1].split(":")[1].strip()[3:]
 
 
-def stake(node):
+def stake(node, amount='3000000'):
     validatorAccount = addValidatorAccounts(node)
     # trasfer funds from node 0 to staking validator
     # args = ['olclient', 'send', '--party', parentnodeaddre, "--counterparty", validatorAccount, '--amount', '100',
@@ -118,7 +130,7 @@ def stake(node):
     # process.wait()
     # output = process.stdout.read()
     # print output
-    args = ['olclient', 'delegation', 'stake', '--address', validatorAccount, '--amount', '3000000', '--password',
+    args = ['olclient', 'delegation', 'stake', '--address', validatorAccount, '--amount', amount, '--password',
             '1234']
     process = subprocess.Popen(args, cwd=node, stdout=subprocess.PIPE)
     process.wait()
