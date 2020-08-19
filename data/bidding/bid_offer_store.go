@@ -14,7 +14,7 @@ type BidOfferStore struct {
 	prefix []byte
 }
 
-func (bos *BidOfferStore) set(key storage.StoreKey, offer BidOffer) error {
+func (bos *BidOfferStore) Set(key storage.StoreKey, offer BidOffer) error {
 	dat, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(offer)
 	if err != nil {
 		return errors.Wrap(err, errorSerialization)
@@ -130,9 +130,9 @@ func assembleBidOfferKey(bidConvId BidConvId, offerType BidOfferType, offerTime 
 	return key
 }
 
-func (bos *BidOfferStore) AddOffer(offer BidOffer) error {
+func (bos *BidOfferStore) SetOffer(offer BidOffer) error {
 	key := assembleBidOfferKey(offer.BidConvId, offer.OfferType, offer.OfferTime)
-	err := bos.set(key, offer)
+	err := bos.Set(key, offer)
 	if err != nil {
 		return err
 	}

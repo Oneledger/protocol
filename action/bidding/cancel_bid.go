@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/Oneledger/protocol/data/bidding"
-	"strconv"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
@@ -42,22 +41,16 @@ func (c CancelBid) Validate(ctx *action.Context, signedTx action.SignedTx) (bool
 		return false, err
 	}
 
-	//Check if bid ID is valid(if provided)
-	if len(createBid.BidConvId) > 0 && createBid.BidConvId.Err() != nil {
+	//Check if bid ID is valid
+	if cancelBid.BidConvId.Err() != nil {
 		return false, bidding.ErrInvalidBidConvId
 	}
 
-	//Check if bidder and owner address is valid oneLedger address(if bid id is not provided)
-	if len(createBid.BidConvId) == 0 {
-		err = createBid.Bidder.Err()
-		if err != nil {
-			return false, errors.Wrap(action.ErrInvalidAddress, err.Error())
-		}
+	//Check if bidder address is valid oneLedger address
 
-		err = createBid.AssetOwner.Err()
-		if err != nil {
-			return false, errors.Wrap(action.ErrInvalidAddress, err.Error())
-		}
+	err = cancelBid.Bidder.Err()
+	if err != nil {
+		return false, errors.Wrap(action.ErrInvalidAddress, err.Error())
 	}
 
 	return true, nil
@@ -78,56 +71,62 @@ func (c CancelBid) ProcessFee(ctx *action.Context, signedTx action.SignedTx, sta
 }
 
 func runCancelBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	createBid := CreateBid{}
-	err := createBid.Unmarshal(tx.Data)
+	cancelBid := CancelBid{}
+	err := cancelBid.Unmarshal(tx.Data)
 	if err != nil {
-		result := action.Response{
-			Events: action.GetEvent(createBid.Tags(), "create_bid_offer_failed_deserialize"),
-			Log:    action.ErrWrongTxType.Wrap(err).Marshal(),
-		}
-		return false, result
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrWrongTxType, cancelBid.Tags(), err)
 	}
 
-	//1. check asset availability
-	assetOk, err := createBid.Asset.ValidateAsset(ctx)
-	if err != nil || assetOk == false {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrInvalidAsset, createBid.Tags(), err)
-	}
-
-	//2. check if this is to create a bid conversation or just add an offer
-	if len(createBid.BidConvId) == 0 {
-		err := createBid.createBidConv(ctx)
-		if err != nil {
-			return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrFailedCreateBidConv, createBid.Tags(), err)
-		}
-	}
-
-	//3. verify bidConvId exists
-	store, err := ctx.ExtStores.Get("bidMaster")
+	//1. verify bidConvId exists
+	bidMasterStore, err := GetBidMasterStore(ctx)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingBidMasterStore, createBid.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingBidMasterStore, cancelBid.Tags(), err)
 	}
-	bidMasterStore, ok := store.(*bidding.BidMasterStore)
-	if ok == false {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrAssertingBidMasterStore, createBid.Tags(), err)
-	}
-	if !bidMasterStore.BidConv.Exists(createBid.BidConvId) {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrBidConvNotFound, createBid.Tags(), err)
+	if !bidMasterStore.BidConv.Exists(cancelBid.BidConvId) {
+		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrBidConvNotFound, cancelBid.Tags(), err)
 	}
 
-	//4. add the offer to offer store
-	createBidOffer := bidding.NewBidOffer(
-		createBid.BidConvId,
-		createBid.OfferTime,
-		createBid.Amount,
-	)
-
-	err = bidMasterStore.BidOffer.AddOffer(*createBidOffer)
+	//2. check if there is active counter offer from owner
+	activeOffer, err := bidMasterStore.BidOffer.GetActiveOfferForBidConvId(cancelBid.BidConvId)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrAddingOffer, createBid.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingActiveOffers, cancelBid.Tags(), err)
+	}
+	if activeOffer.OfferType == bidding.TypeCounterOffer {
+		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrActiveCounterOfferExists, cancelBid.Tags(), err)
 	}
 
-	return helpers.LogAndReturnTrue(ctx.Logger, createBid.Tags(), "create_bid_offer_success")
+	//3. unlock amount
+	activeOfferCoin := activeOffer.Amount.ToCoin(ctx.Currencies)
+	err = ctx.Balances.AddToAddress(cancelBid.Bidder.Bytes(), activeOfferCoin)
+	if err != nil {
+		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrUnlockAmount, cancelBid.Tags(), err)
+	}
+
+	//4. change amount status to unlocked and add it back to bid offer store
+	activeOffer.AmountStatus = bidding.AmountUnlocked
+	err = bidMasterStore.BidOffer.SetOffer(*activeOffer)
+	if err != nil {
+		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrUpdateBidOffer, cancelBid.Tags(), err)
+	}
+
+	//5. add bid conversation to CANCELLED store
+
+	bidConv, err := bidMasterStore.BidConv.WithPrefixType(bidding.BidStateActive).Get(activeOffer.BidConvId)
+	if err != nil {
+		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingBidConv, cancelBid.Tags(), err)
+	}
+	err = bidMasterStore.BidConv.WithPrefixType(bidding.BidStateCancelled).Set(bidConv)
+	if err != nil {
+		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrAddingBidConvToCancelledStore, cancelBid.Tags(), err)
+	}
+
+	// 5. delete it from in ACTIVE store
+	ok, err := bidMasterStore.BidConv.WithPrefixType(bidding.BidStateActive).Delete(activeOffer.BidConvId)
+	if err != nil || !ok {
+		return false, action.Response{Log: bidding.ErrDeletingBidConvFromActiveStore.Marshal()}
+	}
+
+	return helpers.LogAndReturnTrue(ctx.Logger, cancelBid.Tags(), "cancel_bid_success")
 }
 
 func (c CancelBid) Signers() []action.Address {
@@ -151,18 +150,10 @@ func (c CancelBid) Tags() kv.Pairs {
 	}
 	tag2 := kv.Pair{
 		Key:   []byte("tx.assetOwner"),
-		Value: c.AssetOwner.Bytes(),
-	}
-	tag3 := kv.Pair{
-		Key:   []byte("tx.asset"),
-		Value: []byte(c.Asset.ToString()),
-	}
-	tag4 := kv.Pair{
-		Key: []byte("tx.assetType"),
-		Value: []byte(strconv.Itoa(int(c.AssetType))),
+		Value: c.Bidder.Bytes(),
 	}
 
-	tags = append(tags, tag, tag1, tag2, tag3, tag4)
+	tags = append(tags, tag, tag1, tag2)
 	return tags
 }
 

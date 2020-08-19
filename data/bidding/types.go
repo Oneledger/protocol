@@ -11,7 +11,7 @@ type (
 	BidAssetType	int
 	BidConvStatus   bool
 	BidOfferStatus  bool
-	BidOfferType    bool
+	BidOfferType    int
 	BidOfferAmountStatus bool
 )
 

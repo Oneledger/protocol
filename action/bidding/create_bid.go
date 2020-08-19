@@ -96,11 +96,7 @@ func runCreateBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 	createBid := CreateBid{}
 	err := createBid.Unmarshal(tx.Data)
 	if err != nil {
-		result := action.Response{
-			Events: action.GetEvent(createBid.Tags(), "create_bid_offer_failed_deserialize"),
-			Log:    action.ErrWrongTxType.Wrap(err).Marshal(),
-		}
-		return false, result
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrWrongTxType, createBid.Tags(), err)
 	}
 
 	//1. check asset availability
@@ -118,19 +114,16 @@ func runCreateBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 	}
 
 	//3. verify bidConvId exists
-	store, err := ctx.ExtStores.Get("bidMaster")
+	bidMasterStore, err := GetBidMasterStore(ctx)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingBidMasterStore, createBid.Tags(), err)
 	}
-	bidMasterStore, ok := store.(*bidding.BidMasterStore)
-	if ok == false {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrAssertingBidMasterStore, createBid.Tags(), err)
-	}
+
 	if !bidMasterStore.BidConv.Exists(createBid.BidConvId) {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrBidConvNotFound, createBid.Tags(), err)
 	}
 
-	//4. there should be no active bid offer
+	//4. there should be no active bid offer from bidder
 	activeOffer, err := bidMasterStore.BidOffer.GetActiveOfferForBidConvId(createBid.BidConvId)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingActiveOffers, createBid.Tags(), err)
@@ -139,7 +132,7 @@ func runCreateBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrActiveBidOfferExists, createBid.Tags(), err)
 	}
 
-	//5. amount needs to be larger than active counter bid offer
+	//5. amount needs to be larger than active counter bid offer from owner
 	offerCoin := createBid.Amount.ToCoin(ctx.Currencies)
 	activeOfferCoin := activeOffer.Amount.ToCoin(ctx.Currencies)
 	if offerCoin.LessThanEqualCoin(activeOfferCoin) {
@@ -149,7 +142,7 @@ func runCreateBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 	//6. lock amount
 	err = ctx.Balances.MinusFromAddress(createBid.Bidder.Bytes(), offerCoin)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrDeductOfferAmount, createBid.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrLockAmount, createBid.Tags(), err)
 	}
 
 	//7. add the offer to offer store
@@ -161,12 +154,12 @@ func runCreateBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		bidding.AmountLocked,
 	)
 
-	err = bidMasterStore.BidOffer.AddOffer(*createBidOffer)
+	err = bidMasterStore.BidOffer.SetOffer(*createBidOffer)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrAddingOffer, createBid.Tags(), err)
 	}
 
-	return helpers.LogAndReturnTrue(ctx.Logger, createBid.Tags(), "create_bid_offer_success")
+	return helpers.LogAndReturnTrue(ctx.Logger, createBid.Tags(), "create_bid_success")
 }
 
 func (c CreateBid) Signers() []action.Address {

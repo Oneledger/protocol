@@ -42,8 +42,8 @@ const (
 	BidOfferRejected    BidOfferStatus = false
 
 	//Bid Offer Type
-	TypeOffer			BidOfferType = true
-	TypeCounterOffer	BidOfferType = false
+	TypeOffer			BidOfferType = 0x01
+	TypeCounterOffer	BidOfferType = 0x02
 
 	//Bid Offer Amount Lock Status
 	AmountLocked        BidOfferAmountStatus = true
