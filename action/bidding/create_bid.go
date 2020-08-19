@@ -113,13 +113,13 @@ func runCreateBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		}
 	}
 
-	//3. verify bidConvId exists
+	//3. verify bidConvId exists in ACTIVE store
 	bidMasterStore, err := GetBidMasterStore(ctx)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingBidMasterStore, createBid.Tags(), err)
 	}
 
-	if !bidMasterStore.BidConv.Exists(createBid.BidConvId) {
+	if !bidMasterStore.BidConv.WithPrefixType(bidding.BidStateActive).Exists(createBid.BidConvId) {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrBidConvNotFound, createBid.Tags(), err)
 	}
 
@@ -128,30 +128,37 @@ func runCreateBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingActiveOffers, createBid.Tags(), err)
 	}
-	if activeOffer.OfferType == bidding.TypeOffer {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrActiveBidOfferExists, createBid.Tags(), err)
+	if activeOffer != nil {
+		if activeOffer.OfferType == bidding.TypeOffer {
+			return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrActiveBidOfferExists, createBid.Tags(), err)
+		}
+		//5. amount needs to be less than active counter offer from owner
+		offerCoin := createBid.Amount.ToCoin(ctx.Currencies)
+		activeOfferCoin := activeOffer.Amount.ToCoin(ctx.Currencies)
+		if activeOfferCoin.LessThanEqualCoin(offerCoin) {
+			return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrAmountLargerThanActiveCounterOffer, createBid.Tags(), err)
+		}
+		//6. set active counter offer to inactive
+		activeOffer.OfferStatus = bidding.BidOfferInactive
+		err = bidMasterStore.BidOffer.SetOffer(*activeOffer)
+		if err != nil {
+			return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrDeactivateOffer, createBid.Tags(), err)
+		}
 	}
 
-	//5. amount needs to be larger than active counter bid offer from owner
-	offerCoin := createBid.Amount.ToCoin(ctx.Currencies)
-	activeOfferCoin := activeOffer.Amount.ToCoin(ctx.Currencies)
-	if offerCoin.LessThanEqualCoin(activeOfferCoin) {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrAmountLowerThanActiveCounterOffer, createBid.Tags(), err)
-	}
-
-	//6. lock amount
+	//7. lock amount
 	err = ctx.Balances.MinusFromAddress(createBid.Bidder.Bytes(), offerCoin)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrLockAmount, createBid.Tags(), err)
 	}
 
-	//7. add the offer to offer store
+	//8. add the offer to offer store
 	createBidOffer := bidding.NewBidOffer(
 		createBid.BidConvId,
 		bidding.TypeOffer,
 		createBid.OfferTime,
 		createBid.Amount,
-		bidding.AmountLocked,
+		bidding.BidAmountLocked,
 	)
 
 	err = bidMasterStore.BidOffer.SetOffer(*createBidOffer)

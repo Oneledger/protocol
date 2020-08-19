@@ -77,12 +77,12 @@ func runCancelBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrWrongTxType, cancelBid.Tags(), err)
 	}
 
-	//1. verify bidConvId exists
+	//1. verify bidConvId exists in ACTIVE store
 	bidMasterStore, err := GetBidMasterStore(ctx)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingBidMasterStore, cancelBid.Tags(), err)
 	}
-	if !bidMasterStore.BidConv.Exists(cancelBid.BidConvId) {
+	if !bidMasterStore.BidConv.WithPrefixType(bidding.BidStateActive).Exists(cancelBid.BidConvId) {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrBidConvNotFound, cancelBid.Tags(), err)
 	}
 
@@ -103,7 +103,7 @@ func runCancelBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 	}
 
 	//4. change amount status to unlocked and add it back to bid offer store
-	activeOffer.AmountStatus = bidding.AmountUnlocked
+	activeOffer.AmountStatus = bidding.BidAmountUnlocked
 	err = bidMasterStore.BidOffer.SetOffer(*activeOffer)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrUpdateBidOffer, cancelBid.Tags(), err)
@@ -120,7 +120,7 @@ func runCancelBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrAddingBidConvToCancelledStore, cancelBid.Tags(), err)
 	}
 
-	// 5. delete it from in ACTIVE store
+	// 5. delete it from ACTIVE store
 	ok, err := bidMasterStore.BidConv.WithPrefixType(bidding.BidStateActive).Delete(activeOffer.BidConvId)
 	if err != nil || !ok {
 		return false, action.Response{Log: bidding.ErrDeletingBidConvFromActiveStore.Marshal()}

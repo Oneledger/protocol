@@ -12,7 +12,7 @@ type (
 	BidConvStatus   bool
 	BidOfferStatus  bool
 	BidOfferType    int
-	BidOfferAmountStatus bool
+	BidOfferAmountStatus int
 )
 
 func (id BidConvId) Err() error {

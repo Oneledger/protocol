@@ -118,7 +118,7 @@ func (bos *BidOfferStore) GetActiveOfferForBidConvId(id BidConvId) (*BidOffer, e
 		return BidOffer{}
 	})
 	if len(bidOffers) == 0 {
-		return nil, errors.New("errNoActiveBidOffer")
+		return nil, nil
 	} else if len(bidOffers) > 1 {
 		return nil, errors.New("errTooManyActiveBidOffer")
 	}

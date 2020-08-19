@@ -39,15 +39,16 @@ const (
 
 	//Bid Offer Status
 	BidOfferActive  	BidOfferStatus = true
-	BidOfferRejected    BidOfferStatus = false
+	BidOfferInactive    BidOfferStatus = false
 
 	//Bid Offer Type
 	TypeOffer			BidOfferType = 0x01
 	TypeCounterOffer	BidOfferType = 0x02
 
 	//Bid Offer Amount Lock Status
-	AmountLocked        BidOfferAmountStatus = true
-	AmountUnlocked  	BidOfferAmountStatus = false
+	BidAmountLocked     BidOfferAmountStatus = 0x01
+	BidAmountUnlocked  	BidOfferAmountStatus = 0x02
+	CounterOfferAmount  BidOfferAmountStatus = 0x03
 
 	//Bid Asset Type
 	BidAssetOns BidAssetType = 0x21
