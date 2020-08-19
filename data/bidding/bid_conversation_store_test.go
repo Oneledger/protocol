@@ -22,6 +22,8 @@ var (
 
 	bidConvStore    *BidConvStore
 
+	assets []*DomainAsset
+
 )
 
 func init() {
@@ -40,10 +42,10 @@ func init() {
 		k := numPrivateKeys - 1 - j //bidder address list ranges from 9 - 5
 
 		owner := addrList[j]
-		asset := NewTestAsset("test" + strconv.Itoa(i) + ".ol")
+		assets = append(assets, NewDomainAsset("test" + strconv.Itoa(i) + ".ol"))
 		bidder := addrList[k]
 
-		bidConvs = append(bidConvs, NewBidConv(owner, asset, BidAssetOns,
+		bidConvs = append(bidConvs, NewBidConv(owner, assets[i], BidAssetOns,
 			bidder, testDeadline))
 	}
 
@@ -59,29 +61,29 @@ func TestBidConvStore_Set(t *testing.T) {
 	err := bidConvStore.Set(bidConvs[0])
 	assert.Equal(t, nil, err)
 
-	bidConv, err := bidConvStore.Get(bidConvs[0].BidId)
+	bidConv, err := bidConvStore.Get(bidConvs[0].BidConvId)
 	assert.Equal(t, nil, err)
 
-	assert.Equal(t, bidConv.BidId, bidConvs[0].BidId)
+	assert.Equal(t, bidConv.BidConvId, bidConvs[0].BidConvId)
 }
 
 func TestBidConvStore_Exists(t *testing.T) {
-	exists := bidConvStore.Exists(bidConvs[0].BidId)
+	exists := bidConvStore.Exists(bidConvs[0].BidConvId)
 	assert.Equal(t, true, exists)
 
-	exists = bidConvStore.Exists(bidConvs[1].BidId)
+	exists = bidConvStore.Exists(bidConvs[1].BidConvId)
 	assert.Equal(t, false, exists)
 }
 
 func TestBidConvStore_Delete(t *testing.T) {
-	_, err := bidConvStore.Get(bidConvs[0].BidId)
+	_, err := bidConvStore.Get(bidConvs[0].BidConvId)
 	assert.Equal(t, nil, err)
 
-	res, err := bidConvStore.Delete(bidConvs[0].BidId)
+	res, err := bidConvStore.Delete(bidConvs[0].BidConvId)
 	assert.Equal(t, true, res)
 	assert.Equal(t, nil, err)
 
-	_, err = bidConvStore.Get(bidConvs[0].BidId)
+	_, err = bidConvStore.Get(bidConvs[0].BidConvId)
 	assert.NotEqual(t, nil, err)
 }
 
@@ -100,11 +102,12 @@ func TestBidConvStore_Iterate(t *testing.T) {
 	assert.Equal(t, numBids, bidConvCount)
 }
 
-//func TestBidConvStore_FilterBidConvs(t *testing.T) {
-//	onsBidAddr0 := bidConvStore.FilterBidConvs(BidStateActive, addrList[0])
-//	onsBidAddr1 := bidConvStore.FilterBidConvs(BidStateSucceed, addrList[1])
-//	onsBidAddr2 := bidConvStore.FilterBidConvs(BidStateCancelled, addrList[2])
-//	assert.Equal(t, 2, len(onsBidAddr0))
-//	assert.Equal(t, 2, len(onsBidAddr1))
-//	assert.Equal(t, 2, len(onsBidAddr2))
-//}
+func TestBidConvStore_FilterBidConvs(t *testing.T) {
+	bidConvs := bidConvStore.FilterBidConvs(BidStateActive, addrList[0], assets[0], BidAssetOns,
+		addrList[9])
+	//onsBidAddr1 := bidConvStore.FilterBidConvs(BidStateSucceed, addrList[1])
+	//onsBidAddr2 := bidConvStore.FilterBidConvs(BidStateCancelled, addrList[2])
+	assert.Equal(t, 1, len(bidConvs))
+	//assert.Equal(t, 2, len(onsBidAddr1))
+	//assert.Equal(t, 2, len(onsBidAddr2))
+}

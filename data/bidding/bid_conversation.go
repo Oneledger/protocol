@@ -7,7 +7,7 @@ import (
 )
 
 type BidConv struct {
-	BidId      			BidConvId    	`json:"bidId"`
+	BidConvId      		BidConvId    	`json:"bidId"`
 	AssetOwner 			keys.Address 	`json:"assetOwner"`
 	Asset      			BidAsset 		`json:"asset"`
 	AssetType 			BidAssetType 	`json:"assetType"`
@@ -28,7 +28,7 @@ func generateBidConvID(key string) BidConvId {
 
 func NewBidConv(owner keys.Address, asset BidAsset, assetType BidAssetType, bidder keys.Address, deadline int64) *BidConv {
 	return &BidConv{
-		BidId:         		generateBidConvID(owner.String() + asset.ToString() + bidder.String()),
+		BidConvId:         	generateBidConvID(owner.String() + asset.ToString() + bidder.String()),
 		AssetOwner:    		owner,
 		Asset:         		asset,
 		AssetType:			assetType,

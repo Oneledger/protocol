@@ -2,6 +2,7 @@ package bidding
 
 import (
 	"errors"
+	"github.com/Oneledger/protocol/action"
 )
 
 type (
@@ -10,7 +11,8 @@ type (
 	BidAssetType	int
 	BidConvStatus   bool
 	BidOfferStatus  bool
-	BidOfferType    int
+	BidOfferType    bool
+	BidOfferAmountStatus bool
 )
 
 func (id BidConvId) Err() error {
@@ -25,4 +27,5 @@ func (id BidConvId) Err() error {
 
 type BidAsset interface {
 	ToString() string
+	ValidateAsset(ctx *action.Context) (bool, error)
 }

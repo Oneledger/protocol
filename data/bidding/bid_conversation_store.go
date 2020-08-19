@@ -1,9 +1,11 @@
 package bidding
 
 import (
+	"fmt"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
+	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 )
 
@@ -21,7 +23,7 @@ type BidConvStore struct {
 }
 
 func (bcs *BidConvStore) Set(bid *BidConv) error {
-	prefixed := append(bcs.prefix, bid.BidId...)
+	prefixed := append(bcs.prefix, bid.BidConvId...)
 	data, err := bcs.szlr.Serialize(bid)
 	if err != nil {
 		return errors.Wrap(err, errorSerialization)
@@ -146,18 +148,27 @@ func (bcs *BidConvStore) FilterBidConvs(bidState BidConvState, owner keys.Addres
 
 	bidConvs := make([]BidConv, 0)
 	bcs.WithPrefixType(bidState).Iterate(func(id BidConvId, bidConv *BidConv) bool {
+		fmt.Println("owner", owner.String())
+		fmt.Println("bidConv.AssetOwner", bidConv.AssetOwner.String())
 		if len(owner) != 0 && !bidConv.AssetOwner.Equal(owner) {
 			return false
 		}
+		fmt.Println("bidder", bidder.String())
+		fmt.Println("bidConv.Bidder", bidConv.Bidder.String())
 		if len(bidder) != 0 && !bidConv.Bidder.Equal(bidder) {
 			return false
 		}
-		//if bidConv.Asset != asset {
-		//	return false
-		//}
+		fmt.Println("assetType", assetType)
+		fmt.Println("bidConv.AssetType", bidConv.AssetType)
 		if bidConv.AssetType != assetType {
 			return false
 		}
+		fmt.Println("asset", asset.ToString())
+		fmt.Println("bidConv.Asset", bidConv.Asset.ToString())
+		if !cmp.Equal(asset, bidConv.Asset) {
+			return false
+		}
+
 		bidConvs = append(bidConvs, *bidConv)
 		return false
 	})
@@ -172,7 +183,7 @@ func (bcs *BidConvStore) GetIdForBidConv(bidState BidConvState, owner keys.Addre
 	if len(bidConvs) > 1 || len(bidConvs) == 0 {
 		return "", errors.New("errTooManyActiveBidConvs")
 	}
-	return bidConvs[0].BidId, nil
+	return bidConvs[0].BidConvId, nil
 }
 
 func NewBidConvStore(prefixActive string, prefixSucceed string, prefixCancelled string, prefixExpired string, prefixExpiredFailed string, state *storage.State) *BidConvStore {

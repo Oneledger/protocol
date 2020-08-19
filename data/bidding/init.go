@@ -12,7 +12,7 @@ var logger *log.Logger
 func init() {
 	logger = log.NewDefaultLogger(os.Stdout).WithPrefix("ons_bid")
 	serialize.RegisterConcrete(new(DomainAsset), "domain_asset")
-	serialize.RegisterConcrete(new(TestAsset), "test_asset")
+	serialize.RegisterConcrete(new(ExampleAsset), "test_asset")
 }
 
 const (
@@ -42,8 +42,12 @@ const (
 	BidOfferRejected    BidOfferStatus = false
 
 	//Bid Offer Type
-	TypeOffer         BidOfferType = 0x11
-	TypeCounterOffer  BidOfferType= 0x12
+	TypeOffer			BidOfferType = true
+	TypeCounterOffer	BidOfferType = false
+
+	//Bid Offer Amount Lock Status
+	AmountLocked        BidOfferAmountStatus = true
+	AmountUnlocked  	BidOfferAmountStatus = false
 
 	//Bid Asset Type
 	BidAssetOns BidAssetType = 0x21

@@ -54,6 +54,9 @@ const (
 	//Rewards
 	WITHDRAW_REWARD Type = 0x41
 
+	//Bid
+	BID_CREATE				Type = 0x201
+
 	//EOF here Only used as a marker to mark the end of Type list
 	//So that the query for Types can return all Types dynamically
 	//, when there is a change made in Type list

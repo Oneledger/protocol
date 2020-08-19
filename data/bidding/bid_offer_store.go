@@ -131,7 +131,7 @@ func assembleBidOfferKey(bidConvId BidConvId, offerType BidOfferType, offerTime 
 }
 
 func (bos *BidOfferStore) AddOffer(offer BidOffer) error {
-	key := assembleBidOfferKey(offer.BidId, offer.OfferType, offer.OfferTime)
+	key := assembleBidOfferKey(offer.BidConvId, offer.OfferType, offer.OfferTime)
 	err := bos.set(key, offer)
 	if err != nil {
 		return err
