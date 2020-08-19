@@ -1,0 +1,28 @@
+#!/bin/bash
+
+RED='\e[31m'
+GRN="\e[32m"
+YEL="\e[33m"
+NC='\033[0m'
+
+node_num=$1
+root_dir="$OLDATA/devnet/$1-Node"
+#root_dir_alternalte="$OLDATA/devnet/$2-Node"
+echo "Stopping Node  : $root_dir"
+
+#pushd $root_dir
+
+# shellcheck disable=SC2046
+# shellcheck disable=SC2009
+kill $(ps aux | grep "[$1]-Node" | awk '{print $2}')
+
+echo "Cleaning Node : $root_dir"
+rm -rf $root_dir/nodedata/*.db
+rm -rf $root_dir/consensus/data/*.db
+rm -rf $root_dir/consensus/data/cs.wal
+rm -rf $root_dir/consensus.log
+rm -rf $root_dir/olfullnode.log
+
+echo "Starting Node : $root_dir"
+olfullnode node --root $root_dir >>$root_dir/olfullnode.log 2>&1 &
+#popd

@@ -89,6 +89,9 @@ govtest: reset
 	python scripts/governance/withdrawFunds.py
 	python scripts/governance/voteProposals.py
 	python scripts/governance/governanceCLI.py
+	python scripts/governance/optUpdate.py
+	python scripts/governance/optTestCatchup.py
+	python scripts/governance/optValidatorStaking.py
 	make reset
 	@./scripts/testsend
 	python scripts/governance/queryProposals.py
@@ -99,7 +102,7 @@ govtest: reset
 #
 # run staking tests
 #
-stakingtest: reset
+stakingtest: resetReducedMaturity
 	python scripts/staking/self_staking.py
 	@./scripts/stopNodes
 
@@ -131,6 +134,13 @@ alltest: reset
 reset: install_c
 	@./scripts/stopNodes
 	@./scripts/resetDev
+	@./scripts/startDev
+# 	@./scripts/testapply
+# 	@./scripts/testsend
+
+resetReducedMaturity: install_c
+	@./scripts/stopNodes
+	@./scripts/resetDev_ReducedMaturity
 	@./scripts/startDev
 # 	@./scripts/testapply
 # 	@./scripts/testsend
@@ -173,5 +183,3 @@ testData:
 	python scripts/ons/renew_domain.py
 	python scripts/ons/buy_sell_domain.py
 	python scripts/ons/update_domain.py
-
-

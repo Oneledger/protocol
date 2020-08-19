@@ -126,3 +126,40 @@ def stake(node):
     if not success in output:
         print "Stake was not successful"
     print bcolors.OKBLUE + "#### Stake Successfull for :" + node + bcolors.ENDC
+
+
+def validateCatchup(node, node2):
+    args = ['olclient', 'validatorset', 'status']
+    # set protocol root path as current path
+    process1 = subprocess.Popen(args, cwd=node, stdout=subprocess.PIPE)
+    process2 = subprocess.Popen(args, cwd=node2, stdout=subprocess.PIPE)
+    process1.wait()
+    process2.wait()
+    if process1.returncode != 0:
+        print "olclient check validatorset failed returncode"
+        sys.exit(-1)
+    if process2.returncode != 0:
+        print "olclient check validatorset failed returncode"
+        sys.exit(-1)
+    output1 = process1.stdout.readlines()
+    height1 = output1[len(output1) - 1].split(" ")[1]
+    output2 = process2.stdout.readlines()
+    height2 = output2[len(output2) - 1].split(" ")[1]
+    if height2 != height1:
+        print "Node Failed to catchup"
+        sys.exit(-1)
+    return height1
+    # check return code
+
+    # check if on list
+
+
+def clean_and_catchup():
+    call_with_args = "./scripts/governance/clean '%s'" % (str(0))
+    os.system(call_with_args)
+    # Wait for it to catchup
+    time.sleep(30)
+    # Validate Catchup
+    height = validateCatchup(node_0, node_1)
+
+    print bcolors.OKBLUE + "Validator Successfully Caught up to height : " + str(height) + bcolors.ENDC

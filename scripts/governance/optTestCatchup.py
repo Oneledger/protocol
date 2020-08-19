@@ -55,3 +55,5 @@ def test_catchup():
 
 if __name__ == "__main__":
     test_catchup()
+    # Clean 0-Node
+    clean_and_catchup()
