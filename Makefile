@@ -92,8 +92,10 @@ govtest: reset
 	python scripts/governance/optUpdate.py
 	python scripts/governance/optTestCatchup.py
 	python scripts/governance/optValidatorStaking.py
+
 	make reset
 	@./scripts/testsend
+	python scripts/governance/optTestStakingAmount.py
 	python scripts/governance/queryProposals.py
 	python scripts/governance/getFundsByFunder.py
 	python scripts/governance/queryProposalOptions.py

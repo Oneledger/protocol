@@ -146,17 +146,6 @@ func runFinalizeProposal(ctx *action.Context, tx action.RawTx) (bool, action.Res
 	}
 	//Handle Result Passed
 	if voteStatus.Result == governance.VOTE_RESULT_PASSED {
-		proposalDistribution := options.PassedFundDistribution
-		distributeErr := distributeFunds(ctx, proposal, &proposalDistribution)
-		if distributeErr != nil {
-			err = setToFinalizeFailed(ctx, proposal)
-			if err != nil {
-				return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrStatusUnableToSetFinalizeFailed, finalizedProposal.Tags(), err)
-			}
-			ctx.Logger.Error("Distribuition of Funds failed , Set Proposal to Finalize Failed")
-			return helpers.LogAndReturnTrue(ctx.Logger, finalizedProposal.Tags(), governance.ErrFinalizeDistributtionFailed.Wrap(distributeErr).Marshal())
-		}
-
 		if proposal.Type == governance.ProposalTypeConfigUpdate {
 			updates, ok := proposal.GovernanceStateUpdate.(map[string]interface{})
 			if !ok {
@@ -178,6 +167,16 @@ func runFinalizeProposal(ctx *action.Context, tx action.RawTx) (bool, action.Res
 					return helpers.LogAndReturnTrue(ctx.Logger, finalizedProposal.Tags(), fmt.Sprintf("ConfigUpdate_Validation_Failed | %s", proposal.ProposalID))
 				}
 			}
+		}
+		proposalDistribution := options.PassedFundDistribution
+		distributeErr := distributeFunds(ctx, proposal, &proposalDistribution)
+		if distributeErr != nil {
+			err = setToFinalizeFailed(ctx, proposal)
+			if err != nil {
+				return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrStatusUnableToSetFinalizeFailed, finalizedProposal.Tags(), err)
+			}
+			ctx.Logger.Error("Distribuition of Funds failed , Set Proposal to Finalize Failed")
+			return helpers.LogAndReturnTrue(ctx.Logger, finalizedProposal.Tags(), governance.ErrFinalizeDistributtionFailed.Wrap(distributeErr).Marshal())
 		}
 
 		err = setToFinalizeFromPassed(ctx, proposal)
