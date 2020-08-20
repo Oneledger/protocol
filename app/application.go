@@ -110,7 +110,11 @@ func (app *App) setupState(stateBytes []byte) error {
 
 	err = app.Context.govern.SetStakingOptions(initial.Governance.StakingOptions)
 	if err != nil {
-		return errors.Wrap(err, "Setup State")
+		return errors.Wrap(err, "Setup Staking Options")
+	}
+	err = app.Context.govern.SetEvidenceOptions(initial.Governance.EvidenceOptions)
+	if err != nil {
+		return errors.Wrap(err, "Setup Evidence Options")
 	}
 	// commit the initial currencies to the governance db
 	err = app.Context.govern.WithHeight(app.header.Height).SetCurrencies(initial.Currencies)
