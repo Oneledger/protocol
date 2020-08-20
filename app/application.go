@@ -108,9 +108,13 @@ func (app *App) setupState(stateBytes []byte) error {
 		return errors.Wrap(err, "setupState deserialization")
 	}
 
-	err = app.Context.govern.SetStakingOptions(initial.Governance.StakingOptions)
+	err = app.Context.govern.WithHeight(app.header.Height).SetStakingOptions(initial.Governance.StakingOptions)
 	if err != nil {
-		return errors.Wrap(err, "Setup State")
+		return errors.Wrap(err, "Setup Staking Options")
+	}
+	err = app.Context.govern.WithHeight(app.header.Height).SetEvidenceOptions(initial.Governance.EvidenceOptions)
+	if err != nil {
+		return errors.Wrap(err, "Setup Evidence Options")
 	}
 	// commit the initial currencies to the governance db
 	app.logger.Info("Setting up governance options for height: ", app.header.Height)
