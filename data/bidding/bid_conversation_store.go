@@ -17,6 +17,7 @@ type BidConvStore struct {
 
 	prefixActive         []byte
 	prefixSucceed        []byte
+	prefixRejected       []byte
 	prefixCancelled      []byte
 	prefixExpired        []byte
 	prefixExpiredFailed  []byte
@@ -52,10 +53,11 @@ func (bcs *BidConvStore) Get(bidId BidConvId) (*BidConv, error) {
 func (bcs *BidConvStore) Exists(key BidConvId) bool {
 	active := append(bcs.prefixActive, key...)
 	succeed := append(bcs.prefixSucceed, key...)
+	rejected := append(bcs.prefixRejected, key...)
 	cancelled := append(bcs.prefixCancelled, key...)
 	expired := append(bcs.prefixExpired, key...)
 	expiredFailed := append(bcs.prefixExpiredFailed, key...)
-	return bcs.state.Exists(active) || bcs.state.Exists(succeed) || bcs.state.Exists(cancelled) || bcs.state.Exists(expired) || bcs.state.Exists(expiredFailed)
+	return bcs.state.Exists(active) || bcs.state.Exists(succeed) || bcs.state.Exists(rejected) || bcs.state.Exists(cancelled) || bcs.state.Exists(expired) || bcs.state.Exists(expiredFailed)
 }
 
 func (bcs *BidConvStore) Delete(key BidConvId) (bool, error) {
@@ -104,12 +106,14 @@ func (bcs *BidConvStore) WithPrefixType(prefixType BidConvState) *BidConvStore {
 		bcs.prefix = bcs.prefixActive
 	case BidStateSucceed:
 		bcs.prefix = bcs.prefixSucceed
+	case BidStateRejected:
+		bcs.prefix = bcs.prefixRejected
 	case BidStateCancelled:
 		bcs.prefix = bcs.prefixCancelled
 	case BidStateExpired:
 		bcs.prefix = bcs.prefixExpired
-	case BidStateExpiredFailed:
-		bcs.prefix = bcs.prefixExpiredFailed
+	//case BidStateExpireFailed:
+	//	bcs.prefix = bcs.prefixExpiredFailed
 
 	}
 	return bcs
@@ -127,6 +131,10 @@ func (bcs *BidConvStore) QueryAllStores(key BidConvId) (*BidConv, BidConvState, 
 	if err == nil {
 		return bid, BidStateSucceed, nil
 	}
+	bid, err = bcs.WithPrefixType(BidStateRejected).Get(key)
+	if err == nil {
+		return bid, BidStateRejected, nil
+	}
 	bid, err = bcs.WithPrefixType(BidStateCancelled).Get(key)
 	if err == nil {
 		return bid, BidStateCancelled, nil
@@ -135,10 +143,10 @@ func (bcs *BidConvStore) QueryAllStores(key BidConvId) (*BidConv, BidConvState, 
 	if err == nil {
 		return bid, BidStateExpired, nil
 	}
-	bid, err = bcs.WithPrefixType(BidStateExpiredFailed).Get(key)
-	if err == nil {
-		return bid, BidStateExpiredFailed, nil
-	}
+	//bid, err = bcs.WithPrefixType(BidStateExpireFailed).Get(key)
+	//if err == nil {
+	//	return bid, BidStateExpireFailed, nil
+	//}
 	return nil, BidStateInvalid, errors.Wrap(err, errorGettingRecord)
 }
 

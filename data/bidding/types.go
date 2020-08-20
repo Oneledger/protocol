@@ -13,6 +13,7 @@ type (
 	BidOfferStatus  bool
 	BidOfferType    int
 	BidOfferAmountStatus int
+	BidDecision		bool
 )
 
 func (id BidConvId) Err() error {
@@ -27,5 +28,6 @@ func (id BidConvId) Err() error {
 
 type BidAsset interface {
 	ToString() string
-	ValidateAsset(ctx *action.Context) (bool, error)
+	ValidateAsset(ctx *action.Context, owner action.Address) (bool, error)
+	ExchangeAsset(ctx *action.Context, bidder action.Address, preOwner action.Address) (bool, error)
 }

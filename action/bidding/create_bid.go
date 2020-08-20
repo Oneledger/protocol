@@ -128,12 +128,12 @@ func runCreateBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingActiveOffers, createBid.Tags(), err)
 	}
+	offerCoin := createBid.Amount.ToCoin(ctx.Currencies)
 	if activeOffer != nil {
 		if activeOffer.OfferType == bidding.TypeOffer {
 			return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrActiveBidOfferExists, createBid.Tags(), err)
 		}
 		//5. amount needs to be less than active counter offer from owner
-		offerCoin := createBid.Amount.ToCoin(ctx.Currencies)
 		activeOfferCoin := activeOffer.Amount.ToCoin(ctx.Currencies)
 		if activeOfferCoin.LessThanEqualCoin(offerCoin) {
 			return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrAmountLargerThanActiveCounterOffer, createBid.Tags(), err)

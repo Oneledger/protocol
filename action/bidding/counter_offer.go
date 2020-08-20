@@ -115,24 +115,22 @@ func runCounterOffer(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrAmountLowerThanActiveBidOffer, counterOffer.Tags(), err)
 	}
 
-	//4. unlock bidder's previous amount
+
 	bidConv, err := bidMasterStore.BidConv.WithPrefixType(bidding.BidStateActive).Get(activeOffer.BidConvId)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingBidConv, counterOffer.Tags(), err)
 	}
-	err = ctx.Balances.AddToAddress(bidConv.Bidder.Bytes(), activeOfferCoin)
-	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrUnLockAmount, counterOffer.Tags(), err)
-	}
 
-	//5. set active offer to inactive
-	activeOffer.OfferStatus = bidding.BidOfferInactive
-	err = bidMasterStore.BidOffer.SetOffer(*activeOffer)
+	//4. unlock bidder's previous amount and deactivate the bidder's offer
+	// this way we only lock amount from a bid offer from bidder
+	// if the active offer is a counter offer from owner, no amount is locked from the bidder
+
+	err = DeactivateOffer(true, bidConv.Bidder, ctx, activeOffer, bidMasterStore)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrDeactivateOffer, counterOffer.Tags(), err)
 	}
 
-	//6. add the counter offer to offer store
+	//5. add the counter offer to offer store
 	createCounterOffer := bidding.NewBidOffer(
 		counterOffer.BidConvId,
 		bidding.TypeCounterOffer,

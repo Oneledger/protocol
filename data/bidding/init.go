@@ -17,12 +17,13 @@ func init() {
 
 const (
 	//Bid States
-	BidStateInvalid       BidConvState = 0xEE
-	BidStateActive        BidConvState = 0x01
-	BidStateSucceed       BidConvState = 0x02
-	BidStateCancelled     BidConvState = 0x03
-	BidStateExpired       BidConvState = 0x04
-	BidStateExpiredFailed BidConvState = 0x05
+	BidStateInvalid      BidConvState = 0xEE
+	BidStateActive       BidConvState = 0x01
+	BidStateSucceed      BidConvState = 0x02
+	BidStateCancelled    BidConvState = 0x03
+	BidStateExpired      BidConvState = 0x04
+	BidStateRejected	 BidConvState = 0x05
+	//BidStateExpireFailed BidConvState = 0x05
 
 	//Error Codes
 	errorSerialization   = "321"
@@ -46,9 +47,14 @@ const (
 	TypeCounterOffer	BidOfferType = 0x02
 
 	//Bid Offer Amount Lock Status
-	BidAmountLocked     BidOfferAmountStatus = 0x01
-	BidAmountUnlocked  	BidOfferAmountStatus = 0x02
-	CounterOfferAmount  BidOfferAmountStatus = 0x03
+	BidAmountLocked     	BidOfferAmountStatus = 0x01
+	BidAmountUnlocked  		BidOfferAmountStatus = 0x02
+	CounterOfferAmount  	BidOfferAmountStatus = 0x03
+	BidAmountTransferred	BidOfferAmountStatus = 0x04
+
+	//Bid Decision
+	AcceptBid		BidDecision = true
+	RejectBid		BidDecision = false
 
 	//Bid Asset Type
 	BidAssetOns BidAssetType = 0x21
