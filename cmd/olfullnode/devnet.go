@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/Oneledger/protocol/data/evidence"
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/rewards"
 
@@ -543,6 +544,27 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 		MaturityTime:            10,
 	}
 
+	// evidence
+	evidenceOption := evidence.Options{
+		MinVotesRequired: 2,
+		BlockVotesDiff:   4,
+
+		PenaltyBasePercentage: 30,
+		PenaltyBaseDecimals:   100,
+
+		PenaltyBountyPercentage: 50,
+		PenaltyBountyDecimals:   100,
+
+		PenaltyBurnPercentage: 50,
+		PenaltyBurnDecimals:   100,
+
+		ValidatorReleaseTime: 5,
+
+		AllegationVotesCount: 10,
+		AllegationPercentage: 66,
+		AllegationDecimals:   100,
+	}
+
 	//var initialAddrs []keys.Address
 	initAddrIndex := 0
 	//for _, addr := range args.initialTokenHolders {
@@ -654,13 +676,14 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 		Domains:    domains,
 		Fees:       fees_db,
 		Governance: governance.GovernanceState{
-			FeeOption:      feeOpt,
-			ETHCDOption:    option,
-			BTCCDOption:    btcOption,
-			ONSOptions:     onsOption,
-			PropOptions:    propOpt,
-			StakingOptions: stakingOption,
-			RewardOptions:  rewardOpt,
+			FeeOption:       feeOpt,
+			ETHCDOption:     option,
+			BTCCDOption:     btcOption,
+			ONSOptions:      onsOption,
+			PropOptions:     propOpt,
+			StakingOptions:  stakingOption,
+			EvidenceOptions: evidenceOption,
+			RewardOptions:   rewardOpt,
 		},
 	}
 }

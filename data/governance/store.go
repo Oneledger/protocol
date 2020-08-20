@@ -4,8 +4,9 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/data/delegation"
+	"github.com/Oneledger/protocol/data/evidence"
+	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/data/rewards"
 
 	"github.com/pkg/errors"
@@ -42,6 +43,8 @@ const (
 	INDIVIDUAL_FUNDS_PREFIX string = "i"
 
 	LAST_UPDATE_HEIGHT string = "lastupdateheight"
+
+	ADMIN_EVIDENCE_OPTION string = "evidenceopt"
 )
 
 type Store struct {
@@ -244,6 +247,37 @@ func (st *Store) SetStakingOptions(opt delegation.Options) error {
 	}
 
 	return nil
+}
+
+func (st *Store) SetEvidenceOptions(opt evidence.Options) error {
+
+	bytes, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(opt)
+	if err != nil {
+		return errors.Wrap(err, "failed to serialize evidence options")
+	}
+
+	err = st.Set(ADMIN_EVIDENCE_OPTION, bytes)
+	if err != nil {
+		return errors.Wrap(err, "failed to set the evidence options")
+	}
+
+	return nil
+}
+
+func (st *Store) GetEvidenceOptions() (*evidence.Options, error) {
+
+	bytes, err := st.Get(ADMIN_EVIDENCE_OPTION)
+	if err != nil {
+		return nil, err
+	}
+
+	r := &evidence.Options{}
+	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(bytes, r)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to deserialize evidence options")
+	}
+
+	return r, nil
 }
 
 func (st *Store) GetETHChainDriverOption() (*ethchain.ChainDriverOption, error) {

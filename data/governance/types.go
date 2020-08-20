@@ -8,19 +8,21 @@ import (
 	"github.com/Oneledger/protocol/chains/bitcoin"
 	ethchain "github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/delegation"
+	"github.com/Oneledger/protocol/data/evidence"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/data/rewards"
 )
 
 type GovernanceState struct {
-	FeeOption      fees.FeeOption             `json:"feeOption"`
-	ETHCDOption    ethchain.ChainDriverOption `json:"ethchaindriverOption"`
-	BTCCDOption    bitcoin.ChainDriverOption  `json:"bitcoinChainDriverOption"`
-	ONSOptions     ons.Options                `json:"onsOptions"`
-	PropOptions    ProposalOptionSet          `json:"propOptions"`
-	StakingOptions delegation.Options         `json:"stakingOptions"`
-	RewardOptions  rewards.Options            `json:"rewardOptions"`
+	FeeOption       fees.FeeOption             `json:"feeOption"`
+	ETHCDOption     ethchain.ChainDriverOption `json:"ethchaindriverOption"`
+	BTCCDOption     bitcoin.ChainDriverOption  `json:"bitcoinChainDriverOption"`
+	ONSOptions      ons.Options                `json:"onsOptions"`
+	PropOptions     ProposalOptionSet          `json:"propOptions"`
+	StakingOptions  delegation.Options         `json:"stakingOptions"`
+	EvidenceOptions evidence.Options           `json:"evidenceOptions"`
+	RewardOptions   rewards.Options            `json:"rewardOptions"`
 }
 type (
 	ProposalID      string
