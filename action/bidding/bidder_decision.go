@@ -90,12 +90,17 @@ func runBidderDecision(ctx *action.Context, tx action.RawTx) (bool, action.Respo
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingBidConv, bidderDecision.Tags(), err)
 	}
 
-	//2. check bidder's identity
+	//2. check expiry
+	if bidConv.DeadlineUTC <= ctx.Header.Height {
+		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrExpiredBid, bidderDecision.Tags(), err)
+	}
+
+	//3. check bidder's identity
 	if !bidderDecision.Bidder.Equal(bidConv.Bidder) {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrWrongBidder, bidderDecision.Tags(), err)
 	}
 
-	//3. check if there is active counter offer from owner
+	//4. check if there is active counter offer from owner
 	activeOffer, err := bidMasterStore.BidOffer.GetActiveOfferForBidConvId(bidderDecision.BidConvId)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingActiveOffers, bidderDecision.Tags(), err)
@@ -104,7 +109,7 @@ func runBidderDecision(ctx *action.Context, tx action.RawTx) (bool, action.Respo
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingActiveCounterOffer, bidderDecision.Tags(), err)
 	}
 
-	//4. if reject
+	//5. if reject
 	if bidderDecision.Decision == bidding.RejectBid {
 		// deactivate offer and unlock amount depends on active offer type
 		err = DeactivateOffer(true, bidConv.Bidder, ctx, activeOffer, bidMasterStore)
@@ -121,26 +126,26 @@ func runBidderDecision(ctx *action.Context, tx action.RawTx) (bool, action.Respo
 
 	}
 
-	//5. deduct the amount from bidder, in this case no amount is currently being locked
+	//6. deduct the amount from bidder, in this case no amount is currently being locked
 	activeOfferCoin := activeOffer.Amount.ToCoin(ctx.Currencies)
 	err = ctx.Balances.MinusFromAddress(bidderDecision.Bidder.Bytes(), activeOfferCoin)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrDeductingAmountFromBidder, bidderDecision.Tags(), err)
 	}
 
-	//6. add the amount to owner
+	//7. add the amount to owner
 	err = ctx.Balances.AddToAddress(bidConv.AssetOwner.Bytes(), activeOfferCoin)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrAdddingAmountToOwner, bidderDecision.Tags(), err)
 	}
 
-	//7. change offer status to inactive and add it back to bid offer store
+	//8. change offer status to inactive and add it back to bid offer store
 	err = DeactivateOffer(true, bidConv.Bidder, ctx, activeOffer, bidMasterStore)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrDeactivateOffer, bidderDecision.Tags(), err)
 	}
 
-	//8. close the bid conversation
+	//9. close the bid conversation
 	err = CloseBidConv(bidConv, activeOffer, bidMasterStore, bidding.BidStateSucceed)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrCloseBidConv, bidderDecision.Tags(), err)

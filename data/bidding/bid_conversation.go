@@ -7,13 +7,13 @@ import (
 )
 
 type BidConv struct {
-	BidConvId      		BidConvId    	`json:"bidId"`
-	AssetOwner 			keys.Address 	`json:"assetOwner"`
-	Asset      			BidAsset 		`json:"asset"`
-	AssetType 			BidAssetType 	`json:"assetType"`
-	Bidder     			keys.Address 	`json:"bidder"`
-	Deadline   			int64    		`json:"deadline"`
-	Status     			BidConvStatus   `json:"status"`
+	BidConvId   BidConvId     `json:"bidId"`
+	AssetOwner  keys.Address  `json:"assetOwner"`
+	Asset       BidAsset      `json:"asset"`
+	AssetType   BidAssetType  `json:"assetType"`
+	Bidder      keys.Address  `json:"bidder"`
+	DeadlineUTC int64         `json:"deadlineUtc"`
+	Status      BidConvStatus `json:"status"`
 }
 
 func generateBidConvID(key string) BidConvId {
@@ -28,12 +28,12 @@ func generateBidConvID(key string) BidConvId {
 
 func NewBidConv(owner keys.Address, asset BidAsset, assetType BidAssetType, bidder keys.Address, deadline int64) *BidConv {
 	return &BidConv{
-		BidConvId:         	generateBidConvID(owner.String() + asset.ToString() + bidder.String()),
-		AssetOwner:    		owner,
-		Asset:         		asset,
-		AssetType:			assetType,
-		Bidder:        		bidder,
-		Deadline: 	   		deadline,
-		Status:		   		BidConvOpen,
+		BidConvId:   generateBidConvID(owner.String() + asset.ToString() + bidder.String()),
+		AssetOwner:  owner,
+		Asset:       asset,
+		AssetType:   assetType,
+		Bidder:      bidder,
+		DeadlineUTC: deadline,
+		Status:      BidConvOpen,
 	}
 }

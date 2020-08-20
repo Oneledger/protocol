@@ -98,6 +98,17 @@ func runCounterOffer(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrBidConvNotFound, counterOffer.Tags(), err)
 	}
 
+	bidConv, err := bidMasterStore.BidConv.WithPrefixType(bidding.BidStateActive).Get(activeOffer.BidConvId)
+	if err != nil {
+		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingBidConv, counterOffer.Tags(), err)
+	}
+
+
+	//2. check expiry
+	if bidConv.DeadlineUTC <= ctx.Header.Height {
+		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrExpiredBid, counterOffer.Tags(), err)
+	}
+
 	//2. there should be no active counter offer from opwner
 	activeOffer, err := bidMasterStore.BidOffer.GetActiveOfferForBidConvId(counterOffer.BidConvId)
 	// in the counter offer case, there must be an active offer
@@ -115,12 +126,6 @@ func runCounterOffer(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrAmountLowerThanActiveBidOffer, counterOffer.Tags(), err)
 	}
 
-
-	bidConv, err := bidMasterStore.BidConv.WithPrefixType(bidding.BidStateActive).Get(activeOffer.BidConvId)
-	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingBidConv, counterOffer.Tags(), err)
-	}
-
 	//4. unlock bidder's previous amount and deactivate the bidder's offer
 	// this way we only lock amount from a bid offer from bidder
 	// if the active offer is a counter offer from owner, no amount is locked from the bidder
@@ -130,7 +135,7 @@ func runCounterOffer(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrDeactivateOffer, counterOffer.Tags(), err)
 	}
 
-	//5. add the counter offer to offer store
+	//5. add new counter offer to offer store
 	createCounterOffer := bidding.NewBidOffer(
 		counterOffer.BidConvId,
 		bidding.TypeCounterOffer,
@@ -148,7 +153,7 @@ func runCounterOffer(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 }
 
 func (c CounterOffer) Signers() []action.Address {
-	return []action.Address{c.Bidder}
+	return []action.Address{c.AssetOwner}
 }
 
 func (c CounterOffer) Type() action.Type {
@@ -201,7 +206,7 @@ func (c *CounterOffer) createBidConv(ctx *action.Context) error {
 	)
 	//Validate bid deadline
 	//todo change to real time
-	if createBidConv.Deadline <= ctx.Header.Height {
+	if createBidConv.DeadlineUTC <= ctx.Header.Height {
 		return bidding.ErrInvalidDeadline
 	}
 

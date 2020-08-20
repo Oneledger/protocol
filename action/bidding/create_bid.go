@@ -100,7 +100,7 @@ func runCreateBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 	}
 
 	//1. check asset availability
-	assetOk, err := createBid.Asset.ValidateAsset(ctx)
+	assetOk, err := createBid.Asset.ValidateAsset(ctx, createBid.AssetOwner)
 	if err != nil || assetOk == false {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrInvalidAsset, createBid.Tags(), err)
 	}
@@ -123,12 +123,23 @@ func runCreateBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrBidConvNotFound, createBid.Tags(), err)
 	}
 
-	//4. there should be no active bid offer from bidder
+	bidConv, err := bidMasterStore.BidConv.WithPrefixType(bidding.BidStateActive).Get(createBid.BidConvId)
+	if err != nil {
+		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingBidConv, createBid.Tags(), err)
+	}
+
+	//4. check expiry
+	if bidConv.DeadlineUTC <= ctx.Header.Height {
+		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrExpiredBid, createBid.Tags(), err)
+	}
+
+	//5. there should be no active bid offer from bidder
 	activeOffer, err := bidMasterStore.BidOffer.GetActiveOfferForBidConvId(createBid.BidConvId)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingActiveOffers, createBid.Tags(), err)
 	}
 	offerCoin := createBid.Amount.ToCoin(ctx.Currencies)
+
 	if activeOffer != nil {
 		if activeOffer.OfferType == bidding.TypeOffer {
 			return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrActiveBidOfferExists, createBid.Tags(), err)
@@ -139,8 +150,7 @@ func runCreateBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 			return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrAmountLargerThanActiveCounterOffer, createBid.Tags(), err)
 		}
 		//6. set active counter offer to inactive
-		activeOffer.OfferStatus = bidding.BidOfferInactive
-		err = bidMasterStore.BidOffer.SetOffer(*activeOffer)
+		err = DeactivateOffer(true, bidConv.Bidder, ctx, activeOffer, bidMasterStore)
 		if err != nil {
 			return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrDeactivateOffer, createBid.Tags(), err)
 		}
@@ -152,7 +162,7 @@ func runCreateBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrLockAmount, createBid.Tags(), err)
 	}
 
-	//8. add the offer to offer store
+	//8. add new offer to offer store
 	createBidOffer := bidding.NewBidOffer(
 		createBid.BidConvId,
 		bidding.TypeOffer,
@@ -223,7 +233,7 @@ func (c *CreateBid) createBidConv(ctx *action.Context) error {
 	)
 	//Validate bid deadline
 	//todo change to real time
-	if createBidConv.Deadline <= ctx.Header.Height {
+	if createBidConv.DeadlineUTC <= ctx.Header.Height {
 		return bidding.ErrInvalidDeadline
 	}
 

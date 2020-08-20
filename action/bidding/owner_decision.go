@@ -3,7 +3,9 @@ package bidding
 import (
 	"encoding/json"
 	"github.com/Oneledger/protocol/action/helpers"
+	"github.com/Oneledger/protocol/app"
 	"github.com/Oneledger/protocol/data/bidding"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
@@ -88,6 +90,13 @@ func runOwnerDecision(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 	bidConv, err := bidMasterStore.BidConv.WithPrefixType(bidding.BidStateActive).Get(ownerDecision.BidConvId)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingBidConv, ownerDecision.Tags(), err)
+	}
+
+	//2. check expiry
+	deadLine := time.Unix(bidConv.DeadlineUTC, 0)
+
+	if deadLine.Before(ctx.Header.Time) {
+		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrExpiredBid, ownerDecision.Tags(), err)
 	}
 
 	//2. check owner's identity
