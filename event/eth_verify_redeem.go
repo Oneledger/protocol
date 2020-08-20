@@ -35,6 +35,7 @@ func (job *JobETHVerifyRedeem) DoMyJob(ctx interface{}) {
 	}
 	ethCtx, _ := ctx.(*JobsContext)
 	trackerStore := ethCtx.EthereumTrackers
+	ethCtx.Logger.Debug("Executing Validator JOB to verify from ethereum smart contract")
 	tracker, err := trackerStore.WithPrefixType(trackerlib.PrefixOngoing).Get(job.TrackerName)
 	if err != nil {
 		ethCtx.Logger.Error("Unable to get Tracker", job.JobID)
