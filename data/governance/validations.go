@@ -69,7 +69,7 @@ var (
 	minMaturityTime         = int64(109200)
 	maxMaturityTime         = int64(234000)
 	//Evidence
-	MinVotesRequiredPercentage = 70
+	MinVotesRequiredPercentage = int64(70)
 	minBlockVotesDiff          = int64(1000)
 	maxBlockVotesDiff          = int64(100000)
 	minPenaltyBasePercentage   = int64(10)
@@ -312,30 +312,38 @@ func (st *Store) ValidateRewards(opt *rewards.Options) (bool, error) {
 }
 
 func (st *Store) ValidateEvidence(opt *evidence.Options) (bool, error) {
-	//MinVotesRequired: 2, // should be atleast 70% or greater of block votes diff
-	//	BlockVotesDiff:   4,// min limit - 1000, max limit - 100,000
-	//		PenaltyBasePercentage: 30, // min limit - 10, max limit - 40
-	//		PenaltyBountyPercentage: 50,// can be between 0 - 100, PenaltyBurnPercentage + PenaltyBountyPercentage is always 100
-	//		PenaltyBurnPercentage: 50,// can be between 0 -100, PenaltyBurnPercentage + PenaltyBountyPercentage is always 100
 	oldOptions, err := st.GetEvidenceOptions()
 	if err != nil {
 		return false, err
 	}
-	if oldOptions.MinVotesRequired < (int64(MinVotesRequiredPercentage/100) * oldOptions.BlockVotesDiff) {
+	if opt.MinVotesRequired < (MinVotesRequiredPercentage * (opt.BlockVotesDiff / 100)) {
 		return false, errors.New("Min Required Votes cannot be less that 70% of BlockVotesDiff")
 	}
-	ok := verifyRangeInt64(oldOptions.BlockVotesDiff, minBlockVotesDiff, maxBlockVotesDiff)
+	ok := verifyRangeInt64(opt.BlockVotesDiff, minBlockVotesDiff, maxBlockVotesDiff)
 	if !ok {
 		return false, errors.New("Block Votes Diff is not in range")
 	}
-	ok = verifyRangeInt64(oldOptions.PenaltyBasePercentage/oldOptions.PenaltyBountyDecimals, minPenaltyBasePercentage, maxPenaltyBasePercentage)
+	ok = verifyRangeInt64(opt.PenaltyBasePercentage/(opt.PenaltyBaseDecimals/100), minPenaltyBasePercentage, maxPenaltyBasePercentage)
 	if !ok {
-		return false, errors.New("PenaltyBaseDecimals not in range")
+		return false, errors.New("PenaltyBasePercentage not in range")
 	}
-	if (oldOptions.PenaltyBountyPercentage/oldOptions.PenaltyBountyDecimals)+(oldOptions.PenaltyBurnPercentage/oldOptions.PenaltyBurnDecimals) != 100 {
+	if (opt.PenaltyBountyPercentage/(opt.PenaltyBountyDecimals/100))+(opt.PenaltyBurnPercentage/(opt.PenaltyBurnDecimals/100)) != 100 {
 		return false, errors.New("Bounty percentage + Burn Percentage should equal 100 %")
 	}
-	return reflect.DeepEqual(oldOptions, opt), nil
+	if opt.ValidatorReleaseTime != oldOptions.ValidatorReleaseTime {
+		return false, errors.New("Validator release time cannot be changed")
+	}
+	if opt.AllegationVotesCount != oldOptions.AllegationVotesCount {
+		return false, errors.New("AllegationVotesCount cannot be changed")
+	}
+	if opt.AllegationPercentage != oldOptions.AllegationPercentage {
+		return false, errors.New("AllegationPercentage cannot be changed")
+	}
+	if opt.AllegationDecimals != oldOptions.AllegationDecimals {
+		return false, errors.New("AllegationDecimals cannot be changed")
+	}
+
+	return true, nil
 }
 
 func verifyMinFunding(intialFunding *balance.Amount, fundingGoal *balance.Amount) (bool, error) {

@@ -43,7 +43,7 @@ def test_change_gov_options(update, pid):
     time.sleep(3)
 
 
-def updateGov(update, updatetype, p, test_type):
+def updateGov(update, updatetype, p, test_type, checkValue=True):
     opt = query_governanceState()
     old_heights = [None] * len(option_types)
     for idx, val in enumerate(option_types):
@@ -51,19 +51,19 @@ def updateGov(update, updatetype, p, test_type):
     test_change_gov_options(update, p)
     opt = query_governanceState()
     opt = benedict(opt)
-    if opt['govOptions.' + update.keys()[0]] != update_param and test_type:
+    if checkValue and opt['govOptions.' + update.keys()[0]] != update.values()[0] and test_type:
         print "Value not updated"
         sys.exit(-1)
     for idx, val in enumerate(option_types):
         new_height_type = opt["lastUpdateHeight"][val]
         if val == updatetype and new_height_type - old_heights[idx] <= 0 and test_type:
-            print "Height not changed" + val + "Test Type :" + test_type
+            print "Height not changed" + str(val) + "Test Type :" + str(test_type)
             sys.exit(-1)
         if val == updatetype and new_height_type - old_heights[idx] > 0 and not test_type:
-            print "Height not changed" + val + "Test Type :" + test_type
+            print "Height changed for negative update " + str(val) + " Test Type :" + str(test_type)
             sys.exit(-1)
         if val != updatetype and new_height_type - old_heights[idx] > 0 and test_type:
-            print "Height changed" + val + "Test Type :" + test_type
+            print "Height changed" + str(val) + "Test Type :" + str(test_type)
             sys.exit(-1)
     if test_type:
         print bcolors.OKBLUE + "Option Update Successful : " + str(update.keys()[0]) + "| At Height " + str(
@@ -74,31 +74,45 @@ def updateGov(update, updatetype, p, test_type):
 
 
 if __name__ == "__main__":
-    update_param = {
-        "burn": 10,
-        "executionCost": 20,
-        "bountyPool": 50,
-        "validators": 10,
-        "proposerReward": 0,
-        "feePool": 10
-    }
-    update = {"propOptions.configUpdate.passedFundDistribution": update_param}
-    updateGov(update, "proposal", "id_20067", True)
-
-    update_param = 109201
-    update = {"stakingOptions.maturityTime": update_param}
-    updateGov(update, "staking", "id_20068", True)
-
-    update_param = 10
-    update = {"feeOption.minFeeDecimal": update_param}
-    updateGov(update, "fee", "id_20069", True)
-
-    update_param = 2
-    update = {"evidenceOptions.minVotesRequired": update_param}
-    updateGov(update, "evidence", "id_20070", True)
-
-    update_param = 2
+    # update_param = {
+    #     "burn": 10,
+    #     "executionCost": 20,
+    #     "bountyPool": 50,
+    #     "validators": 10,
+    #     "proposerReward": 0,
+    #     "feePool": 10
+    # }
+    # update = {"propOptions.configUpdate.passedFundDistribution": update_param}
+    # updateGov(update, "proposal", "id_20067", True)
+    #
+    # update_param = 109201
+    # update = {"stakingOptions.maturityTime": update_param}
+    # updateGov(update, "staking", "id_20068", True)
+    #
+    # update_param = 10
+    # update = {"feeOption.minFeeDecimal": update_param}
+    # updateGov(update, "fee", "id_20069", True)
+    #
+    # update_param = 800
+    # update = {"evidenceOptions.minVotesRequired": update_param}
+    # updateGov(update, "evidence", "id_20070", True)
+    #
+    update_param = 1000
     update = {"evidenceOptions.blockVotesDiff": update_param}
     updateGov(update, "evidence", "id_20071", False)
+
+    update_param = {
+        "penaltyBountyPercentage": 20,
+        "penaltyBurnPercentage": 80,
+    }
+    update = {"evidenceOptions.penaltyPercentage": update_param}
+    updateGov(update, "evidence", "id_20072", True, False)
+
+    update_param = {
+        "penaltyBountyPercentage": 10,
+        "penaltyBurnPercentage": 80,
+    }
+    update = {"evidenceOptions.penaltyPercentage": update_param}
+    updateGov(update, "evidence", "id_20072", False, False)
 
     clean_and_catchup()

@@ -1,10 +1,13 @@
 package action
 
 import (
+	"fmt"
+
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/evidence"
 	"github.com/Oneledger/protocol/data/governance"
 )
 
@@ -60,8 +63,8 @@ func (g GovernaceUpdateAndValidate) inititalizize() {
 	g.GovernanceUpdateFunction["evidenceOptions.minVotesRequired"] = evidenceOptionsminVotesRequired
 	g.GovernanceUpdateFunction["evidenceOptions.blockVotesDiff"] = evidenceOptionsblockVotesDiff
 	g.GovernanceUpdateFunction["evidenceOptions.penaltyBasePercentage"] = evidenceOptionspenaltyBasePercentage
-	g.GovernanceUpdateFunction["evidenceOptions.penaltyBountyPercentage"] = evidenceOptionspenaltyBountyPercentage
-	g.GovernanceUpdateFunction["evidenceOptions.penaltyBurnPercentage"] = evidenceOptionspenaltyBurnPercentage
+	g.GovernanceUpdateFunction["evidenceOptions.penaltyPercentage"] = evidenceOptionspenaltyPercentage
+
 	//MinVotesRequired: 2, // should be atleast 70% or greater of block votes diff
 	//	BlockVotesDiff:   4,// min limit - 1000, max limit - 100,000
 	//		PenaltyBasePercentage: 30, // min limit - 10, max limit - 40
@@ -163,16 +166,19 @@ func evidenceOptionspenaltyBasePercentage(value interface{}, ctx *Context, valid
 	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height, "| evidenceOptions.penaltyBasePercentage :", newValue)
 	return true, nil
 }
-func evidenceOptionspenaltyBountyPercentage(value interface{}, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+func evidenceOptionspenaltyPercentage(value interface{}, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
 	Options, err := ctx.GovernanceStore.GetEvidenceOptions()
 	if err != nil {
 		return false, err
 	}
-	newValue, err := getNewValueInt64(value)
+	newValue, err := getEvidenceOpt(value)
 	if err != nil {
+		fmt.Println(err)
 		return false, err
 	}
-	Options.PenaltyBountyPercentage = newValue
+	fmt.Println(newValue)
+	Options.PenaltyBountyPercentage = newValue.PenaltyBountyPercentage
+	Options.PenaltyBurnPercentage = newValue.PenaltyBurnPercentage
 	ok, err := ctx.GovernanceStore.ValidateEvidence(Options)
 	if err != nil {
 		return false, err
@@ -195,38 +201,7 @@ func evidenceOptionspenaltyBountyPercentage(value interface{}, ctx *Context, val
 	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height, "| evidenceOptions.penaltyBountyPercentage :", newValue)
 	return true, nil
 }
-func evidenceOptionspenaltyBurnPercentage(value interface{}, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
-	Options, err := ctx.GovernanceStore.GetEvidenceOptions()
-	if err != nil {
-		return false, err
-	}
-	newValue, err := getNewValueInt64(value)
-	if err != nil {
-		return false, err
-	}
-	Options.PenaltyBurnPercentage = newValue
-	ok, err := ctx.GovernanceStore.ValidateEvidence(Options)
-	if err != nil {
-		return false, err
-	}
-	if !ok {
-		return false, errors.New("Validation Failed")
-	}
-	if validationOnly == ValidateOnly {
-		return true, nil
-	}
-	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetEvidenceOptions(*Options)
-	if err != nil {
-		return false, errors.Wrap(err, "Setup Evidence Options")
-	}
-	//Staking not part of context
-	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetLUH(governance.LAST_UPDATE_HEIGHT_EVIDENCE)
-	if err != nil {
-		return false, errors.Wrap(err, "Unable to set last Update height ")
-	}
-	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height, "| evidenceOptions.penaltyBurnPercentage :", newValue)
-	return true, nil
-}
+
 func stakingOptionsminSelfDelegationAmount(value interface{}, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
 	Options, err := ctx.GovernanceStore.GetStakingOptions()
 	if err != nil {
@@ -1127,6 +1102,18 @@ func getNewValueInt64(value interface{}) (int64, error) {
 }
 
 func getDistribution(value interface{}) (newDistribution governance.ProposalFundDistribution, err error) {
+	newValue, ok := value.(map[string]interface{})
+	if !ok {
+		return
+	}
+	err = mapstructure.Decode(newValue, &newDistribution)
+	if err != nil {
+		return
+	}
+	return
+}
+
+func getEvidenceOpt(value interface{}) (newDistribution evidence.Options, err error) {
 	newValue, ok := value.(map[string]interface{})
 	if !ok {
 		return

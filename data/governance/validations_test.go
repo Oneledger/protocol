@@ -14,6 +14,7 @@ import (
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/delegation"
+	"github.com/Oneledger/protocol/data/evidence"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/data/rewards"
@@ -409,11 +410,34 @@ func generateGov() *GovernanceState {
 		TotalSupplyAddr:    "",
 		BlockConfirmation:  12,
 	}
+	evidenceOption := evidence.Options{
+		MinVotesRequired: 800,
+		BlockVotesDiff:   1000,
+
+		PenaltyBasePercentage: 30,
+		PenaltyBaseDecimals:   100,
+
+		PenaltyBountyPercentage: 50,
+		PenaltyBountyDecimals:   100,
+
+		PenaltyBurnPercentage: 50,
+		PenaltyBurnDecimals:   100,
+
+		ValidatorReleaseTime: 5,
+
+		AllegationVotesCount: 10,
+		AllegationPercentage: 66,
+		AllegationDecimals:   100,
+	}
 	err := vStore.WithHeight(0).SetFeeOption(feeOpt)
 	if err != nil {
 		fmt.Println(err)
 	}
 	err = vStore.WithHeight(0).SetStakingOptions(stakingOption)
+	if err != nil {
+		fmt.Println(err)
+	}
+	err = vStore.WithHeight(0).SetEvidenceOptions(evidenceOption)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -442,12 +466,13 @@ func generateGov() *GovernanceState {
 		fmt.Println(err)
 	}
 	return &GovernanceState{
-		FeeOption:      feeOpt,
-		ETHCDOption:    ethOpt,
-		BTCCDOption:    btccdo,
-		ONSOptions:     onsOp,
-		PropOptions:    propOpt,
-		StakingOptions: stakingOption,
-		RewardOptions:  rewzOpt,
+		FeeOption:       feeOpt,
+		ETHCDOption:     ethOpt,
+		BTCCDOption:     btccdo,
+		ONSOptions:      onsOp,
+		PropOptions:     propOpt,
+		StakingOptions:  stakingOption,
+		RewardOptions:   rewzOpt,
+		EvidenceOptions: evidenceOption,
 	}
 }

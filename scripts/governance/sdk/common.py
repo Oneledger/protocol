@@ -169,11 +169,23 @@ def validateCatchup(node, node2):
 
 
 def clean_and_catchup():
+    opt = query_governanceState()
+
+    old_heights = [None] * len(option_types)
+    for idx, val in enumerate(option_types):
+        old_heights[idx] = opt["lastUpdateHeight"][val]
+
     call_with_args = "./scripts/governance/clean '%s'" % (str(0))
     os.system(call_with_args)
     # Wait for it to catchup
     time.sleep(30)
     # Validate Catchup
     height = validateCatchup(node_0, node_1)
-
-    print bcolors.OKBLUE + "Validator Successfully Caught up to height : " + str(height) + bcolors.ENDC
+    opt = query_governanceState()
+    for idx, val in enumerate(option_types):
+        if opt["lastUpdateHeight"][val] != old_heights[idx]:
+            print "Last update height for " + val + "is :" + opt["lastUpdateHeight"][val] + " , it was : " + \
+                  old_heights[idx] + " Before Catchup"
+            sys.exit(-1)
+    print bcolors.OKBLUE + "Last Update Height After Catchup : " + str(opt["lastUpdateHeight"]) + bcolors.ENDC
+    print bcolors.OKBLUE + "Block Height After Catchup : " + str(height) + bcolors.ENDC
