@@ -328,9 +328,12 @@ func (st *Store) ValidateEvidence(opt *evidence.Options) (bool, error) {
 	if !ok {
 		return false, errors.New("Block Votes Diff is not in range")
 	}
-	ok = verifyRangeInt64(oldOptions.PenaltyBaseDecimals, minPenaltyBasePercentage, maxPenaltyBasePercentage)
+	ok = verifyRangeInt64(oldOptions.PenaltyBasePercentage/oldOptions.PenaltyBountyDecimals, minPenaltyBasePercentage, maxPenaltyBasePercentage)
 	if !ok {
-		return false, errors.New("PenaltyBaseDecimals")
+		return false, errors.New("PenaltyBaseDecimals not in range")
+	}
+	if (oldOptions.PenaltyBountyPercentage/oldOptions.PenaltyBountyDecimals)+(oldOptions.PenaltyBurnPercentage/oldOptions.PenaltyBurnDecimals) != 100 {
+		return false, errors.New("Bounty percentage + Burn Percentage should equal 100 %")
 	}
 	return reflect.DeepEqual(oldOptions, opt), nil
 }
