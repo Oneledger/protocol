@@ -10,9 +10,9 @@ import (
 var logger *log.Logger
 
 func init() {
-	logger = log.NewDefaultLogger(os.Stdout).WithPrefix("ons_bid")
+	logger = log.NewDefaultLogger(os.Stdout).WithPrefix("bidding")
 	serialize.RegisterConcrete(new(DomainAsset), "domain_asset")
-	serialize.RegisterConcrete(new(ExampleAsset), "test_asset")
+	serialize.RegisterConcrete(new(ExampleAsset), "example_asset")
 }
 
 const (
@@ -33,10 +33,6 @@ const (
 	errorDeletingRecord  = "325"
 
 	EmptyStr = ""
-
-	//Bid Conversation Status
-	BidConvOpen		BidConvStatus = true
-	BidConvClosed   BidConvStatus = false
 
 	//Bid Offer Status
 	BidOfferActive  	BidOfferStatus = true

@@ -3,7 +3,6 @@ package bidding
 import (
 	"encoding/json"
 	"github.com/Oneledger/protocol/action/helpers"
-	"github.com/Oneledger/protocol/app"
 	"github.com/Oneledger/protocol/data/bidding"
 	"time"
 
@@ -99,6 +98,12 @@ func runOwnerDecision(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrExpiredBid, ownerDecision.Tags(), err)
 	}
 
+	//1. check asset availability
+	assetOk, err := bidConv.Asset.ValidateAsset(ctx, bidConv.AssetOwner)
+	if err != nil || assetOk == false {
+		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrInvalidAsset, ownerDecision.Tags(), err)
+	}
+
 	//2. check owner's identity
 	if !ownerDecision.Owner.Equal(bidConv.AssetOwner) {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrWrongAssetOwner, ownerDecision.Tags(), err)
@@ -157,7 +162,7 @@ func (o OwnerDecision) Signers() []action.Address {
 }
 
 func (o OwnerDecision) Type() action.Type {
-	return action.BID_CREATE
+	return action.BID_OWNER_DECISION
 }
 
 func (o OwnerDecision) Tags() kv.Pairs {

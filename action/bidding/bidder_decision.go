@@ -98,6 +98,12 @@ func runBidderDecision(ctx *action.Context, tx action.RawTx) (bool, action.Respo
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrExpiredBid, bidderDecision.Tags(), err)
 	}
 
+	//1. check asset availability
+	assetOk, err := bidConv.Asset.ValidateAsset(ctx, bidConv.AssetOwner)
+	if err != nil || assetOk == false {
+		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrInvalidAsset, bidderDecision.Tags(), err)
+	}
+
 	//3. check bidder's identity
 	if !bidderDecision.Bidder.Equal(bidConv.Bidder) {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrWrongBidder, bidderDecision.Tags(), err)
@@ -162,7 +168,7 @@ func (b BidderDecision) Signers() []action.Address {
 }
 
 func (b BidderDecision) Type() action.Type {
-	return action.BID_CREATE
+	return action.BID_BIDDER_DICISION
 }
 
 func (b BidderDecision) Tags() kv.Pairs {

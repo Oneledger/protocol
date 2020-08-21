@@ -115,6 +115,12 @@ func runCounterOffer(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrExpiredBid, counterOffer.Tags(), err)
 	}
 
+	//1. check asset availability
+	assetOk, err := bidConv.Asset.ValidateAsset(ctx, bidConv.AssetOwner)
+	if err != nil || assetOk == false {
+		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrInvalidAsset, counterOffer.Tags(), err)
+	}
+
 	//2. there should be no active counter offer from owner
 	activeOffer, err := bidMasterStore.BidOffer.GetActiveOfferForBidConvId(counterOffer.BidConvId)
 	// in the counter offer case, there must be an active offer
@@ -163,7 +169,7 @@ func (c CounterOffer) Signers() []action.Address {
 }
 
 func (c CounterOffer) Type() action.Type {
-	return action.BID_CREATE
+	return action.BID_CONTER_OFFER
 }
 
 func (c CounterOffer) Tags() kv.Pairs {

@@ -140,7 +140,7 @@ func (c CancelBid) Signers() []action.Address {
 }
 
 func (c CancelBid) Type() action.Type {
-	return action.BID_CREATE
+	return action.BID_CANCEL
 }
 
 func (c CancelBid) Tags() kv.Pairs {

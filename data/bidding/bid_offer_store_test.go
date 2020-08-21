@@ -2,6 +2,7 @@ package bidding
 
 import (
 	"fmt"
+	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/storage"
@@ -56,22 +57,22 @@ func generateIDs() {
 
 func TestBidOfferStore_AddOffer(t *testing.T) {
 	//fmt.Println("Adding New Proposer for funding")
-	err := bidOfferStore.SetOffer(*NewBidOffer(ID1, TypeOffer, offerTimes[0], *balance.NewAmount(100)))
+	err := bidOfferStore.SetOffer(*NewBidOffer(ID1, TypeOffer, offerTimes[0], *action.NewAmount("OLT", *balance.NewAmount(100)), BidAmountLocked))
 	assert.NoError(t, err, "")
 	cs.Commit()
-	err = bidOfferStore.SetOffer(*NewBidOffer(ID1, TypeCounterOffer, offerTimes[1], *balance.NewAmount(200)))
+	err = bidOfferStore.SetOffer(*NewBidOffer(ID1, TypeCounterOffer, offerTimes[1], *action.NewAmount("OLT", *balance.NewAmount(200)), CounterOfferAmount))
 	assert.NoError(t, err, "")
 	cs.Commit()
-	err = bidOfferStore.SetOffer(*NewBidOffer(ID1, TypeOffer, offerTimes[2], *balance.NewAmount(150)))
+	err = bidOfferStore.SetOffer(*NewBidOffer(ID1, TypeOffer, offerTimes[2], *action.NewAmount("OLT", *balance.NewAmount(150)), BidAmountLocked))
 	assert.NoError(t, err, "")
 	cs.Commit()
-	err = bidOfferStore.SetOffer(*NewBidOffer(ID2, TypeOffer, offerTimes[3], *balance.NewAmount(50)))
+	err = bidOfferStore.SetOffer(*NewBidOffer(ID2, TypeOffer, offerTimes[3], *action.NewAmount("OLT", *balance.NewAmount(50)), BidAmountLocked))
 	assert.NoError(t, err, "")
 	cs.Commit()
-	err = bidOfferStore.SetOffer(*NewBidOffer(ID2, TypeCounterOffer, offerTimes[4], *balance.NewAmount(300)))
+	err = bidOfferStore.SetOffer(*NewBidOffer(ID2, TypeCounterOffer, offerTimes[4], *action.NewAmount("OLT", *balance.NewAmount(300)), CounterOfferAmount))
 	assert.NoError(t, err, "")
 	cs.Commit()
-	err = bidOfferStore.SetOffer(*NewBidOffer(ID2, TypeOffer, offerTimes[5], *balance.NewAmount(250)))
+	err = bidOfferStore.SetOffer(*NewBidOffer(ID2, TypeOffer, offerTimes[5], *action.NewAmount("OLT", *balance.NewAmount(250)), BidAmountLocked))
 	assert.NoError(t, err, "")
 	cs.Commit()
 

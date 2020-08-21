@@ -113,7 +113,7 @@ func (e ExpireBid) Signers() []action.Address {
 }
 
 func (e ExpireBid) Type() action.Type {
-	return action.BID_CREATE
+	return action.BID_EXPIRE
 }
 
 func (e ExpireBid) Tags() kv.Pairs {

@@ -13,7 +13,6 @@ type BidConv struct {
 	AssetType   BidAssetType  `json:"assetType"`
 	Bidder      keys.Address  `json:"bidder"`
 	DeadlineUTC int64         `json:"deadlineUtc"`
-	Status      BidConvStatus `json:"status"`
 }
 
 func generateBidConvID(key string) BidConvId {
@@ -34,6 +33,5 @@ func NewBidConv(owner keys.Address, asset BidAsset, assetType BidAssetType, bidd
 		AssetType:   assetType,
 		Bidder:      bidder,
 		DeadlineUTC: deadline,
-		Status:      BidConvOpen,
 	}
 }
