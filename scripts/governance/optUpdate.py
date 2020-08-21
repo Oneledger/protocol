@@ -1,3 +1,5 @@
+from benedict import benedict
+
 from sdk import *
 
 addr_list = addresses()
@@ -41,6 +43,36 @@ def test_change_gov_options(update, pid):
     time.sleep(3)
 
 
+def updateGov(update, updatetype, p, test_type):
+    opt = query_governanceState()
+    old_heights = [None] * len(option_types)
+    for idx, val in enumerate(option_types):
+        old_heights[idx] = opt["lastUpdateHeight"][val]
+    test_change_gov_options(update, p)
+    opt = query_governanceState()
+    opt = benedict(opt)
+    if opt['govOptions.' + update.keys()[0]] != update_param and test_type:
+        print "Value not updated"
+        sys.exit(-1)
+    for idx, val in enumerate(option_types):
+        new_height_type = opt["lastUpdateHeight"][val]
+        if val == updatetype and new_height_type - old_heights[idx] <= 0 and test_type:
+            print "Height not changed" + val + "Test Type :" + test_type
+            sys.exit(-1)
+        if val == updatetype and new_height_type - old_heights[idx] > 0 and not test_type:
+            print "Height not changed" + val + "Test Type :" + test_type
+            sys.exit(-1)
+        if val != updatetype and new_height_type - old_heights[idx] > 0 and test_type:
+            print "Height changed" + val + "Test Type :" + test_type
+            sys.exit(-1)
+    if test_type:
+        print bcolors.OKBLUE + "Option Update Successful : " + str(update.keys()[0]) + "| At Height " + str(
+            opt["lastUpdateHeight"][updatetype]) + bcolors.ENDC
+    if not test_type:
+        print bcolors.OKGREEN + "Option Update NOT Successful (Validation Failed) : " + str(
+            update.keys()[0]) + " | For Value " + str(update.values()[0]) + bcolors.ENDC
+
+
 if __name__ == "__main__":
     update_param = {
         "burn": 10,
@@ -51,73 +83,22 @@ if __name__ == "__main__":
         "feePool": 10
     }
     update = {"propOptions.configUpdate.passedFundDistribution": update_param}
-    opt = query_governanceState()
-    old_height_proposal = opt["lastUpdateHeight"]["proposal"]
-    old_height_staking = opt["lastUpdateHeight"]["staking"]
-    old_height_fee = opt["lastUpdateHeight"]["fee"]
-    test_change_gov_options(update, _pid_pass_0)
-    opt = query_governanceState()
-    if opt["govOptions"]["propOptions"]["configUpdate"]["passedFundDistribution"] != update_param:
-        print "Value not updated"
-        sys.exit(-1)
-    if opt["lastUpdateHeight"]["proposal"] - old_height_proposal <= 0:
-        print "Height not changed proposal ,Update type proposal"
-        sys.exit(-1)
-    if opt["lastUpdateHeight"]["staking"] - old_height_staking != 0:
-        print "Height changed staking ,Update type proposal"
-        sys.exit(-1)
-    if opt["lastUpdateHeight"]["fee"] - old_height_fee != 0:
-        print "Height changed fee , Update type proposal"
-        sys.exit(-1)
-    print bcolors.OKBLUE + "Option Update Successful : propOptions.configUpdate.passedFundDistribution | At Height " + str(
-        opt["lastUpdateHeight"]["proposal"]) + bcolors.ENDC
+    updateGov(update, "proposal", "id_20067", True)
 
     update_param = 109201
     update = {"stakingOptions.maturityTime": update_param}
-    opt = query_governanceState()
-    old_height_proposal = opt["lastUpdateHeight"]["proposal"]
-    old_height_staking = opt["lastUpdateHeight"]["staking"]
-    old_height_fee = opt["lastUpdateHeight"]["fee"]
-    test_change_gov_options(update, _pid_pass_1)
-    opt = query_governanceState()
-    new_height = opt["lastUpdateHeight"]["staking"]
-    if opt["govOptions"]["stakingOptions"]["maturityTime"] != update_param:
-        print "Value not updated"
-        sys.exit(-1)
-    if opt["lastUpdateHeight"]["proposal"] - old_height_proposal != 0:
-        print "Height changed proposal ,Update type staking"
-        sys.exit(-1)
-    if opt["lastUpdateHeight"]["staking"] - old_height_staking <= 0:
-        print "Height not changed staking ,Update type staking"
-        sys.exit(-1)
-    if opt["lastUpdateHeight"]["fee"] - old_height_fee != 0:
-        print "Height changed fee , Update type staking"
-        sys.exit(-1)
-    print bcolors.OKBLUE + "Option Update Successful : stakingOptions.maturityTime | At Height " + str(
-        opt["lastUpdateHeight"]["staking"]) + bcolors.ENDC
+    updateGov(update, "staking", "id_20068", True)
 
     update_param = 10
     update = {"feeOption.minFeeDecimal": update_param}
-    opt = query_governanceState()
-    old_height_proposal = opt["lastUpdateHeight"]["proposal"]
-    old_height_staking = opt["lastUpdateHeight"]["staking"]
-    old_height_fee = opt["lastUpdateHeight"]["fee"]
-    test_change_gov_options(update, _pid_pass_2)
-    opt = query_governanceState()
+    updateGov(update, "fee", "id_20069", True)
 
-    if opt["govOptions"]["feeOption"]["minFeeDecimal"] != update_param:
-        print "Value not updated"
-        sys.exit(-1)
-    if opt["lastUpdateHeight"]["proposal"] - old_height_proposal != 0:
-        print "Height changed proposal ,Update type fee"
-        sys.exit(-1)
-    if opt["lastUpdateHeight"]["staking"] - old_height_staking != 0:
-        print "Height changed staking ,Update type fee"
-        sys.exit(-1)
-    if opt["lastUpdateHeight"]["fee"] - old_height_fee <= 0:
-        print "Height not changed fee , Update type fee"
-        sys.exit(-1)
-    print bcolors.OKBLUE + "Option Update Successful : feeOption.minFeeDecimal | At Height " + str(
-        opt["lastUpdateHeight"]["fee"]) + bcolors.ENDC
+    update_param = 2
+    update = {"evidenceOptions.minVotesRequired": update_param}
+    updateGov(update, "evidence", "id_20070", True)
+
+    update_param = 2
+    update = {"evidenceOptions.blockVotesDiff": update_param}
+    updateGov(update, "evidence", "id_20071", False)
 
     clean_and_catchup()

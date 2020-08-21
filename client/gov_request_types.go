@@ -53,6 +53,7 @@ type LastUpdateHeights struct {
 	Staking  int64 `json:"staking"`
 	Currency int64 `json:"currency"`
 	Fee      int64 `json:"fee"`
+	Evidence int64 `json:"evidence"`
 }
 type GovernanceOptionsRequest struct {
 }

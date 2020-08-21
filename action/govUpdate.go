@@ -57,7 +57,175 @@ func (g GovernaceUpdateAndValidate) inititalizize() {
 	g.GovernanceUpdateFunction["propOptions.configUpdate.failedFundDistribution"] = propOptionsconfigUpdatefailedFundDistribution
 	g.GovernanceUpdateFunction["propOptions.codeChange.failedFundDistribution"] = propOptionscodeChangefailedFundDistribution
 	g.GovernanceUpdateFunction["propOptions.general.failedFundDistribution"] = propOptionsgeneralfailedFundDistribution
+	g.GovernanceUpdateFunction["evidenceOptions.minVotesRequired"] = evidenceOptionsminVotesRequired
+	g.GovernanceUpdateFunction["evidenceOptions.blockVotesDiff"] = evidenceOptionsblockVotesDiff
+	g.GovernanceUpdateFunction["evidenceOptions.penaltyBasePercentage"] = evidenceOptionspenaltyBasePercentage
+	g.GovernanceUpdateFunction["evidenceOptions.penaltyBountyPercentage"] = evidenceOptionspenaltyBountyPercentage
+	g.GovernanceUpdateFunction["evidenceOptions.penaltyBurnPercentage"] = evidenceOptionspenaltyBurnPercentage
+	//MinVotesRequired: 2, // should be atleast 70% or greater of block votes diff
+	//	BlockVotesDiff:   4,// min limit - 1000, max limit - 100,000
+	//		PenaltyBasePercentage: 30, // min limit - 10, max limit - 40
+	//		PenaltyBountyPercentage: 50,// can be between 0 - 100, PenaltyBurnPercentage + PenaltyBountyPercentage is always 100
+	//		PenaltyBurnPercentage: 50,// can be between 0 -100, PenaltyBurnPercentage + PenaltyBountyPercentage is always 100
+}
 
+func evidenceOptionsminVotesRequired(value interface{}, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	Options, err := ctx.GovernanceStore.GetEvidenceOptions()
+	if err != nil {
+		return false, err
+	}
+	newValue, err := getNewValueInt64(value)
+	if err != nil {
+		return false, err
+	}
+	Options.MinVotesRequired = newValue
+	ok, err := ctx.GovernanceStore.ValidateEvidence(Options)
+	if err != nil {
+		return false, err
+	}
+	if !ok {
+		return false, errors.New("Validation Failed")
+	}
+	if validationOnly == ValidateOnly {
+		return true, nil
+	}
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetEvidenceOptions(*Options)
+	if err != nil {
+		return false, errors.Wrap(err, "Setup Evidence Options")
+	}
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetLUH(governance.LAST_UPDATE_HEIGHT_EVIDENCE)
+	if err != nil {
+		return false, errors.Wrap(err, "Unable to set last Update height ")
+	}
+	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height, "| evidenceOptions.minVotesRequired :", newValue)
+	return true, nil
+}
+func evidenceOptionsblockVotesDiff(value interface{}, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	Options, err := ctx.GovernanceStore.GetEvidenceOptions()
+	if err != nil {
+		return false, err
+	}
+	newValue, err := getNewValueInt64(value)
+	if err != nil {
+		return false, err
+	}
+	Options.BlockVotesDiff = newValue
+	ok, err := ctx.GovernanceStore.ValidateEvidence(Options)
+	if err != nil {
+		return false, err
+	}
+	if !ok {
+		return false, errors.New("Validation Failed")
+	}
+	if validationOnly == ValidateOnly {
+		return true, nil
+	}
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetEvidenceOptions(*Options)
+	if err != nil {
+		return false, errors.Wrap(err, "Setup Evidence Options")
+	}
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetLUH(governance.LAST_UPDATE_HEIGHT_EVIDENCE)
+	if err != nil {
+		return false, errors.Wrap(err, "Unable to set last Update height ")
+	}
+	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height, "| evidenceOptions.blockVotesDiff :", newValue)
+	return true, nil
+
+}
+func evidenceOptionspenaltyBasePercentage(value interface{}, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	Options, err := ctx.GovernanceStore.GetEvidenceOptions()
+	if err != nil {
+		return false, err
+	}
+	newValue, err := getNewValueInt64(value)
+	if err != nil {
+		return false, err
+	}
+	Options.PenaltyBasePercentage = newValue
+	ok, err := ctx.GovernanceStore.ValidateEvidence(Options)
+	if err != nil {
+		return false, err
+	}
+	if !ok {
+		return false, errors.New("Validation Failed")
+	}
+	if validationOnly == ValidateOnly {
+		return true, nil
+	}
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetEvidenceOptions(*Options)
+	if err != nil {
+		return false, errors.Wrap(err, "Setup Evidence Options")
+	}
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetLUH(governance.LAST_UPDATE_HEIGHT_EVIDENCE)
+	if err != nil {
+		return false, errors.Wrap(err, "Unable to set last Update height ")
+	}
+	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height, "| evidenceOptions.penaltyBasePercentage :", newValue)
+	return true, nil
+}
+func evidenceOptionspenaltyBountyPercentage(value interface{}, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	Options, err := ctx.GovernanceStore.GetEvidenceOptions()
+	if err != nil {
+		return false, err
+	}
+	newValue, err := getNewValueInt64(value)
+	if err != nil {
+		return false, err
+	}
+	Options.PenaltyBountyPercentage = newValue
+	ok, err := ctx.GovernanceStore.ValidateEvidence(Options)
+	if err != nil {
+		return false, err
+	}
+	if !ok {
+		return false, errors.New("Validation Failed")
+	}
+	if validationOnly == ValidateOnly {
+		return true, nil
+	}
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetEvidenceOptions(*Options)
+	if err != nil {
+		return false, errors.Wrap(err, "Setup Evidence Options")
+	}
+	//Staking not part of context
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetLUH(governance.LAST_UPDATE_HEIGHT_EVIDENCE)
+	if err != nil {
+		return false, errors.Wrap(err, "Unable to set last Update height ")
+	}
+	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height, "| evidenceOptions.penaltyBountyPercentage :", newValue)
+	return true, nil
+}
+func evidenceOptionspenaltyBurnPercentage(value interface{}, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
+	Options, err := ctx.GovernanceStore.GetEvidenceOptions()
+	if err != nil {
+		return false, err
+	}
+	newValue, err := getNewValueInt64(value)
+	if err != nil {
+		return false, err
+	}
+	Options.PenaltyBurnPercentage = newValue
+	ok, err := ctx.GovernanceStore.ValidateEvidence(Options)
+	if err != nil {
+		return false, err
+	}
+	if !ok {
+		return false, errors.New("Validation Failed")
+	}
+	if validationOnly == ValidateOnly {
+		return true, nil
+	}
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetEvidenceOptions(*Options)
+	if err != nil {
+		return false, errors.Wrap(err, "Setup Evidence Options")
+	}
+	//Staking not part of context
+	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetLUH(governance.LAST_UPDATE_HEIGHT_EVIDENCE)
+	if err != nil {
+		return false, errors.Wrap(err, "Unable to set last Update height ")
+	}
+	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height, "| evidenceOptions.penaltyBurnPercentage :", newValue)
+	return true, nil
 }
 func stakingOptionsminSelfDelegationAmount(value interface{}, ctx *Context, validationOnly FunctionBehaviour) (bool, error) {
 	Options, err := ctx.GovernanceStore.GetStakingOptions()

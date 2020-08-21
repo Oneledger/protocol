@@ -12,6 +12,7 @@ import (
 	ethchain "github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/delegation"
+	"github.com/Oneledger/protocol/data/evidence"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/data/rewards"
@@ -67,6 +68,13 @@ var (
 	maxValidatorCount       = int64(64)
 	minMaturityTime         = int64(109200)
 	maxMaturityTime         = int64(234000)
+	//Evidence
+	MinVotesRequiredPErcentage = 70
+	minBlockVotesDiff          = 1000
+	maxBlockVotesDiff          = 100000
+	minPenaltyBasePercentage   = 10
+	maxPenaltyBasePercentage   = 40
+	// can be between 0 -100, PenaltyBurnPercentage + PenaltyBountyPercentage is always 100
 )
 
 func (st *Store) ValidateGov(govstate GovernanceState) (bool, error) {
@@ -97,6 +105,10 @@ func (st *Store) ValidateGov(govstate GovernanceState) (bool, error) {
 	ok, err = st.ValidateRewards(&govstate.RewardOptions)
 	if err != nil || !ok {
 		return false, errors.New("reward options cannot be changed ")
+	}
+	ok, err = st.ValidateEvidence(&govstate.EvidenceOptions)
+	if err != nil || !ok {
+		return false, err
 	}
 	return true, nil
 }
@@ -293,6 +305,14 @@ func (st *Store) ValidateProposal(opt *ProposalOptionSet) (bool, error) {
 
 func (st *Store) ValidateRewards(opt *rewards.Options) (bool, error) {
 	oldOptions, err := st.GetRewardOptions()
+	if err != nil {
+		return false, err
+	}
+	return reflect.DeepEqual(oldOptions, opt), nil
+}
+
+func (st *Store) ValidateEvidence(opt *evidence.Options) (bool, error) {
+	oldOptions, err := st.GetEvidenceOptions()
 	if err != nil {
 		return false, err
 	}

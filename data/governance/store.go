@@ -40,13 +40,12 @@ const (
 
 	ADMIN_REWARD_OPTION string = "reward"
 
+	ADMIN_EVIDENCE_OPTION string = "evidenceopt"
+
 	TOTAL_FUNDS_PREFIX string = "t"
 
 	INDIVIDUAL_FUNDS_PREFIX string = "i"
 
-	LAST_UPDATE_HEIGHT string = "lastupdateheight"
-
-	ADMIN_EVIDENCE_OPTION string = "evidenceopt"
 	LAST_UPDATE_HEIGHT          string = "defaultOptions"
 	LAST_UPDATE_HEIGHT_CURRENCY string = "currencyOptions"
 	LAST_UPDATE_HEIGHT_FEE      string = "feeOptions"
@@ -56,6 +55,7 @@ const (
 	LAST_UPDATE_HEIGHT_STAKING  string = "stakingOptions"
 	LAST_UPDATE_HEIGHT_ONS      string = "onsOptions"
 	LAST_UPDATE_HEIGHT_PROPOSAL string = "proposalOptions"
+	LAST_UPDATE_HEIGHT_EVIDENCE string = "evidenceOptions"
 	HEIGHT_INDEPENDENT_VALUE    string = "heightindependent"
 )
 
@@ -169,6 +169,10 @@ func (st *Store) SetAllLUH() error {
 		return err
 	}
 	err = st.SetLUH(LAST_UPDATE_HEIGHT_CURRENCY)
+	if err != nil {
+		return err
+	}
+	err = st.SetLUH(LAST_UPDATE_HEIGHT_EVIDENCE)
 	if err != nil {
 		return err
 	}
@@ -328,7 +332,7 @@ func (st *Store) SetEvidenceOptions(opt evidence.Options) error {
 
 func (st *Store) GetEvidenceOptions() (*evidence.Options, error) {
 
-	bytes, err := st.Get(ADMIN_EVIDENCE_OPTION)
+	bytes, err := st.Get(ADMIN_EVIDENCE_OPTION, LAST_UPDATE_HEIGHT_EVIDENCE)
 	if err != nil {
 		return nil, err
 	}

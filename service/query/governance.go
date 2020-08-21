@@ -130,6 +130,10 @@ func (svc *Service) GetGovernanceOptionsForHeight(req client.GovernanceOptionsRe
 	if err != nil {
 		return err
 	}
+	evidenceOpt, err := svc.governance.GetEvidenceOptions()
+	if err != nil {
+		return err
+	}
 	luhFee, err := svc.governance.GetLUH(governance.LAST_UPDATE_HEIGHT_FEE)
 	if err != nil {
 		return err
@@ -162,15 +166,20 @@ func (svc *Service) GetGovernanceOptionsForHeight(req client.GovernanceOptionsRe
 	if err != nil {
 		return err
 	}
+	luhEvidence, err := svc.governance.GetLUH(governance.LAST_UPDATE_HEIGHT_EVIDENCE)
+	if err != nil {
+		return err
+	}
 	*reply = client.GovernanceOptionsReply{
 		GovOptions: governance.GovernanceState{
-			FeeOption:      *feeOpt,
-			ETHCDOption:    *ethOpt,
-			BTCCDOption:    *btcOpt,
-			ONSOptions:     *onsOpt,
-			PropOptions:    *propOpt,
-			RewardOptions:  *rewardOpt,
-			StakingOptions: *stakingOpt,
+			FeeOption:       *feeOpt,
+			ETHCDOption:     *ethOpt,
+			BTCCDOption:     *btcOpt,
+			ONSOptions:      *onsOpt,
+			PropOptions:     *propOpt,
+			RewardOptions:   *rewardOpt,
+			StakingOptions:  *stakingOpt,
+			EvidenceOptions: *evidenceOpt,
 		},
 		LastUpdateHeight: client.LastUpdateHeights{
 			Proposal: luhProposal,
@@ -181,6 +190,7 @@ func (svc *Service) GetGovernanceOptionsForHeight(req client.GovernanceOptionsRe
 			Staking:  luhStaking,
 			Currency: luhCurrency,
 			Fee:      luhFee,
+			Evidence: luhEvidence,
 		},
 	}
 	return nil

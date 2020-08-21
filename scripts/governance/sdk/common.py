@@ -5,6 +5,8 @@ from actions import *
 
 success = "Returned Successfully"
 
+option_types = ["proposal", "staking", "fee", "evidence", "currency", "eth", "btc", "ons", "rewards", "currency"]
+
 
 def fund_proposal(pid, amount, funder, secs=1):
     # fund the proposal

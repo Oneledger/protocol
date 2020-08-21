@@ -108,11 +108,11 @@ func (app *App) setupState(stateBytes []byte) error {
 		return errors.Wrap(err, "setupState deserialization")
 	}
 
-	err = app.Context.govern.SetStakingOptions(initial.Governance.StakingOptions)
+	err = app.Context.govern.WithHeight(app.header.Height).SetStakingOptions(initial.Governance.StakingOptions)
 	if err != nil {
 		return errors.Wrap(err, "Setup Staking Options")
 	}
-	err = app.Context.govern.SetEvidenceOptions(initial.Governance.EvidenceOptions)
+	err = app.Context.govern.WithHeight(app.header.Height).SetEvidenceOptions(initial.Governance.EvidenceOptions)
 	if err != nil {
 		return errors.Wrap(err, "Setup Evidence Options")
 	}
