@@ -16,8 +16,8 @@ const (
 )
 
 type Cfunction struct {
-	function      func(interface{})
-	functionParam interface{}
+	Function      func(interface{})
+	FunctionParam interface{}
 }
 
 // Router interface supplies functionality to add a function to the blockender and blockbeginner

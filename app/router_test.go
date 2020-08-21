@@ -22,7 +22,12 @@ func internalTX1(i interface{}) {
 }
 func internalTX2(i interface{}) {
 	param := i.(parameterStruct)
-	fmt.Println("INTERNALTX2 ", param.name)
+	fmt.Println("INTERNALTX2", param.name)
+}
+
+func internalTX3(i interface{}) {
+	param := i.(parameterStruct)
+	fmt.Println("INTERNALTX3", param.name)
 }
 
 func init() {
@@ -45,7 +50,7 @@ func TestRouter_AddBlockBeginner(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	err = cRouter.Add(BlockEnder, Cfunction{
-		function:      internalTX2,
+		function:      internalTX3,
 		functionParam: parameterStruct{name: "TEST3"},
 	})
 }
