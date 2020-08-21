@@ -69,11 +69,11 @@ var (
 	minMaturityTime         = int64(109200)
 	maxMaturityTime         = int64(234000)
 	//Evidence
-	MinVotesRequiredPErcentage = 70
-	minBlockVotesDiff          = 1000
-	maxBlockVotesDiff          = 100000
-	minPenaltyBasePercentage   = 10
-	maxPenaltyBasePercentage   = 40
+	MinVotesRequiredPercentage = 70
+	minBlockVotesDiff          = int64(1000)
+	maxBlockVotesDiff          = int64(100000)
+	minPenaltyBasePercentage   = int64(10)
+	maxPenaltyBasePercentage   = int64(40)
 	// can be between 0 -100, PenaltyBurnPercentage + PenaltyBountyPercentage is always 100
 )
 
@@ -312,9 +312,25 @@ func (st *Store) ValidateRewards(opt *rewards.Options) (bool, error) {
 }
 
 func (st *Store) ValidateEvidence(opt *evidence.Options) (bool, error) {
+	//MinVotesRequired: 2, // should be atleast 70% or greater of block votes diff
+	//	BlockVotesDiff:   4,// min limit - 1000, max limit - 100,000
+	//		PenaltyBasePercentage: 30, // min limit - 10, max limit - 40
+	//		PenaltyBountyPercentage: 50,// can be between 0 - 100, PenaltyBurnPercentage + PenaltyBountyPercentage is always 100
+	//		PenaltyBurnPercentage: 50,// can be between 0 -100, PenaltyBurnPercentage + PenaltyBountyPercentage is always 100
 	oldOptions, err := st.GetEvidenceOptions()
 	if err != nil {
 		return false, err
+	}
+	if oldOptions.MinVotesRequired < (int64(MinVotesRequiredPercentage/100) * oldOptions.BlockVotesDiff) {
+		return false, errors.New("Min Required Votes cannot be less that 70% of BlockVotesDiff")
+	}
+	ok := verifyRangeInt64(oldOptions.BlockVotesDiff, minBlockVotesDiff, maxBlockVotesDiff)
+	if !ok {
+		return false, errors.New("Block Votes Diff is not in range")
+	}
+	ok = verifyRangeInt64(oldOptions.PenaltyBaseDecimals, minPenaltyBasePercentage, maxPenaltyBasePercentage)
+	if !ok {
+		return false, errors.New("Block Votes Diff is not in range")
 	}
 	return reflect.DeepEqual(oldOptions, opt), nil
 }
