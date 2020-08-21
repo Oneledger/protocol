@@ -38,7 +38,7 @@ func DeactivateOffer(unlock bool, bidder action.Address, ctx *action.Context, ac
 	activeOffer.OfferStatus = bidding.BidOfferInactive
 	err := bidMasterStore.BidOffer.SetOffer(*activeOffer)
 	if err != nil {
-		return bidding.ErrUpdateBidOffer
+		return bidding.ErrUpdateOffer
 	}
 	return nil
 }

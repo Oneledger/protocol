@@ -5,6 +5,7 @@ import (
 	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/Oneledger/protocol/data/bidding"
 	"strconv"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
@@ -128,15 +129,22 @@ func runCreateBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingBidConv, createBid.Tags(), err)
 	}
 
+	//3. check bidder's identity
+	if !createBid.Bidder.Equal(bidConv.Bidder) {
+		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrWrongBidder, createBid.Tags(), err)
+	}
+
 	//4. check expiry
-	if bidConv.DeadlineUTC <= ctx.Header.Height {
+	deadLine := time.Unix(bidConv.DeadlineUTC, 0)
+
+	if deadLine.Before(ctx.Header.Time.UTC()) {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrExpiredBid, createBid.Tags(), err)
 	}
 
 	//5. there should be no active bid offer from bidder
 	activeOffer, err := bidMasterStore.BidOffer.GetActiveOfferForBidConvId(createBid.BidConvId)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingActiveOffers, createBid.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingActiveOffer, createBid.Tags(), err)
 	}
 	offerCoin := createBid.Amount.ToCoin(ctx.Currencies)
 
@@ -147,7 +155,7 @@ func runCreateBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		//5. amount needs to be less than active counter offer from owner
 		activeOfferCoin := activeOffer.Amount.ToCoin(ctx.Currencies)
 		if activeOfferCoin.LessThanEqualCoin(offerCoin) {
-			return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrAmountLargerThanActiveCounterOffer, createBid.Tags(), err)
+			return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrAmountMoreThanActiveCounterOffer, createBid.Tags(), err)
 		}
 		//6. set active counter offer to inactive
 		err = DeactivateOffer(true, bidConv.Bidder, ctx, activeOffer, bidMasterStore)
@@ -232,8 +240,9 @@ func (c *CreateBid) createBidConv(ctx *action.Context) error {
 		c.Deadline,
 	)
 	//Validate bid deadline
-	//todo change to real time
-	if createBidConv.DeadlineUTC <= ctx.Header.Height {
+	deadLine := time.Unix(createBidConv.DeadlineUTC, 0)
+
+	if deadLine.Before(ctx.Header.Time.UTC()) {
 		return bidding.ErrInvalidDeadline
 	}
 

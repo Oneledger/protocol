@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/Oneledger/protocol/data/bidding"
-	"strconv"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
@@ -98,32 +98,38 @@ func runCounterOffer(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrBidConvNotFound, counterOffer.Tags(), err)
 	}
 
-	bidConv, err := bidMasterStore.BidConv.WithPrefixType(bidding.BidStateActive).Get(activeOffer.BidConvId)
+	bidConv, err := bidMasterStore.BidConv.WithPrefixType(bidding.BidStateActive).Get(counterOffer.BidConvId)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingBidConv, counterOffer.Tags(), err)
 	}
 
+	//3. check owner's identity
+	if !counterOffer.AssetOwner.Equal(bidConv.AssetOwner) {
+		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrWrongAssetOwner, counterOffer.Tags(), err)
+	}
 
 	//2. check expiry
-	if bidConv.DeadlineUTC <= ctx.Header.Height {
+	deadLine := time.Unix(bidConv.DeadlineUTC, 0)
+
+	if deadLine.Before(ctx.Header.Time.UTC()) {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrExpiredBid, counterOffer.Tags(), err)
 	}
 
-	//2. there should be no active counter offer from opwner
+	//2. there should be no active counter offer from owner
 	activeOffer, err := bidMasterStore.BidOffer.GetActiveOfferForBidConvId(counterOffer.BidConvId)
 	// in the counter offer case, there must be an active offer
 	if err != nil || activeOffer == nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingActiveOffers, counterOffer.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingActiveOffer, counterOffer.Tags(), err)
 	}
 	if activeOffer.OfferType == bidding.TypeCounterOffer {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrActiveBidOfferExists, counterOffer.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrActiveCounterOfferExists, counterOffer.Tags(), err)
 	}
 
 	//3. amount needs to be large than active bid offer from bidder
 	offerCoin := counterOffer.Amount.ToCoin(ctx.Currencies)
 	activeOfferCoin := activeOffer.Amount.ToCoin(ctx.Currencies)
 	if offerCoin.LessThanEqualCoin(activeOfferCoin) {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrAmountLowerThanActiveBidOffer, counterOffer.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrAmountLessThanActiveOffer, counterOffer.Tags(), err)
 	}
 
 	//4. unlock bidder's previous amount and deactivate the bidder's offer
@@ -149,7 +155,7 @@ func runCounterOffer(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrAddingCounterOffer, counterOffer.Tags(), err)
 	}
 
-	return helpers.LogAndReturnTrue(ctx.Logger, createBid.Tags(), "create_bid_success")
+	return helpers.LogAndReturnTrue(ctx.Logger, counterOffer.Tags(), "create_counter_offer_success")
 }
 
 func (c CounterOffer) Signers() []action.Address {
@@ -175,16 +181,7 @@ func (c CounterOffer) Tags() kv.Pairs {
 		Key:   []byte("tx.assetOwner"),
 		Value: c.AssetOwner.Bytes(),
 	}
-	tag3 := kv.Pair{
-		Key:   []byte("tx.asset"),
-		Value: []byte(c.Asset.ToString()),
-	}
-	tag4 := kv.Pair{
-		Key: []byte("tx.assetType"),
-		Value: []byte(strconv.Itoa(int(c.AssetType))),
-	}
-
-	tags = append(tags, tag, tag1, tag2, tag3, tag4)
+	tags = append(tags, tag, tag1, tag2)
 	return tags
 }
 
@@ -194,38 +191,4 @@ func (c CounterOffer) Marshal() ([]byte, error) {
 
 func (c *CounterOffer) Unmarshal(bytes []byte) error {
 	return json.Unmarshal(bytes, c)
-}
-
-func (c *CounterOffer) createBidConv(ctx *action.Context) error {
-	createBidConv := bidding.NewBidConv(
-		c.AssetOwner,
-		c.Asset,
-		c.AssetType,
-		c.Bidder,
-		c.Deadline,
-	)
-	//Validate bid deadline
-	//todo change to real time
-	if createBidConv.DeadlineUTC <= ctx.Header.Height {
-		return bidding.ErrInvalidDeadline
-	}
-
-	//Check if any bid conversation with same asset, owner, bidder already exists in active store
-	store, err := ctx.ExtStores.Get("bidMaster")
-	if err != nil {
-		return bidding.ErrGettingBidMasterStore.Wrap(err)
-	}
-	bidMasterStore := store.(*bidding.BidMasterStore)
-	filteredBidConvs := bidMasterStore.BidConv.FilterBidConvs(bidding.BidStateActive, createBidConv.AssetOwner, createBidConv.Asset, createBidConv.AssetType, createBidConv.Bidder)
-	if len(filteredBidConvs) != 0 {
-		return bidding.ErrActiveBidConvExists
-	}
-	//Add bid conversation to DB
-	activeBidConvs := bidMasterStore.BidConv.WithPrefixType(bidding.BidStateActive)
-	err = activeBidConvs.Set(createBidConv)
-	if err != nil {
-		return bidding.ErrAddingBidConvToActiveStore.Wrap(err)
-	}
-
-	return nil
 }

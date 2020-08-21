@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/Oneledger/protocol/data/bidding"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
@@ -86,21 +87,27 @@ func runCancelBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrBidConvNotFound, cancelBid.Tags(), err)
 	}
 
-	bidConv, err := bidMasterStore.BidConv.WithPrefixType(bidding.BidStateActive).Get(activeOffer.BidConvId)
+	bidConv, err := bidMasterStore.BidConv.WithPrefixType(bidding.BidStateActive).Get(cancelBid.BidConvId)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingBidConv, cancelBid.Tags(), err)
 	}
 
+	//3. check bidder's identity
+	if !cancelBid.Bidder.Equal(bidConv.Bidder) {
+		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrWrongBidder, cancelBid.Tags(), err)
+	}
 
 	//2. check expiry
-	if bidConv.DeadlineUTC <= ctx.Header.Height {
+	deadLine := time.Unix(bidConv.DeadlineUTC, 0)
+
+	if deadLine.Before(ctx.Header.Time.UTC()) {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrExpiredBid, cancelBid.Tags(), err)
 	}
 
 	//3. check if there is active counter offer from owner
 	activeOffer, err := bidMasterStore.BidOffer.GetActiveOfferForBidConvId(cancelBid.BidConvId)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingActiveOffers, cancelBid.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingActiveOffer, cancelBid.Tags(), err)
 	}
 	if activeOffer.OfferType == bidding.TypeCounterOffer {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrActiveCounterOfferExists, cancelBid.Tags(), err)
@@ -113,11 +120,10 @@ func runCancelBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrUnlockAmount, cancelBid.Tags(), err)
 	}
 
-	//6. change amount status to unlocked and add it back to bid offer store
-	activeOffer.AmountStatus = bidding.BidAmountUnlocked
-	err = bidMasterStore.BidOffer.SetOffer(*activeOffer)
+	//6. change amount status to unlocked and deactivate it
+	err = DeactivateOffer(true, bidConv.Bidder, ctx, activeOffer, bidMasterStore)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrUpdateBidOffer, cancelBid.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrDeactivateOffer, cancelBid.Tags(), err)
 	}
 
 	//7. close bid and put to CANCELLED store

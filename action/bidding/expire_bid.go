@@ -90,7 +90,7 @@ func runExpireBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingBidConv, expireBid.Tags(), err)
 	}
 
-	//2. unlock amount and set offer inactive(if active offer is bid offer from bidder)
+	//2. unlock amount and set offer to inactive(if active offer is bid offer from bidder)
 	activeOffer, err := bidMasterStore.BidOffer.GetActiveOfferForBidConvId(expireBid.BidConvId)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingActiveOffer, expireBid.Tags(), err)

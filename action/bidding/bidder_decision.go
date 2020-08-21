@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/Oneledger/protocol/data/bidding"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
@@ -91,7 +92,9 @@ func runBidderDecision(ctx *action.Context, tx action.RawTx) (bool, action.Respo
 	}
 
 	//2. check expiry
-	if bidConv.DeadlineUTC <= ctx.Header.Height {
+	deadLine := time.Unix(bidConv.DeadlineUTC, 0)
+
+	if deadLine.Before(ctx.Header.Time.UTC()) {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrExpiredBid, bidderDecision.Tags(), err)
 	}
 
@@ -103,7 +106,7 @@ func runBidderDecision(ctx *action.Context, tx action.RawTx) (bool, action.Respo
 	//4. check if there is active counter offer from owner
 	activeOffer, err := bidMasterStore.BidOffer.GetActiveOfferForBidConvId(bidderDecision.BidConvId)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingActiveOffers, bidderDecision.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingActiveOffer, bidderDecision.Tags(), err)
 	}
 	if activeOffer.OfferType == bidding.TypeOffer {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingActiveCounterOffer, bidderDecision.Tags(), err)

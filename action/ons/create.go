@@ -150,6 +150,7 @@ func (domainCreateTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, 
 }
 
 func runCreate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	ctx.Logger.Debug("myTime: ", ctx.Header.Time, "myHeight: ", ctx.Header.Height)
 	create := &DomainCreate{}
 	err := create.Unmarshal(tx.Data)
 	if err != nil {

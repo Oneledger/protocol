@@ -95,7 +95,7 @@ func runOwnerDecision(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 	//2. check expiry
 	deadLine := time.Unix(bidConv.DeadlineUTC, 0)
 
-	if deadLine.Before(ctx.Header.Time) {
+	if deadLine.Before(ctx.Header.Time.UTC()) {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrExpiredBid, ownerDecision.Tags(), err)
 	}
 
@@ -107,7 +107,7 @@ func runOwnerDecision(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 	//3. check if there is active offer from bidder
 	activeOffer, err := bidMasterStore.BidOffer.GetActiveOfferForBidConvId(ownerDecision.BidConvId)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingActiveOffers, ownerDecision.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingActiveOffer, ownerDecision.Tags(), err)
 	}
 	if activeOffer.OfferType == bidding.TypeCounterOffer {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingActiveBidOffer, ownerDecision.Tags(), err)
