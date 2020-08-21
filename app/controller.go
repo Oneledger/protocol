@@ -144,7 +144,7 @@ func (app *App) blockBeginner() blockBeginner {
 		functionList, err := app.Context.controllerFunctions.Iterate(BlockBeginner)
 		if err == nil {
 			for _, controllerFunction := range functionList {
-				controllerFunction.function(controllerFunction.functionParam)
+				controllerFunction.Function(controllerFunction.FunctionParam)
 			}
 		}
 		app.logger.Detail("Begin Block:", result, "height:", req.Header.Height, "AppHash:", hex.EncodeToString(req.Header.AppHash))
@@ -293,7 +293,7 @@ func (app *App) blockEnder() blockEnder {
 		functionList, err := app.Context.controllerFunctions.Iterate(BlockEnder)
 		if err == nil {
 			for _, controllerFunction := range functionList {
-				controllerFunction.function(controllerFunction.functionParam)
+				controllerFunction.Function(controllerFunction.FunctionParam)
 			}
 		}
 		result := ResponseEndBlock{
