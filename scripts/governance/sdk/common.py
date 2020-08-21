@@ -184,8 +184,8 @@ def clean_and_catchup():
     opt = query_governanceState()
     for idx, val in enumerate(option_types):
         if opt["lastUpdateHeight"][val] != old_heights[idx]:
-            print "Last update height for " + val + "is :" + opt["lastUpdateHeight"][val] + " , it was : " + \
-                  old_heights[idx] + " Before Catchup"
+            print "Last update height for " + str(val) + "is :" + str(
+                opt["lastUpdateHeight"][val]) + " , it was : " + str(old_heights[idx]) + " Before Catchup"
             sys.exit(-1)
     print bcolors.OKBLUE + "Last Update Height After Catchup : " + str(opt["lastUpdateHeight"]) + bcolors.ENDC
     print bcolors.OKBLUE + "Block Height After Catchup : " + str(height) + bcolors.ENDC
