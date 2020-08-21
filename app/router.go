@@ -15,22 +15,22 @@ const (
 	BlockEnder    txblock = 2
 )
 
-type cfunction struct {
+type Cfunction struct {
 	function      func(interface{})
 	functionParam interface{}
 }
 
 // Router interface supplies functionality to add a function to the blockender and blockbeginner
 type Router interface {
-	Add(txblock, cfunction) error
-	Iterate(txblock) ([]cfunction, error)
+	Add(txblock, Cfunction) error
+	Iterate(txblock) ([]Cfunction, error)
 }
 
 type ControllerRouter struct {
-	functionlist map[txblock][]cfunction
+	functionlist map[txblock][]Cfunction
 }
 
-func (r ControllerRouter) Add(t txblock, i cfunction) error {
+func (r ControllerRouter) Add(t txblock, i Cfunction) error {
 	if t != BlockBeginner && t != BlockEnder {
 		return errInvalidInput
 	}
@@ -38,16 +38,16 @@ func (r ControllerRouter) Add(t txblock, i cfunction) error {
 	return nil
 }
 
-func (r ControllerRouter) Iterate(t txblock) ([]cfunction, error) {
+func (r ControllerRouter) Iterate(t txblock) ([]Cfunction, error) {
 	if t != BlockBeginner && t != BlockEnder {
-		return []cfunction{}, errInvalidInput
+		return []Cfunction{}, errInvalidInput
 	}
 	return r.functionlist[t], nil
 }
 
 func NewRouter() ControllerRouter {
 	return ControllerRouter{
-		functionlist: make(map[txblock][]cfunction),
+		functionlist: make(map[txblock][]Cfunction),
 	}
 }
 

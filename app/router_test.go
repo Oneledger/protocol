@@ -34,17 +34,17 @@ func init() {
 
 func TestRouter_AddBlockBeginner(t *testing.T) {
 
-	err := cRouter.Add(BlockBeginner, cfunction{
+	err := cRouter.Add(BlockBeginner, Cfunction{
 		function:      internalTX1,
 		functionParam: parameterStruct{name: "TEST"},
 	})
 	assert.NoError(t, err)
-	err = cRouter.Add(BlockBeginner, cfunction{
+	err = cRouter.Add(BlockBeginner, Cfunction{
 		function:      internalTX2,
 		functionParam: parameterStruct{name: "TEST2"},
 	})
 	assert.NoError(t, err)
-	err = cRouter.Add(BlockEnder, cfunction{
+	err = cRouter.Add(BlockEnder, Cfunction{
 		function:      internalTX2,
 		functionParam: parameterStruct{name: "TEST3"},
 	})
