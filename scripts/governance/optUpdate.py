@@ -74,30 +74,30 @@ def updateGov(update, updatetype, p, test_type, checkValue=True):
 
 
 if __name__ == "__main__":
-    # update_param = {
-    #     "burn": 10,
-    #     "executionCost": 20,
-    #     "bountyPool": 50,
-    #     "validators": 10,
-    #     "proposerReward": 0,
-    #     "feePool": 10
-    # }
-    # update = {"propOptions.configUpdate.passedFundDistribution": update_param}
-    # updateGov(update, "proposal", "id_20067", True)
-    #
-    # update_param = 109201
-    # update = {"stakingOptions.maturityTime": update_param}
-    # updateGov(update, "staking", "id_20068", True)
-    #
-    # update_param = 10
-    # update = {"feeOption.minFeeDecimal": update_param}
-    # updateGov(update, "fee", "id_20069", True)
-    #
-    # update_param = 800
-    # update = {"evidenceOptions.minVotesRequired": update_param}
-    # updateGov(update, "evidence", "id_20070", True)
-    #
-    update_param = 1000
+    update_param = {
+        "burn": 10,
+        "executionCost": 20,
+        "bountyPool": 50,
+        "validators": 10,
+        "proposerReward": 0,
+        "feePool": 10
+    }
+    update = {"propOptions.configUpdate.passedFundDistribution": update_param}
+    updateGov(update, "proposal", "id_20067", True)
+
+    update_param = 109201
+    update = {"stakingOptions.maturityTime": update_param}
+    updateGov(update, "staking", "id_20068", True)
+
+    update_param = 10
+    update = {"feeOption.minFeeDecimal": update_param}
+    updateGov(update, "fee", "id_20069", True)
+
+    update_param = 800
+    update = {"evidenceOptions.minVotesRequired": update_param}
+    updateGov(update, "evidence", "id_20070", True)
+
+    update_param = 10000
     update = {"evidenceOptions.blockVotesDiff": update_param}
     updateGov(update, "evidence", "id_20071", False)
 
