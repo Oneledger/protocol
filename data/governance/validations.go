@@ -330,7 +330,7 @@ func (st *Store) ValidateEvidence(opt *evidence.Options) (bool, error) {
 	}
 	ok = verifyRangeInt64(oldOptions.PenaltyBaseDecimals, minPenaltyBasePercentage, maxPenaltyBasePercentage)
 	if !ok {
-		return false, errors.New("Block Votes Diff is not in range")
+		return false, errors.New("PenaltyBaseDecimals")
 	}
 	return reflect.DeepEqual(oldOptions, opt), nil
 }
