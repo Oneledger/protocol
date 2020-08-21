@@ -176,6 +176,38 @@ const (
 	RewardsUnableToWithdraw         = 800002
 	RewardsYearRewardsMissing       = 800003
 
+	//Bidding Error
+	BidErrInvalidBidConvId = 900001
+	BidErrInvalidAsset = 900002
+	BidErrFailedCreateBidConv = 900003
+	BidErrGettingBidMasterStore = 900004
+	BidErrBidConvNotFound = 900005
+	BidErrGettingBidConv = 900006
+	BidErrExpiredBid = 900007
+	BidErrGettingActiveOffer = 900008
+	BidErrGettingActiveBidOffer = 900009
+	BidErrGettingActiveCounterOffer = 900010
+	BidErrDeactivateOffer = 900011
+	BidErrCloseBidConv = 900012
+	BidErrActiveCounterOfferExists = 900013
+	BidErrActiveBidOfferExists = 900014
+	BidErrAmountMoreThanActiveCounterOffer = 900015
+	BidErrAmountLessThanActiveOffer = 900016
+	BidErrLockAmount = 900017
+	BidErrUnlockAmount = 900018
+	BidErrAddingOffer = 900019
+	BidErrAddingCounterOffer = 900020
+	BidErrInvalidDeadline = 900021
+	BidErrActiveBidConvExists = 900022
+	BidErrAddingBidConvToActiveStore = 900023
+	BidErrWrongBidder = 900024
+	BidErrWrongAssetOwner = 900025
+	BidErrDeductingAmountFromBidder = 900026
+	BidErrAdddingAmountToOwner = 900027
+	BidErrUpdateOffer = 900028
+	BidErrAssertingBidMasterStore = 900029
+	BidErrAddingBidConvToTargetStore = 900030
+
 	//Ethereum Errors
 
 )

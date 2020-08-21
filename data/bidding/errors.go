@@ -17,7 +17,7 @@ var (
 	ErrCloseBidConv                     = codes.ProtocolError{codes.BidErrCloseBidConv, "failed to close bid conversation"}
 	ErrActiveCounterOfferExists         = codes.ProtocolError{codes.BidErrActiveCounterOfferExists, "there is active counter offer"}
 	ErrActiveBidOfferExists             = codes.ProtocolError{codes.BidErrActiveBidOfferExists, "there is active bid offer"}
-	ErrAmountMoreThanActiveCounterOffer = codes.ProtocolError{codes.BidErrAmountLargerThanActiveCounterOffer, "amount should not be larger than active counter offer amount"}
+	ErrAmountMoreThanActiveCounterOffer = codes.ProtocolError{codes.BidErrAmountMoreThanActiveCounterOffer, "amount should not be larger than active counter offer amount"}
 	ErrAmountLessThanActiveOffer        = codes.ProtocolError{codes.BidErrAmountLessThanActiveOffer, "amount should not be less than active bid offer amount"}
 	ErrLockAmount                   = codes.ProtocolError{codes.BidErrLockAmount, "failed to lock amount"}
 	ErrUnlockAmount                 = codes.ProtocolError{codes.BidErrUnlockAmount, "failed to unlock amount"}
