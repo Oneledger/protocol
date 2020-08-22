@@ -23,6 +23,15 @@ rm -rf $root_dir/consensus/data/cs.wal
 rm -rf $root_dir/consensus.log
 rm -rf $root_dir/olfullnode.log
 
+chdir=$root_dir/consensus/data/
+cat >priv_validator_state.json <<EOF
+{
+  "height": "0",
+  "round": "0",
+  "step": 0
+}
+EOF
+
 echo "Starting Node : $root_dir"
 olfullnode node --root $root_dir >>$root_dir/olfullnode.log 2>&1 &
 #popd
