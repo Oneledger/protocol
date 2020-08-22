@@ -137,6 +137,8 @@ func (t Type) String() string {
 		return "PROPOSAL_WITHDRAW_FUNDS"
 	case EXPIRE_VOTES:
 		return "EXPIRE_VOTES"
+	case WITHDRAW_REWARD:
+		return "WITHDRAW_REWARD"
 	default:
 		return "UNKNOWN"
 	}
