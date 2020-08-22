@@ -1,7 +1,6 @@
 package governance
 
 import (
-	"bytes"
 	"math"
 	"math/big"
 	"reflect"
@@ -170,30 +169,7 @@ func (st *Store) ValidateETH(opt *ethchain.ChainDriverOption) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if oldOptions.ContractABI != opt.ContractABI {
-		return false, errors.New("contract abi cannot be changed")
-	}
-	if oldOptions.ERCContractABI != opt.ERCContractABI {
-		return false, errors.New("erc contract abi cannot be changed")
-	}
-	if oldOptions.TotalSupply != opt.TotalSupply {
-		return false, errors.New("total supply cannot be changed")
-	}
-	if oldOptions.TotalSupplyAddr != opt.TotalSupplyAddr {
-		return false, errors.New("total supply address cannot be changed")
-	}
-	if !bytes.Equal(opt.ContractAddress.Bytes(), oldOptions.ContractAddress.Bytes()) {
-		return false, errors.New("smart contract address cannot be changed")
-	}
-	if !bytes.Equal(opt.ERCContractAddress.Bytes(), oldOptions.ERCContractAddress.Bytes()) {
-		return false, errors.New("ERC20 smart contract address cannot be changed")
-	}
-	if oldOptions.BlockConfirmation != opt.BlockConfirmation {
-		return false, errors.New("BlockConfirmations cannot be changed")
-	}
-	//if !verifyRangeInt64(opt.BlockConfirmation, minBlockConfirmation, maxBlockConfirmation) {
-	//	return false, errors.New("BlockConfirmations should be between 0 and 50")
-	//}
+	return reflect.DeepEqual(oldOptions, opt), nil
 	return true, nil
 }
 
