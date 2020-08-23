@@ -6,14 +6,14 @@ import (
 )
 
 type (
-	BidConvId       string
-	BidConvState    int
-	BidAssetType	int
-	BidConvStatus   bool
-	BidOfferStatus  bool
-	BidOfferType    int
+	BidConvId            string
+	BidConvState         int
+	BidAssetType         int
+	BidConvStatus        bool
+	BidOfferStatus       int
+	BidOfferType         int
 	BidOfferAmountStatus int
-	BidDecision		bool
+	BidDecision          bool
 )
 
 func (id BidConvId) Err() error {

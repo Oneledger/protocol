@@ -15,8 +15,8 @@ import (
 var _ action.Msg = &ExpireBid{}
 
 type ExpireBid struct {
-	BidConvId      	bidding.BidConvId		`json:"bidConvId"`
-	ValidatorAddress action.Address        `json:"validatorAddress"`
+	BidConvId        bidding.BidConvId `json:"bidConvId"`
+	ValidatorAddress action.Address    `json:"validatorAddress"`
 }
 
 func (e ExpireBid) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
@@ -90,17 +90,23 @@ func runExpireBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingBidConv, expireBid.Tags(), err)
 	}
 
-	//2. unlock amount and set offer to inactive(if active offer is bid offer from bidder)
-	activeOffer, err := bidMasterStore.BidOffer.GetActiveOfferForBidConvId(expireBid.BidConvId)
-	if err != nil {
+	//2. get the active offer(bid offer or counter offer)
+	activeOffers := bidMasterStore.BidOffer.GetOffers(expireBid.BidConvId, bidding.BidOfferActive, bidding.TypeInvalid)
+	// in this case there must be an offer
+	if len(activeOffers) == 0 {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingActiveOffer, expireBid.Tags(), err)
+	} else if len(activeOffers) > 1 {
+		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrTooManyActiveOffers, expireBid.Tags(), err)
 	}
-	err = DeactivateOffer(true, bidConv.Bidder, ctx, activeOffer, bidMasterStore)
+	activeOffer := activeOffers[0]
+
+	//3. unlock amount and set offer to inactive(if active offer is bid offer from bidder)
+	err = DeactivateOffer(false, bidConv.Bidder, ctx, &activeOffer, bidMasterStore)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrDeactivateOffer, expireBid.Tags(), err)
 	}
 
-	err = CloseBidConv(bidConv, activeOffer, bidMasterStore, bidding.BidStateExpired)
+	err = CloseBidConv(bidConv, bidMasterStore, bidding.BidStateExpired)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrCloseBidConv, expireBid.Tags(), err)
 	}

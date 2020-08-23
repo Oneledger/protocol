@@ -17,12 +17,12 @@ func init() {
 
 const (
 	//Bid States
-	BidStateInvalid      BidConvState = 0xEE
-	BidStateActive       BidConvState = 0x01
-	BidStateSucceed      BidConvState = 0x02
-	BidStateCancelled    BidConvState = 0x03
-	BidStateExpired      BidConvState = 0x04
-	BidStateRejected	 BidConvState = 0x05
+	BidStateInvalid   BidConvState = 0xEE
+	BidStateActive    BidConvState = 0x01
+	BidStateSucceed   BidConvState = 0x02
+	BidStateCancelled BidConvState = 0x03
+	BidStateExpired   BidConvState = 0x04
+	BidStateRejected  BidConvState = 0x05
 	//BidStateExpireFailed BidConvState = 0x05
 
 	//Error Codes
@@ -35,38 +35,36 @@ const (
 	EmptyStr = ""
 
 	//Bid Offer Status
-	BidOfferActive  	BidOfferStatus = true
-	BidOfferInactive    BidOfferStatus = false
+	BidOfferActive   BidOfferStatus = 0x01
+	BidOfferInactive BidOfferStatus = 0x02
+	BidOfferInvalid  BidOfferStatus = 0x03
 
 	//Bid Offer Type
-	TypeOffer			BidOfferType = 0x01
-	TypeCounterOffer	BidOfferType = 0x02
+	TypeOffer        BidOfferType = 0x01
+	TypeCounterOffer BidOfferType = 0x02
+	TypeInvalid      BidOfferType = 0x03
 
 	//Bid Offer Amount Lock Status
-	BidAmountLocked     	BidOfferAmountStatus = 0x01
-	BidAmountUnlocked  		BidOfferAmountStatus = 0x02
-	CounterOfferAmount  	BidOfferAmountStatus = 0x03
-	BidAmountTransferred	BidOfferAmountStatus = 0x04
+	BidAmountLocked      BidOfferAmountStatus = 0x01
+	BidAmountUnlocked    BidOfferAmountStatus = 0x02
+	CounterOfferAmount   BidOfferAmountStatus = 0x03
+	BidAmountTransferred BidOfferAmountStatus = 0x04
 
 	//Bid Decision
-	AcceptBid		BidDecision = true
-	RejectBid		BidDecision = false
+	AcceptBid BidDecision = true
+	RejectBid BidDecision = false
 
 	//Bid Asset Type
-	BidAssetOns BidAssetType = 0x21
+	BidAssetInvalid BidAssetType = 0xEE
+	BidAssetOns     BidAssetType = 0x21
 
 	//Bid Id length based on hash algorithm
 	SHA256LENGTH int = 0x40
-
-	//todo turn this to real block time
-	BlockTime int64 = 1596763561
-
-
 )
 
 type BidMasterStore struct {
-	BidConv            *BidConvStore
-	BidOffer    	   *BidOfferStore
+	BidConv  *BidConvStore
+	BidOffer *BidOfferStore
 }
 
 func (bm *BidMasterStore) WithState(state *storage.State) *BidMasterStore {
@@ -77,7 +75,7 @@ func (bm *BidMasterStore) WithState(state *storage.State) *BidMasterStore {
 
 func NewBidMasterStore(bc *BidConvStore, bo *BidOfferStore) *BidMasterStore {
 	return &BidMasterStore{
-		BidConv:     	bc,
-		BidOffer: 		bo,
+		BidConv:  bc,
+		BidOffer: bo,
 	}
 }

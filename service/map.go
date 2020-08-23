@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/Oneledger/protocol/data/bidding"
 	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/data"
@@ -63,12 +64,21 @@ type Map map[string]interface{}
 
 func NewMap(ctx *Context) (Map, error) {
 
+	store, err := ctx.ExtStores.Get("bidMaster")
+	if err != nil {
+		return nil, bidding.ErrGettingBidMasterStore.Wrap(err)
+	}
+	bidMasterStore, ok := store.(*bidding.BidMasterStore)
+	if ok == false {
+		return nil, bidding.ErrAssertingBidMasterStore
+	}
+
 	defaultMap := Map{
 		broadcast.Name(): broadcast.NewService(ctx.Services, ctx.Router, ctx.Currencies, ctx.FeePool, ctx.Domains, ctx.Govern, ctx.Delegators, ctx.ValidatorSet, ctx.Logger, ctx.Trackers, ctx.ProposalMaster, ctx.RewardMaster, ctx.ExtStores),
 		nodesvc.Name():   nodesvc.NewService(ctx.NodeContext, &ctx.Cfg, ctx.Logger),
 		owner.Name():     owner.NewService(ctx.Accounts, ctx.Logger),
 		query.Name(): query.NewService(ctx.Services, ctx.Balances, ctx.Currencies, ctx.ValidatorSet, ctx.WitnessSet, ctx.Domains, ctx.Delegators, ctx.Govern,
-			ctx.FeePool, ctx.ProposalMaster, ctx.RewardMaster, ctx.Logger, ctx.TxTypes),
+			ctx.FeePool, ctx.ProposalMaster, ctx.RewardMaster, ctx.Logger, ctx.TxTypes, bidMasterStore),
 
 		tx.Name():       tx.NewService(ctx.Balances, ctx.Router, ctx.Accounts, ctx.ValidatorSet, ctx.Govern, ctx.Delegators, ctx.FeePool.GetOpt(), ctx.NodeContext, ctx.Logger),
 		btc.Name():      btc.NewService(ctx.Balances, ctx.Accounts, ctx.NodeContext, ctx.ValidatorSet, ctx.Trackers, ctx.Logger),

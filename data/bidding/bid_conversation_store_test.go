@@ -12,18 +12,17 @@ import (
 
 const (
 	numPrivateKeys = 10
-	numBids   = 10
-	testDeadline = 1596740920
+	numBids        = 10
+	testDeadline   = 1596740920
 )
 
 var (
-	addrList    []keys.Address
-	bidConvs     []*BidConv
+	addrList []keys.Address
+	bidConvs []*BidConv
 
-	bidConvStore    *BidConvStore
+	bidConvStore *BidConvStore
 
 	assets []*DomainAsset
-
 )
 
 func init() {
@@ -38,11 +37,11 @@ func init() {
 
 	//Create new bid conversations
 	for i := 0; i < numBids; i++ {
-		j := i / 2      //owner address list ranges from 0 - 4
+		j := i / 2                  //owner address list ranges from 0 - 4
 		k := numPrivateKeys - 1 - j //bidder address list ranges from 9 - 5
 
 		owner := addrList[j]
-		assets = append(assets, NewDomainAsset("test" + strconv.Itoa(i) + ".ol"))
+		assets = append(assets, NewDomainAsset("test"+strconv.Itoa(i)+".ol"))
 		bidder := addrList[k]
 
 		bidConvs = append(bidConvs, NewBidConv(owner, assets[i], BidAssetOns,
@@ -103,7 +102,7 @@ func TestBidConvStore_Iterate(t *testing.T) {
 }
 
 func TestBidConvStore_FilterBidConvs(t *testing.T) {
-	bidConvs := bidConvStore.FilterBidConvs(BidStateActive, addrList[0], assets[0], BidAssetOns,
+	bidConvs := bidConvStore.FilterBidConvs(BidStateActive, addrList[0], assets[0].ToString(), BidAssetOns,
 		addrList[9])
 	//onsBidAddr1 := bidConvStore.FilterBidConvs(BidStateSucceed, addrList[1])
 	//onsBidAddr2 := bidConvStore.FilterBidConvs(BidStateCancelled, addrList[2])

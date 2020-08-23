@@ -15,12 +15,12 @@ type BidConvStore struct {
 
 	prefix []byte //Current Store Prefix
 
-	prefixActive         []byte
-	prefixSucceed        []byte
-	prefixRejected       []byte
-	prefixCancelled      []byte
-	prefixExpired        []byte
-	prefixExpiredFailed  []byte
+	prefixActive        []byte
+	prefixSucceed       []byte
+	prefixRejected      []byte
+	prefixCancelled     []byte
+	prefixExpired       []byte
+	prefixExpiredFailed []byte
 }
 
 func (bcs *BidConvStore) Set(bid *BidConv) error {
@@ -112,8 +112,8 @@ func (bcs *BidConvStore) WithPrefixType(prefixType BidConvState) *BidConvStore {
 		bcs.prefix = bcs.prefixCancelled
 	case BidStateExpired:
 		bcs.prefix = bcs.prefixExpired
-	//case BidStateExpireFailed:
-	//	bcs.prefix = bcs.prefixExpiredFailed
+		//case BidStateExpireFailed:
+		//	bcs.prefix = bcs.prefixExpiredFailed
 
 	}
 	return bcs
@@ -150,7 +150,7 @@ func (bcs *BidConvStore) QueryAllStores(key BidConvId) (*BidConv, BidConvState, 
 	return nil, BidStateInvalid, errors.Wrap(err, errorGettingRecord)
 }
 
-func (bcs *BidConvStore) FilterBidConvs(bidState BidConvState, owner keys.Address, asset BidAsset, assetType BidAssetType, bidder keys.Address) []BidConv {
+func (bcs *BidConvStore) FilterBidConvs(bidState BidConvState, owner keys.Address, assetName string, assetType BidAssetType, bidder keys.Address) []BidConv {
 	prefix := bcs.prefix
 	defer func() { bcs.prefix = prefix }()
 
@@ -171,9 +171,9 @@ func (bcs *BidConvStore) FilterBidConvs(bidState BidConvState, owner keys.Addres
 		if bidConv.AssetType != assetType {
 			return false
 		}
-		fmt.Println("asset", asset.ToString())
+		fmt.Println("asset", assetName)
 		fmt.Println("bidConv.Asset", bidConv.Asset.ToString())
-		if !cmp.Equal(asset, bidConv.Asset) {
+		if !cmp.Equal(assetName, bidConv.Asset.ToString()) {
 			return false
 		}
 
@@ -183,11 +183,11 @@ func (bcs *BidConvStore) FilterBidConvs(bidState BidConvState, owner keys.Addres
 	return bidConvs
 }
 
-func (bcs *BidConvStore) GetIdForBidConv(bidState BidConvState, owner keys.Address, asset BidAsset, assetType BidAssetType, bidder keys.Address) (BidConvId, error) {
+func (bcs *BidConvStore) GetIdForBidConv(bidState BidConvState, owner keys.Address, assetName string, assetType BidAssetType, bidder keys.Address) (BidConvId, error) {
 	prefix := bcs.prefix
 	defer func() { bcs.prefix = prefix }()
 
-	bidConvs := bcs.FilterBidConvs(bidState, owner, asset, assetType, bidder)
+	bidConvs := bcs.FilterBidConvs(bidState, owner, assetName, assetType, bidder)
 	if len(bidConvs) > 1 || len(bidConvs) == 0 {
 		return "", errors.New("errTooManyActiveBidConvs")
 	}
@@ -196,13 +196,13 @@ func (bcs *BidConvStore) GetIdForBidConv(bidState BidConvState, owner keys.Addre
 
 func NewBidConvStore(prefixActive string, prefixSucceed string, prefixCancelled string, prefixExpired string, prefixExpiredFailed string, state *storage.State) *BidConvStore {
 	return &BidConvStore{
-		state:                state,
-		szlr:                 serialize.GetSerializer(serialize.LOCAL),
-		prefix:               []byte(prefixActive),
-		prefixActive:         []byte(prefixActive),
-		prefixSucceed:        []byte(prefixSucceed),
-		prefixCancelled:      []byte(prefixCancelled),
-		prefixExpired:        []byte(prefixExpired),
-		prefixExpiredFailed:  []byte(prefixExpiredFailed),
+		state:               state,
+		szlr:                serialize.GetSerializer(serialize.LOCAL),
+		prefix:              []byte(prefixActive),
+		prefixActive:        []byte(prefixActive),
+		prefixSucceed:       []byte(prefixSucceed),
+		prefixCancelled:     []byte(prefixCancelled),
+		prefixExpired:       []byte(prefixExpired),
+		prefixExpiredFailed: []byte(prefixExpiredFailed),
 	}
 }

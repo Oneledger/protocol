@@ -12,16 +12,15 @@ import (
 )
 
 var (
-	bidOfferStore    *BidOfferStore
-	cs       *storage.State
-	address  keys.Address
-	address2 keys.Address
-	ID1      BidConvId
-	ID2      BidConvId
-	offerTimes []int64
-	offerTime int64 = 1596701481
-	offerTimeCount = 7
-
+	bidOfferStore  *BidOfferStore
+	cs             *storage.State
+	address        keys.Address
+	address2       keys.Address
+	ID1            BidConvId
+	ID2            BidConvId
+	offerTimes     []int64
+	offerTime      int64 = 1596701481
+	offerTimeCount       = 7
 )
 
 func init() {
@@ -46,13 +45,13 @@ func generateAddresses() {
 
 func generateOfferTimes() {
 	for i := 0; i < offerTimeCount; i++ {
-		offerTimes = append(offerTimes, offerTime + int64(i * 20))
+		offerTimes = append(offerTimes, offerTime+int64(i*20))
 	}
 }
 
 func generateIDs() {
-	ID1 = generateBidConvID("Test")
-	ID2 = generateBidConvID("Test1")
+	ID1 = generateBidConvID("Test", 123)
+	ID2 = generateBidConvID("Test1", 234)
 }
 
 func TestBidOfferStore_AddOffer(t *testing.T) {
@@ -81,8 +80,8 @@ func TestBidOfferStore_AddOffer(t *testing.T) {
 func TestBidOfferStore_Iterate(t *testing.T) {
 	//fmt.Println("Iterating Stores")
 	IDLIST := []BidConvId{ID2, ID1}
-	ok := bidOfferStore.iterate(func(bidConvId BidConvId, offerType BidOfferType, offerTime int64) bool {
-		//fmt.Println("BidConvId : ", bidConvId, "BidOfferType :", offerType, "BidOfferTime :", offerTime)
+	ok := bidOfferStore.iterate(func(bidConvId BidConvId, offerStatus BidOfferStatus, offerType BidOfferType, offerTime int64, offer BidOffer) bool {
+		fmt.Println("BidConvId : ", bidConvId, "BidOfferType :", offerType, "BidOfferTime :", offerTime)
 		assert.Contains(t, IDLIST, bidConvId, "")
 		return false
 	})
@@ -90,27 +89,20 @@ func TestBidOfferStore_Iterate(t *testing.T) {
 }
 
 //
-func TestBidOfferStore_GetOffersForBidConvId(t *testing.T) {
-	//fmt.Println("Get offers for ID :  ", ID1)
-	offers := bidOfferStore.GetOffersForBidConvId(ID1, func(bidConvId BidConvId, offerType BidOfferType, offerTime int64) BidOffer {
-		bidOffer, err := bidOfferStore.get(assembleBidOfferKey(bidConvId, offerType, offerTime))
-		if err != nil {
-			return BidOffer{}
-		}
-		return *bidOffer
-	})
-	//for _, offer := range offers {
-	//	offer.Print()
-	//}
+func TestBidOfferStore_GetOffersForBidConv(t *testing.T) {
+	fmt.Println("Get offers for ID :  ", ID1)
+	offers := bidOfferStore.GetOffers(ID1, BidOfferInvalid, TypeInvalid)
+	for _, offer := range offers {
+		fmt.Print(offer.Amount)
+	}
 	assert.EqualValues(t, 3, len(offers), "")
 }
 
 //
-func TestBidOfferStore_GetActiveOfferForBidConvId(t *testing.T) {
-	//fmt.Println("Get active offer for id :")
-	//todo manually turn other offers to inactive
-
-	offer, err := bidOfferStore.GetActiveOfferForBidConvId(ID1)
-	assert.NoError(t, err, "")
-	assert.NotEmpty(t, offer)
-}
+//func TestBidOfferStore_GetActiveOfferForBidConvId(t *testing.T) {
+//	//fmt.Println("Get active offer for id :")
+//
+//	offer, err := bidOfferStore.GetActiveOfferForBidConvId(ID1)
+//	assert.NoError(t, err, "")
+//	assert.NotEmpty(t, offer)
+//}

@@ -129,7 +129,7 @@ func PopExpireBidTxFromQueue(i interface{}) {
 		}
 		uuidNew, _ := uuid.NewUUID()
 		rawTx := action.RawTx{
-			Type: action.EXPIRE_BIDCONV,
+			Type: action.BID_EXPIRE,
 			Data: txData,
 			Fee:  action.Fee{},
 			Memo: uuidNew.String(),

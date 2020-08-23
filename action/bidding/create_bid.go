@@ -18,14 +18,13 @@ import (
 var _ action.Msg = &CreateBid{}
 
 type CreateBid struct {
-	BidConvId      	bidding.BidConvId		`json:"bidConvId"`
-	AssetOwner 		keys.Address 			`json:"assetOwner"`
-	Asset      		bidding.BidAsset 		`json:"asset"`
-	AssetType 		bidding.BidAssetType 	`json:"assetType"`
-	Bidder     		keys.Address 			`json:"bidder"`
-	Amount     		action.Amount           `json:"amount"`
-	OfferTime		int64					`json:"offerTime"`
-	Deadline	 	int64                   `json:"deadline"`
+	BidConvId  bidding.BidConvId    `json:"bidConvId"`
+	AssetOwner keys.Address         `json:"assetOwner"`
+	Asset      bidding.BidAsset     `json:"asset"`
+	AssetType  bidding.BidAssetType `json:"assetType"`
+	Bidder     keys.Address         `json:"bidder"`
+	Amount     action.Amount        `json:"amount"`
+	Deadline   int64                `json:"deadline"`
 }
 
 func (c CreateBid) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
@@ -141,24 +140,22 @@ func runCreateBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrExpiredBid, createBid.Tags(), err)
 	}
 
-	//5. there should be no active bid offer from bidder
-	activeOffer, err := bidMasterStore.BidOffer.GetActiveOfferForBidConvId(createBid.BidConvId)
-	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingActiveOffer, createBid.Tags(), err)
-	}
 	offerCoin := createBid.Amount.ToCoin(ctx.Currencies)
 
-	if activeOffer != nil {
-		if activeOffer.OfferType == bidding.TypeOffer {
-			return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrActiveBidOfferExists, createBid.Tags(), err)
-		}
+	//5. get the active counter offer
+	activeOffers := bidMasterStore.BidOffer.GetOffers(createBid.BidConvId, bidding.BidOfferActive, bidding.TypeCounterOffer)
+	// in this case there can be no counter offer if this is the beginning of bid
+	if len(activeOffers) > 1 {
+		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrTooManyActiveOffers, createBid.Tags(), err)
+	} else if len(activeOffers) == 1 {
+		activeOffer := activeOffers[0]
 		//5. amount needs to be less than active counter offer from owner
 		activeOfferCoin := activeOffer.Amount.ToCoin(ctx.Currencies)
 		if activeOfferCoin.LessThanEqualCoin(offerCoin) {
 			return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrAmountMoreThanActiveCounterOffer, createBid.Tags(), err)
 		}
 		//6. set active counter offer to inactive
-		err = DeactivateOffer(true, bidConv.Bidder, ctx, activeOffer, bidMasterStore)
+		err = DeactivateOffer(false, bidConv.Bidder, ctx, &activeOffer, bidMasterStore)
 		if err != nil {
 			return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrDeactivateOffer, createBid.Tags(), err)
 		}
@@ -174,7 +171,7 @@ func runCreateBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 	createBidOffer := bidding.NewBidOffer(
 		createBid.BidConvId,
 		bidding.TypeOffer,
-		createBid.OfferTime,
+		ctx.Header.Time.UTC().Unix(),
 		createBid.Amount,
 		bidding.BidAmountLocked,
 	)
@@ -215,7 +212,7 @@ func (c CreateBid) Tags() kv.Pairs {
 		Value: []byte(c.Asset.ToString()),
 	}
 	tag4 := kv.Pair{
-		Key: []byte("tx.assetType"),
+		Key:   []byte("tx.assetType"),
 		Value: []byte(strconv.Itoa(int(c.AssetType))),
 	}
 
@@ -238,6 +235,7 @@ func (c *CreateBid) createBidConv(ctx *action.Context) error {
 		c.AssetType,
 		c.Bidder,
 		c.Deadline,
+		ctx.Header.Height,
 	)
 	//Validate bid deadline
 	deadLine := time.Unix(createBidConv.DeadlineUTC, 0)
@@ -252,7 +250,7 @@ func (c *CreateBid) createBidConv(ctx *action.Context) error {
 		return bidding.ErrGettingBidMasterStore.Wrap(err)
 	}
 	bidMasterStore := store.(*bidding.BidMasterStore)
-	filteredBidConvs := bidMasterStore.BidConv.FilterBidConvs(bidding.BidStateActive, createBidConv.AssetOwner, createBidConv.Asset, createBidConv.AssetType, createBidConv.Bidder)
+	filteredBidConvs := bidMasterStore.BidConv.FilterBidConvs(bidding.BidStateActive, createBidConv.AssetOwner, createBidConv.Asset.ToString(), createBidConv.AssetType, createBidConv.Bidder)
 	if len(filteredBidConvs) != 0 {
 		return bidding.ErrActiveBidConvExists
 	}

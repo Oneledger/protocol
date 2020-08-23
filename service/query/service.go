@@ -2,6 +2,7 @@ package query
 
 import (
 	"encoding/hex"
+	"github.com/Oneledger/protocol/data/bidding"
 	"strings"
 
 	"github.com/Oneledger/protocol/data/rewards"
@@ -35,6 +36,7 @@ type Service struct {
 	governance     *governance.Store
 	logger         *log.Logger
 	txTypes        *[]action.TxTypeDescribe
+	bidMaster  	   *bidding.BidMasterStore
 }
 
 func Name() string {
@@ -42,7 +44,7 @@ func Name() string {
 }
 
 func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencies *balance.CurrencySet, validators *identity.ValidatorStore, witnesses *identity.WitnessStore,
-	domains *ons.DomainStore, delegators *delegation.DelegationStore, govern *governance.Store, feePool *fees.Store, proposalMaster *governance.ProposalMasterStore, rewardMaster *rewards.RewardMasterStore, logger *log.Logger, txTypes *[]action.TxTypeDescribe) *Service {
+	domains *ons.DomainStore, delegators *delegation.DelegationStore, govern *governance.Store, feePool *fees.Store, proposalMaster *governance.ProposalMasterStore, rewardMaster *rewards.RewardMasterStore, logger *log.Logger, txTypes *[]action.TxTypeDescribe, bidMaster *bidding.BidMasterStore) *Service {
 	return &Service{
 		name:           "query",
 		ext:            ctx,
@@ -59,6 +61,7 @@ func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencie
 		logger:         logger,
 		txTypes:        txTypes,
 		governance:     govern,
+		bidMaster:  	bidMaster,
 	}
 }
 

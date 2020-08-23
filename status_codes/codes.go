@@ -38,6 +38,7 @@ const (
 	InternalErrorTrackerInsufficientBalance = 100609
 	InternalErrorListWitnesses              = 100610
 	InternalErrorGettingProposal            = 100611
+	InternalErrorGettingBidConv				= 100612
 
 	ONSError                        = 1007
 	ONSErrDomainMissing             = 100701
@@ -185,28 +186,31 @@ const (
 	BidErrGettingBidConv = 900006
 	BidErrExpiredBid = 900007
 	BidErrGettingActiveOffer = 900008
-	BidErrGettingActiveBidOffer = 900009
-	BidErrGettingActiveCounterOffer = 900010
-	BidErrDeactivateOffer = 900011
-	BidErrCloseBidConv = 900012
-	BidErrActiveCounterOfferExists = 900013
-	BidErrActiveBidOfferExists = 900014
-	BidErrAmountMoreThanActiveCounterOffer = 900015
-	BidErrAmountLessThanActiveOffer = 900016
-	BidErrLockAmount = 900017
-	BidErrUnlockAmount = 900018
-	BidErrAddingOffer = 900019
-	BidErrAddingCounterOffer = 900020
-	BidErrInvalidDeadline = 900021
-	BidErrActiveBidConvExists = 900022
-	BidErrAddingBidConvToActiveStore = 900023
-	BidErrWrongBidder = 900024
-	BidErrWrongAssetOwner = 900025
-	BidErrDeductingAmountFromBidder = 900026
-	BidErrAdddingAmountToOwner = 900027
-	BidErrUpdateOffer = 900028
-	BidErrAssertingBidMasterStore = 900029
-	BidErrAddingBidConvToTargetStore = 900030
+	BidErrTooManyActiveOffers = 900009
+	BidErrGettingActiveBidOffer = 900010
+	BidErrGettingActiveCounterOffer = 900011
+	BidErrDeactivateOffer = 900012
+	BidErrCloseBidConv = 900013
+	BidErrActiveCounterOfferExists = 900014
+	BidErrActiveBidOfferExists = 900015
+	BidErrAmountMoreThanActiveCounterOffer = 900016
+	BidErrAmountLessThanActiveOffer = 900017
+	BidErrLockAmount = 900018
+	BidErrUnlockAmount = 900019
+	BidErrAddingOffer = 900020
+	BidErrAddingCounterOffer = 900021
+	BidErrInvalidDeadline = 900022
+	BidErrActiveBidConvExists = 900023
+	BidErrAddingBidConvToActiveStore = 900024
+	BidErrWrongBidder = 900025
+	BidErrWrongAssetOwner = 900026
+	BidErrDeductingAmountFromBidder = 900027
+	BidErrAdddingAmountToOwner = 900028
+	BidErrUpdateOffer = 900029
+	BidErrAssertingBidMasterStore = 900030
+	BidErrAddingBidConvToTargetStore = 900031
+	BidErrDeletingBidConvFromActiveStore = 900032
+	BidErrInvalidOfferType = 900033
 
 	//Ethereum Errors
 

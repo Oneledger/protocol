@@ -17,9 +17,9 @@ import (
 var _ action.Msg = &BidderDecision{}
 
 type BidderDecision struct {
-	BidConvId      	bidding.BidConvId		`json:"bidConvId"`
-	Bidder     		keys.Address 			`json:"bidder"`
-	Decision		bidding.BidDecision		`json:"decision"`
+	BidConvId bidding.BidConvId   `json:"bidConvId"`
+	Bidder    keys.Address        `json:"bidder"`
+	Decision  bidding.BidDecision `json:"decision"`
 }
 
 func (b BidderDecision) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
@@ -109,24 +109,25 @@ func runBidderDecision(ctx *action.Context, tx action.RawTx) (bool, action.Respo
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrWrongBidder, bidderDecision.Tags(), err)
 	}
 
-	//4. check if there is active counter offer from owner
-	activeOffer, err := bidMasterStore.BidOffer.GetActiveOfferForBidConvId(bidderDecision.BidConvId)
-	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingActiveOffer, bidderDecision.Tags(), err)
-	}
-	if activeOffer.OfferType == bidding.TypeOffer {
+	//4. get the active counter offer
+	activeOffers := bidMasterStore.BidOffer.GetOffers(bidderDecision.BidConvId, bidding.BidOfferActive, bidding.TypeCounterOffer)
+	// in this case there must be a counter offer from owner
+	if len(activeOffers) == 0 {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingActiveCounterOffer, bidderDecision.Tags(), err)
+	} else if len(activeOffers) > 1 {
+		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrTooManyActiveOffers, bidderDecision.Tags(), err)
 	}
+	activeOffer := activeOffers[0]
 
 	//5. if reject
 	if bidderDecision.Decision == bidding.RejectBid {
 		// deactivate offer and unlock amount depends on active offer type
-		err = DeactivateOffer(true, bidConv.Bidder, ctx, activeOffer, bidMasterStore)
+		err = DeactivateOffer(false, bidConv.Bidder, ctx, &activeOffer, bidMasterStore)
 		if err != nil {
 			return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrDeactivateOffer, bidderDecision.Tags(), err)
 		}
 		// close bid conversation
-		err = CloseBidConv(bidConv, activeOffer, bidMasterStore, bidding.BidStateRejected)
+		err = CloseBidConv(bidConv, bidMasterStore, bidding.BidStateRejected)
 		if err != nil {
 			return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrCloseBidConv, bidderDecision.Tags(), err)
 		}
@@ -149,13 +150,13 @@ func runBidderDecision(ctx *action.Context, tx action.RawTx) (bool, action.Respo
 	}
 
 	//8. change offer status to inactive and add it back to bid offer store
-	err = DeactivateOffer(true, bidConv.Bidder, ctx, activeOffer, bidMasterStore)
+	err = DeactivateOffer(true, bidConv.Bidder, ctx, &activeOffer, bidMasterStore)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrDeactivateOffer, bidderDecision.Tags(), err)
 	}
 
 	//9. close the bid conversation
-	err = CloseBidConv(bidConv, activeOffer, bidMasterStore, bidding.BidStateSucceed)
+	err = CloseBidConv(bidConv, bidMasterStore, bidding.BidStateSucceed)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrCloseBidConv, bidderDecision.Tags(), err)
 	}

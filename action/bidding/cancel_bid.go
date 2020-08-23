@@ -17,8 +17,8 @@ import (
 var _ action.Msg = &CancelBid{}
 
 type CancelBid struct {
-	BidConvId      	bidding.BidConvId		`json:"bidConvId"`
-	Bidder     		keys.Address 			`json:"bidder"`
+	BidConvId bidding.BidConvId `json:"bidConvId"`
+	Bidder    keys.Address      `json:"bidder"`
 }
 
 func (c CancelBid) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
@@ -104,14 +104,15 @@ func runCancelBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrExpiredBid, cancelBid.Tags(), err)
 	}
 
-	//3. check if there is active counter offer from owner
-	activeOffer, err := bidMasterStore.BidOffer.GetActiveOfferForBidConvId(cancelBid.BidConvId)
-	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingActiveOffer, cancelBid.Tags(), err)
+	//3. get the active counter offer
+	activeOffers := bidMasterStore.BidOffer.GetOffers(cancelBid.BidConvId, bidding.BidOfferActive, bidding.TypeCounterOffer)
+	// in this case there must be a counter offer from owner
+	if len(activeOffers) == 0 {
+		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingActiveCounterOffer, cancelBid.Tags(), err)
+	} else if len(activeOffers) > 1 {
+		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrTooManyActiveOffers, cancelBid.Tags(), err)
 	}
-	if activeOffer.OfferType == bidding.TypeCounterOffer {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrActiveCounterOfferExists, cancelBid.Tags(), err)
-	}
+	activeOffer := activeOffers[0]
 
 	//5. unlock amount
 	activeOfferCoin := activeOffer.Amount.ToCoin(ctx.Currencies)
@@ -121,13 +122,13 @@ func runCancelBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 	}
 
 	//6. change amount status to unlocked and deactivate it
-	err = DeactivateOffer(true, bidConv.Bidder, ctx, activeOffer, bidMasterStore)
+	err = DeactivateOffer(false, bidConv.Bidder, ctx, &activeOffer, bidMasterStore)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrDeactivateOffer, cancelBid.Tags(), err)
 	}
 
 	//7. close bid and put to CANCELLED store
-	err = CloseBidConv(bidConv, activeOffer, bidMasterStore, bidding.BidStateCancelled)
+	err = CloseBidConv(bidConv, bidMasterStore, bidding.BidStateCancelled)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrCloseBidConv, cancelBid.Tags(), err)
 	}

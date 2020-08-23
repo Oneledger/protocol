@@ -17,10 +17,9 @@ import (
 var _ action.Msg = &CounterOffer{}
 
 type CounterOffer struct {
-	BidConvId      	bidding.BidConvId		`json:"bidConvId"`
-	AssetOwner 		keys.Address 			`json:"assetOwner"`
-	Amount     		action.Amount           `json:"amount"`
-	OfferTime		int64					`json:"offerTime"`
+	BidConvId  bidding.BidConvId `json:"bidConvId"`
+	AssetOwner keys.Address      `json:"assetOwner"`
+	Amount     action.Amount     `json:"amount"`
 }
 
 func (c CounterOffer) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
@@ -121,15 +120,15 @@ func runCounterOffer(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrInvalidAsset, counterOffer.Tags(), err)
 	}
 
-	//2. there should be no active counter offer from owner
-	activeOffer, err := bidMasterStore.BidOffer.GetActiveOfferForBidConvId(counterOffer.BidConvId)
-	// in the counter offer case, there must be an active offer
-	if err != nil || activeOffer == nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingActiveOffer, counterOffer.Tags(), err)
+	//2. get active bid offer
+	activeOffers := bidMasterStore.BidOffer.GetOffers(counterOffer.BidConvId, bidding.BidOfferActive, bidding.TypeOffer)
+	// in this case, there must be an existing active offer
+	if len(activeOffers) == 0 {
+		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingActiveBidOffer, counterOffer.Tags(), err)
+	} else if len(activeOffers) > 1 {
+		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrTooManyActiveOffers, counterOffer.Tags(), err)
 	}
-	if activeOffer.OfferType == bidding.TypeCounterOffer {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrActiveCounterOfferExists, counterOffer.Tags(), err)
-	}
+	activeOffer := activeOffers[0]
 
 	//3. amount needs to be large than active bid offer from bidder
 	offerCoin := counterOffer.Amount.ToCoin(ctx.Currencies)
@@ -142,7 +141,7 @@ func runCounterOffer(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 	// this way we only lock amount from a bid offer from bidder
 	// if the active offer is a counter offer from owner, no amount is locked from the bidder
 
-	err = DeactivateOffer(true, bidConv.Bidder, ctx, activeOffer, bidMasterStore)
+	err = DeactivateOffer(false, bidConv.Bidder, ctx, &activeOffer, bidMasterStore)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrDeactivateOffer, counterOffer.Tags(), err)
 	}
@@ -151,7 +150,7 @@ func runCounterOffer(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 	createCounterOffer := bidding.NewBidOffer(
 		counterOffer.BidConvId,
 		bidding.TypeCounterOffer,
-		counterOffer.OfferTime,
+		ctx.Header.Time.UTC().Unix(),
 		counterOffer.Amount,
 		bidding.CounterOfferAmount,
 	)
