@@ -13,6 +13,7 @@ import (
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/delegation"
 	"github.com/Oneledger/protocol/data/fees"
+	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
@@ -361,6 +362,7 @@ func (vs *ValidatorStore) HandleUnstake(unstake Unstake) error {
 // Set validator last purge height
 func (vs *ValidatorStore) SetLastPurgeHeight(validator keys.Address, height int64) error {
 	key := append(vs.prefixPurge, validator...)
+	fmt.Println("Set Purge Height :", validator.String(), height)
 	value, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(height)
 	if err != nil {
 		return errors.Wrap(err, "failed to serialize purged height")
@@ -407,7 +409,6 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 	}
 
 	minSelfDelegationAmount := stakingOptions.MinSelfDelegationAmount.BigInt().Int64()
-
 	if height > 1 || (len(vs.byzantine) > 0) {
 		// map for non top-power validators
 		nonTopValidators := make(map[string]types.PubKey)
@@ -430,7 +431,6 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 				logger.Errorf("Validator: %s not found", addrHuman)
 				continue
 			}
-
 			updateTendermint := false
 
 			if validator.Power >= minSelfDelegationAmount && cnt < stakingOptions.TopValidatorCount {
@@ -441,6 +441,7 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 			// delete validator who's power is 0
 			if validator.Power <= 0 {
 				vKey := append(vs.prefix, validator.Address.Bytes()...)
+				fmt.Println("Deleting :", validator.Address.String())
 				//TODO: validator delete will not properly delete the item because of state implementation
 				ok, err := vs.store.Delete(vKey)
 				if !ok {
@@ -462,17 +463,18 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 			//distribute the fee for validators
 			if distribute {
 				feeShare := total.MultiplyInt64(queued.Priority()).DivideInt64(vs.totalPower)
+
 				err = ctx.FeePool.MinusFromPool(feeShare)
 				if err != nil {
 					logger.Fatal("failed to minus from fee pool")
 				}
 				err = ctx.FeePool.AddToAddress(validator.StakeAddress, feeShare)
+				fmt.Println("feeShare :", validator.StakeAddress.String(), ": ", feeShare)
 				if err != nil {
 					logger.Fatal("failed to distribute fee")
 				}
 			}
 		}
-
 		// purge all other active validators if not among the top
 		for addr, power := range vs.lastActive {
 			addrHuman := keys.Address(addr).Humanize()
@@ -503,10 +505,17 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 			if err != nil {
 				logger.Fatalf("failed  set last purge height, validator: %s", addrHuman)
 			}
+			fmt.Println("----------------------------------------------------")
+			fmt.Println("Staking Options : ", stakingOptions)
+			luh, _ := ctx.Govern.GetLUH(governance.LAST_UPDATE_HEIGHT_STAKING)
+			fmt.Println("LAst Update Height Staking : ", luh)
+			fmt.Println("PurgeHeight old/new :", purgeHeight, height)
+			fmt.Println("----------------------------------------------------")
 		}
 
 		// delegation
 		ctx.Delegators.UpdateWithdrawReward(height)
+
 	}
 	logger.Detailf("GetEndBlockUpdate end at block: %d\n", height)
 

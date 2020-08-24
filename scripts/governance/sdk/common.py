@@ -214,24 +214,11 @@ def test_change_gov_options(update, pid):
     time.sleep(3)
     encoded_pid = _prop.pid
 
-    # 1st fund
     fund_proposal(encoded_pid, _funding_goal_general, addr_list[0])
-
-    # 1st vote --> 25%
     vote_proposal(encoded_pid, OPIN_POSITIVE, url_0, addr_list[0])
-    # check_proposal_state(encoded_pid, ProposalStateActive, ProposalStatusVoting)
-
-    # 2nd vote --> 25%
     vote_proposal(encoded_pid, OPIN_NEGATIVE, url_1, addr_list[0])
-    # check_proposal_state(encoded_pid, ProposalStateActive, ProposalStatusVoting)
-
-    # 3rd vote --> 50%
     vote_proposal(encoded_pid, OPIN_POSITIVE, url_2, addr_list[0])
-    # check_proposal_state(encoded_pid, ProposalStateActive, ProposalStatusVoting)
-
-    # 4th vote --> 75%
     vote_proposal(encoded_pid, OPIN_POSITIVE, url_3, addr_list[0])
-    # check_proposal_state(encoded_pid, ProposalStatePassed, ProposalStatusCompleted)
 
     time.sleep(3)
 

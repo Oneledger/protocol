@@ -65,22 +65,26 @@ class Proposal:
         query_options = query_proposal_options()
         options = query_options["proposalOptions"]
         height = query_options["height"]
-        funding_deadline_in_use = options["configUpdate"]["fundingDeadline"]
-        voting_deadline_in_use = options["configUpdate"]["votingDeadline"]
         if assign_funding_deadline != 0:
             funding_deadline_in_use = assign_funding_deadline
 
         if self.pty == "configUpdate":
+            funding_deadline_in_use = options["configUpdate"]["fundingDeadline"]
+            voting_deadline_in_use = options["configUpdate"]["votingDeadline"]
             funding_goal = options["configUpdate"]["fundingGoal"]
             funding_deadline = height + funding_deadline_in_use
             voting_deadline = funding_deadline + voting_deadline_in_use
             pass_percentage = options["configUpdate"]["passPercentage"]
         elif self.pty == "codeChange":
+            funding_deadline_in_use = options["codeChange"]["fundingDeadline"]
+            voting_deadline_in_use = options["codeChange"]["votingDeadline"]
             funding_goal = options["codeChange"]["fundingGoal"]
             funding_deadline = height + funding_deadline_in_use
             voting_deadline = funding_deadline + voting_deadline_in_use
             pass_percentage = options["codeChange"]["passPercentage"]
         elif self.pty == "general":
+            funding_deadline_in_use = options["general"]["fundingDeadline"]
+            voting_deadline_in_use = options["general"]["votingDeadline"]
             funding_goal = options["general"]["fundingGoal"]
             funding_deadline = height + funding_deadline_in_use
             voting_deadline = funding_deadline + voting_deadline_in_use

@@ -55,6 +55,10 @@ if __name__ == "__main__":
     update = {"propOptions.configUpdate.votingDeadline": update_param}
     updateGov(update, "proposal", "id_" + str(randint(10000, 99999)), True, False)
 
+    update_param = 75002
+    update = {"propOptions.configUpdate.fundingDeadline": update_param}
+    updateGov(update, "proposal", "id_" + str(randint(10000, 99999)), True, False)
+
     update_param = {
         "penaltyBountyPercentage": 20,
         "penaltyBurnPercentage": 80,

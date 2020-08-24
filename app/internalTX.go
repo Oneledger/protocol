@@ -1,6 +1,8 @@
 package app
 
 import (
+	"fmt"
+
 	"github.com/google/uuid"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
 
@@ -121,7 +123,7 @@ func FinalizeProposals(header *Header, ctx *context, logger *log.Logger) {
 		finalizeProposals = append(finalizeProposals, *tx)
 		return false
 	})
-
+	fmt.Println(finalizeProposals)
 	for _, proposal := range finalizeProposals {
 		ctx.deliver.BeginTxSession()
 		actionctx := ctx.Action(header, ctx.deliver)

@@ -169,7 +169,7 @@ func (st *DelegationStore) GetMatureAmounts(version int64) (mature *MatureBlock,
 
 func (st *DelegationStore) SetMatureAmounts(version int64, mature *MatureBlock) (err error) {
 	key := st.getMatureKey(version)
-
+	fmt.Println("Set Mature  : ", mature, version)
 	dat, err := st.szlr.Serialize(mature)
 	if err != nil {
 		return err
@@ -358,6 +358,7 @@ func (st *DelegationStore) UpdateWithdrawReward(height int64) {
 
 	// get pending mature coins at block height
 	mature, err := st.GetMatureAmounts(height)
+	fmt.Println("Matured Amounts : ", mature)
 	if err != nil {
 		return
 	}
