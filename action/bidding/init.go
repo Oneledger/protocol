@@ -28,7 +28,7 @@ func EnableBidding(r action.Router) error {
 	if err != nil {
 		return errors.Wrap(err, "expireBidTx")
 	}
-	err = r.AddHandler(action.BID_BIDDER_DICISION, BidderDecision{})
+	err = r.AddHandler(action.BID_BIDDER_DECISION, BidderDecision{})
 	if err != nil {
 		return errors.Wrap(err, "bidderDecisionTx")
 	}

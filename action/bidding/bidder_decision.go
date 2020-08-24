@@ -169,7 +169,7 @@ func (b BidderDecision) Signers() []action.Address {
 }
 
 func (b BidderDecision) Type() action.Type {
-	return action.BID_BIDDER_DICISION
+	return action.BID_BIDDER_DECISION
 }
 
 func (b BidderDecision) Tags() kv.Pairs {

@@ -55,14 +55,12 @@ const (
 	WITHDRAW_REWARD Type = 0x41
 
 	//Bid
-	BID_CREATE       	Type = 0x101
-	BID_CONTER_OFFER 	Type = 0x102
-	BID_CANCEL		 	Type = 0x103
-	BID_BIDDER_DICISION Type = 0x104
-	BID_EXPIRE			Type = 0x105
-	BID_OWNER_DECISION 	Type = 0x106
-
-
+	BID_CREATE          Type = 0x101
+	BID_CONTER_OFFER    Type = 0x102
+	BID_CANCEL          Type = 0x103
+	BID_BIDDER_DECISION Type = 0x104
+	BID_EXPIRE          Type = 0x105
+	BID_OWNER_DECISION  Type = 0x106
 
 	//EOF here Only used as a marker to mark the end of Type list
 	//So that the query for Types can return all Types dynamically
