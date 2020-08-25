@@ -81,19 +81,19 @@ withdrawtest: reset
 #
 # run governance tests
 #
+
 govtest: reset
-# 	@./scripts/testsend
-# 	python scripts/governance/createProposals.py
-# 	python scripts/governance/fundProposals.py
-# 	python scripts/governance/cancelProposals.py
-# 	python scripts/governance/withdrawFunds.py
-# 	python scripts/governance/voteProposals.py
-# 	python scripts/governance/governanceCLI.py
-# 	python scripts/governance/optUpdate.py
-# 	python scripts/governance/optTestCatchup.py
-# 	python scripts/governance/optValidatorStaking.py
-#
-# 	make reset
+	@./scripts/testsend
+	python scripts/governance/createProposals.py
+	python scripts/governance/fundProposals.py
+	python scripts/governance/cancelProposals.py
+	python scripts/governance/withdrawFunds.py
+	python scripts/governance/voteProposals.py
+	python scripts/governance/governanceCLI.py
+	python scripts/governance/optUpdate.py
+	python scripts/governance/optTestCatchup.py
+	python scripts/governance/optValidatorStaking.py
+	make reset
 	@./scripts/testsend
 	python scripts/governance/queryProposals.py
 	python scripts/governance/optTestStakingAmount.py
