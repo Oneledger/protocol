@@ -151,24 +151,58 @@ def stake(node, amount='3000000'):
     print bcolors.OKBLUE + "#### Stake Successfull for :" + node + bcolors.ENDC
 
 
-def validateCatchup(node, node2):
+def unstake(node, amount='3000000'):
+    validatorAccount = addValidatorAccounts(node)
+    # trasfer funds from node 0 to staking validator
+    # args = ['olclient', 'send', '--party', parentnodeaddre, "--counterparty", validatorAccount, '--amount', '100',
+    #         '--password',
+    #         '1234', '--fee', '0.001']
+    # process = subprocess.Popen(args, cwd=node_0, stdout=subprocess.PIPE)
+    # process.wait()
+    # output = process.stdout.read()
+    # print output
+    args = ['olclient', 'delegation', 'unstake', '--address', validatorAccount, '--amount', amount, '--password',
+            '1234']
+    process = subprocess.Popen(args, cwd=node, stdout=subprocess.PIPE)
+    process.wait()
+    output = process.stdout.read()
+    if not success in output:
+        print "UnStake was not successful"
+    print bcolors.OKBLUE + "#### UnStake Successfull for :" + node + bcolors.ENDC
+
+
+def validateCatchup():
     args = ['olclient', 'validatorset', 'status']
     # set protocol root path as current path
-    process1 = subprocess.Popen(args, cwd=node, stdout=subprocess.PIPE)
-    process2 = subprocess.Popen(args, cwd=node2, stdout=subprocess.PIPE)
+    process1 = subprocess.Popen(args, cwd=node_0, stdout=subprocess.PIPE)
+    process2 = subprocess.Popen(args, cwd=node_1, stdout=subprocess.PIPE)
+    process3 = subprocess.Popen(args, cwd=node_2, stdout=subprocess.PIPE)
+    process4 = subprocess.Popen(args, cwd=node_3, stdout=subprocess.PIPE)
     process1.wait()
     process2.wait()
+    process3.wait()
+    process4.wait()
     if process1.returncode != 0:
         print "olclient check validatorset failed returncode"
         sys.exit(-1)
     if process2.returncode != 0:
         print "olclient check validatorset failed returncode"
         sys.exit(-1)
+    if process3.returncode != 0:
+        print "olclient check validatorset failed returncode"
+        sys.exit(-1)
+    if process4.returncode != 0:
+        print "olclient check validatorset failed returncode"
+        sys.exit(-1)
     output1 = process1.stdout.readlines()
     height1 = output1[len(output1) - 1].split(" ")[1]
     output2 = process2.stdout.readlines()
     height2 = output2[len(output2) - 1].split(" ")[1]
-    if height2 != height1:
+    output3 = process3.stdout.readlines()
+    height3 = output3[len(output3) - 1].split(" ")[1]
+    output4 = process4.stdout.readlines()
+    height4 = output4[len(output4) - 1].split(" ")[1]
+    if not height2 == height1 == height3 == height4:
         print "Node Failed to catchup"
         sys.exit(-1)
     return height1
@@ -187,9 +221,9 @@ def clean_and_catchup():
     call_with_args = "./scripts/governance/clean '%s'" % (str(0))
     os.system(call_with_args)
     # Wait for it to catchup
-    time.sleep(30)
+    time.sleep(15)
     # Validate Catchup
-    height = validateCatchup(node_0, node_1)
+    height = validateCatchup()
     opt = query_governanceState()
     for idx, val in enumerate(option_types):
         if opt["lastUpdateHeight"][val] != old_heights[idx]:
@@ -215,8 +249,8 @@ def test_change_gov_options(update, pid):
     encoded_pid = _prop.pid
 
     fund_proposal(encoded_pid, _funding_goal_general, addr_list[0])
-    vote_proposal(encoded_pid, OPIN_POSITIVE, url_0, addr_list[0])
-    vote_proposal(encoded_pid, OPIN_NEGATIVE, url_1, addr_list[0])
+    # vote_proposal(encoded_pid, OPIN_POSITIVE, url_0, addr_list[0])
+    # vote_proposal(encoded_pid, OPIN_POSITIVE, url_1, addr_list[0])
     vote_proposal(encoded_pid, OPIN_POSITIVE, url_2, addr_list[0])
     vote_proposal(encoded_pid, OPIN_POSITIVE, url_3, addr_list[0])
 

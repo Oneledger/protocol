@@ -149,7 +149,7 @@ func runFinalizeProposal(ctx *action.Context, tx action.RawTx) (bool, action.Res
 		if proposal.Type == governance.ProposalTypeConfigUpdate {
 			updates, ok := proposal.GovernanceStateUpdate.(map[string]interface{})
 			if !ok {
-				return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrValidateGovState, finalizedProposal.Tags(), errors.New("Invalide Update Object"))
+				return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrValidateGovState, finalizedProposal.Tags(), errors.New("Invalid Update Object"))
 			}
 			for configUpdatePath, updateValue := range updates {
 				updatefunc, ok := ctx.GovUpdate.GovernanceUpdateFunction[configUpdatePath]
@@ -175,7 +175,7 @@ func runFinalizeProposal(ctx *action.Context, tx action.RawTx) (bool, action.Res
 			if err != nil {
 				return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrStatusUnableToSetFinalizeFailed, finalizedProposal.Tags(), err)
 			}
-			ctx.Logger.Error("Distribuition of Funds failed , Set Proposal to Finalize Failed")
+			ctx.Logger.Error("Distribution of Funds failed , Set Proposal to Finalize Failed")
 			return helpers.LogAndReturnTrue(ctx.Logger, finalizedProposal.Tags(), governance.ErrFinalizeDistributtionFailed.Wrap(distributeErr).Marshal())
 		}
 

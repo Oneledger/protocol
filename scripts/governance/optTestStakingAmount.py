@@ -18,6 +18,7 @@ def stake_new_validators_less_than_min():
     stake(node_5, '2000000')
 
 
+
 if __name__ == "__main__":
     stake_new_validators_less_than_min()
     if getActiveValidators() != 4:
@@ -34,7 +35,7 @@ if __name__ == "__main__":
         sys.exit(-1)
     if getAllValidators() != 6:
         sys.exit(-1)
-
+    #
     print bcolors.OKBLUE + "#### Active Validator/Total Validator count : " + str(getActiveValidators()) + " / " + str(
         getAllValidators()) + " | New Validators Added | minSelfDelegationAmount = " + str(update_param) + bcolors.ENDC
 
@@ -52,4 +53,4 @@ if __name__ == "__main__":
     print bcolors.OKBLUE + "#### Active Validator/Total Validator count : " + str(getActiveValidators()) + " / " + str(
         getAllValidators()) + " | Validators Removed | minSelfDelegationAmount = " + str(update_param) + bcolors.ENDC
 
-    # clean_and_catchup()
+    clean_and_catchup()

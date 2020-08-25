@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"math/big"
+	"sort"
 
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
@@ -13,7 +14,6 @@ import (
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/delegation"
 	"github.com/Oneledger/protocol/data/fees"
-	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
@@ -362,7 +362,6 @@ func (vs *ValidatorStore) HandleUnstake(unstake Unstake) error {
 // Set validator last purge height
 func (vs *ValidatorStore) SetLastPurgeHeight(validator keys.Address, height int64) error {
 	key := append(vs.prefixPurge, validator...)
-	fmt.Println("Set Purge Height :", validator.String(), height)
 	value, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(height)
 	if err != nil {
 		return errors.Wrap(err, "failed to serialize purged height")
@@ -476,7 +475,13 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 			}
 		}
 		// purge all other active validators if not among the top
-		for addr, power := range vs.lastActive {
+		keysLA := make([]string, 0, len(vs.lastActive))
+		for k := range vs.lastActive {
+			keysLA = append(keysLA, k)
+		}
+		sort.Strings(keysLA)
+
+		for _, addr := range keysLA {
 			addrHuman := keys.Address(addr).Humanize()
 			pub, ok := nonTopValidators[addrHuman]
 			if !ok {
@@ -494,7 +499,7 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 			}
 
 			// add to validator update list
-			logger.Infof("Validator for purge ready: %s - with power: %d\n", addrHuman, power)
+			logger.Infof("Validator for purge ready: %s - with power: %d\n", addrHuman, vs.lastActive[addr])
 			validatorUpdates = append(validatorUpdates, types.ValidatorUpdate{
 				PubKey: pub,
 				Power:  0,
@@ -504,13 +509,9 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 			err = vs.SetLastPurgeHeight(keys.Address(addr), height)
 			if err != nil {
 				logger.Fatalf("failed  set last purge height, validator: %s", addrHuman)
+
 			}
-			fmt.Println("----------------------------------------------------")
-			fmt.Println("Staking Options : ", stakingOptions)
-			luh, _ := ctx.Govern.GetLUH(governance.LAST_UPDATE_HEIGHT_STAKING)
-			fmt.Println("LAst Update Height Staking : ", luh)
-			fmt.Println("PurgeHeight old/new :", purgeHeight, height)
-			fmt.Println("----------------------------------------------------")
+
 		}
 
 		// delegation
@@ -520,6 +521,11 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 	logger.Detailf("GetEndBlockUpdate end at block: %d\n", height)
 
 	// TODO : get the final updates from vs.cached
+
+	sort.Slice(validatorUpdates, func(i, j int) bool {
+		return bytes.Compare(validatorUpdates[i].PubKey.GetData(), validatorUpdates[j].PubKey.GetData()) < 0
+	})
+
 	return validatorUpdates
 }
 
