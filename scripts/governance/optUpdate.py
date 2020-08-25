@@ -51,13 +51,6 @@ if __name__ == "__main__":
     update = {"evidenceOptions.blockVotesDiff": update_param}
     updateGov(update, "evidence", "id_" + str(randint(10000, 99999)), True)
 
-    update_param = 150002
-    update = {"propOptions.configUpdate.votingDeadline": update_param}
-    updateGov(update, "proposal", "id_" + str(randint(10000, 99999)), True, False)
-
-    update_param = 75002
-    update = {"propOptions.configUpdate.fundingDeadline": update_param}
-    updateGov(update, "proposal", "id_" + str(randint(10000, 99999)), True, False)
 
     update_param = {
         "penaltyBountyPercentage": 20,

@@ -58,8 +58,8 @@ var (
 
 	proposalInitialFunding, _   = balance.NewAmountFromString("1000000000", 10)
 	proposalFundingGoal, _      = balance.NewAmountFromString("10000000000", 10)
-	proposalFundingDeadline     = int64(75001)
-	proposalVotingDeadline      = int64(150000)
+	proposalFundingDeadline     = int64(100)
+	proposalVotingDeadline      = int64(12)
 	proposalPassPercentage      = 51
 	bountyProgramAddr           = "oneledgerBountyProgram"
 	executionCostAddrConfig     = "executionCostConfig"
