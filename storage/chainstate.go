@@ -119,6 +119,8 @@ func (state *ChainState) IterateRange(start, end []byte, ascending bool, fn func
 }
 
 func (state *ChainState) Iterate(fn func(key []byte, value []byte) bool) (stopped bool) {
+	state.RLock()
+	defer state.RUnlock()
 	return state.Delivered.Iterate(fn)
 }
 
@@ -137,6 +139,8 @@ func (state *ChainState) FindAll() map[string][]byte {
 // TODO: Should be against the commit tree, not the delivered one!!!
 func (state *ChainState) Get(key StoreKey) ([]byte, error) {
 	// get the value of currently working tree. it's temporary value that is not persistent yet.
+	state.RLock()
+	defer state.RUnlock()
 	_, value := state.Delivered.ImmutableTree.Get(key)
 
 	return value, nil
@@ -155,6 +159,8 @@ func (state *ChainState) GetVersioned(version int64, key StoreKey) (int64, []byt
 
 // TODO: Should be against the commit tree, not the delivered one!!!
 func (state *ChainState) Exists(key StoreKey) bool {
+	state.RLock()
+	defer state.RUnlock()
 	return state.Delivered.ImmutableTree.Has(key)
 }
 
@@ -171,7 +177,8 @@ func (state *ChainState) Delete(key StoreKey) (bool, error) {
 // TODO: Not sure about this, it seems to be Cosmos-sdk's way of getting arround the immutable copy problem...
 func (state *ChainState) Commit() ([]byte, int64) {
 
-	state.RLock()
+	state.Lock()
+	defer state.Unlock()
 	// Persist the Delivered merkle tree
 	hash, version, err := state.Delivered.SaveVersion()
 	if err != nil {
@@ -199,7 +206,7 @@ func (state *ChainState) Commit() ([]byte, int64) {
 		}
 
 	}
-	state.RUnlock()
+
 	return hash, version
 }
 
