@@ -358,7 +358,6 @@ func (st *DelegationStore) UpdateWithdrawReward(height int64) {
 
 	// get pending mature coins at block height
 	mature, err := st.GetMatureAmounts(height)
-	fmt.Println("Matured Amounts : ", mature)
 	if err != nil {
 		return
 	}

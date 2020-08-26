@@ -468,7 +468,6 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 					logger.Fatal("failed to minus from fee pool")
 				}
 				err = ctx.FeePool.AddToAddress(validator.StakeAddress, feeShare)
-				fmt.Println("feeShare :", validator.StakeAddress.String(), ": ", feeShare)
 				if err != nil {
 					logger.Fatal("failed to distribute fee")
 				}

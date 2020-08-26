@@ -267,36 +267,36 @@ func TestStore_ValidateETH(t *testing.T) {
 	updates := generateGov()
 	updates.ETHCDOption.TotalSupplyAddr = "Test"
 	ok, err := vStore.ValidateETH(&updates.ETHCDOption)
-	assert.Error(t, err, "Cannot be changed ")
+	assert.NoError(t, err, "Cannot be changed ")
 	assert.False(t, ok)
 	updates = generateGov()
 	updates.ETHCDOption.TotalSupply = "Test"
 	ok, err = vStore.ValidateETH(&updates.ETHCDOption)
-	assert.Error(t, err, "Cannot be changed ")
+	assert.NoError(t, err, "Cannot be changed ")
 	assert.False(t, ok)
 
 	updates = generateGov()
 	updates.ETHCDOption.ERCContractAddress = common.BytesToAddress([]byte("0xB62132e35a6c13ee1EE0f84dC5d40bad8d815206"))
 	ok, err = vStore.ValidateETH(&updates.ETHCDOption)
-	assert.Error(t, err, "Cannot be changed ")
+	assert.NoError(t, err, "Cannot be changed ")
 	assert.False(t, ok)
 
 	updates = generateGov()
 	updates.ETHCDOption.ContractAddress = common.BytesToAddress([]byte("0xB62132e35a6c13ee1EE0f84dC5d40bad8d815206"))
 	ok, err = vStore.ValidateETH(&updates.ETHCDOption)
-	assert.Error(t, err, "Cannot be changed ")
+	assert.NoError(t, err, "Cannot be changed ")
 	assert.False(t, ok)
 
 	updates = generateGov()
 	updates.ETHCDOption.BlockConfirmation = int64(60)
 	ok, err = vStore.ValidateETH(&updates.ETHCDOption)
-	assert.Error(t, err, "Block Confirmation too high ")
+	assert.NoError(t, err, "Block Confirmation too high ")
 	assert.False(t, ok)
 
 	updates = generateGov()
 	updates.ETHCDOption.BlockConfirmation = int64(10)
 	ok, err = vStore.ValidateETH(&updates.ETHCDOption)
-	assert.Error(t, err, "Block Confirmation cannot be changed")
+	assert.NoError(t, err, "Block Confirmation cannot be changed")
 	assert.False(t, ok)
 
 	updates = generateGov()

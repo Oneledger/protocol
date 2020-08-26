@@ -56,10 +56,12 @@ var (
 	ethBlockConfirmation = int64(12)
 	btcBlockConfirmation = int64(6)
 
-	proposalInitialFunding, _   = balance.NewAmountFromString("1000000000", 10)
-	proposalFundingGoal, _      = balance.NewAmountFromString("10000000000", 10)
-	proposalFundingDeadline     = int64(100)
-	proposalVotingDeadline      = int64(12)
+	proposalInitialFunding, _ = balance.NewAmountFromString("1000000000", 10)
+	proposalFundingGoal, _    = balance.NewAmountFromString("10000000000", 10)
+	proposalFundingDeadline   = int64(75001)
+	proposalVotingDeadline    = int64(150000)
+	//proposalFundingDeadline     = int64(10)
+	//proposalVotingDeadline      = int64(12)
 	proposalPassPercentage      = 51
 	bountyProgramAddr           = "oneledgerBountyProgram"
 	executionCostAddrConfig     = "executionCostConfig"
@@ -129,6 +131,8 @@ type testnetConfig struct {
 	rewardsInterval      int64
 	reserved_domains     string
 	maturityTime         int64
+	votingDeadline       int64
+	fundingDeadline      int64
 }
 
 func init() {
@@ -150,6 +154,8 @@ func init() {
 	testnetCmd.Flags().Int64Var(&testnetArgs.rewardsInterval, "rewards_interval", 1, "Block rewards interval")
 	testnetCmd.Flags().StringVar(&testnetArgs.reserved_domains, "reserved_domains", "", "Directory which contains Reserved domains list")
 	testnetCmd.Flags().Int64Var(&testnetArgs.maturityTime, "maturity_time", 109200, "Set Maturity time for staking")
+	testnetCmd.Flags().Int64Var(&testnetArgs.fundingDeadline, "funding_deadline", 75001, "Set Maturity time for staking")
+	testnetCmd.Flags().Int64Var(&testnetArgs.votingDeadline, "voting_deadline", 150000, "Set Maturity time for staking")
 
 }
 
@@ -326,7 +332,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		cfg.Node.DB = args.dbType
 		if args.createEmptyBlock {
 			cfg.Consensus.CreateEmptyBlocks = true
-			cfg.Consensus.CreateEmptyBlocksInterval = 3000
+			cfg.Consensus.CreateEmptyBlocksInterval = 1000
 		} else {
 			cfg.Consensus.CreateEmptyBlocks = false
 		}
@@ -437,7 +443,8 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		lockBalanceAddress,
 		btcBlockConfirmation,
 	}
-
+	proposalFundingDeadline = args.fundingDeadline
+	proposalVotingDeadline = args.votingDeadline
 	propOpt := governance.ProposalOptionSet{
 		ConfigUpdate: governance.ProposalOption{
 			InitialFunding:         proposalInitialFunding,

@@ -221,9 +221,14 @@ def clean_and_catchup():
     call_with_args = "./scripts/governance/clean '%s'" % (str(0))
     os.system(call_with_args)
     # Wait for it to catchup
-    time.sleep(15)
+    time.sleep(20)
     # Validate Catchup
-    height = validateCatchup()
+    height1 = validateCatchup()
+    time.sleep(3)
+    height2 = validateCatchup()
+    if not height2 > height1:
+        print "All nodes crashed"
+        sys.exit(-1)
     opt = query_governanceState()
     for idx, val in enumerate(option_types):
         if opt["lastUpdateHeight"][val] != old_heights[idx]:
@@ -231,7 +236,8 @@ def clean_and_catchup():
                 opt["lastUpdateHeight"][val]) + " , it was : " + str(old_heights[idx]) + " Before Catchup"
             sys.exit(-1)
     print bcolors.OKBLUE + "Last Update Height After Catchup : " + str(opt["lastUpdateHeight"]) + bcolors.ENDC
-    print bcolors.OKBLUE + "Block Height After Catchup : " + str(height) + bcolors.ENDC
+    print bcolors.OKBLUE + "Block Height After Catchup : " + str(height1) + bcolors.ENDC
+    print bcolors.OKBLUE + "Block Height Rechecked at  : " + str(height2) + bcolors.ENDC
 
 
 def test_change_gov_options(update, pid):
