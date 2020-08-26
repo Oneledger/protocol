@@ -423,9 +423,10 @@ func generateGov() *GovernanceState {
 		PenaltyBurnPercentage: 50,
 		PenaltyBurnDecimals:   100,
 
-		ValidatorReleaseTime: 5,
+		ValidatorReleaseTime:    5,
+		ValidatorVoteDecimals:   100,
+		ValidatorVotePercentage: 50,
 
-		AllegationVotesCount: 10,
 		AllegationPercentage: 66,
 		AllegationDecimals:   100,
 	}

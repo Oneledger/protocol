@@ -309,14 +309,17 @@ func (st *Store) ValidateEvidence(opt *evidence.Options) (bool, error) {
 	if opt.ValidatorReleaseTime != oldOptions.ValidatorReleaseTime {
 		return false, errors.New("Validator release time cannot be changed")
 	}
-	if opt.AllegationVotesCount != oldOptions.AllegationVotesCount {
-		return false, errors.New("AllegationVotesCount cannot be changed")
-	}
 	if opt.AllegationPercentage != oldOptions.AllegationPercentage {
 		return false, errors.New("AllegationPercentage cannot be changed")
 	}
 	if opt.AllegationDecimals != oldOptions.AllegationDecimals {
 		return false, errors.New("AllegationDecimals cannot be changed")
+	}
+	if opt.ValidatorVotePercentage != oldOptions.ValidatorVotePercentage {
+		return false, errors.New("Validator Vote Percentage cannot be changed")
+	}
+	if opt.ValidatorVoteDecimals != oldOptions.ValidatorVoteDecimals {
+		return false, errors.New("Validation Vote Decimals cannot be changed")
 	}
 
 	return true, nil
