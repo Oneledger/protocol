@@ -2,7 +2,6 @@ package governance
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
@@ -118,9 +117,6 @@ func runWithdraw(ctx *action.Context, signedTx action.RawTx) (bool, action.Respo
 		// if funding goal is reached or there is still time for funding,
 		// this will also cover InsufficientVotes and Completed
 		if currentFundsForProposal.BigInt().Cmp(proposal.FundingGoal.BigInt()) >= 0 || ctx.Header.Height <= proposal.FundingDeadline {
-			fmt.Println("-------------------------------------------------------------------------------------")
-			fmt.Println(currentFundsForProposal.BigInt().Cmp(proposal.FundingGoal.BigInt()))
-			fmt.Println(ctx.Header.Height, proposal.FundingDeadline)
 			ctx.Logger.Error("Proposal does not meet withdraw requirement", withdrawProposal.ProposalID)
 			result := action.Response{
 				Events: action.GetEvent(withdrawProposal.Tags(), "withdraw_proposal_does_not_meet_withdraw_requirement"),

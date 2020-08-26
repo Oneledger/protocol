@@ -2,7 +2,6 @@ package governance
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
@@ -116,7 +115,6 @@ func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) 
 
 	//Validate voting height
 	if createProposal.VotingDeadline-createProposal.FundingDeadline != options.VotingDeadline {
-		fmt.Println(createProposal.VotingDeadline, createProposal.FundingDeadline)
 		return false, governance.ErrInvalidVotingDeadline
 	}
 

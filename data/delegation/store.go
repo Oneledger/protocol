@@ -169,7 +169,6 @@ func (st *DelegationStore) GetMatureAmounts(version int64) (mature *MatureBlock,
 
 func (st *DelegationStore) SetMatureAmounts(version int64, mature *MatureBlock) (err error) {
 	key := st.getMatureKey(version)
-	fmt.Println("Set Mature  : ", mature, version)
 	dat, err := st.szlr.Serialize(mature)
 	if err != nil {
 		return err

@@ -332,7 +332,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		cfg.Node.DB = args.dbType
 		if args.createEmptyBlock {
 			cfg.Consensus.CreateEmptyBlocks = true
-			cfg.Consensus.CreateEmptyBlocksInterval = 1000
+			cfg.Consensus.CreateEmptyBlocksInterval = 3000
 		} else {
 			cfg.Consensus.CreateEmptyBlocks = false
 		}
