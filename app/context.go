@@ -80,6 +80,7 @@ type context struct {
 	rewardMaster    *rewards.RewardMasterStore
 	transaction     *transactions.TransactionStore
 	logWriter       io.Writer
+	govupdate       *action.GovernaceUpdateAndValidate
 }
 
 func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (context, error) {
@@ -132,6 +133,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.internalRouter = action.NewRouter("internal")
 	ctx.extStores = data.NewStorageRouter()
 	ctx.controllerFunctions = NewRouter()
+	ctx.govupdate = action.NewGovUpdate()
 	testEnv := os.Getenv("OLTEST")
 
 	btime := 600 * time.Second
@@ -205,6 +207,7 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.rewardMaster.WithState(state),
 		ctx.govern.WithState(state),
 		ctx.extStores,
+		ctx.govupdate,
 	)
 
 	return actionCtx
@@ -275,6 +278,7 @@ func (ctx *context) Services() (service.Map, error) {
 		EthTrackers:    ethTracker,
 		Trackers:       btcTrackers,
 		Govern:         ctx.govern,
+		GovUpdate:      ctx.govupdate,
 	}
 
 	return service.NewMap(svcCtx)

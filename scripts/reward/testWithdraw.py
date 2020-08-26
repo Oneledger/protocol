@@ -88,4 +88,16 @@ if __name__ == "__main__":
     testrewardswithdraw([newAccount], True, "No Error")
     print bcolors.OKGREEN + "#### Success for withdraw to new address" + bcolors.ENDC
 
+    # Staking Back from 0-Node (To restore Validator = Active)
+    args = ['olclient', 'delegation', 'stake', '--address', validatorAccounts[0], '--amount', '3000000', '--password',
+            '1234']
+    process = subprocess.Popen(args, cwd=node_0, stdout=subprocess.PIPE)
+    process.wait()
+    output = process.stdout.readlines()
+    if not success in output[1]:
+        print "stake was not successful"
+        sys.exit(-1)
+    print bcolors.OKGREEN + "#### Success for stake" + bcolors.ENDC
+    time.sleep(5)
+
 print bcolors.OKGREEN + "#### Withdraw block rewards succeed" + bcolors.ENDC

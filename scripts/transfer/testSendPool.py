@@ -6,7 +6,7 @@ import sys
 import time
 
 success = "Returned Successfully"
-sendAmount = "100000"
+sendAmount = "10000"
 
 url = "http://127.0.0.1:26602/jsonrpc"
 devnet = os.path.join(os.environ['OLDATA'], "devnet")
@@ -44,15 +44,20 @@ def addValidatorAccounts(numofValidators):
         process = subprocess.Popen(args, cwd=nodedir, stdout=subprocess.PIPE)
         process.wait()
         output = process.stdout.readlines()
+        if "exists" in output[0]:
+            args = ['olclient', 'list']
+            process = subprocess.Popen(args, cwd=nodedir, stdout=subprocess.PIPE)
+            process.wait()
+            output = process.stdout.readlines()
+            validatorAcounts.append(output[2].split(" ")[1].strip()[3:])
         validatorAcounts.append(output[1].split(":")[1].strip()[3:])
     return validatorAcounts
 
 
 if __name__ == "__main__":
     # Creating accounts for with funds
-    validatorAccounts = addValidatorAccounts(4)
+    validatorAccounts = addValidatorAccounts(1)
     # send some funds to pool through olclient
-
     args = ['olclient', 'sendpool', '--amount', sendAmount, '--party', validatorAccounts[0],
             '--poolname', 'RewardsPool', '--fee', '0.0001', '--password', '1234']
     process = subprocess.Popen(args, cwd=node_0, stdout=subprocess.PIPE)

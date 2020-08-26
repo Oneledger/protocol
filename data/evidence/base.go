@@ -12,12 +12,12 @@ type Options struct {
 	PenaltyBaseDecimals int64 `json:"penaltyBaseDecimals"`
 
 	// penalty cut for bounty (as example 13.43 %, stored as 1343)
-	PenaltyBountyPercentage int64 `json:"penaltyBountyPerncentage"`
+	PenaltyBountyPercentage int64 `json:"penaltyBountyPercentage"`
 	// penalty cut decimals
 	PenaltyBountyDecimals int64 `json:"penaltyBountyDecimals"`
 
 	// penalty cut for burn
-	PenaltyBurnPercentage int64 `json:"penaltyBurnPerncentage"`
+	PenaltyBurnPercentage int64 `json:"penaltyBurnPercentage"`
 	// penalty cut decimals
 	PenaltyBurnDecimals int64 `json:"penaltyBurnDecimals"`
 
