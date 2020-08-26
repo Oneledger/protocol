@@ -126,7 +126,6 @@ func (app *App) blockBeginner() blockBeginner {
 			app.logger.Error("validator set with error", err)
 		}
 
-		//update Block Rewards
 		blockRewardEvent := handleBlockRewards(app.Context.validators, app.Context.balances,
 			app.Context.rewardMaster.WithState(app.Context.deliver), app.Context.currencies, req)
 
@@ -301,7 +300,6 @@ func (app *App) blockEnder() blockEnder {
 		result := ResponseEndBlock{
 			ValidatorUpdates: updates,
 		}
-		app.logger.Debug("Commited Block :", req.Height)
 		app.logger.Detail("End Block: ", result, "height:", req.Height)
 
 		return result
