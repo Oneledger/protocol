@@ -73,6 +73,8 @@ var (
 	maxBlockVotesDiff          = int64(100000)
 	minPenaltyBasePercentage   = int64(10)
 	maxPenaltyBasePercentage   = int64(40)
+	minValidatorVotePercentage = int64(50)
+	maxValidatorVotePercentage = int64(100)
 	// can be between 0 -100, PenaltyBurnPercentage + PenaltyBountyPercentage is always 100
 )
 
@@ -306,6 +308,10 @@ func (st *Store) ValidateEvidence(opt *evidence.Options) (bool, error) {
 	if !ok {
 		return false, errors.New("PenaltyBasePercentage not in range")
 	}
+	ok = verifyRangeInt64(opt.ValidatorVotePercentage/(opt.ValidatorVoteDecimals/100), minValidatorVotePercentage, maxValidatorVotePercentage)
+	if !ok {
+		return false, errors.New("Validator Vote Percentage not in range")
+	}
 	if (opt.PenaltyBountyPercentage/(opt.PenaltyBountyDecimals/100))+(opt.PenaltyBurnPercentage/(opt.PenaltyBurnDecimals/100)) != 100 {
 		return false, errors.New("Bounty percentage + Burn Percentage should equal 100 %")
 	}
@@ -318,13 +324,6 @@ func (st *Store) ValidateEvidence(opt *evidence.Options) (bool, error) {
 	if opt.AllegationDecimals != oldOptions.AllegationDecimals {
 		return false, errors.New("AllegationDecimals cannot be changed")
 	}
-	if opt.ValidatorVotePercentage != oldOptions.ValidatorVotePercentage {
-		return false, errors.New("Validator Vote Percentage cannot be changed")
-	}
-	if opt.ValidatorVoteDecimals != oldOptions.ValidatorVoteDecimals {
-		return false, errors.New("Validation Vote Decimals cannot be changed")
-	}
-
 	return true, nil
 }
 

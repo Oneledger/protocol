@@ -343,7 +343,23 @@ func TestStore_ValidateEvidence(t *testing.T) {
 	ok, err = vStore.ValidateEvidence(&updates.EvidenceOptions)
 	assert.Error(t, err, "Should Fail")
 	assert.False(t, ok)
+	updates = generateGov()
 	updates.EvidenceOptions.MinVotesRequired = 1
+	ok, err = vStore.ValidateEvidence(&updates.EvidenceOptions)
+	assert.Error(t, err, "Should Fail")
+	assert.False(t, ok)
+	updates = generateGov()
+	updates.EvidenceOptions.ValidatorVotePercentage = 60
+	ok, err = vStore.ValidateEvidence(&updates.EvidenceOptions)
+	assert.NoError(t, err, "Should Pass")
+	assert.True(t, ok)
+	updates = generateGov()
+	updates.EvidenceOptions.ValidatorVotePercentage = 49
+	ok, err = vStore.ValidateEvidence(&updates.EvidenceOptions)
+	assert.Error(t, err, "Should Fail")
+	assert.False(t, ok)
+	updates = generateGov()
+	updates.EvidenceOptions.ValidatorVotePercentage = 101
 	ok, err = vStore.ValidateEvidence(&updates.EvidenceOptions)
 	assert.Error(t, err, "Should Fail")
 	assert.False(t, ok)
