@@ -336,8 +336,8 @@ func TestStore_ValidateEvidence(t *testing.T) {
 	updates = generateGov()
 	updates.EvidenceOptions.MinVotesRequired = 1010
 	ok, err = vStore.ValidateEvidence(&updates.EvidenceOptions)
-	assert.NoError(t, err, "Should Pass")
-	assert.True(t, ok)
+	assert.Error(t, err, "Should Fail")
+	assert.False(t, ok)
 	updates = generateGov()
 	updates.EvidenceOptions.MinVotesRequired = 5
 	ok, err = vStore.ValidateEvidence(&updates.EvidenceOptions)
