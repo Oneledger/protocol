@@ -125,7 +125,7 @@ func TestStore_ValidateProposal(t *testing.T) {
 	ok, err = vStore.ValidateProposal(&updates.PropOptions)
 	assert.Error(t, err, "Pass percentage too low")
 	assert.False(t, ok)
-	updates.PropOptions.ConfigUpdate.PassPercentage = 70
+	updates.PropOptions.ConfigUpdate.PassPercentage = 90
 	ok, err = vStore.ValidateProposal(&updates.PropOptions)
 	assert.Error(t, err, "Pass percentage too high")
 	assert.False(t, ok)
@@ -179,11 +179,11 @@ func TestStore_ValidateProposal(t *testing.T) {
 func TestStore_ValidateStaking(t *testing.T) {
 	//Tests for Initial Funding
 	updates := generateGov()
-	updates.StakingOptions.MaturityTime = 2340000
+	updates.StakingOptions.MaturityTime = 468001
 	ok, err := vStore.ValidateStaking(&updates.StakingOptions)
 	assert.Error(t, err, "Maturity time too high")
 	assert.False(t, ok)
-	updates.StakingOptions.MaturityTime = 2340
+	updates.StakingOptions.MaturityTime = 109199
 	ok, err = vStore.ValidateStaking(&updates.StakingOptions)
 	assert.Error(t, err, "Maturity time too low")
 	assert.False(t, ok)

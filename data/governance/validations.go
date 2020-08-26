@@ -47,10 +47,10 @@ var (
 	minDeadlineVotingeGeneral = getDeadline(75000)
 	maxDeadlineVotingGeneral  = getDeadline(150000)
 	minPassPercentage         = int64(51)
-	maxPassPercentage         = int64(67)
+	maxPassPercentage         = int64(80)
 	decimalsAllowed           = 2
 	//ONS
-	minPerBlockFee     = balance.NewAmountFromInt(0)
+	minPerBlockFee     = balance.NewAmountFromInt(1)
 	maxPerBlockFee     = infiniteMaxBalance
 	minBaseDomainPrice = balance.NewAmountFromInt(0)
 	maxBaseDomainPrice = infiniteMaxBalance
@@ -66,7 +66,7 @@ var (
 	minValidatorCount       = int64(8)
 	maxValidatorCount       = int64(64)
 	minMaturityTime         = int64(109200)
-	maxMaturityTime         = int64(234000)
+	maxMaturityTime         = int64(468000)
 	//Evidence
 	MinVotesRequiredPercentage = int64(70)
 	minBlockVotesDiff          = int64(1000)
