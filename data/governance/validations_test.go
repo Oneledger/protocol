@@ -323,6 +323,32 @@ func TestStore_ValidateRewards(t *testing.T) {
 	assert.True(t, ok)
 }
 
+func TestStore_ValidateEvidence(t *testing.T) {
+	updates := generateGov()
+	updates.EvidenceOptions.BlockVotesDiff = 1055
+	ok, err := vStore.ValidateEvidence(&updates.EvidenceOptions)
+	assert.NoError(t, err, "Should Pass")
+	updates = generateGov()
+	updates.EvidenceOptions.MinVotesRequired = 77
+	ok, err = vStore.ValidateEvidence(&updates.EvidenceOptions)
+	assert.Error(t, err, "Should Pass")
+	assert.False(t, ok)
+	updates = generateGov()
+	updates.EvidenceOptions.MinVotesRequired = 1010
+	ok, err = vStore.ValidateEvidence(&updates.EvidenceOptions)
+	assert.NoError(t, err, "Should Pass")
+	assert.True(t, ok)
+	updates = generateGov()
+	updates.EvidenceOptions.MinVotesRequired = 5
+	ok, err = vStore.ValidateEvidence(&updates.EvidenceOptions)
+	assert.Error(t, err, "Should Fail")
+	assert.False(t, ok)
+	updates.EvidenceOptions.MinVotesRequired = 1
+	ok, err = vStore.ValidateEvidence(&updates.EvidenceOptions)
+	assert.Error(t, err, "Should Fail")
+	assert.False(t, ok)
+}
+
 func generateGov() *GovernanceState {
 	perblock, _ := big.NewInt(0).SetString("100000000000000", 10)
 	baseDomainPrice, _ := big.NewInt(0).SetString("1000000000000000000000", 10)
