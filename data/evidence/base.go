@@ -23,13 +23,13 @@ type Options struct {
 
 	// time to unfreeze validator (number of days) - for 2 scenario
 	ValidatorReleaseTime int64 `json:"validatorReleaseTime"`
-	// required count to finish voting
-	AllegationVotesCount int64 `json:"allegationVotesCount"`
+	// required validator votes
+	ValidatorVotePercentage int64 `json:"validatorVotePercentage"`
+	// required validator decimals
+	ValidatorVoteDecimals int64 `json:"validatorVoteDecimals"`
 
 	// allegation persent
 	AllegationPercentage int64 `json:"allegationPercentage"`
 	// allegation cut decimals
 	AllegationDecimals int64 `json:"allegationDecimals"`
-	// Active (self staking)
-	// Freeze (freeze true, active false)
 }
