@@ -49,9 +49,10 @@ var (
 	lockRedeemContractAddr        = ""
 	lockRedeem_KratosContractAddr = ""
 	numofValidatorsOld            = big.NewInt(8)
-	lock_period                   = big.NewInt(0)
+	lock_period                   = big.NewInt(25)
 	gasPriceM                     = big.NewInt(18000000000) // Not Used currently multiplying suggested gas price
 	gasLimitM                     = uint64(700000)
+	validatorInitialFund          = big.NewInt(30000000000000000)
 	Cfg                           = config.DefaultEthConfig("rinkeby", "de5e96cbb6284d5ea1341bf6cb7fa401")
 
 	lockRedeemABI       = contract.LockRedeemABI
@@ -79,11 +80,21 @@ func main() {
 		Log.Info("Lock Period is zero")
 		return
 	}
-	ethDeployKratoscontract()
-	//fmt.Println("NEW contract isActive : ", checkIsActive())
-	//migrateContract()
-	//time.Sleep(time.Second * 15)
-	//fmt.Println("NEW contract isActive : ", checkIsActive())
+	fmt.Printf("New Validator PrivateKeys at location : %s | Validators Fund amount : %s", newValidatorsDir, validatorInitialFund)
+	fmt.Printf("New Block Period  : %d | Number of Validators in Kainos : %d | Kainos Smart Comtract Address :%d | ", lock_period.Int64(), OldSmartContractAddress, numofValidatorsOld)
+	fmt.Printf("Gaslimit  : %d | GasPrice : Calculated during deployment ", gasLimitM)
+	fmt.Printf("Press the Enter Key to continue")
+	fmt.Scanln()
+	address := ethDeployKratoscontract()
+	KratosSmartContractAddress = address
+	fmt.Printf("Press the Enter Key to continue Migrate From : %s To %s", OldSmartContractAddress, KratosSmartContractAddress)
+	fmt.Scanln()
+	fmt.Println("New contract isActive : ", checkIsActive())
+	fmt.Printf("Press the Enter Key to continue , Old Validator PrivateKeys at location : %s", oldValidatorsDir)
+	fmt.Scanln()
+	migrateContract()
+	time.Sleep(time.Second * 15)
+	fmt.Println("NEW contract isActive/ Wait for tx to be confirmed on etheruem  if not active : ", checkIsActive())
 }
 
 // Stop Kainos network
@@ -107,7 +118,7 @@ func main() {
 func checkIsActive() bool {
 	ctrct, err := contract.NewLockRedeemKratos(KratosSmartContractAddress, Client)
 	if err != nil {
-		Log.Fatal("Unable to get LOCKREDEEM Kratos")
+		Log.Fatal("Unable to get LockRedeemKratos")
 	}
 	callopts := &ethereum.CallOpts{
 		Pending:     true,
@@ -196,24 +207,25 @@ func migrateContract() {
 	}
 }
 
-func ethDeployKratoscontract() {
+func ethDeployKratoscontract() common.Address {
+	contractaddress := common.Address{}
 	var validatorset []common.Address
 	for i := 0; i < 4; i++ {
 		folder := newValidatorsDir + strconv.Itoa(i) + "-Node/consensus/config/"
 		ecdspkbytes, err := ioutil.ReadFile(filepath.Join(folder, "priv_validator_key_ecdsa.json"))
 		if err != nil {
 			Log.Fatal(err)
-			return
+			return contractaddress
 		}
 		ecdsPrivKey, err := base64.StdEncoding.DecodeString(string(ecdspkbytes))
 		if err != nil {
 			Log.Fatal(err)
-			return
+			return contractaddress
 		}
 		pkey, err := keys.GetPrivateKeyFromBytes(ecdsPrivKey[:], keys.SECP256K1)
 		if err != nil {
 			fmt.Println("Privatekey from String ", err)
-			return
+			return contractaddress
 		}
 		privatekey := keys.ETHSECP256K1TOECDSA(pkey.Data)
 
@@ -221,61 +233,61 @@ func ethDeployKratoscontract() {
 		publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
 		if !ok {
 			Log.Fatal("error casting public key to ECDSA")
-			return
+			return contractaddress
 		}
 		validatorAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
 		validatorset = append(validatorset, validatorAddress)
 	}
+	fmt.Println("Kainos Initial Validators")
 	for _, v := range validatorset {
 		fmt.Println(v.String())
 	}
-	err := deployethcdcontract(validatorset)
+	err, contractaddress := deployethcdcontract(validatorset)
 	if err != nil {
-		fmt.Println(err)
+		Log.Fatal("error deploying smart contract", err)
 	}
-
+	return contractaddress
 }
 
-func deployethcdcontract(initialValidators []common.Address) error {
+func deployethcdcontract(initialValidators []common.Address) (error, common.Address) {
+	address := common.Address{}
 	err := os.Setenv("ETHPKPATH", "/tmp/pkdata")
 	if err != nil {
 		Log.Error("Unable to set ETHPKPATH")
-		return err
+		return err, address
 	}
 	f, err := os.Open(os.Getenv("ETHPKPATH"))
 	if err != nil {
-		return errors.Wrap(err, "Error Reading File")
+		return errors.Wrap(err, "Error Reading File"), address
 	}
 	b1 := make([]byte, 64)
 	pk, err := f.Read(b1)
 	if err != nil {
-		return errors.Wrap(err, "Error reading private key")
+		return errors.Wrap(err, "Error reading private key"), address
 	}
 	//fmt.Println("Private key used to deploy : ", string(b1[:pk]))
 	pkStr := string(b1[:pk])
 	privatekey, err := crypto.HexToECDSA(pkStr)
 
 	if err != nil {
-		return err
+		return err, address
 	}
 	cli, err := ethclient.Dial(Cfg.Connection)
 	if err != nil {
-		return err
+		return err, address
 	}
 
 	publicKey := privatekey.Public()
 	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
 	if !ok {
-		return err
+		return err, address
 	}
 
 	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
 
-	gasLimit := uint64(7000000) // in units
-
 	auth := bind.NewKeyedTransactor(privatekey)
 	auth.Value = big.NewInt(0) // in wei
-	auth.GasLimit = gasLimit   // in units
+	auth.GasLimit = gasLimitM  // in units
 	gasPrice, err := Client.SuggestGasPrice(context.Background())
 	if err != nil {
 		Log.Fatal(err)
@@ -284,19 +296,19 @@ func deployethcdcontract(initialValidators []common.Address) error {
 	auth.GasPrice = gasPrice
 	initialValidatorList := make([]common.Address, 0, 10)
 
-	tokenSupplyTestToken := new(big.Int)
-	validatorInitialFund := big.NewInt(30000000000000000) //300000000000000000
+	//tokenSupplyTestToken := new(big.Int)
+	validatorInitialFund := validatorInitialFund //300000000000000000
 
-	tokenSupplyTestToken, ok = tokenSupplyTestToken.SetString("1000000000000000000000", 10)
-	if !ok {
-		return errors.New("Unabe to create total supply for token")
-	}
+	//tokenSupplyTestToken, ok = tokenSupplyTestToken.SetString("1000000000000000000000", 10)
+	//if !ok {
+	//	return errors.New("Unabe to create total supply for token"), address
+	//}
 
 	for _, valAddr := range initialValidators {
 
 		nonce, err := cli.PendingNonceAt(context.Background(), fromAddress)
 		if err != nil {
-			return err
+			return err, address
 		}
 
 		addr := valAddr
@@ -307,31 +319,28 @@ func deployethcdcontract(initialValidators []common.Address) error {
 		chainId, _ := cli.ChainID(context.Background())
 		signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainId), privatekey)
 		if err != nil {
-			return errors.Wrap(err, "signing tx")
+			return errors.Wrap(err, "signing tx"), address
 		}
 		err = cli.SendTransaction(context.Background(), signedTx)
 		if err != nil {
-			return errors.Wrap(err, "sending")
+			return errors.Wrap(err, "sending"), address
 		}
 		time.Sleep(1 * time.Second)
 	}
 
 	nonce, err := cli.PendingNonceAt(context.Background(), fromAddress)
 	if err != nil {
-		return err
+		return err, address
 	}
 
 	auth.Nonce = big.NewInt(int64(nonce))
 
-	address, _, _, err := contract.DeployLockRedeemKratos(auth, cli, initialValidatorList, lock_period, OldSmartContractAddress, numofValidatorsOld)
+	address, _, _, err = contract.DeployLockRedeemKratos(auth, cli, initialValidatorList, lock_period, OldSmartContractAddress, numofValidatorsOld)
 	if err != nil {
-		return errors.Wrap(err, "Deployement Eth LockRedeem Kratos")
+		return errors.Wrap(err, "Deployement Eth LockRedeem Kratos"), address
 	}
-	tokenAddress := common.Address{}
-	ercAddress := common.Address{}
 
 	fmt.Printf("LockRedeemContractKratosAddr = \"%v\"\n", address.Hex())
-	fmt.Printf("TestTokenContractAddr = \"%v\"\n", tokenAddress.Hex())
-	fmt.Printf("LockRedeemERC20ContractAddr = \"%v\"\n", ercAddress.Hex())
-	return nil
+
+	return nil, address
 }
