@@ -292,12 +292,12 @@ func (st *Store) ValidateEvidence(opt *evidence.Options) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if opt.MinVotesRequired < (MinVotesRequiredPercentage * (opt.BlockVotesDiff / 100)) {
-		return false, errors.New("Min Required Votes cannot be less that 70% of BlockVotesDiff")
-	}
 	ok := verifyRangeInt64(opt.BlockVotesDiff, minBlockVotesDiff, maxBlockVotesDiff)
 	if !ok {
 		return false, errors.New("Block Votes Diff is not in range")
+	}
+	if opt.MinVotesRequired < (MinVotesRequiredPercentage * (opt.BlockVotesDiff / 100)) {
+		return false, errors.New("Min Required Votes cannot be less that 70% of BlockVotesDiff")
 	}
 	ok = verifyRangeInt64(opt.PenaltyBasePercentage/(opt.PenaltyBaseDecimals/100), minPenaltyBasePercentage, maxPenaltyBasePercentage)
 	if !ok {
