@@ -39,6 +39,7 @@ import (
 	"github.com/Oneledger/protocol/chains/ethereum/contract"
 	oclient "github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/config"
+	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 	logger "github.com/Oneledger/protocol/log"
@@ -51,10 +52,10 @@ var (
 	TestTokenABI     = contract.ERC20BasicABI
 	LockRedeemERCABI = contract.LockRedeemERCABI
 	// LockRedeemERC20ABI = contract.ContextABI
-	LockRedeemContractAddr      = "0xD2EefCfA1afa8050Bd26ac09fB431FEA2939aCb7"
+	LockRedeemContractAddr      = "0xE24ECa2572a509b594e6bD199c38225ca914f0eD"
 	TestTokenContractAddr       = "0x0000000000000000000000000000000000000000"
 	LockRedeemERC20ContractAddr = "0x0000000000000000000000000000000000000000"
-	readDir                     = ""
+	readDir                     = "/home/tanmay/Codebase/Test/Testing Migrate/devnetNew/"
 
 	cfg = config.DefaultEthConfig("rinkeby", "de5e96cbb6284d5ea1341bf6cb7fa401")
 	//cfg               = config.DefaultEthConfig("", "")
@@ -147,7 +148,7 @@ func main() {
 	//erc20lock()
 	///time.Sleep(10 * time.Second)
 	//erc20Redeem()
-	//takeValidatorFunds()
+	//takeValidatorFunds(4)
 }
 
 func takeValidatorFunds(noOfValidators int) {
@@ -454,20 +455,20 @@ func redeem() []byte {
 		return nil
 	}
 
-	acc := accReply.Accounts[0]
+	//acc := accReply.Accounts[0]
 
-	//acc := keys.Address{}
-	//err = acc.UnmarshalText([]byte(""))
-	//if err != nil {
-	//	return nil
-	//}
-	//wallet, err := accounts.NewWalletKeyStore("")
-	//if err != nil {
-	//	return nil
-	//}
-	//wallet.Open(acc, "1234")
+	acc := keys.Address{}
+	err = acc.UnmarshalText([]byte("4846690b235c5d391876a1d8948da2094fb39c65"))
+	if err != nil {
+		return nil
+	}
+	wallet, err := accounts.NewWalletKeyStore("/home/tanmay/Codebase/Test/devnet/0-Node/")
+	if err != nil {
+		return nil
+	}
+	wallet.Open(acc, "1234")
 
-	//addresslist, _ := wallet.ListAddresses()
+	addresslist, _ := wallet.ListAddresses()
 
 	result := &oclient.ListCurrenciesReply{}
 	err = rpcclient.Call("query.ListCurrencies", struct{}{}, result)
@@ -477,7 +478,7 @@ func redeem() []byte {
 	}
 	olt, _ := result.Currencies.GetCurrencySet().GetCurrencyByName("OLT")
 	rr := se.RedeemRequest{
-		acc.Address(),
+		addresslist[0],
 		common.BytesToAddress(redeemAddress),
 		rawTxBytes2,
 		action.Amount{Currency: olt.Name, Value: *balance.NewAmountFromInt(10000000000)},
@@ -487,12 +488,12 @@ func redeem() []byte {
 	reply := &se.OLTReply{}
 	err = rpcclient.Call("eth.CreateRawExtRedeem", rr, reply)
 
-	signReply := &oclient.SignRawTxResponse{}
-	//pubkey, signature, err := wallet.SignWithAddress(reply.RawTX, addresslist[0])
-	err = rpcclient.Call("owner.SignWithAddress", oclient.SignRawTxRequest{
-		RawTx:   reply.RawTX,
-		Address: acc.Address(),
-	}, signReply)
+	//signReply := &oclient.SignRawTxResponse{}
+	pubkey, signature, err := wallet.SignWithAddress(reply.RawTX, addresslist[0])
+	//err = rpcclient.Call("owner.SignWithAddress", oclient.SignRawTxRequest{
+	//	RawTx:   reply.RawTX,
+	//	Address: addresslist[0],
+	//}, signReply)
 	if err != nil {
 		fmt.Println(err)
 		return nil
@@ -500,8 +501,8 @@ func redeem() []byte {
 	bresult2 := &oclient.BroadcastReply{}
 	err = rpcclient.Call("broadcast.TxSync", oclient.BroadcastRequest{
 		RawTx:     reply.RawTX,
-		Signature: signReply.Signature.Signed,
-		PublicKey: signReply.Signature.Signer,
+		Signature: signature,
+		PublicKey: pubkey,
 	}, bresult2)
 	if err != nil {
 		fmt.Println(err)
