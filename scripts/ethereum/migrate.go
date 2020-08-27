@@ -65,6 +65,9 @@ var (
 	KratosContractAbi          abi.ABI
 	OldSmartContractAddress    = common.HexToAddress(lockRedeemContractAddr)
 	KratosSmartContractAddress = common.HexToAddress(lockRedeem_KratosContractAddr)
+
+	Deployer         = ""
+	DeployersAddress = common.HexToAddress(Deployer)
 )
 
 func init() {
@@ -102,6 +105,7 @@ func main() {
 	migrateContract()
 	time.Sleep(time.Second * 15)
 	fmt.Println("NEW contract isActive/ Wait for tx to be confirmed on etheruem  if not active : ", checkIsActive())
+
 }
 
 // Stop Kainos network
@@ -347,4 +351,76 @@ func CheckTXstatus(txHash common.Hash) bool {
 		time.Sleep(time.Second * 1)
 	}
 	return false
+}
+
+func takeFunds() {
+	for i := 0; i < int(numofValidatorsOld.Int64()); i++ {
+		folder := oldValidatorsDir + strconv.Itoa(i) + "-Node/consensus/config/"
+		ecdspkbytes, err := ioutil.ReadFile(filepath.Join(folder, "priv_validator_key_ecdsa.json"))
+		if err != nil {
+			log.Fatal(err)
+			return
+		}
+		ecdsPrivKey, err := base64.StdEncoding.DecodeString(string(ecdspkbytes))
+		if err != nil {
+			log.Fatal(err)
+			return
+		}
+		pkey, err := keys.GetPrivateKeyFromBytes(ecdsPrivKey[:], keys.SECP256K1)
+		if err != nil {
+			fmt.Println("Privatekey from String ", err)
+			return
+		}
+		privatekey := keys.ETHSECP256K1TOECDSA(pkey.Data)
+
+		publicKey := privatekey.Public()
+		publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+		if !ok {
+			log.Fatal("error casting public key to ECDSA")
+			return
+		}
+		validatorAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+
+		nonce, err := client.PendingNonceAt(context.Background(), validatorAddress)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		gasLimit := int64(gasLimit) // in units
+		gasPrice, err := client.SuggestGasPrice(context.Background())
+		if err != nil {
+			log.Fatal(err)
+			return
+		}
+		gasCost := gasPrice.Mul(gasPrice, big.NewInt(gasLimit))
+		////spareWei := big.NewInt(1000000000000000)
+		currentBalance, err := client.BalanceAt(context.Background(), validatorAddress, nil)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		currentBalance.Sub(currentBalance, gasCost)
+		g, err := client.SuggestGasPrice(context.Background())
+		if err != nil {
+			log.Fatal(err)
+			return
+		}
+		tx := types.NewTransaction(nonce, DeployersAddress, currentBalance, uint64(gasLimit), g, nil)
+		chainID, err := client.ChainID(context.Background())
+		if err != nil {
+			log.Fatal(err)
+			return
+		}
+		signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), privatekey)
+		if err != nil {
+			log.Fatal(err)
+			return
+		}
+		err = client.SendTransaction(context.Background(), signedTx)
+		if err != nil {
+			log.Fatal(err, validatorAddress.String())
+			return
+		}
+		fmt.Println("Funds transferred from :", validatorAddress.Hex(), "Amount Transfered :", currentBalance)
+	}
 }
