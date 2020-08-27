@@ -140,17 +140,11 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 		return ctx, errors.Wrap(err, "add internalBidTx store to external stores failed")
 	}
 	ctx.controllerFunctions = NewRouter()
-	err = ctx.controllerFunctions.Add(BlockBeginner, Cfunction{
-		function:      AddExpireBidTxToQueue,
-		functionParam: nil,
-	})
+	err = ctx.controllerFunctions.Add(BlockBeginner,AddExpireBidTxToQueue)
 	if err != nil {
 		return ctx, errors.Wrap(err, "add expire bid tx to queue failed")
 	}
-	err = ctx.controllerFunctions.Add(BlockEnder, Cfunction{
-		function:      PopExpireBidTxFromQueue,
-		functionParam: nil,
-	})
+	err = ctx.controllerFunctions.Add(BlockEnder, PopExpireBidTxFromQueue)
 	if err != nil {
 		return ctx, errors.Wrap(err, "pop expire bid tx from queue failed")
 	}

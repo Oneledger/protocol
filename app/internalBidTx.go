@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"github.com/Oneledger/protocol/action"
 	bid_action "github.com/Oneledger/protocol/action/bidding"
 	"github.com/Oneledger/protocol/data/bidding"
@@ -21,7 +22,7 @@ func AddExpireBidTxToQueue(i interface{}) {
 	// 1. get all the needed stores
 	app, ok := i.(*App)
 	if ok == false {
-		app.logger.Error("failed to assert app in block beginner")
+		fmt.Println("failed to assert app in block beginner")
 	}
 	bidMaster, err := app.Context.extStores.Get("bidMaster")
 	if err != nil {
