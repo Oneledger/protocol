@@ -52,7 +52,7 @@ var (
 	TestTokenABI     = contract.ERC20BasicABI
 	LockRedeemERCABI = contract.LockRedeemERCABI
 	// LockRedeemERC20ABI = contract.ContextABI
-	LockRedeemContractAddr      = "0xE24ECa2572a509b594e6bD199c38225ca914f0eD"
+	LockRedeemContractAddr      = "0x4bDEddB848a8907f7C02dC74fDBcedea69F7D4F3"
 	TestTokenContractAddr       = "0x0000000000000000000000000000000000000000"
 	LockRedeemERC20ContractAddr = "0x0000000000000000000000000000000000000000"
 	readDir                     = "/home/tanmay/Codebase/Test/Testing Migrate/devnetNew/"
@@ -141,7 +141,7 @@ func init() {
 //Insufficient Funds    :Refund   ok
 //InsufficientFunds(50% Validators) + Panic (50 % Validators): Refund
 func main() {
-	//getstatus(lock())
+	getstatus(lock())
 	//time.Sleep(time.Second * 5)
 	getstatus(redeem())
 	//sendTrasactions(12)

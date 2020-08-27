@@ -12,7 +12,11 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
+
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/rlp"
 
 	"github.com/Oneledger/protocol/data/evidence"
 	"github.com/Oneledger/protocol/data/governance"
@@ -793,11 +797,15 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 	}
 
 	auth.Nonce = big.NewInt(int64(nonce))
-	oldaddress := common.Address{}
-	num_of_validators := big.NewInt(8)
-	address, _, _, err := contract.DeployLockRedeem(auth, cli, initialValidatorList, lock_period, oldaddress, num_of_validators)
+
+	num_of_validators := big.NewInt(1)
+	address, _, _, err := contract.DeployLockRedeem(auth, cli, initialValidatorList, lock_period, fromAddress, num_of_validators)
 	if err != nil {
 		return nil, errors.Wrap(err, "Deployement Eth LockRedeem")
+	}
+	err = activateContract(fromAddress, address, privatekey, cli)
+	if err != nil {
+		return nil, errors.Wrap(err, "Unable to activate new contract")
 	}
 	tokenAddress := common.Address{}
 	ercAddress := common.Address{}
@@ -829,4 +837,64 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 		BlockConfirmation:  ethBlockConfirmation,
 	}, nil
 
+}
+
+func activateContract(validatorAddress common.Address, KratosSmartContractAddress common.Address, privatekey *ecdsa.PrivateKey, client *ethclient.Client) error {
+	ContractAbi, _ := abi.JSON(strings.NewReader(contract.LockRedeemABI))
+	// Fake migration Vote
+	bytesData, err := ContractAbi.Pack("MigrateFromOld")
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	nonce, err := client.PendingNonceAt(context.Background(), validatorAddress)
+	if err != nil {
+		return err
+	}
+
+	gasLimit := uint64(1700000) // in units
+	gasPrice, err := client.SuggestGasPrice(context.Background())
+	if err != nil {
+		return err
+	}
+	value := big.NewInt(0)
+	tx2 := types.NewTransaction(nonce, KratosSmartContractAddress, value, gasLimit, gasPrice, bytesData)
+	chainID, err := client.ChainID(context.Background())
+	if err != nil {
+		return err
+	}
+	signedTx2, err := types.SignTx(tx2, types.NewEIP155Signer(chainID), privatekey)
+	if err != nil {
+		return err
+	}
+	ts2 := types.Transactions{signedTx2}
+
+	rawTxBytes2 := ts2.GetRlp(0)
+	txNew2 := &types.Transaction{}
+	err = rlp.DecodeBytes(rawTxBytes2, txNew2)
+
+	err = client.SendTransaction(context.Background(), signedTx2)
+	if err != nil {
+		return err
+	}
+
+	// Calling Payable
+	nonce, err = client.PendingNonceAt(context.Background(), validatorAddress)
+	if err != nil {
+		return err
+	}
+	validatorInitialFund := big.NewInt(10)
+	tx := types.NewTransaction(nonce, KratosSmartContractAddress, validatorInitialFund, gasLimit, gasPrice, nil)
+	chainId, _ := client.ChainID(context.Background())
+	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainId), privatekey)
+	if err != nil {
+		return errors.Wrap(err, "signing tx")
+	}
+	err = client.SendTransaction(context.Background(), signedTx)
+	if err != nil {
+		return errors.Wrap(err, "sending")
+	}
+	time.Sleep(1 * time.Second)
+	return nil
 }
