@@ -66,8 +66,8 @@ var (
 	OldSmartContractAddress    = common.HexToAddress(lockRedeemContractAddr)
 	KratosSmartContractAddress = common.HexToAddress(lockRedeem_KratosContractAddr)
 
-	Deployer         = ""
-	DeployersAddress = common.HexToAddress(Deployer)
+	//Deployer         = ""
+	DeployersAddress = common.Address{}
 )
 
 func init() {
@@ -288,7 +288,7 @@ func deployethcdcontract(initialValidators []common.Address) (error, common.Addr
 	}
 
 	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-
+	DeployersAddress = fromAddress
 	auth := bind.NewKeyedTransactor(privatekey)
 	auth.Value = big.NewInt(0) // in wei
 	auth.GasLimit = gasLimitM  // in units
