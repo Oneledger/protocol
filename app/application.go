@@ -8,8 +8,6 @@ import (
 	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/service"
 
-	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/action/eth"
 	"github.com/Oneledger/protocol/app/node"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
@@ -110,27 +108,53 @@ func (app *App) setupState(stateBytes []byte) error {
 		return errors.Wrap(err, "setupState deserialization")
 	}
 
+	err = app.Context.govern.WithHeight(app.header.Height).SetStakingOptions(initial.Governance.StakingOptions)
+	if err != nil {
+		return errors.Wrap(err, "Setup Staking Options")
+	}
+	err = app.Context.govern.WithHeight(app.header.Height).SetEvidenceOptions(initial.Governance.EvidenceOptions)
+	if err != nil {
+		return errors.Wrap(err, "Setup Evidence Options")
+	}
 	// commit the initial currencies to the governance db
-
-	err = app.Context.govern.SetCurrencies(initial.Currencies)
+	err = app.Context.govern.WithHeight(app.header.Height).SetCurrencies(initial.Currencies)
 	if err != nil {
 		return errors.Wrap(err, "Setup State")
 	}
 
-	err = app.Context.govern.SetETHChainDriverOption(initial.Governance.ETHCDOption)
+	err = app.Context.govern.WithHeight(app.header.Height).SetProposalOptions(initial.Governance.PropOptions)
 	if err != nil {
-		return errors.Wrap(err, "Setup State")
+		return errors.Wrap(err, "Setup Proposal Options")
 	}
+	app.Context.proposalMaster.Proposal.SetOptions(&initial.Governance.PropOptions)
 
-	err = app.Context.govern.SetBTCChainDriverOption(initial.Governance.BTCCDOption)
+	err = app.Context.govern.WithHeight(app.header.Height).SetETHChainDriverOption(initial.Governance.ETHCDOption)
 	if err != nil {
-		return errors.Wrap(err, "Setup State")
+		return errors.Wrap(err, "Setup Ethereum Options")
+	}
+	app.Context.ethTrackers.SetupOption(&initial.Governance.ETHCDOption)
+
+	err = app.Context.govern.WithHeight(app.header.Height).SetBTCChainDriverOption(initial.Governance.BTCCDOption)
+	if err != nil {
+		return errors.Wrap(err, "Setup BTC Options")
 	}
 	balanceCtx := app.Context.Balances()
-	err = app.Context.govern.SetONSOptions(initial.Governance.ONSOptions)
+
+	app.Context.btcTrackers.SetConfig(bitcoin.NewBTCConfig(app.Context.cfg.ChainDriver, initial.Governance.BTCCDOption.ChainType))
+	app.Context.btcTrackers.SetOption(initial.Governance.BTCCDOption)
+
+	err = app.Context.govern.WithHeight(app.header.Height).SetONSOptions(initial.Governance.ONSOptions)
 	if err != nil {
 		return errors.Wrap(err, "Error in setting up ONS options")
 	}
+	app.Context.domains.SetOptions(&initial.Governance.ONSOptions)
+
+	err = app.Context.govern.WithHeight(app.header.Height).SetRewardOptions(initial.Governance.RewardOptions)
+	if err != nil {
+		return errors.Wrap(err, "Error in setting up Reward options")
+	}
+	app.Context.rewardMaster.SetOptions(&initial.Governance.RewardOptions)
+
 	// (1) Register all the currencies and fee
 	for _, currency := range initial.Currencies {
 		err := balanceCtx.Currencies().Register(currency)
@@ -138,17 +162,17 @@ func (app *App) setupState(stateBytes []byte) error {
 			return errors.Wrapf(err, "failed to register currency %s", currency.Name)
 		}
 	}
-	app.Context.ethTrackers.SetupOption(&initial.Governance.ETHCDOption)
-	err = app.Context.govern.SetFeeOption(initial.Governance.FeeOption)
+
+	err = app.Context.govern.WithHeight(app.header.Height).SetFeeOption(initial.Governance.FeeOption)
 	if err != nil {
-		return errors.Wrap(err, "Setup State")
+		return errors.Wrap(err, "Setup FeeOptions Options")
 	}
 	app.Context.feePool.SetupOpt(&initial.Governance.FeeOption)
-	app.Context.domains.SetOptions(&initial.Governance.ONSOptions)
 
-	app.Context.btcTrackers.SetConfig(bitcoin.NewBTCConfig(app.Context.cfg.ChainDriver, initial.Governance.BTCCDOption.ChainType))
-	app.Context.btcTrackers.SetOption(initial.Governance.BTCCDOption)
-
+	err = app.Context.govern.WithHeight(app.header.Height).SetAllLUH()
+	if err != nil {
+		return errors.Wrap(err, "Unable to set last Update height ")
+	}
 	// (2) Set balances to all those mentioned
 	for _, bal := range initial.Balances {
 		key := storage.StoreKey(bal.Address)
@@ -164,7 +188,11 @@ func (app *App) setupState(stateBytes []byte) error {
 	}
 
 	for _, stake := range initial.Staking {
-		err := app.Context.validators.WithState(app.Context.deliver).HandleStake(identity.Stake(stake))
+		err := app.Context.delegators.WithState(app.Context.deliver).Stake(stake.ValidatorAddress, stake.StakeAddress, identity.Stake(stake).Amount)
+		if err != nil {
+			return errors.Wrap(err, "failed to handle delegators staking")
+		}
+		err = app.Context.validators.WithState(app.Context.deliver).HandleStake(identity.Stake(stake), false)
 		if err != nil {
 			return errors.Wrap(err, "failed to handle initial staking")
 		}
@@ -174,12 +202,21 @@ func (app *App) setupState(stateBytes []byte) error {
 		}
 	}
 
+	if !app.Context.delegators.WithState(app.Context.deliver).LoadState(initial.Delegation) {
+		return errors.Wrap(err, "failed to setup initial delegation")
+	}
+
+	if !app.Context.rewardMaster.WithState(app.Context.deliver).LoadState(initial.Rewards) {
+		return errors.Wrap(err, "failed to setup initial rewards")
+	}
+
 	for _, domain := range initial.Domains {
-		if ons.GetNameFromString(domain.Name).IsValid() {
+		if ons.GetNameFromString(domain.Name).IsValid() && app.Context.domains.GetOptions().IsNameAllowed(ons.Name(domain.Name)) {
 			d, err := ons.NewDomain(domain.Owner, domain.Beneficiary, domain.Name, 0, domain.URI, domain.ExpireHeight)
 			if err != nil {
 				return errors.Wrap(err, "failed to create initial domain")
 			}
+			d.ActiveFlag = false
 			err = app.Context.domains.WithState(app.Context.deliver).Set(d)
 			if err != nil {
 				return errors.Wrap(err, "failed to setup initial domain")
@@ -224,6 +261,12 @@ func (app *App) setupState(stateBytes []byte) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to setup initial Trackers")
 		}
+	}
+
+	//Setup Proposals
+	err = app.Context.proposalMaster.WithState(app.Context.deliver).LoadProposals(initial.Proposals)
+	if err != nil {
+		return errors.Wrap(err, "error setup proposal data")
 	}
 
 	app.Context.deliver.Write()
@@ -309,7 +352,8 @@ func (app *App) Prepare() error {
 
 	//get currencies from governance db
 	if !app.Context.govern.InitialChain() {
-		currencies, err := app.Context.govern.GetCurrencies()
+		//TODO remove setting individual stores after all TX's directly use the Gov store
+		currencies, err := app.Context.govern.WithHeight(app.header.Height).GetCurrencies()
 		if err != nil {
 			return err
 		}
@@ -322,29 +366,37 @@ func (app *App) Prepare() error {
 
 		app.logger.Infof("Read currencies from db %#v", currencies)
 
-		feeOpt, err := app.Context.govern.GetFeeOption()
+		feeOpt, err := app.Context.govern.WithHeight(app.header.Height).GetFeeOption()
 		if err != nil {
 			return err
 		}
 
 		app.Context.feePool.SetupOpt(feeOpt)
 
-		onsOpt, err := app.Context.govern.GetONSOptions()
-		if err != nil {
-			return err
-		}
-		app.Context.domains.SetOptions(onsOpt)
-
-		cdOpt, err := app.Context.govern.GetETHChainDriverOption()
+		cdOpt, err := app.Context.govern.WithHeight(app.header.Height).GetETHChainDriverOption()
 		if err != nil {
 			return err
 		}
 		app.Context.ethTrackers.SetupOption(cdOpt)
 
-		btcOption, err := app.Context.govern.GetBTCChainDriverOption()
+		btcOption, err := app.Context.govern.WithHeight(app.header.Height).GetBTCChainDriverOption()
+		if err != nil {
+			return err
+		}
 		btcConfig := bitcoin.NewBTCConfig(app.Context.cfg.ChainDriver, btcOption.ChainType)
 
 		app.Context.btcTrackers.SetConfig(btcConfig)
+
+		propOpt, err := app.Context.govern.WithHeight(app.header.Height).GetProposalOptions()
+		if err != nil {
+			return err
+		}
+		app.Context.proposalMaster.Proposal.SetOptions(propOpt)
+		rewardsOpt, err := app.Context.govern.GetRewardOptions()
+		if err != nil {
+			return err
+		}
+		app.Context.rewardMaster.SetOptions(rewardsOpt)
 	}
 
 	nodecfg, err := consensus.ParseConfig(&app.Context.cfg)
@@ -365,15 +417,13 @@ func (app *App) Prepare() error {
 
 	// Init witness store after genesis witnesses loaded in above NewNode
 	app.Context.witnesses.Init(chain.ETHEREUM, app.Context.node.ValidatorAddress())
-	// Adding internal Router
-	internalRouter := action.NewRouter("internal")
-	err = eth.EnableInternalETH(internalRouter)
-	if err != nil {
-		app.logger.Error("failed to register eth internal transaction")
-		return err
-	}
+
+	// Init reward cumulative store
+	app.Context.rewardMaster.RewardCm.Init(app.node.BlockStore())
+
+	// Initialize internal Services
 	app.Context.internalService = event.NewService(app.Context.node,
-		log.NewLoggerWithPrefix(app.Context.logWriter, "internal_service"), internalRouter, app.node)
+		log.NewLoggerWithPrefix(app.Context.logWriter, "internal_service"), app.Context.internalRouter, app.node)
 
 	return nil
 }

@@ -146,10 +146,22 @@ func loadTest(_ *cobra.Command, _ []string) {
 				return
 			}
 
-			accRead := reply.Account
+			// add account to wallet
+			wallet, err := accounts.NewWalletKeyStore(keyStorePath)
+			if err != nil {
+				return
+			}
+			if !wallet.Open(acc.Address(), "pass") {
+				return
+			}
+			err = wallet.Add(acc)
+			if err != nil {
+				return
+			}
+			wallet.Close()
 
 			// praccint details
-			thLogger.Infof("Created account successfully: %#v", accRead)
+			thLogger.Infof("Created account successfully: %#v", reply.Account)
 			ctx.logger.Infof("Address for the account is: %s", acc.Address().Humanize())
 		} else {
 			acc = accs[i+1]

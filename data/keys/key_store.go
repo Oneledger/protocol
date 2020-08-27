@@ -132,6 +132,12 @@ func (ks *KeyStore) decrypt(data []byte, passphrase string) ([]byte, error) {
 }
 
 func (ks *KeyStore) SaveKeyData(path string, address Address, data []byte, passphrase string) error {
+	//Check if keyfile already exists
+	existingFile, _ := GetFileName(path, address)
+	if len(existingFile) > 0 {
+		return errors.New("key file already exists")
+	}
+
 	filename, _ := filepath.Abs(path + buildFileName(address))
 	f, _ := os.Create(filename)
 
@@ -177,7 +183,6 @@ func (ks *KeyStore) GetKeyData(path string, address Address, passphrase string) 
 	if err != nil {
 		return nil, err
 	}
-
 	cipherData, err := hex.DecodeString(accData.CipherText)
 	if err != nil {
 		return nil, err

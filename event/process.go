@@ -23,6 +23,7 @@ type JobBus struct {
 type Option struct {
 	BtcInterval time.Duration
 	EthInterval time.Duration
+	OltInterval time.Duration
 }
 
 func NewJobBus(opt Option, store *jobs.JobStore) *JobBus {
@@ -37,6 +38,7 @@ func (j *JobBus) Start(ctx *JobsContext) error {
 	j.ctx = ctx
 	tickerBtc := time.NewTicker(j.opt.BtcInterval)
 	tickerEth := time.NewTicker(j.opt.EthInterval)
+	tickerOlt := time.NewTicker(j.opt.OltInterval)
 	go func() {
 		for {
 			select {
@@ -45,9 +47,13 @@ func (j *JobBus) Start(ctx *JobsContext) error {
 				DeleteCompletedJobs(j.ctx, j.store.WithChain(chain.BITCOIN))
 			case <-tickerEth.C:
 				ProcessAllJobs(j.ctx, j.store.WithChain(chain.ETHEREUM))
+			case <-tickerOlt.C:
+				ProcessAllJobs(j.ctx, j.store.WithChain(chain.ONELEDGER))
+				DeleteCompletedJobs(j.ctx, j.store.WithChain(chain.ONELEDGER))
 			case <-j.quit:
 				tickerBtc.Stop()
 				tickerEth.Stop()
+				tickerOlt.Stop()
 				return
 			}
 		}
@@ -74,8 +80,8 @@ func ProcessAllJobs(ctx *JobsContext, js *jobs.JobStore) {
 				if r := recover(); r != nil {
 					ctx.Logger.Info("panic in job: ", job.GetJobID())
 					ctx.Logger.Info(r)
-					panic(r)
 					debug.PrintStack()
+					panic(r)
 				}
 			}()
 			job.DoMyJob(ctx)
@@ -119,13 +125,13 @@ func DeleteCompletedJobs(ctx *JobsContext, js *jobs.JobStore) {
 			jobkeys = append(jobkeys, job.GetJobID())
 		}
 	})
-
 	for _, key := range jobkeys {
 
 		job, err := js.GetJob(key)
 		if err != nil {
 			fmt.Println("err getting job by key", err)
 		}
+
 		if job.IsDone() {
 			err = js.DeleteJob(job)
 			if err != nil {

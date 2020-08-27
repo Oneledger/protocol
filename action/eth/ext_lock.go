@@ -5,14 +5,18 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+
 	"github.com/tendermint/tendermint/libs/kv"
 
+	ethcommon "github.com/ethereum/go-ethereum/common"
+	"github.com/pkg/errors"
+
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/action/helpers"
 	ethchaindriver "github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/ethereum"
-	ethcommon "github.com/ethereum/go-ethereum/common"
-	"github.com/pkg/errors"
+	gov "github.com/Oneledger/protocol/data/governance"
 )
 
 // Lock is a struct for one-Ledger transaction for Ether Lock
@@ -87,7 +91,11 @@ func (ethLockTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, 
 	}
 
 	// validate fee
-	err = action.ValidateFee(ctx.FeePool.GetOpt(), signedTx.Fee)
+	feeOpt, err := ctx.GovernanceStore.GetFeeOption()
+	if err != nil {
+		return false, gov.ErrGetFeeOptions
+	}
+	err = action.ValidateFee(feeOpt, signedTx.Fee)
 	if err != nil {
 		ctx.Logger.Error("validate fee failed", err)
 		return false, err
@@ -150,9 +158,12 @@ func runLock(ctx *action.Context, lock *Lock) (bool, action.Response) {
 		}
 	}
 
-	cdOptions := ctx.ETHTrackers.GetOption()
+	ethOptions, err := ctx.GovernanceStore.GetETHChainDriverOption()
+	if err != nil {
+		return helpers.LogAndReturnFalse(ctx.Logger, gov.ErrGetEthOptions, lock.Tags(), err)
+	}
 
-	ok, err := ethchaindriver.VerifyLock(ethTx, cdOptions.ContractABI)
+	ok, err := ethchaindriver.VerifyLock(ethTx, ethOptions.ContractABI)
 	if err != nil {
 		ctx.Logger.Error("Unable to Verify Data for Ethereum Lock")
 		return false, action.Response{
@@ -165,7 +176,7 @@ func runLock(ctx *action.Context, lock *Lock) (bool, action.Response) {
 		}
 	}
 
-	if !bytes.Equal(ethTx.To().Bytes(), cdOptions.ContractAddress.Bytes()) {
+	if !bytes.Equal(ethTx.To().Bytes(), ethOptions.ContractAddress.Bytes()) {
 		ctx.Logger.Error("to field does not match contract address")
 		return false, action.Response{
 			Log: "Contract address does not match",
@@ -185,13 +196,13 @@ func runLock(ctx *action.Context, lock *Lock) (bool, action.Response) {
 	}
 	lockCoin := curr.NewCoinFromString(ethTx.Value().String())
 	// Adding lock amount to common address to maintain count of total oEth minted
-	ethSupply := action.Address(cdOptions.TotalSupplyAddr)
+	ethSupply := action.Address(ethOptions.TotalSupplyAddr)
 	balCoin, err := ctx.Balances.GetBalanceForCurr(ethSupply, &curr)
 	if err != nil {
 		return false, action.Response{Log: fmt.Sprintf("Unable to get Eth lock total balance", lock.Locker)}
 	}
 
-	totalSupplyCoin := curr.NewCoinFromString(cdOptions.TotalSupply)
+	totalSupplyCoin := curr.NewCoinFromString(ethOptions.TotalSupply)
 
 	if !balCoin.Plus(lockCoin).LessThanEqualCoin(totalSupplyCoin) {
 		return false, action.Response{Log: fmt.Sprintf("Eth lock exceeded limit", lock.Locker)}

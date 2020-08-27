@@ -2,29 +2,40 @@ package governance
 
 import (
 	"fmt"
-	"github.com/Oneledger/protocol/data/keys"
-	"github.com/Oneledger/protocol/storage"
+	"testing"
+	"time"
+
+	"github.com/Oneledger/protocol/data/balance"
+
 	"github.com/stretchr/testify/assert"
 	db "github.com/tendermint/tm-db"
-	"testing"
+
+	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/storage"
 )
 
 const (
 	numPrivateKeys = 5
 	numProposals   = 10
 
-	codeChange   = 2
-	configUpdate = 3
-	general      = 4
+	codeChange = 2
+
+	configUpdate   = 3
+	general        = 4
+	passPercentage = 51
 )
 
 var (
 	addrList    []keys.Address
 	proposals   []*Proposal
-	proposalOpt ProposalOptions
+	proposalOpt ProposalOptionSet
 
 	govStore      *Store
 	proposalStore *ProposalStore
+
+	codeChangeAmount   = balance.NewAmount(codeChange)
+	generalAmount      = balance.NewAmount(general)
+	configUpdateAmount = balance.NewAmount(configUpdate)
 )
 
 func init() {
@@ -38,25 +49,28 @@ func init() {
 	}
 
 	//Create new proposal options
-	proposalOpt.CodeChange = options{
-		InitialFunding:  codeChange,
+	proposalOpt.CodeChange = ProposalOption{
+		InitialFunding:  codeChangeAmount,
 		FundingDeadline: codeChange,
-		FundingGoal:     codeChange,
+		FundingGoal:     codeChangeAmount,
 		VotingDeadline:  codeChange,
+		PassPercentage:  passPercentage,
 	}
 
-	proposalOpt.ConfigUpdate = options{
-		InitialFunding:  configUpdate,
+	proposalOpt.ConfigUpdate = ProposalOption{
+		InitialFunding:  configUpdateAmount,
 		FundingDeadline: configUpdate,
-		FundingGoal:     configUpdate,
+		FundingGoal:     configUpdateAmount,
 		VotingDeadline:  configUpdate,
+		PassPercentage:  passPercentage,
 	}
 
-	proposalOpt.General = options{
-		InitialFunding:  general,
+	proposalOpt.General = ProposalOption{
+		InitialFunding:  generalAmount,
 		FundingDeadline: general,
-		FundingGoal:     general,
+		FundingGoal:     generalAmount,
 		VotingDeadline:  general,
+		PassPercentage:  passPercentage,
 	}
 
 	//Create new proposals
@@ -66,7 +80,7 @@ func init() {
 
 		proposer := addrList[j]
 
-		var opt options
+		var opt ProposalOption
 		switch ProposalType(k) {
 		case ProposalTypeConfigUpdate:
 			opt = proposalOpt.ConfigUpdate
@@ -78,8 +92,12 @@ func init() {
 			opt = proposalOpt.General
 		}
 
-		proposals = append(proposals, NewProposal(ProposalType(k), "Test Proposal", proposer,
-			opt.FundingDeadline, opt.FundingGoal, opt.VotingDeadline))
+		fundingGoal := balance.NewAmountFromBigInt(opt.FundingGoal.BigInt())
+		configUpdate := make(map[string]interface{})
+		configUpdate["feeOption.minFeeDecimal"] = 10
+
+		proposals = append(proposals, NewProposal(ProposalID(time.Now().String()), ProposalType(k), "Test Proposal",
+			"Test Headline", proposer, opt.FundingDeadline, fundingGoal, opt.VotingDeadline, opt.PassPercentage, configUpdate))
 	}
 
 	//Create Test DB
@@ -90,7 +108,7 @@ func init() {
 	govStore = NewStore("g", cs)
 
 	//Create Proposal store
-	proposalStore = NewProposalStore("p_active", "p_passed", "p_failed", cs)
+	proposalStore = NewProposalStore("p_active", "p_passed", "p_failed", "p_finalized", "p_finalizeFailed", cs)
 }
 
 func TestProposalStore_Set(t *testing.T) {
@@ -167,10 +185,20 @@ func TestProposalStore_IterateProposalType(t *testing.T) {
 	assert.Equal(t, 2, proposalCount)
 }
 
-func TestProposalStore_SetOptions(t *testing.T) {
-	err := govStore.SetProposalOptions(proposalOpt)
-	assert.Equal(t, nil, err)
+func TestProposalStore_FilterProposals(t *testing.T) {
+	proposals_general := proposalStore.FilterProposals(ProposalStateActive, keys.Address{}, ProposalTypeGeneral)
+	proposals_codeupdate := proposalStore.FilterProposals(ProposalStateActive, keys.Address{}, ProposalTypeCodeChange)
+	proposals_cfgupdate := proposalStore.FilterProposals(ProposalStateActive, keys.Address{}, ProposalTypeConfigUpdate)
+	assert.Equal(t, 2, len(proposals_general))
+	assert.Equal(t, 4, len(proposals_codeupdate))
+	assert.Equal(t, 4, len(proposals_cfgupdate))
+}
 
-	propOpt, err := govStore.GetProposalOptions()
+func TestProposalStore_SetOptions(t *testing.T) {
+	err := govStore.WithHeight(0).SetProposalOptions(proposalOpt)
+	assert.Equal(t, nil, err)
+	err = govStore.WithHeight(0).SetLUH(LAST_UPDATE_HEIGHT_PROPOSAL)
+	assert.NoError(t, err)
+	propOpt, err := govStore.WithHeight(0).GetProposalOptions()
 	assert.Exactly(t, &proposalOpt, propOpt)
 }
