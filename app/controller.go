@@ -120,14 +120,12 @@ func (app *App) blockBeginner() blockBeginner {
 		defer app.handlePanic()
 		gc := getGasCalculator(app.genesisDoc.ConsensusParams)
 		app.Context.deliver = storage.NewState(app.Context.chainstate).WithGas(gc)
-
 		// update the validator set
 		err := app.Context.validators.Setup(req, app.Context.node.ValidatorAddress())
 		if err != nil {
 			app.logger.Error("validator set with error", err)
 		}
 
-		// update Block Rewards
 		blockRewardEvent := handleBlockRewards(app.Context.validators, app.Context.balances,
 			app.Context.rewardMaster.WithState(app.Context.deliver), app.Context.currencies, req)
 
@@ -147,6 +145,7 @@ func (app *App) blockBeginner() blockBeginner {
 				function(app)
 			}
 		}
+
 		app.logger.Detail("Begin Block:", result, "height:", req.Header.Height, "AppHash:", hex.EncodeToString(req.Header.AppHash))
 		return result
 	}
@@ -154,6 +153,7 @@ func (app *App) blockBeginner() blockBeginner {
 
 // mempool connection: for checking if transactions should be relayed before they are committed
 func (app *App) txChecker() txChecker {
+
 	return func(msg RequestCheckTx) ResponseCheckTx {
 		defer app.handlePanic()
 
@@ -216,6 +216,7 @@ func (app *App) txChecker() txChecker {
 }
 
 func (app *App) txDeliverer() txDeliverer {
+
 	return func(msg RequestDeliverTx) ResponseDeliverTx {
 		defer app.handlePanic()
 
@@ -299,7 +300,6 @@ func (app *App) blockEnder() blockEnder {
 		result := ResponseEndBlock{
 			ValidatorUpdates: updates,
 		}
-
 		app.logger.Detail("End Block: ", result, "height:", req.Height)
 
 		return result
@@ -309,7 +309,6 @@ func (app *App) blockEnder() blockEnder {
 func (app *App) commitor() commitor {
 	return func() ResponseCommit {
 		defer app.handlePanic()
-
 		hash, ver := app.Context.deliver.Commit()
 		app.logger.Detailf("Committed New Block height[%d], hash[%s], versions[%d]", app.header.Height, hex.EncodeToString(hash), ver)
 

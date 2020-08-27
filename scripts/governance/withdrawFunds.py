@@ -1,5 +1,3 @@
-import time
-
 from sdk import *
 
 addr_list = addresses()
@@ -172,4 +170,5 @@ if __name__ == "__main__":
     print "#### FAILED PROPOSALS: ####"
     failedList = query_proposals(ProposalStateFailed)
     if len(failedList) == 0:
+        print "Failed List is zero"
         sys.exit(-1)

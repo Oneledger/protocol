@@ -93,7 +93,8 @@ func init() {
 		}
 
 		fundingGoal := balance.NewAmountFromBigInt(opt.FundingGoal.BigInt())
-		configUpdate := GovernanceState{}
+		configUpdate := make(map[string]interface{})
+		configUpdate["feeOption.minFeeDecimal"] = 10
 
 		proposals = append(proposals, NewProposal(ProposalID(time.Now().String()), ProposalType(k), "Test Proposal",
 			"Test Headline", proposer, opt.FundingDeadline, fundingGoal, opt.VotingDeadline, opt.PassPercentage, configUpdate))
@@ -196,7 +197,7 @@ func TestProposalStore_FilterProposals(t *testing.T) {
 func TestProposalStore_SetOptions(t *testing.T) {
 	err := govStore.WithHeight(0).SetProposalOptions(proposalOpt)
 	assert.Equal(t, nil, err)
-	err = govStore.WithHeight(0).SetLUH()
+	err = govStore.WithHeight(0).SetLUH(LAST_UPDATE_HEIGHT_PROPOSAL)
 	assert.NoError(t, err)
 	propOpt, err := govStore.WithHeight(0).GetProposalOptions()
 	assert.Exactly(t, &proposalOpt, propOpt)

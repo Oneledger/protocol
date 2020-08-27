@@ -126,20 +126,72 @@ func (svc *Service) GetGovernanceOptionsForHeight(req client.GovernanceOptionsRe
 	if err != nil {
 		return err
 	}
-	luh, err := svc.governance.GetLUH()
+	stakingOpt, err := svc.governance.GetStakingOptions()
+	if err != nil {
+		return err
+	}
+	evidenceOpt, err := svc.governance.GetEvidenceOptions()
+	if err != nil {
+		return err
+	}
+	luhFee, err := svc.governance.GetLUH(governance.LAST_UPDATE_HEIGHT_FEE)
+	if err != nil {
+		return err
+	}
+	luhCurrency, err := svc.governance.GetLUH(governance.LAST_UPDATE_HEIGHT_CURRENCY)
+	if err != nil {
+		return err
+	}
+	luhProposal, err := svc.governance.GetLUH(governance.LAST_UPDATE_HEIGHT_PROPOSAL)
+	if err != nil {
+		return err
+	}
+	luhStaking, err := svc.governance.GetLUH(governance.LAST_UPDATE_HEIGHT_STAKING)
+	if err != nil {
+		return err
+	}
+	luhRewads, err := svc.governance.GetLUH(governance.LAST_UPDATE_HEIGHT_REWARDS)
+	if err != nil {
+		return err
+	}
+	luhOns, err := svc.governance.GetLUH(governance.LAST_UPDATE_HEIGHT_ONS)
+	if err != nil {
+		return err
+	}
+	luhEth, err := svc.governance.GetLUH(governance.LAST_UPDATE_HEIGHT_ETH)
+	if err != nil {
+		return err
+	}
+	luhBtc, err := svc.governance.GetLUH(governance.LAST_UPDATE_HEIGHT_BTC)
+	if err != nil {
+		return err
+	}
+	luhEvidence, err := svc.governance.GetLUH(governance.LAST_UPDATE_HEIGHT_EVIDENCE)
 	if err != nil {
 		return err
 	}
 	*reply = client.GovernanceOptionsReply{
 		GovOptions: governance.GovernanceState{
-			FeeOption:     *feeOpt,
-			ETHCDOption:   *ethOpt,
-			BTCCDOption:   *btcOpt,
-			ONSOptions:    *onsOpt,
-			PropOptions:   *propOpt,
-			RewardOptions: *rewardOpt,
+			FeeOption:       *feeOpt,
+			ETHCDOption:     *ethOpt,
+			BTCCDOption:     *btcOpt,
+			ONSOptions:      *onsOpt,
+			PropOptions:     *propOpt,
+			RewardOptions:   *rewardOpt,
+			StakingOptions:  *stakingOpt,
+			EvidenceOptions: *evidenceOpt,
 		},
-		LastUpdateHeight: luh,
+		LastUpdateHeight: client.LastUpdateHeights{
+			Proposal: luhProposal,
+			Rewards:  luhRewads,
+			Ons:      luhOns,
+			Eth:      luhEth,
+			Btc:      luhBtc,
+			Staking:  luhStaking,
+			Currency: luhCurrency,
+			Fee:      luhFee,
+			Evidence: luhEvidence,
+		},
 	}
 	return nil
 }
@@ -151,7 +203,6 @@ func (svc *Service) GetProposalOptions(_ client.ListTxTypesRequest, reply *clien
 		return err
 	}
 	height := svc.proposalMaster.Proposal.GetState().Version()
-
 	*reply = client.GetProposalOptionsReply{
 		ProposalOptions: *options,
 		Height:          height,
