@@ -25,14 +25,18 @@ contract LockRedeem {
     uint rewardGas = 10000;
 
     uint public migrationSignatures;
-    mapping (address => bool) public migrationSigners;
-    mapping (address => uint) migrationCount;
+    mapping(address => bool) public migrationSigners;
+    mapping(address => uint) migrationCount;
     address [] migrationAddress;
 
     // Default Voting power should be updated at one point
     //int constant DEFAULT_VALIDATOR_POWER = 100;
     uint constant MIN_VALIDATORS = 0;
 
+    //Approx
+    // 270 blocks per hour
+    // 5 blocks per min
+    // 28800 old value
     uint256 LOCK_PERIOD;
 
 
