@@ -396,6 +396,7 @@ func redeem() []byte {
 	if err != nil {
 		log.Fatal(err)
 	}
+	//nonce = 2297
 	gasLimit := gasLimit // in units
 
 	gasPrice, err := client.SuggestGasPrice(context.Background())
@@ -458,18 +459,17 @@ func redeem() []byte {
 	//acc := accReply.Accounts[0]
 
 	acc := keys.Address{}
-	err = acc.UnmarshalText([]byte("4846690b235c5d391876a1d8948da2094fb39c65"))
+	err = acc.UnmarshalText([]byte(""))
 	if err != nil {
 		return nil
 	}
-	wallet, err := accounts.NewWalletKeyStore("/home/tanmay/Codebase/Test/devnet/0-Node/")
+	wallet, err := accounts.NewWalletKeyStore("")
 	if err != nil {
 		return nil
 	}
 	wallet.Open(acc, "1234")
 
 	addresslist, _ := wallet.ListAddresses()
-
 	result := &oclient.ListCurrenciesReply{}
 	err = rpcclient.Call("query.ListCurrencies", struct{}{}, result)
 	if err != nil {

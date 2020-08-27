@@ -42,7 +42,6 @@ import (
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/keys"
 
-	ethcontracts "github.com/Oneledger/protocol/chains/ethereum/contract"
 	"github.com/Oneledger/protocol/log"
 )
 
@@ -794,13 +793,15 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 	}
 
 	auth.Nonce = big.NewInt(int64(nonce))
-
-	address, _, _, err := ethcontracts.DeployLockRedeem(auth, cli, initialValidatorList, lock_period)
+	oldaddress := common.Address{}
+	num_of_validators := big.NewInt(8)
+	address, _, _, err := contract.DeployLockRedeem(auth, cli, initialValidatorList, lock_period, oldaddress, num_of_validators)
 	if err != nil {
 		return nil, errors.Wrap(err, "Deployement Eth LockRedeem")
 	}
 	tokenAddress := common.Address{}
 	ercAddress := common.Address{}
+
 	//auth.Nonce = big.NewInt(int64(nonce + 1))
 	//tokenAddress, _, _, err := ethcontracts.DeployERC20Basic(auth, cli, tokenSupplyTestToken)
 	//if err != nil {

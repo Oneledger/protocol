@@ -1,6 +1,6 @@
 pragma solidity >=0.5.0 <0.6.0;
 
-contract LockRedeem_Kratos {
+contract LockRedeem {
     //Flag to pause and unpause contract
     bool ACTIVE = false;
 
@@ -111,7 +111,6 @@ contract LockRedeem_Kratos {
             require(validators[v] == 0, "found non-unique validator in initialValidators");
             addValidator(v);
         }
-        //ACTIVE = true ;
         LOCK_PERIOD = _lock_period;
         //validatorEarningMultiplier = multiplier;
         votingThreshold = (initialValidators.length * 2 / 3) + 1;
