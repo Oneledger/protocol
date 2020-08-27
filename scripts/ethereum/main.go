@@ -395,7 +395,7 @@ func redeem() []byte {
 	if err != nil {
 		log.Fatal(err)
 	}
-	//nonce = 2297
+
 	gasLimit := gasLimit // in units
 
 	gasPrice, err := client.SuggestGasPrice(context.Background())
