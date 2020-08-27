@@ -47,11 +47,11 @@ type Proposal struct {
 	FundingGoal           *balance.Amount `json:"fundingGoal"`
 	VotingDeadline        int64           `json:"votingDeadline"`
 	PassPercentage        int             `json:"passPercent"`
-	GovernanceStateUpdate GovernanceState `json:"updateGovernanace"`
+	GovernanceStateUpdate interface{}     `json:"updateGovernanace"`
 }
 
 func NewProposal(proposalID ProposalID, propType ProposalType, desc string, headline string, proposer keys.Address, fundingDeadline int64, fundingGoal *balance.Amount,
-	votingDeadline int64, passPercentage int, upd GovernanceState) *Proposal {
+	votingDeadline int64, passPercentage int, upd interface{}) *Proposal {
 
 	return &Proposal{
 		ProposalID:            proposalID,

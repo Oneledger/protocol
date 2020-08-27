@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/Oneledger/protocol/data/evidence"
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/rewards"
 
@@ -55,10 +56,12 @@ var (
 	ethBlockConfirmation = int64(12)
 	btcBlockConfirmation = int64(6)
 
-	proposalInitialFunding, _   = balance.NewAmountFromString("1000000000", 10)
-	proposalFundingGoal, _      = balance.NewAmountFromString("10000000000", 10)
-	proposalFundingDeadline     = int64(100)
-	proposalVotingDeadline      = int64(12)
+	proposalInitialFunding, _ = balance.NewAmountFromString("1000000000", 10)
+	proposalFundingGoal, _    = balance.NewAmountFromString("10000000000", 10)
+	proposalFundingDeadline   = int64(75001)
+	proposalVotingDeadline    = int64(150000)
+	//proposalFundingDeadline     = int64(10)
+	//proposalVotingDeadline      = int64(12)
 	proposalPassPercentage      = 51
 	bountyProgramAddr           = "oneledgerBountyProgram"
 	executionCostAddrConfig     = "executionCostConfig"
@@ -127,6 +130,9 @@ type testnetConfig struct {
 	loglevel             int
 	rewardsInterval      int64
 	reserved_domains     string
+	maturityTime         int64
+	votingDeadline       int64
+	fundingDeadline      int64
 }
 
 func init() {
@@ -147,6 +153,9 @@ func init() {
 	testnetCmd.Flags().IntVar(&testnetArgs.loglevel, "loglevel", 3, "Specify the log level for olfullnode. 0: Fatal, 1: Error, 2: Warning, 3: Info, 4: Debug, 5: Detail")
 	testnetCmd.Flags().Int64Var(&testnetArgs.rewardsInterval, "rewards_interval", 1, "Block rewards interval")
 	testnetCmd.Flags().StringVar(&testnetArgs.reserved_domains, "reserved_domains", "", "Directory which contains Reserved domains list")
+	testnetCmd.Flags().Int64Var(&testnetArgs.maturityTime, "maturity_time", 109200, "Set Maturity time for staking")
+	testnetCmd.Flags().Int64Var(&testnetArgs.fundingDeadline, "funding_deadline", 75001, "Set Maturity time for staking")
+	testnetCmd.Flags().Int64Var(&testnetArgs.votingDeadline, "voting_deadline", 150000, "Set Maturity time for staking")
 
 }
 
@@ -434,7 +443,8 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		lockBalanceAddress,
 		btcBlockConfirmation,
 	}
-
+	proposalFundingDeadline = args.fundingDeadline
+	proposalVotingDeadline = args.votingDeadline
 	propOpt := governance.ProposalOptionSet{
 		ConfigUpdate: governance.ProposalOption{
 			InitialFunding:         proposalInitialFunding,
@@ -539,8 +549,30 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 	stakingOption := delegation.Options{
 		MinSelfDelegationAmount: *balance.NewAmount(3000000),
 		MinDelegationAmount:     *balance.NewAmount(1),
-		TopValidatorCount:       4,
-		MaturityTime:            10,
+		TopValidatorCount:       8,
+		MaturityTime:            args.maturityTime,
+	}
+
+	// evidence
+	evidenceOption := evidence.Options{
+		MinVotesRequired: 800,
+		BlockVotesDiff:   1000,
+
+		PenaltyBasePercentage: 30,
+		PenaltyBaseDecimals:   100,
+
+		PenaltyBountyPercentage: 50,
+		PenaltyBountyDecimals:   100,
+
+		PenaltyBurnPercentage: 50,
+		PenaltyBurnDecimals:   100,
+
+		ValidatorReleaseTime:    5,
+		ValidatorVotePercentage: 50,
+		ValidatorVoteDecimals:   100,
+
+		AllegationPercentage: 50,
+		AllegationDecimals:   100,
 	}
 
 	//var initialAddrs []keys.Address
@@ -654,13 +686,14 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 		Domains:    domains,
 		Fees:       fees_db,
 		Governance: governance.GovernanceState{
-			FeeOption:      feeOpt,
-			ETHCDOption:    option,
-			BTCCDOption:    btcOption,
-			ONSOptions:     onsOption,
-			PropOptions:    propOpt,
-			StakingOptions: stakingOption,
-			RewardOptions:  rewardOpt,
+			FeeOption:       feeOpt,
+			ETHCDOption:     option,
+			BTCCDOption:     btcOption,
+			ONSOptions:      onsOption,
+			PropOptions:     propOpt,
+			StakingOptions:  stakingOption,
+			EvidenceOptions: evidenceOption,
+			RewardOptions:   rewardOpt,
 		},
 	}
 }

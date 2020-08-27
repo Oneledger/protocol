@@ -19,7 +19,7 @@ type Validator struct {
 	ECDSAPubKey  keys.PublicKey `json:"ecdsaPubkey"`
 	Power        int64          `json:"power"`
 	Name         string         `json:"name"`
-	Staking      balance.Amount `json:"staking,string"`
+	Staking      balance.Amount `json:"staking"`
 }
 
 func NewValidator(address keys.Address, stakeAddress keys.Address, pubKey keys.PublicKey, ecdsaPubKey keys.PublicKey, amount balance.Amount, name string) *Validator {

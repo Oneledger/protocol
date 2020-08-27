@@ -50,35 +50,41 @@ class bcolors:
 
 
 class Proposal:
-    def __init__(self, pid, pType, description, headline, proposer, init_fund):
+    def __init__(self, pid, pType, description, headline, proposer, init_fund, updatevalue=None):
+        if updatevalue is None:
+            updatevalue = {"feeOption.minFeeDecimal": 9}
         self.pid = pid
         self.pty = pType
         self.headline = headline
         self.des = description
         self.proposer = proposer
         self.init_fund = init_fund
-        self.configupdate = self.default_gov_state()
+        self.configupdate = updatevalue
 
     def _calculate_proposal_info(self, assign_funding_deadline):
         query_options = query_proposal_options()
         options = query_options["proposalOptions"]
         height = query_options["height"]
-        funding_deadline_in_use = options["configUpdate"]["fundingDeadline"]
-        voting_deadline_in_use = options["configUpdate"]["votingDeadline"]
         if assign_funding_deadline != 0:
             funding_deadline_in_use = assign_funding_deadline
 
         if self.pty == "configUpdate":
+            funding_deadline_in_use = options["configUpdate"]["fundingDeadline"]
+            voting_deadline_in_use = options["configUpdate"]["votingDeadline"]
             funding_goal = options["configUpdate"]["fundingGoal"]
             funding_deadline = height + funding_deadline_in_use
             voting_deadline = funding_deadline + voting_deadline_in_use
             pass_percentage = options["configUpdate"]["passPercentage"]
         elif self.pty == "codeChange":
+            funding_deadline_in_use = options["codeChange"]["fundingDeadline"]
+            voting_deadline_in_use = options["codeChange"]["votingDeadline"]
             funding_goal = options["codeChange"]["fundingGoal"]
             funding_deadline = height + funding_deadline_in_use
             voting_deadline = funding_deadline + voting_deadline_in_use
             pass_percentage = options["codeChange"]["passPercentage"]
         elif self.pty == "general":
+            funding_deadline_in_use = options["general"]["fundingDeadline"]
+            voting_deadline_in_use = options["general"]["votingDeadline"]
             funding_goal = options["general"]["fundingGoal"]
             funding_deadline = height + funding_deadline_in_use
             voting_deadline = funding_deadline + voting_deadline_in_use
@@ -660,6 +666,7 @@ def query_balance(address):
 def query_proposal_options():
     req = {}
     resp = rpc_call('query.GetProposalOptions', req)
+
     if "result" not in resp:
         sys.exit(-1)
     if "proposalOptions" not in resp["result"]:

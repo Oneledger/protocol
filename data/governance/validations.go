@@ -1,7 +1,6 @@
 package governance
 
 import (
-	"bytes"
 	"math"
 	"math/big"
 	"reflect"
@@ -12,6 +11,7 @@ import (
 	ethchain "github.com/Oneledger/protocol/chains/ethereum"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/delegation"
+	"github.com/Oneledger/protocol/data/evidence"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/data/rewards"
@@ -47,10 +47,10 @@ var (
 	minDeadlineVotingeGeneral = getDeadline(75000)
 	maxDeadlineVotingGeneral  = getDeadline(150000)
 	minPassPercentage         = int64(51)
-	maxPassPercentage         = int64(67)
+	maxPassPercentage         = int64(80)
 	decimalsAllowed           = 2
 	//ONS
-	minPerBlockFee     = balance.NewAmountFromInt(0)
+	minPerBlockFee     = balance.NewAmountFromInt(1)
 	maxPerBlockFee     = infiniteMaxBalance
 	minBaseDomainPrice = balance.NewAmountFromInt(0)
 	maxBaseDomainPrice = infiniteMaxBalance
@@ -66,7 +66,16 @@ var (
 	minValidatorCount       = int64(8)
 	maxValidatorCount       = int64(64)
 	minMaturityTime         = int64(109200)
-	maxMaturityTime         = int64(234000)
+	maxMaturityTime         = int64(468000)
+	//Evidence
+	MinVotesRequiredPercentage = int64(70)
+	minBlockVotesDiff          = int64(1000)
+	maxBlockVotesDiff          = int64(100000)
+	minPenaltyBasePercentage   = int64(10)
+	maxPenaltyBasePercentage   = int64(40)
+	minValidatorVotePercentage = int64(50)
+	maxValidatorVotePercentage = int64(100)
+	// can be between 0 -100, PenaltyBurnPercentage + PenaltyBountyPercentage is always 100
 )
 
 func (st *Store) ValidateGov(govstate GovernanceState) (bool, error) {
@@ -97,6 +106,10 @@ func (st *Store) ValidateGov(govstate GovernanceState) (bool, error) {
 	ok, err = st.ValidateRewards(&govstate.RewardOptions)
 	if err != nil || !ok {
 		return false, errors.New("reward options cannot be changed ")
+	}
+	ok, err = st.ValidateEvidence(&govstate.EvidenceOptions)
+	if err != nil || !ok {
+		return false, err
 	}
 	return true, nil
 }
@@ -158,30 +171,7 @@ func (st *Store) ValidateETH(opt *ethchain.ChainDriverOption) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if oldOptions.ContractABI != opt.ContractABI {
-		return false, errors.New("contract abi cannot be changed")
-	}
-	if oldOptions.ERCContractABI != opt.ERCContractABI {
-		return false, errors.New("erc contract abi cannot be changed")
-	}
-	if oldOptions.TotalSupply != opt.TotalSupply {
-		return false, errors.New("total supply cannot be changed")
-	}
-	if oldOptions.TotalSupplyAddr != opt.TotalSupplyAddr {
-		return false, errors.New("total supply address cannot be changed")
-	}
-	if !bytes.Equal(opt.ContractAddress.Bytes(), oldOptions.ContractAddress.Bytes()) {
-		return false, errors.New("smart contract address cannot be changed")
-	}
-	if !bytes.Equal(opt.ERCContractAddress.Bytes(), oldOptions.ERCContractAddress.Bytes()) {
-		return false, errors.New("ERC20 smart contract address cannot be changed")
-	}
-	if oldOptions.BlockConfirmation != opt.BlockConfirmation {
-		return false, errors.New("BlockConfirmations cannot be changed")
-	}
-	//if !verifyRangeInt64(opt.BlockConfirmation, minBlockConfirmation, maxBlockConfirmation) {
-	//	return false, errors.New("BlockConfirmations should be between 0 and 50")
-	//}
+	return reflect.DeepEqual(oldOptions, opt), nil
 	return true, nil
 }
 
@@ -229,19 +219,19 @@ func (st *Store) ValidateProposal(opt *ProposalOptionSet) (bool, error) {
 		return false, errors.New("funding deadline for Config update is not within range")
 	}
 	if !verifyRangeInt64(config.VotingDeadline, minDeadlineVotingConfig, maxDeadlineVotingConfig) {
-		return false, errors.New("funding deadline for Config update is not within range")
+		return false, errors.New("voting deadline for Config update is not within range")
 	}
 	if !verifyRangeInt64(code.FundingDeadline, minDeadlineFundingCode, maxDeadlineFundingCode) {
 		return false, errors.New("funding deadline for code update is not within range")
 	}
 	if !verifyRangeInt64(code.VotingDeadline, minDeadlineVotingCode, maxDeadlineVotingCode) {
-		return false, errors.New("funding deadline for code update is not within range")
+		return false, errors.New("voting deadline for code update is not within range")
 	}
 	if !verifyRangeInt64(general.FundingDeadline, minDeadlineFundingGeneral, maxDeadlineFundingGeneral) {
 		return false, errors.New("funding deadline for general update is not within range")
 	}
 	if !verifyRangeInt64(general.VotingDeadline, minDeadlineVotingeGeneral, maxDeadlineVotingGeneral) {
-		return false, errors.New("funding deadline for general update is not within range")
+		return false, errors.New("voting deadline for general update is not within range")
 	}
 	if !verifyRangeInt64(int64(config.PassPercentage), minPassPercentage, maxPassPercentage) {
 		return false, errors.New("pass percentage for config update is not within range")
@@ -297,6 +287,44 @@ func (st *Store) ValidateRewards(opt *rewards.Options) (bool, error) {
 		return false, err
 	}
 	return reflect.DeepEqual(oldOptions, opt), nil
+}
+
+func (st *Store) ValidateEvidence(opt *evidence.Options) (bool, error) {
+	oldOptions, err := st.GetEvidenceOptions()
+	if err != nil {
+		return false, err
+	}
+	ok := verifyRangeInt64(opt.BlockVotesDiff, minBlockVotesDiff, maxBlockVotesDiff)
+	if !ok {
+		return false, errors.New("Block Votes Diff is not in range")
+	}
+	if opt.MinVotesRequired < (MinVotesRequiredPercentage * (opt.BlockVotesDiff / 100)) {
+		return false, errors.New("Min Required Votes cannot be less that 70% of BlockVotesDiff")
+	}
+	if opt.MinVotesRequired > opt.BlockVotesDiff {
+		return false, errors.New("Min Required Votes cannot be more than BlockVotesDiff")
+	}
+	ok = verifyRangeInt64(opt.PenaltyBasePercentage/(opt.PenaltyBaseDecimals/100), minPenaltyBasePercentage, maxPenaltyBasePercentage)
+	if !ok {
+		return false, errors.New("PenaltyBasePercentage not in range")
+	}
+	ok = verifyRangeInt64(opt.ValidatorVotePercentage/(opt.ValidatorVoteDecimals/100), minValidatorVotePercentage, maxValidatorVotePercentage)
+	if !ok {
+		return false, errors.New("Validator Vote Percentage not in range")
+	}
+	if (opt.PenaltyBountyPercentage/(opt.PenaltyBountyDecimals/100))+(opt.PenaltyBurnPercentage/(opt.PenaltyBurnDecimals/100)) != 100 {
+		return false, errors.New("Bounty percentage + Burn Percentage should equal 100 %")
+	}
+	if opt.ValidatorReleaseTime != oldOptions.ValidatorReleaseTime {
+		return false, errors.New("Validator release time cannot be changed")
+	}
+	if opt.AllegationPercentage != oldOptions.AllegationPercentage {
+		return false, errors.New("AllegationPercentage cannot be changed")
+	}
+	if opt.AllegationDecimals != oldOptions.AllegationDecimals {
+		return false, errors.New("AllegationDecimals cannot be changed")
+	}
+	return true, nil
 }
 
 func verifyMinFunding(intialFunding *balance.Amount, fundingGoal *balance.Amount) (bool, error) {
