@@ -82,18 +82,19 @@ func Signing(ctx interface{}) error {
 
 	if tracker.State != ethereum.New {
 		err := errors.New("Cannot Start Sign and Broadcast from Current State")
-		return errors.Wrap(err, string((*tracker).State))
+		return err
 	}
 	tracker.State = ethereum.BusyBroadcasting
 	if context.Witnesses.IsETHWitness() {
 
 		job := NewETHSignRedeem(tracker.TrackerName, ethereum.BusyBroadcasting)
+
 		err := context.JobStore.SaveJob(job)
 		if err != nil {
 
 			return errors.Wrap(errors.New("job serialization failed err: "), err.Error())
 		}
-
+		context.Logger.Debug("Signing Job Created")
 	}
 
 	return nil
@@ -122,14 +123,9 @@ func VerifyRedeem(ctx interface{}) error {
 			if err != nil {
 				return errors.Wrap(err, "Failed to save job")
 			}
+			context.Logger.Debug("Verify Job Created")
 		}
 	}
-
-	y, n := tracker.GetVotes()
-	if y+n > 0 {
-		tracker.State = ethereum.BusyFinalizing
-	}
-
 	context.Tracker = tracker
 	return nil
 }
@@ -141,16 +137,19 @@ func RedeemConfirmed(ctx interface{}) error {
 		return errors.New("error casting tracker context")
 	}
 	tracker := context.Tracker
-	if tracker.State == ethereum.BusyFinalizing {
-		bjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyBroadcasting))
-		if err != nil {
-			return errors.Wrap(err, "failed to get job")
-		}
-		if bjob.IsDone() && !bjob.IsFailed() {
-			job := NewETHVerifyRedeem(tracker.TrackerName, ethereum.BusyFinalizing)
-			err := context.JobStore.SaveJob(job)
+	if context.Witnesses.IsETHWitness() {
+		if tracker.State == ethereum.BusyFinalizing {
+			bjob, err := context.JobStore.GetJob(tracker.GetJobID(ethereum.BusyBroadcasting))
 			if err != nil {
-				return errors.Wrap(err, "Failed to save job")
+				return errors.Wrap(err, "failed to get job")
+			}
+			if bjob.IsDone() && !bjob.IsFailed() {
+				job := NewETHVerifyRedeem(tracker.TrackerName, ethereum.BusyFinalizing)
+				err := context.JobStore.SaveJob(job)
+				if err != nil {
+					return errors.Wrap(err, "Failed to save job")
+				}
+				context.Logger.Debug("Verify Job Created")
 			}
 		}
 	}

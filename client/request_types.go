@@ -11,6 +11,8 @@ package client
 
 import (
 	"github.com/Oneledger/protocol/data/chain"
+	"github.com/Oneledger/protocol/data/delegation"
+
 	"github.com/tendermint/tendermint/libs/bytes"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 
@@ -40,12 +42,41 @@ Services:
 type BalanceRequest struct {
 	Address keys.Address `json:"address"`
 }
+
+type BalancePoolRequest struct {
+	Poolname string `json:"poolname"`
+}
 type BalanceReply struct {
 	// The balance of the account. Returns an empty balance
 	// if the account is not found
 	Balance string `json:"balance"`
 	// The height when this balance was recorded
 	Height int64 `json:"height"`
+}
+
+type ValidatorStatusRequest struct {
+	Address keys.Address `json:"address"`
+}
+
+type ValidatorStatusReply struct {
+	Height                int64  `json:"height"`
+	Power                 int64  `json:"power"`
+	Staking               string `json:"staking"`
+	TotalDelegationAmount string `json:"totalDelegationAmount"`
+	SelfDelegationAmount  string `json:"selfDelegationAmount"`
+	DelegationAmount      string `json:"delegationAmount"`
+	Exists                bool   `json:"exists"`
+}
+
+type DelegationStatusRequest struct {
+	Address keys.Address `json:"address"`
+}
+
+type DelegationStatusReply struct {
+	Balance                   string                   `json:"balance"`
+	EffectiveDelegationAmount string                   `json:"effectiveDelegationAmount"`
+	WithdrawableAmount        string                   `json:"withdrawableAmount"`
+	MaturedAmounts            []*delegation.MatureData `json:"maturedAmount"`
 }
 
 /* Tx Service */
@@ -58,40 +89,45 @@ type SendTxRequest struct {
 	Gas      int64         `json:"gas"`
 }
 
+type SendPoolTxRequest struct {
+	From     action.Address `json:"from"`
+	PoolName string         `json:"to"`
+	Amount   action.Amount  `json:"amount"`
+	GasPrice action.Amount  `json:"gasPrice"`
+	Gas      int64          `json:"gas"`
+}
+
 type CreateTxReply struct {
 	RawTx []byte `json:"rawTx"`
 }
 
-type ApplyValidatorRequest struct {
+type StakeRequest struct {
 	Address      keys.Address   `json:"address"`
-	Name         string         `json:"name"`
 	Amount       balance.Amount `json:"amount"`
-	Purge        bool           `json:"purge"`
+	Name         string         `json:"name"`
 	TmPubKeyType string         `json:"tmPubKeyType"`
 	TmPubKey     []byte         `json:"tmPubKey"`
 }
 
-type ApplyValidatorReply struct {
+type StakeReply struct {
 	RawTx []byte `json:"rawTx"`
 }
 
-type WithdrawRewardRequest struct {
-	From     keys.Address  `json:"from"`
-	To       keys.Address  `json:"to"`
-	GasPrice action.Amount `json:"gasPrice"`
-	Gas      int64         `json:"gas"`
+type UnstakeRequest struct {
+	Address keys.Address   `json:"address"`
+	Amount  balance.Amount `json:"amount"`
 }
 
-type WithdrawRewardReply struct {
+type UnstakeReply struct {
 	RawTx []byte `json:"rawTx"`
 }
 
-type PurgeValidatorRequest struct {
-	Admin     keys.Address `json:"admin"`
-	Validator keys.Address `json:"validator"`
+type WithdrawRequest struct {
+	Address keys.Address   `json:"address"`
+	Amount  balance.Amount `json:"amount"`
 }
 
-type PurgeValidatorReply struct {
+type WithdrawReply struct {
 	RawTx []byte `json:"rawTx"`
 }
 
@@ -109,7 +145,8 @@ type NodeIDRequest struct {
 	ShouldShowIP bool `json:"shouldShowIP,omitempty"`
 }
 type NodeIDReply struct {
-	Id string `json:"id"`
+	PublicKey string `json:"publicKey"`
+	Id        string `json:"id"`
 }
 
 type AddAccountRequest = accounts.Account
@@ -143,10 +180,11 @@ type ListValidatorsReply struct {
 	// The list of active validators
 	Validators []identity.Validator `json:"validators"`
 	// Height at which this validator set was active
-	Height int64 `json:"height"`
+	Height int64           `json:"height"`
+	VMap   map[string]bool `json:"vmap"`
 }
 
-type ListWitnessesRequest struct{
+type ListWitnessesRequest struct {
 	ChainType chain.Type `json:"chainType"`
 }
 type ListWitnessesReply struct {
@@ -176,6 +214,11 @@ type BroadcastReply struct {
 	OK     bool   `json:"ok"`
 	Height *int64 `json:"height,omitempty"`
 	Log    string `json:"log"`
+}
+
+type BroadcastMtSigRequest struct {
+	RawTx      []byte             `json:"rawTx"`
+	Signatures []action.Signature `json:"signatures"`
 }
 
 func (reply *BroadcastReply) FromResultBroadcastTx(result *ctypes.ResultBroadcastTx) {

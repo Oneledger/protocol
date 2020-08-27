@@ -19,13 +19,13 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"strings"
+
+	"github.com/spf13/cobra"
+	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 
 	accounts2 "github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
-	"github.com/spf13/cobra"
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
@@ -42,6 +42,16 @@ type SendArguments struct {
 	Password     string `json:"password"`
 }
 
+type SendPoolArguments struct {
+	Party    []byte `json:"party"`
+	PoolName string `json:"poolName"`
+	Amount   string `json:"amount"`
+	Currency string `json:"currency"`
+	Fee      string `json:"fee"`
+	Gas      int64  `json:"gas"`
+	Password string `json:"password"`
+}
+
 var (
 	sendCmd = &cobra.Command{
 		Use:   "send",
@@ -54,7 +64,13 @@ var (
 		Short: "Send funds to a given address",
 		RunE:  sendFunds,
 	}
+	sendFundsPoolCmd = &cobra.Command{
+		Use:   "sendpool",
+		Short: "Send funds to a given Pool",
+		RunE:  sendFundsPool,
+	}
 
+	sendpoolargs  = &SendPoolArguments{}
 	sendargs      = &SendArguments{}
 	sendfundsargs = &SendArguments{}
 
@@ -65,16 +81,6 @@ func (args *SendArguments) ClientRequest(currencies *balance.CurrencySet) (clien
 	c, ok := currencies.GetCurrencyByName(args.Currency)
 	if !ok {
 		return client.SendTxRequest{}, errors.New("currency not support:" + args.Currency)
-	}
-	padZero := func(s string) string {
-		ss := strings.Split(s, ".")
-		if len(ss) == 2 {
-			ss = []string{strings.TrimLeft(ss[0], "0"), strings.TrimLeft(ss[1], "0"), strings.Repeat("0", 18-len(ss[1]))}
-		} else {
-			ss = []string{strings.TrimLeft(ss[0], "0"), strings.Repeat("0", 18)}
-		}
-		s = strings.Join(ss, "")
-		return s
 	}
 	_, err := strconv.ParseFloat(args.Amount, 64)
 	if err != nil {
@@ -104,6 +110,9 @@ func init() {
 	RootCmd.AddCommand(sendCmd)
 	setArgs(sendCmd, sendargs)
 
+	RootCmd.AddCommand(sendFundsPoolCmd)
+	setSendPoolArgs(sendFundsPoolCmd, sendpoolargs)
+
 	testEnv := os.Getenv(testenv)
 	if testEnv == "1" {
 		RootCmd.AddCommand(sendFundsCmd)
@@ -115,6 +124,17 @@ func setArgs(command *cobra.Command, sendArgs *SendArguments) {
 	// Transaction Parameters
 	command.Flags().BytesHexVar(&sendArgs.Party, "party", []byte{}, "send sender")
 	command.Flags().BytesHexVar(&sendArgs.CounterParty, "counterparty", []byte{}, "send recipient")
+	command.Flags().StringVar(&sendArgs.Amount, "amount", "0", "specify an amount")
+	command.Flags().StringVar(&sendArgs.Currency, "currency", "OLT", "the currency")
+	command.Flags().StringVar(&sendArgs.Fee, "fee", "0", "include a fee in OLT")
+	command.Flags().StringVar(&sendArgs.Password, "password", "", "password to access secure wallet.")
+	command.Flags().Int64Var(&sendArgs.Gas, "gas", 20000, "gas limit")
+}
+
+func setSendPoolArgs(command *cobra.Command, sendArgs *SendPoolArguments) {
+	// Transaction Parameters
+	command.Flags().BytesHexVar(&sendArgs.Party, "party", []byte{}, "sender address")
+	command.Flags().StringVar(&sendArgs.PoolName, "poolname", "", "name of pool ")
 	command.Flags().StringVar(&sendArgs.Amount, "amount", "0", "specify an amount")
 	command.Flags().StringVar(&sendArgs.Currency, "currency", "OLT", "the currency")
 	command.Flags().StringVar(&sendArgs.Fee, "fee", "0", "include a fee in OLT")
@@ -197,12 +217,14 @@ func IssueRequest(cmd *cobra.Command, args []string) {
 	}
 
 	//Broadcast Transaction
-	result, err := ctx.clCtx.BroadcastTxCommit(packet)
+	result, err := ctx.clCtx.BroadcastTxSync(packet)
 	if err != nil {
-		ctx.logger.Error("error in BroadcastTxCommit", err)
+		ctx.logger.Error("error in BroadcastTxSync", err)
 	}
 
-	BroadcastStatus(ctx, result)
+	if BroadcastStatusSync(ctx, result) {
+		PollTxResult(ctx, result.Hash.String())
+	}
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
@@ -229,12 +251,14 @@ func sendFunds(cmd *cobra.Command, args []string) error {
 	}
 	packet := reply.RawTx
 
-	result, err := ctx.clCtx.BroadcastTxCommit(packet)
+	result, err := ctx.clCtx.BroadcastTxSync(packet)
 	if err != nil {
-		ctx.logger.Error("error in BroadcastTxCommit", err)
+		ctx.logger.Error("error in BroadcastTxSync", err)
 	}
 
-	BroadcastStatus(ctx, result)
+	if BroadcastStatusSync(ctx, result) {
+		PollTxResult(ctx, result.Hash.String())
+	}
 
 	return nil
 }

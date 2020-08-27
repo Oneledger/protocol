@@ -4,10 +4,18 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math"
+	"math/big"
 	"runtime/debug"
+	"strconv"
+
+	"github.com/tendermint/tendermint/libs/kv"
+
+	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/rewards"
 
 	"github.com/pkg/errors"
 
+	abciTypes "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/types"
 
 	"github.com/Oneledger/protocol/action"
@@ -23,6 +31,7 @@ import (
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/serialize"
+	codes "github.com/Oneledger/protocol/status_codes"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/Oneledger/protocol/utils"
 	"github.com/Oneledger/protocol/utils/transition"
@@ -111,17 +120,31 @@ func (app *App) blockBeginner() blockBeginner {
 		defer app.handlePanic()
 		gc := getGasCalculator(app.genesisDoc.ConsensusParams)
 		app.Context.deliver = storage.NewState(app.Context.chainstate).WithGas(gc)
-
 		// update the validator set
 		err := app.Context.validators.Setup(req, app.Context.node.ValidatorAddress())
 		if err != nil {
 			app.logger.Error("validator set with error", err)
 		}
 
-		result := ResponseBeginBlock{}
+		blockRewardEvent := handleBlockRewards(app.Context.validators, app.Context.balances,
+			app.Context.rewardMaster.WithState(app.Context.deliver), app.Context.currencies, req)
+
+		result := ResponseBeginBlock{
+			Events: []abciTypes.Event{blockRewardEvent},
+		}
 
 		//update the header to current block
 		app.header = req.Header
+		//Adds proposals that meet the requirements to either Expired or Finalizing Keys from transaction store
+		//Transaction store is not part of chainstate ,it just maintains a list of proposals from BlockBeginner to BlockEnder .Gets cleared at each Block Ender
+		AddInternalTX(app.Context.proposalMaster, app.Context.node.ValidatorAddress(), app.header.Height, app.Context.transaction, app.logger)
+
+		functionList, err := app.Context.controllerFunctions.Iterate(BlockBeginner)
+		if err == nil {
+			for _, function := range functionList {
+				function(app)
+			}
+		}
 
 		app.logger.Detail("Begin Block:", result, "height:", req.Header.Height, "AppHash:", hex.EncodeToString(req.Header.AppHash))
 		return result
@@ -130,6 +153,7 @@ func (app *App) blockBeginner() blockBeginner {
 
 // mempool connection: for checking if transactions should be relayed before they are committed
 func (app *App) txChecker() txChecker {
+
 	return func(msg RequestCheckTx) ResponseCheckTx {
 		defer app.handlePanic()
 
@@ -150,12 +174,10 @@ func (app *App) txChecker() txChecker {
 		if err != nil {
 			app.logger.Errorf("checkTx failed to deserialize msg: %v, error: %s ", msg, err)
 		}
-
 		txCtx := app.Context.Action(&app.header, app.Context.check)
 		handler := txCtx.Router.Handler(tx.Type)
 
 		gas := txCtx.State.ConsumedGas()
-
 		ok, err := handler.Validate(txCtx, *tx)
 		if err != nil {
 			app.logger.Debug("Check Tx invalid: ", err.Error())
@@ -168,10 +190,12 @@ func (app *App) txChecker() txChecker {
 
 		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, storage.Gas(len(msg.Tx)))
 
+		logString := marshalLog(ok, response, feeResponse)
+
 		result := ResponseCheckTx{
 			Code:      getCode(ok && feeOk).uint32(),
 			Data:      response.Data,
-			Log:       response.Log + feeResponse.Log,
+			Log:       logString,
 			Info:      response.Info,
 			GasWanted: feeResponse.GasWanted,
 			GasUsed:   feeResponse.GasUsed,
@@ -192,6 +216,7 @@ func (app *App) txChecker() txChecker {
 }
 
 func (app *App) txDeliverer() txDeliverer {
+
 	return func(msg RequestDeliverTx) ResponseDeliverTx {
 		defer app.handlePanic()
 
@@ -222,10 +247,12 @@ func (app *App) txDeliverer() txDeliverer {
 
 		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, storage.Gas(len(msg.Tx)))
 
+		logString := marshalLog(ok, response, feeResponse)
+
 		result := ResponseDeliverTx{
 			Code:      getCode(ok && feeOk).uint32(),
 			Data:      response.Data,
-			Log:       response.Log + feeResponse.Log,
+			Log:       logString,
 			Info:      response.Info,
 			GasWanted: feeResponse.GasWanted,
 			GasUsed:   feeResponse.GasUsed,
@@ -250,15 +277,29 @@ func (app *App) blockEnder() blockEnder {
 
 		fee, err := app.Context.feePool.WithState(app.Context.deliver).Get([]byte(fees.POOL_KEY))
 		app.logger.Detail("endblock fee", fee, err)
-		updates := app.Context.validators.GetEndBlockUpdate(app.Context.ValidatorCtx(), req)
-		result := ResponseEndBlock{
-			ValidatorUpdates: updates,
-			//Tags:             []kv.Pair(nil),
-		}
+
+		updates := app.Context.validators.WithState(app.Context.deliver).GetEndBlockUpdate(app.Context.ValidatorCtx(), req)
+		app.logger.Detailf("Sending updates with nodes to tendermint: %+v\n", updates)
+
 		ethTrackerlog := log.NewLoggerWithPrefix(app.Context.logWriter, "ethtracker").WithLevel(log.Level(app.Context.cfg.Node.LogLevel))
 		doTransitions(app.Context.jobStore, app.Context.btcTrackers.WithState(app.Context.deliver), app.Context.validators)
 		doEthTransitions(app.Context.jobStore, app.Context.ethTrackers, app.Context.node.ValidatorAddress(), ethTrackerlog, app.Context.witnesses, app.Context.deliver)
+		// Proposals currently in store are cleared if deliver is successful
+		// If Expire or Finalize TX returns false,they will added to the proposals queue in the next block
+		// Errors are logged at the function level
+		// These functions iterate the transactions store
+		ExpireProposals(&app.header, &app.Context, app.logger)
+		FinalizeProposals(&app.header, &app.Context, app.logger)
 
+		functionList, err := app.Context.controllerFunctions.Iterate(BlockEnder)
+		if err == nil {
+			for _, function := range functionList {
+				function(app)
+			}
+		}
+		result := ResponseEndBlock{
+			ValidatorUpdates: updates,
+		}
 		app.logger.Detail("End Block: ", result, "height:", req.Height)
 
 		return result
@@ -268,7 +309,6 @@ func (app *App) blockEnder() blockEnder {
 func (app *App) commitor() commitor {
 	return func() ResponseCommit {
 		defer app.handlePanic()
-
 		hash, ver := app.Context.deliver.Commit()
 		app.logger.Detailf("Committed New Block height[%d], hash[%s], versions[%d]", app.header.Height, hex.EncodeToString(hash), ver)
 
@@ -398,7 +438,145 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 
 }
 
+//Get Individual Validator reward based on power
+func getRewardForValidator(totalPower int64, validatorPower int64, totalRewards *balance.Amount) *balance.Amount {
+	numerator := big.NewInt(0).Mul(totalRewards.BigInt(), big.NewInt(validatorPower))
+	reward := balance.NewAmountFromBigInt(big.NewInt(0).Div(numerator, big.NewInt(totalPower)))
+	return reward
+}
+
+func handleBlockRewards(validators *identity.ValidatorStore, balances *balance.Store, rewardMaster *rewards.RewardMasterStore,
+	currency *balance.CurrencySet, block RequestBeginBlock) abciTypes.Event {
+
+	votes := block.LastCommitInfo.Votes
+	lastHeight := block.GetHeader().Height
+	options := rewardMaster.Reward.GetOptions()
+
+	heightKey := "height"
+
+	//Initialize Event for Block Response
+	result := abciTypes.Event{}
+	kvMap := make(map[string]kv.Pair)
+
+	kvMap[heightKey] = kv.Pair{
+		Key:   []byte(heightKey),
+		Value: []byte(strconv.FormatInt(lastHeight, 10)),
+	}
+
+	//Initialize kvMap with validators containing 0 rewards
+	validators.Iterate(func(addr keys.Address, validator *identity.Validator) bool {
+		kvMap[addr.String()] = kv.Pair{
+			Key:   []byte(addr.String()),
+			Value: []byte(balance.NewAmount(0).String()),
+		}
+		return false
+	})
+
+	//get total power of active validators
+	totalPower := int64(0)
+	for _, vote := range votes {
+		totalPower += vote.Validator.Power
+	}
+
+	//get total rewards for the block
+	rewardPoolBalance, err := balances.GetBalance(keys.Address(options.RewardPoolAddress), currency)
+	curr, ok := currency.GetCurrencyById(0)
+	if err != nil || !ok {
+		return abciTypes.Event{}
+	}
+	currency.GetCurrencyById(0)
+	coin := rewardPoolBalance.GetCoin(curr)
+	totalRewards, err := rewardMaster.RewardCm.PullRewards(lastHeight, coin.Amount)
+	if err != nil {
+		return abciTypes.Event{}
+	}
+
+	//Loop through all validators that participated in signing the last block
+	totalConsumed := balance.NewAmount(0)
+	for _, vote := range votes {
+		//Verify Validator Address
+		valAddress := keys.Address(vote.Validator.Address)
+		if valAddress.Err() != nil {
+			continue
+		}
+		val, err := validators.Get(valAddress)
+		if err != nil || len(val.Bytes()) == 0 {
+			continue
+		}
+
+		if vote.GetSignedLastBlock() {
+			amount := getRewardForValidator(totalPower, vote.Validator.Power, totalRewards)
+			err = rewardMaster.Reward.AddToAddress(valAddress, lastHeight, amount)
+			if err != nil {
+				continue
+			}
+			//Add to Consumed amount
+			totalConsumed = totalConsumed.Plus(*amount)
+
+			//Record Amount in kvMap
+			kvMap[valAddress.String()] = kv.Pair{
+				Key:   []byte(valAddress.String()),
+				Value: []byte(amount.String()),
+			}
+		}
+	}
+
+	//Update Matured Amount
+	rewardMaster.Reward.IterateAddrList(func(addr keys.Address) bool {
+		matured := lastHeight % options.RewardInterval
+		if matured == 0 {
+			//Add rewards at chunk n - 2 to cumulative store
+			maturedAmount, err := rewardMaster.Reward.GetMaturedAmount(addr, lastHeight)
+			if err != nil {
+				return false
+			}
+			err = rewardMaster.RewardCm.AddMaturedBalance(addr, maturedAmount)
+			if err != nil {
+				return false
+			}
+		}
+		return false
+	})
+
+	//pass total consumed amount to cumulative db
+	_ = rewardMaster.RewardCm.ConsumeRewards(totalConsumed)
+
+	//Populate Event with validator rewards
+	result.Type = "block_rewards"
+	for _, value := range kvMap {
+		result.Attributes = append(result.Attributes, value)
+	}
+
+	return result
+}
+
 func (app *App) VerifyCache(tx []byte) bool {
 	hash := utils.SHA2(tx)
 	return app.Context.internalService.ExistTx(hash)
+}
+
+func marshalLog(ok bool, response action.Response, feeResponse action.Response) string {
+	var errorObj codes.ProtocolError
+	var err error
+	if response.Log == "" && feeResponse.Log == "" {
+		return ""
+	}
+	if !ok {
+		errorObj, err = codes.UnMarshalError(response.Log)
+		if err != nil {
+			// means response.Log is a regular string, from where error marshal has not
+			// been done(will do it later)
+			errorObj = codes.ProtocolError{
+				Code: codes.GeneralErr,
+				Msg:  response.Log,
+			}
+		}
+
+	}
+	if feeResponse.Log != "" {
+		errorObj.Msg += ", fee response log: " + feeResponse.Log
+	}
+
+	return errorObj.Marshal()
+
 }

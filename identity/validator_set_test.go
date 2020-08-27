@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/tendermint/tm-db"
+	db "github.com/tendermint/tm-db"
 
 	"github.com/Oneledger/protocol/storage"
 
@@ -36,7 +36,7 @@ func setup() *ValidatorStore {
 
 	db := db.NewDB("test", db.MemDBBackend, "")
 	cs := storage.NewState(storage.NewChainState("balance", db))
-	vs := NewValidatorStore("v", cs)
+	vs := NewValidatorStore("v", "purged", cs)
 	return vs
 }
 
@@ -123,7 +123,7 @@ func TestValidatorStore_Init(t *testing.T) {
 	})
 	t.Run("run with invalid pubkey type, should return invalid key algorithm error", func(t *testing.T) {
 		vs := setup()
-		req, currencies := setupForInit("ed25520", []byte(""), "VT", 0)
+		req, currencies := setupForInit("ed25520", []byte(""), "OLT", 0)
 		_, err := vs.Init(req, currencies)
 		assert.EqualError(t, err, "invalid pubkey type: provided invalid key algorithm")
 	})
@@ -181,7 +181,7 @@ func TestValidatorStore_Set(t *testing.T) {
 	t.Run("update validator set successfully with valid stake", func(t *testing.T) {
 		vs := setup()
 		req2, _, _, stake := setupForSet()
-		err := vs.HandleStake(stake)
+		err := vs.HandleStake(stake, false)
 		assert.Nil(t, err)
 		vs.store.Commit()
 		err = vs.Setup(req2, keys.Address{})
@@ -207,11 +207,11 @@ func TestValidatorStore_HandleStake(t *testing.T) {
 	vaList, _ := vs.GetValidatorSet()
 	assert.Empty(t, vaList)
 
-	assert.NoError(t, vs.HandleStake(apply))
+	assert.NoError(t, vs.HandleStake(apply, false))
 
 	vs.store.Commit()
 
-	assert.NoError(t, vs.HandleStake(apply))
+	assert.NoError(t, vs.HandleStake(apply, false))
 
 	vaList, _ = vs.GetValidatorSet()
 	assert.NotEmpty(t, vaList)
@@ -232,7 +232,7 @@ func TestValidatorStore_HandleUnstake(t *testing.T) {
 	t.Run("check chainstate get, should return no error", func(t *testing.T) {
 		vs := setup()
 		unstake, stake := setupForUnHandleStake()
-		vs.HandleStake(stake)
+		vs.HandleStake(stake, false)
 		vs.store.Commit()
 		err := vs.HandleUnstake(unstake)
 		assert.NoError(t, err)
@@ -278,7 +278,7 @@ func TestValidatorStore_GetEndBlockUpdate(t *testing.T) {
 	queued := utils.NewQueued(validatorAddr, 0, 1)
 	vs.queue.append(queued)
 	vs.queue.Init()
-	err := vs.HandleStake(stake)
+	err := vs.HandleStake(stake, false)
 	assert.Nil(t, err)
 	vs.store.Commit()
 
@@ -286,7 +286,7 @@ func TestValidatorStore_GetEndBlockUpdate(t *testing.T) {
 	queued1 := utils.NewQueued([]byte("nonsenceaddress"), 0, 1)
 	vs.queue.append(queued1)
 	vs.queue.Init()
-	err = vs.HandleStake(stake1)
+	err = vs.HandleStake(stake1, false)
 	assert.Nil(t, err)
 	vs.store.Commit()
 
@@ -300,7 +300,7 @@ func TestValidatorStore_GetEndBlockUpdate(t *testing.T) {
 func TestValidatorStore_Commit(t *testing.T) {
 	vs := setup()
 	apply := setupForHandleStake()
-	err := vs.HandleStake(apply)
+	err := vs.HandleStake(apply, false)
 	assert.Nil(t, err)
 	result, index := vs.store.Commit()
 	assert.NotEmpty(t, result)

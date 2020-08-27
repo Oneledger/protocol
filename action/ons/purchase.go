@@ -2,12 +2,16 @@ package ons
 
 import (
 	"encoding/json"
-	"github.com/tendermint/tendermint/libs/kv"
 	"math/big"
 
-	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/data/ons"
+	"github.com/tendermint/tendermint/libs/kv"
+
 	"github.com/pkg/errors"
+
+	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/action/helpers"
+	gov "github.com/Oneledger/protocol/data/governance"
+	"github.com/Oneledger/protocol/data/ons"
 )
 
 var _ Ons = &DomainPurchase{}
@@ -84,7 +88,11 @@ func (domainPurchaseTx) Validate(ctx *action.Context, tx action.SignedTx) (bool,
 		return false, err
 	}
 
-	err = action.ValidateFee(ctx.FeePool.GetOpt(), tx.Fee)
+	feeOpt, err := ctx.GovernanceStore.GetFeeOption()
+	if err != nil {
+		return false, gov.ErrGetFeeOptions
+	}
+	err = action.ValidateFee(feeOpt, tx.Fee)
 	if err != nil {
 		return false, err
 	}
@@ -158,7 +166,10 @@ func runPurchaseDomain(ctx *action.Context, tx action.RawTx) (bool, action.Respo
 
 	remain := buy.Offering.ToCoin(ctx.Currencies)
 
-	opt := ctx.Domains.GetOptions()
+	opt, err := ctx.GovernanceStore.GetONSOptions()
+	if err != nil {
+		return helpers.LogAndReturnFalse(ctx.Logger, gov.ErrGetONSOptions, buy.Tags(), err)
+	}
 	var extend int64
 	// if the domain is on sale and not expired
 	if (ctx.State.Version() <= domain.ExpireHeight) && domain.OnSaleFlag {
@@ -176,16 +187,9 @@ func runPurchaseDomain(ctx *action.Context, tx action.RawTx) (bool, action.Respo
 		}
 
 		// credit the sale price to the previous owner
-		if ctx.State.Version() >= action.DOMAIN_CHANGE_BLOCK_HEIGHT {
-			err = ctx.Balances.AddToAddress(domain.Owner, sale)
-			if err != nil {
-				return false, action.Response{Log: err.Error()}
-			}
-		} else {
-			err = ctx.Balances.AddToAddress(domain.Beneficiary, sale)
-			if err != nil {
-				return false, action.Response{Log: err.Error()}
-			}
+		err = ctx.Balances.AddToAddress(domain.Owner, sale)
+		if err != nil {
+			return false, action.Response{Log: err.Error()}
 		}
 
 		// deduct the saleprice from the offering
