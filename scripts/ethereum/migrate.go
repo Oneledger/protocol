@@ -48,18 +48,18 @@ var (
 	oldValidatorsDir              = "/home/tanmay/Codebase/Test/Testing Migrate/devnetOld/"
 	newValidatorsDir              = "/home/tanmay/Codebase/Test/Testing Migrate/devnetNew/"
 	lockRedeemContractAddr        = "0x1016b294a58a2d9cc2bac156fe5f77e54da00cd2"
-	lockRedeem_KratosContractAddr = ""
-	numofValidatorsOld            = big.NewInt(8)
-	lock_period                   = big.NewInt(25)
+	lockRedeem_KratosContractAddr = ""                      //Generated while migrating
+	numofValidatorsOld            = big.NewInt(8)           // Kainos Validators
+	lock_period                   = big.NewInt(500)         // Approx 2 hours
 	gasPriceM                     = big.NewInt(18000000000) // Not Used currently multiplying suggested gas price
 	gasLimitM                     = uint64(1700000)
-	validatorInitialFund          = big.NewInt(30000000000000000)
+	validatorInitialFund          = big.NewInt(1000000000000000000) // 1 Ether
 	Cfg                           = config.DefaultEthConfig("rinkeby", "de5e96cbb6284d5ea1341bf6cb7fa401")
 
 	lockRedeemABI              = contract.LockRedeemABI
 	lockRedeemKratosABI        = contract.LockRedeemKratosABI
 	maxSecondsToWaitForTX      = 180
-	Log                        = logger.NewDefaultLogger(os.Stdout).WithPrefix("testethMigrate")
+	Log                        = logger.NewDefaultLogger(os.Stdout).WithPrefix("ethMigrate")
 	Client                     *ethclient.Client
 	ContractAbi                abi.ABI
 	KratosContractAbi          abi.ABI
@@ -104,7 +104,7 @@ func main() {
 	bufio.NewReader(os.Stdin).ReadBytes('\n')
 	migrateContract()
 	time.Sleep(time.Second * 15)
-	fmt.Println("NEW contract isActive/ Wait for tx to be confirmed on etheruem  if not active : ", checkIsActive())
+	fmt.Println("New contract isActive/ Wait for tx to be confirmed on etheruem  if not active : ", checkIsActive())
 	fmt.Printf("Press Enter to trasfer fund from old Validator :")
 	bufio.NewReader(os.Stdin).ReadBytes('\n')
 	takeFunds()
