@@ -47,8 +47,8 @@ import (
 var (
 	oldValidatorsDir              = "/home/tanmay/Codebase/Test/Testing Migrate/devnetOld/"
 	newValidatorsDir              = "/home/tanmay/Codebase/Test/Testing Migrate/devnetNew/"
-	lockRedeemContractAddr        = "0x497909adb5c88f9d805baeb5c2b2ea9822de4ea1"
-	lockRedeem_KratosContractAddr = "0xE24ECa2572a509b594e6bD199c38225ca914f0eD"
+	lockRedeemContractAddr        = "0x1016b294a58a2d9cc2bac156fe5f77e54da00cd2"
+	lockRedeem_KratosContractAddr = ""
 	numofValidatorsOld            = big.NewInt(8)
 	lock_period                   = big.NewInt(25)
 	gasPriceM                     = big.NewInt(18000000000) // Not Used currently multiplying suggested gas price
@@ -66,7 +66,7 @@ var (
 	OldSmartContractAddress    = common.HexToAddress(lockRedeemContractAddr)
 	KratosSmartContractAddress = common.HexToAddress(lockRedeem_KratosContractAddr)
 
-	//Deployer         = ""
+	Deployer         = ""
 	DeployersAddress = common.Address{}
 )
 
@@ -105,7 +105,9 @@ func main() {
 	migrateContract()
 	time.Sleep(time.Second * 15)
 	fmt.Println("NEW contract isActive/ Wait for tx to be confirmed on etheruem  if not active : ", checkIsActive())
-
+	fmt.Printf("Press Enter to trasfer fund from old Validator :")
+	bufio.NewReader(os.Stdin).ReadBytes('\n')
+	takeFunds()
 }
 
 // Stop Kainos network
@@ -289,6 +291,7 @@ func deployethcdcontract(initialValidators []common.Address) (error, common.Addr
 
 	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
 	DeployersAddress = fromAddress
+	fmt.Println("Deployers address ", fromAddress.String())
 	auth := bind.NewKeyedTransactor(privatekey)
 	auth.Value = big.NewInt(0) // in wei
 	auth.GasLimit = gasLimitM  // in units
@@ -335,7 +338,7 @@ func deployethcdcontract(initialValidators []common.Address) (error, common.Addr
 	Log.Info("Confirming Smart contract Deployment on the Network :", address.String())
 	ok = CheckTXstatus(tx.Hash())
 	if !ok {
-		return errors.New("Trasaction Could not be Confirmed on the mainet"), address
+		return errors.New("Transaction Could not be Confirmed on the main-net"), address
 	}
 	fmt.Printf("LockRedeemContractKratosAddr = \"%v\"\n", address.Hex())
 
@@ -358,12 +361,12 @@ func takeFunds() {
 		folder := oldValidatorsDir + strconv.Itoa(i) + "-Node/consensus/config/"
 		ecdspkbytes, err := ioutil.ReadFile(filepath.Join(folder, "priv_validator_key_ecdsa.json"))
 		if err != nil {
-			log.Fatal(err)
+			Log.Fatal(err)
 			return
 		}
 		ecdsPrivKey, err := base64.StdEncoding.DecodeString(string(ecdspkbytes))
 		if err != nil {
-			log.Fatal(err)
+			Log.Fatal(err)
 			return
 		}
 		pkey, err := keys.GetPrivateKeyFromBytes(ecdsPrivKey[:], keys.SECP256K1)
@@ -376,49 +379,49 @@ func takeFunds() {
 		publicKey := privatekey.Public()
 		publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
 		if !ok {
-			log.Fatal("error casting public key to ECDSA")
+			Log.Fatal("error casting public key to ECDSA")
 			return
 		}
 		validatorAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
 
-		nonce, err := client.PendingNonceAt(context.Background(), validatorAddress)
+		nonce, err := Client.PendingNonceAt(context.Background(), validatorAddress)
 		if err != nil {
-			log.Fatal(err)
+			Log.Fatal(err)
 		}
 
-		gasLimit := int64(gasLimit) // in units
-		gasPrice, err := client.SuggestGasPrice(context.Background())
+		gasLimit := int64(gasLimitM) // in units
+		gasPrice, err := Client.SuggestGasPrice(context.Background())
 		if err != nil {
-			log.Fatal(err)
+			Log.Fatal(err)
 			return
 		}
 		gasCost := gasPrice.Mul(gasPrice, big.NewInt(gasLimit))
 		////spareWei := big.NewInt(1000000000000000)
-		currentBalance, err := client.BalanceAt(context.Background(), validatorAddress, nil)
+		currentBalance, err := Client.BalanceAt(context.Background(), validatorAddress, nil)
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
 		currentBalance.Sub(currentBalance, gasCost)
-		g, err := client.SuggestGasPrice(context.Background())
+		g, err := Client.SuggestGasPrice(context.Background())
 		if err != nil {
-			log.Fatal(err)
+			Log.Fatal(err)
 			return
 		}
 		tx := types.NewTransaction(nonce, DeployersAddress, currentBalance, uint64(gasLimit), g, nil)
-		chainID, err := client.ChainID(context.Background())
+		chainID, err := Client.ChainID(context.Background())
 		if err != nil {
-			log.Fatal(err)
+			Log.Fatal(err)
 			return
 		}
 		signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), privatekey)
 		if err != nil {
-			log.Fatal(err)
+			Log.Fatal(err)
 			return
 		}
-		err = client.SendTransaction(context.Background(), signedTx)
+		err = Client.SendTransaction(context.Background(), signedTx)
 		if err != nil {
-			log.Fatal(err, validatorAddress.String())
+			Log.Fatal(err, validatorAddress.String())
 			return
 		}
 		fmt.Println("Funds transferred from :", validatorAddress.Hex(), "Amount Transfered :", currentBalance)
