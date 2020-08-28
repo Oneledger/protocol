@@ -314,7 +314,7 @@ func getEthOpt(conn string, nodeList []node) (*ethchain.ChainDriverOption, error
 			addr := crypto.PubkeyToAddress(*ecdsapubkey)
 
 			initialValidatorList = append(initialValidatorList, addr)
-			tx := types.NewTransaction(nonce, addr, validatorInitialFund, auth.GasLimit, auth.GasPrice, (nil))
+			tx := types.NewTransaction(nonce, addr, validatorInitialFund, auth.GasLimit, auth.GasPrice, nil)
 			fmt.Println("validator Address :", addr.Hex(), ":", validatorInitialFund)
 			chainId, _ := cli.ChainID(context.Background())
 			signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainId), privatekey)
@@ -335,8 +335,9 @@ func getEthOpt(conn string, nodeList []node) (*ethchain.ChainDriverOption, error
 	}
 
 	auth.Nonce = big.NewInt(int64(nonce))
-
-	address, _, _, err := contract.DeployLockRedeem(auth, cli, initialValidatorList, lock_period)
+	oldaddress := common.Address{}
+	num_of_validators := big.NewInt(8)
+	address, _, _, err := contract.DeployLockRedeem(auth, cli, initialValidatorList, lock_period, oldaddress, num_of_validators)
 	if err != nil {
 		return nil, errors.Wrap(err, "Deployement Eth LockRedeem")
 	}
