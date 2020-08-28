@@ -54,7 +54,7 @@ var (
 	LockRedeemContractAddr      = "0x99e709597677ea3FB5160E46E8eA3d4989F8dFc0"
 	TestTokenContractAddr       = "0x0000000000000000000000000000000000000000"
 	LockRedeemERC20ContractAddr = "0x0000000000000000000000000000000000000000"
-	readDir                     = "/home/tanmay/Codebase/Test/Pk-dev3/"
+	readDir                     = "/home/tanmay/Codebase/Test/Testing Migrate/devnetNew/"
 
 	cfg = config.DefaultEthConfig("rinkeby", "de5e96cbb6284d5ea1341bf6cb7fa401")
 	//cfg               = config.DefaultEthConfig("", "")
@@ -141,14 +141,14 @@ func init() {
 //InsufficientFunds(50% Validators) + Panic (50 % Validators): Refund
 func main() {
 	//ethManualDeploy()
-	getstatus(lock())
+	//getstatus(lock())
 	//time.Sleep(time.Second * 5)
 	//getstatus(redeem())
 	//sendTrasactions(12)
 	//erc20lock()
 	///time.Sleep(10 * time.Second)
 	//erc20Redeem()
-	//takeValidatorFunds()
+	takeValidatorFunds(4)
 }
 
 func takeValidatorFunds(noOfValidators int) {

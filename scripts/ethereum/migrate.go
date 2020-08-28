@@ -47,10 +47,10 @@ import (
 var (
 	oldValidatorsDir              = "/home/tanmay/Codebase/Test/Testing Migrate/devnetOld/"
 	newValidatorsDir              = "/home/tanmay/Codebase/Test/Testing Migrate/devnetNew/"
-	lockRedeemContractAddr        = "0x1016b294a58a2d9cc2bac156fe5f77e54da00cd2"
+	lockRedeemContractAddr        = "0xeEbB7F34D1489A0ed859299b1061104413B40dFb"
 	lockRedeem_KratosContractAddr = ""                      //Generated while migrating
 	numofValidatorsOld            = big.NewInt(8)           // Kainos Validators
-	lock_period                   = big.NewInt(500)         // Approx 2 hours
+	lock_period                   = big.NewInt(3600)        // Approx 2 hours
 	gasPriceM                     = big.NewInt(18000000000) // Not Used currently multiplying suggested gas price
 	gasLimitM                     = uint64(1700000)
 	validatorInitialFund          = big.NewInt(1000000000000000000) // 1 Ether
@@ -77,8 +77,6 @@ func init() {
 	KratosContractAbi, _ = abi.JSON(strings.NewReader(lockRedeemKratosABI))
 }
 
-// Redeem locked if tracker fails . User redeems more funds than he has .
-
 func main() {
 	if lock_period.Int64() == 0 {
 		Log.Info("Lock Period is zero")
@@ -104,7 +102,7 @@ func main() {
 	bufio.NewReader(os.Stdin).ReadBytes('\n')
 	migrateContract()
 	time.Sleep(time.Second * 15)
-	fmt.Println("New contract isActive/ Wait for tx to be confirmed on etheruem  if not active : ", checkIsActive())
+	fmt.Println("New contract isActive/ Wait for tx to be confirmed on ethereum  if not active : ", checkIsActive())
 	fmt.Printf("Press Enter to trasfer fund from old Validator :")
 	bufio.NewReader(os.Stdin).ReadBytes('\n')
 	takeFunds()
