@@ -174,8 +174,8 @@ func (s *State) IterateRange(start, end []byte, ascending bool, fn func(key, val
 }
 
 func (s State) Write() bool {
-	s.mux.Lock()
-	defer s.mux.Unlock()
+	//s.mux.Lock()
+	//defer s.mux.Unlock()
 	s.cache.GetIterable().Iterate(func(key []byte, value []byte) bool {
 		if bytes.Equal(value, []byte(TOMBSTONE)) {
 			_, _ = s.cs.Delete(key)
