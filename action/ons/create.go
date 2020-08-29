@@ -262,6 +262,7 @@ func runCreate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		ctx.Header.Height,
 		create.Uri,
 		expiry,
+		true,
 	)
 	if err != nil {
 		return false, action.Response{
