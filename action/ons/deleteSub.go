@@ -159,5 +159,7 @@ func runDeleteSub(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		}
 	}
 
+	parent.SetLastUpdatedHeight(ctx.Header.Height)
+
 	return true, action.Response{Events: action.GetEvent(del.Tags(), "delete_subDomain")}
 }

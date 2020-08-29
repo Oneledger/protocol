@@ -207,13 +207,13 @@ func runRenew(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	ctx.Domains.IterateSubDomain(domain.Name, func(subname ons.Name, subdomain *ons.Domain) bool {
 
 		subdomain.ExpireHeight = domain.ExpireHeight
-		subdomain.SetLastUpdatedHeight(ctx.Header.Height)
-
 		err := ctx.Domains.Set(subdomain)
 		if err != nil {
 			ctx.Logger.Error("failed to update sub domain expiry ", subdomain.Name, err)
 			return false
 		}
+
+		domain.SetLastUpdatedHeight(ctx.Header.Height)
 		return false
 	})
 
