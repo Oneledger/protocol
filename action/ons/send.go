@@ -160,6 +160,11 @@ func runDomainSend(ctx *action.Context, tx action.RawTx) (bool, action.Response)
 		log := fmt.Sprint("error getting domain:", err)
 		return false, action.Response{Log: log}
 	}
+
+	if !domain.IsChangeable(ctx.Header.Height) {
+		return false, action.Response{Log: "domain is not changeable"}
+	}
+
 	if domain.IsExpired(ctx.State.Version()) {
 		log := fmt.Sprint("domain expired")
 		return false, action.Response{Log: log}

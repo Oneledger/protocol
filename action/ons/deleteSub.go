@@ -136,6 +136,10 @@ func runDeleteSub(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		return false, action.Response{Log: "Parent domain doesn't exist, cannot delete sub domain!"}
 	}
 
+	if !parent.IsChangeable(ctx.Header.Height) {
+		return false, action.Response{Log: "domain is not changeable"}
+	}
+
 	if !bytes.Equal(parent.Owner, del.Owner) {
 		return false, action.Response{Log: "parent domain not owned"}
 	}

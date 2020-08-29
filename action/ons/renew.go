@@ -156,6 +156,10 @@ func runRenew(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false, action.Response{Log: err.Error()}
 	}
 
+	if !domain.IsChangeable(ctx.Header.Height) {
+		return false, action.Response{Log: "domain is not changeable"}
+	}
+
 	// if domain is expired it can't be renewed
 	if domain.IsExpired(ctx.State.Version()) {
 		return false, action.Response{Log: "domain already expired, need to purchase again"}
@@ -192,6 +196,7 @@ func runRenew(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
 	// increase the expiry height & save domain
 	domain.AddToExpire(extend)
+	domain.SetLastUpdatedHeight(ctx.Header.Height)
 
 	err = ctx.Domains.Set(domain)
 	if err != nil {
@@ -202,6 +207,7 @@ func runRenew(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	ctx.Domains.IterateSubDomain(domain.Name, func(subname ons.Name, subdomain *ons.Domain) bool {
 
 		subdomain.ExpireHeight = domain.ExpireHeight
+		subdomain.SetLastUpdatedHeight(ctx.Header.Height)
 
 		err := ctx.Domains.Set(subdomain)
 		if err != nil {
