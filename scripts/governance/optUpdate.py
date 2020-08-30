@@ -21,8 +21,8 @@ if __name__ == "__main__":
     #     "proposerReward": 0,
     #     "feePool": 10
     # "
-    # update = {"propOptions.configUpdate.passedFundDistribution: update_param}
-    # updateGov(update, "proposal", "id_" + str(randint(10000, 99999)), True)
+    update = "propOptions.configUpdate.passedFundDistribution:10"
+    updateGov(update, "proposal", "id_" + str(randint(10000, 99999)), False, False)
 
     update_param = 109201
     update = "stakingOptions.maturityTime:109201"
@@ -59,7 +59,7 @@ if __name__ == "__main__":
     #     "penaltyBountyPercentage": 10,
     #     "penaltyBurnPercentage": 80,
     # }
-    # update = {"evidenceOptions.penaltyPercentage:": update_param}
-    # updateGov(update, "evidence", "id_" + str(randint(10000, 99999)), False, False)
+    update = "evidenceOptions.penaltyPercentage:10"
+    updateGov(update, "evidence", "id_" + str(randint(10000, 99999)), False, False)
 
     clean_and_catchup()
