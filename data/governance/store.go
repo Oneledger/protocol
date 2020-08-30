@@ -462,8 +462,7 @@ func (st *Store) GetProposalOptions() (*ProposalOptionSet, error) {
 }
 
 func (st *Store) GetProposalOptionsByType(ptype ProposalType) (*ProposalOption, error) {
-	st.mux.RLock()
-	defer st.mux.RUnlock()
+
 	pOpts, err := st.GetProposalOptions()
 	if err != nil {
 		return nil, err
