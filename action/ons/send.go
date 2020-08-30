@@ -13,7 +13,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/action"
-	gov "github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/ons"
 )
 
@@ -98,11 +97,7 @@ func (domainSendTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, err
 		return false, err
 	}
 
-	feeOpt, err := ctx.GovernanceStore.GetFeeOption()
-	if err != nil {
-		return false, gov.ErrGetFeeOptions
-	}
-	err = action.ValidateFee(feeOpt, tx.Fee)
+	err = action.ValidateFee(ctx.FeePool.GetOpt(), tx.Fee)
 	if err != nil {
 		return false, err
 	}
@@ -160,6 +155,11 @@ func runDomainSend(ctx *action.Context, tx action.RawTx) (bool, action.Response)
 		log := fmt.Sprint("error getting domain:", err)
 		return false, action.Response{Log: log}
 	}
+
+	if !domain.IsChangeable(ctx.Header.Height) {
+		return false, action.Response{Log: "domain is not changeable"}
+	}
+
 	if domain.IsExpired(ctx.State.Version()) {
 		log := fmt.Sprint("domain expired")
 		return false, action.Response{Log: log}

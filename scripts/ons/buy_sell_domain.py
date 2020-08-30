@@ -1,11 +1,10 @@
 
 
 import sys
-import requests
-import json
 import time
 
 from sdk.actions import *
+
 
 class bcolors:
     HEADER = '\033[95m'
@@ -40,7 +39,7 @@ if __name__ == "__main__":
     signed = sign(raw_txn, addrs[0])
     print signed
     print
-
+    time.sleep(3)
     result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
     print result
     print "#################" \
@@ -51,14 +50,14 @@ if __name__ == "__main__":
         sys.exit(-1)
 
     sell_price = (int("105432")*10**14)
-
+    time.sleep(3)
     raw_txn = send_domain(name, addrs[0], (int("100")*10**18))
     print raw_txn
 
     signed = sign(raw_txn, addrs[0])
     print signed
     print
-
+    time.sleep(3)
     result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
     print result
     print "#################" \
@@ -68,7 +67,7 @@ if __name__ == "__main__":
     if result["ok"] != True:
         sys.exit(-1)
 
-    time.sleep(2)
+    time.sleep(3)
     raw_txn = sell_domain(name, addrs[0], sell_price)
     print raw_txn
     print
@@ -85,12 +84,13 @@ if __name__ == "__main__":
     if result["ok"] != True:
         sys.exit(-1)
 
+    time.sleep(3)
     raw_txn = send(addrs[0], addrs[3], (int("2000")*10**18))
     print result
     signed = sign(raw_txn, addrs[0])
     print signed
     print
-
+    time.sleep(3)
     result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
     print result
     print "############################################"

@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"os"
+	"sync"
 
 	"github.com/Oneledger/protocol/data/delegation"
 	"github.com/Oneledger/protocol/data/evidence"
@@ -64,6 +65,7 @@ type Store struct {
 	prefix []byte
 	height int64
 	logger *log.Logger
+	mux    sync.RWMutex
 }
 
 func NewStore(prefix string, state *storage.State) *Store {
@@ -460,6 +462,7 @@ func (st *Store) GetProposalOptions() (*ProposalOptionSet, error) {
 }
 
 func (st *Store) GetProposalOptionsByType(ptype ProposalType) (*ProposalOption, error) {
+
 	pOpts, err := st.GetProposalOptions()
 	if err != nil {
 		return nil, err
