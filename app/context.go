@@ -268,7 +268,7 @@ func (ctx *context) Services() (service.Map, error) {
 		ValidatorSet:   identity.NewValidatorStore("v", "purged", storage.NewState(ctx.chainstate)),
 		WitnessSet:     identity.NewWitnessStore("w", storage.NewState(ctx.chainstate)),
 		Domains:        onsStore,
-		Delegators:     ctx.delegators,
+		Delegators:     delegation.NewDelegationStore("st", storage.NewState(ctx.chainstate)),
 		ProposalMaster: proposalMaster,
 		RewardMaster:   rewardMaster,
 		ExtStores:      ctx.extStores,
