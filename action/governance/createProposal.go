@@ -47,11 +47,6 @@ func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) 
 		return false, err
 	}
 
-	options, err := ctx.GovernanceStore.GetProposalOptionsByType(createProposal.ProposalType)
-	if err != nil {
-		return false, governance.ErrGetProposalOptions
-	}
-
 	// the currency should be OLT
 	currency, ok := ctx.Currencies.GetCurrencyById(0)
 	if !ok {
@@ -64,21 +59,6 @@ func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) 
 	//Check if Proposal ID is valid
 	if err = createProposal.ProposalID.Err(); err != nil {
 		return false, governance.ErrInvalidProposalId
-	}
-
-	//Get Proposal options based on type.
-	coin := createProposal.InitialFunding.ToCoin(ctx.Currencies)
-	coinInit := coin.Currency.NewCoinFromAmount(*options.InitialFunding)
-	coinGoal := coin.Currency.NewCoinFromAmount(*options.FundingGoal)
-
-	//Check if initial funding is not less than minimum amount based on type.
-	if coin.LessThanCoin(coinInit) {
-		return false, errors.Wrap(action.ErrInvalidAmount, "Funding Less than initial funding")
-	}
-
-	//Check if initial funding is more than funding goal.
-	if coinGoal.LessThanEqualCoin(coin) {
-		return false, errors.Wrap(action.ErrInvalidAmount, "Funding More than Funding goal")
 	}
 
 	//Check if Proposal Type is valid
@@ -98,20 +78,6 @@ func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) 
 
 	if len(createProposal.Description) == 0 {
 		return false, governance.ErrInvalidProposalDesc
-	}
-
-	//Validate funding goal and pass percentage
-	if !createProposal.FundingGoal.Equals(*options.FundingGoal) {
-		return false, governance.ErrInvalidFundingGoal
-	}
-
-	if createProposal.PassPercentage != options.PassPercentage {
-		return false, governance.ErrInvalidPassPercentage
-	}
-
-	//Validate voting height
-	if createProposal.VotingDeadline-createProposal.FundingDeadline != options.VotingDeadline {
-		return false, governance.ErrInvalidVotingDeadline
 	}
 
 	return true, nil
@@ -140,6 +106,38 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 			Log:    action.ErrWrongTxType.Wrap(err).Marshal(),
 		}
 		return false, result
+	}
+
+	options, err := ctx.GovernanceStore.GetProposalOptionsByType(createProposal.ProposalType)
+	if err != nil {
+		helpers.LogAndReturnFalse(ctx.Logger, governance.ErrGetProposalOptions, createProposal.Tags(), err)
+	}
+	//Get Proposal options based on type.
+	coin := createProposal.InitialFunding.ToCoin(ctx.Currencies)
+	coinInit := coin.Currency.NewCoinFromAmount(*options.InitialFunding)
+	coinGoal := coin.Currency.NewCoinFromAmount(*options.FundingGoal)
+	//Check if initial funding is not less than minimum amount based on type.
+	if coin.LessThanCoin(coinInit) {
+		helpers.LogAndReturnFalse(ctx.Logger, action.ErrInvalidAmount, createProposal.Tags(), errors.New("Funding Less than initial funding"))
+	}
+
+	//Check if initial funding is more than funding goal.
+	if coinGoal.LessThanEqualCoin(coin) {
+		helpers.LogAndReturnFalse(ctx.Logger, action.ErrInvalidAmount, createProposal.Tags(), errors.New("Funding More than Funding goal"))
+	}
+
+	if !createProposal.FundingGoal.Equals(*options.FundingGoal) {
+		helpers.LogAndReturnFalse(ctx.Logger, governance.ErrInvalidFundingGoal, createProposal.Tags(), errors.New("Funding goal"))
+	}
+
+	if createProposal.PassPercentage != options.PassPercentage {
+		helpers.LogAndReturnFalse(ctx.Logger, governance.ErrInvalidPassPercentage, createProposal.Tags(), errors.New("Pass percentage"))
+	}
+
+	//Validate voting height
+	if createProposal.VotingDeadline-createProposal.FundingDeadline != options.VotingDeadline {
+		helpers.LogAndReturnFalse(ctx.Logger, governance.ErrInvalidVotingDeadline, createProposal.Tags(), errors.New("Voting Deadline"))
+
 	}
 
 	//Validate funding height, this one is put here because in validate() we cannot always get valid ctx.Header

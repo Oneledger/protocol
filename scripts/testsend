@@ -1,14 +1,12 @@
 #!/bin/bash
 
-name=$(ls -l $OLDATA/devnet | grep Node  | awk '(NR==1){print $9}')
+name=$(ls -l $OLDATA/devnet | grep Node | awk '(NR==1){print $9}')
 
 # shellcheck disable=SC2070
-if [ -n "$name" ]
-then
-    echo "run load test command on node $name"
-    olclient loadtest --root $OLDATA/devnet/$name --threads 2 --interval 10 --max-tx 20
+if [ -n "$name" ]; then
+  echo "run load test command on node $name"
+  olclient loadtest --root $OLDATA/devnet/$name --threads 20 --interval 2 --max-tx 20000
 
 fi
 
 sleep 5
-

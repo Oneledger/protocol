@@ -110,14 +110,6 @@ func (r RenewDomainTx) Validate(ctx *action.Context, signedTx action.SignedTx) (
 	if c.Name != renewDomain.BuyingPrice.Currency {
 		return false, errors.Wrap(action.ErrInvalidAmount, renewDomain.BuyingPrice.String())
 	}
-	opt, err := ctx.GovernanceStore.GetONSOptions()
-	if err != nil {
-		return false, gov.ErrGetONSOptions
-	}
-	coin := renewDomain.BuyingPrice.ToCoin(ctx.Currencies)
-	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromAmount(opt.PerBlockFees)) {
-		return false, action.ErrNotEnoughFund
-	}
 
 	return true, nil
 }
@@ -140,6 +132,15 @@ func runRenew(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	err := renewDomain.Unmarshal(tx.Data)
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
+	}
+
+	opt, err := ctx.GovernanceStore.GetONSOptions()
+	if err != nil {
+		helpers.LogAndReturnFalse(ctx.Logger, gov.ErrGetONSOptions, renewDomain.Tags(), err)
+	}
+	coin := renewDomain.BuyingPrice.ToCoin(ctx.Currencies)
+	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromAmount(opt.PerBlockFees)) {
+		helpers.LogAndReturnFalse(ctx.Logger, action.ErrNotEnoughFund, renewDomain.Tags(), errors.New("Less than per block fees"))
 	}
 
 	// domain should not be a sub domain
@@ -176,10 +177,7 @@ func runRenew(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	}
 
 	// calculate the blocks
-	opt, err := ctx.GovernanceStore.GetONSOptions()
-	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, gov.ErrGetONSOptions, renewDomain.Tags(), err)
-	}
+
 	extend, err := calculateRenewal(&renewDomain.BuyingPrice.Value, &opt.PerBlockFees)
 	if err != nil {
 		return false, action.Response{
