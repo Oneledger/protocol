@@ -8,9 +8,9 @@ _pid_pass_0 = "id_20067"
 _pid_pass_1 = "id_20068"
 _pid_pass_2 = "id_20069"
 _proposer = addr_list[0]
-_initial_funding = 20000000000000000000
+_initial_funding = (int("2") * 10 ** 9)
 _each_funding = (int("5") * 10 ** 9)
-_funding_goal_general = 1000000000000000000000
+_funding_goal_general = (int("10") * 10 ** 9)
 
 if __name__ == "__main__":
     # update_param = "

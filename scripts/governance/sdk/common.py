@@ -246,6 +246,7 @@ def test_change_gov_options(update, pid):
     _initial_funding = (int("2") * 10 ** 9)
     _each_funding = (int("5") * 10 ** 9)
     _funding_goal_general = (int("10") * 10 ** 9)
+    _funding_goal_general = (int("10") * 10 ** 9)
     _prop = Proposal(pid, "configUpdate", "proposal for vote", "Headline", _proposer, _initial_funding,
                      update)
     # create proposal
