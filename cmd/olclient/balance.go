@@ -31,9 +31,10 @@ type Balance struct {
 	accountName  string
 	accountKey   []byte
 	currencyName string
+	poolName     string
 }
 
-var balArgs *Balance = &Balance{}
+var balArgs = &Balance{}
 
 func init() {
 	RootCmd.AddCommand(balanceCmd)
@@ -44,14 +45,20 @@ func init() {
 
 	balanceCmd.Flags().StringVar(&balArgs.currencyName, "currency", "", "currency name")
 
+	balanceCmd.Flags().StringVar(&balArgs.poolName, "poolname", "", "poolname")
+
 }
 
 // IssueRequest sends out a sendTx to all of the nodes in the chain
 func BalanceNode(cmd *cobra.Command, args []string) {
 	Ctx := NewContext()
 
-	if len(balArgs.accountKey) == 0 {
+	if len(balArgs.accountKey) == 0 && len(balArgs.poolName) == 0 {
 		logger.Error("missing address")
+		return
+	}
+	if len(balArgs.accountKey) > 0 && len(balArgs.poolName) > 0 {
+		logger.Error("Can only query one address at a time")
 		return
 	}
 
@@ -62,7 +69,7 @@ func BalanceNode(cmd *cobra.Command, args []string) {
 	}
 
 	// assuming we have public key
-	if balArgs.currencyName == "" {
+	if balArgs.currencyName == "" && balArgs.poolName == "" {
 		bal, err := fullnode.Balance(balArgs.accountKey)
 		if err != nil {
 			logger.Fatal("error in getting balance", err)
@@ -70,7 +77,15 @@ func BalanceNode(cmd *cobra.Command, args []string) {
 
 		printBalance(nodeName.Name, balArgs.accountKey, bal)
 
-	} else {
+	} else if balArgs.currencyName == "" && len(balArgs.accountKey) == 0 {
+		bal, err := fullnode.BalancePool(balArgs.poolName)
+		if err != nil {
+			logger.Fatal("error in getting balance", err)
+		}
+
+		printBalance(nodeName.Name, balArgs.accountKey, bal)
+
+	} else if balArgs.poolName == "" {
 		bal, err := fullnode.CurrBalance(balArgs.accountKey, balArgs.currencyName)
 		if err != nil {
 			logger.Fatal("error in getting balance", err)

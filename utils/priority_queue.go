@@ -24,6 +24,10 @@ func (q Queued) Priority() int64 {
 	return q.priority
 }
 
+func (q Queued) Index() int {
+	return q.index
+}
+
 // A PriorityQueue implements heap.Interface and holds Items.
 type PriorityQueue []*Queued
 
@@ -51,6 +55,7 @@ func (vq *PriorityQueue) Pop() interface{} {
 	old := *vq
 	n := len(old)
 	item := old[n-1]
+	old[n-1] = nil  // avoid memory leak
 	item.index = -1 // for safety
 	*vq = old[0 : n-1]
 	return item

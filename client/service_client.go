@@ -2,9 +2,10 @@ package client
 
 import (
 	"errors"
+	"os"
+
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/rpc"
-	"os"
 )
 
 // A type-safe client for accessing rpc services.
@@ -25,6 +26,22 @@ func (c *ServiceClient) Balance(addr keys.Address) (out BalanceReply, err error)
 	}*/
 	request := BalanceRequest{addr}
 	err = c.Call("query.Balance", &request, &out)
+	return
+}
+
+func (c *ServiceClient) BalancePool(poolname string) (out BalanceReply, err error) {
+	request := BalancePoolRequest{poolname}
+	err = c.Call("query.BalancePool", &request, &out)
+	return
+}
+
+func (c *ServiceClient) ValidatorStatus(request ValidatorStatusRequest) (out ValidatorStatusReply, err error) {
+	err = c.Call("query.ValidatorStatus", &request, &out)
+	return
+}
+
+func (c *ServiceClient) DelegationStatus(request DelegationStatusRequest) (out DelegationStatusReply, err error) {
+	err = c.Call("query.DelegationStatus", &request, &out)
 	return
 }
 
@@ -81,18 +98,18 @@ func (c *ServiceClient) ListAccountAddresses() (out ListAccountAddressesReply, e
 	return
 }
 
-func (c *ServiceClient) ApplyValidator(req ApplyValidatorRequest) (out ApplyValidatorReply, err error) {
-	err = c.Call("tx.ApplyValidator", req, &out)
+func (c *ServiceClient) Stake(req StakeRequest) (out StakeReply, err error) {
+	err = c.Call("tx.Stake", req, &out)
 	return
 }
 
-func (c *ServiceClient) PurgeValidator(req PurgeValidatorRequest) (out PurgeValidatorReply, err error) {
-	err = c.Call("tx.PurgeValidator", req, &out)
+func (c *ServiceClient) Unstake(req UnstakeRequest) (out UnstakeReply, err error) {
+	err = c.Call("tx.Unstake", req, &out)
 	return
 }
 
-func (c *ServiceClient) WithdrawReward(req WithdrawRewardRequest) (out WithdrawRewardReply, err error) {
-	err = c.Call("tx.WithdrawReward", req, &out)
+func (c *ServiceClient) Withdraw(req WithdrawRequest) (out WithdrawReply, err error) {
+	err = c.Call("tx.Withdraw", req, &out)
 	return
 }
 
@@ -124,6 +141,17 @@ func (c *ServiceClient) CreateRawSend(req SendTxRequest) (out *CreateTxReply, er
 	return
 }
 
+func (c *ServiceClient) CreateRawSendPool(req SendPoolTxRequest) (out *CreateTxReply, err error) {
+	err = c.Call("tx.CreateRawSendPool", req, &out)
+	return
+}
+
+/* Governance */
+func (c *ServiceClient) VoteProposal(req VoteProposalRequest) (out *VoteProposalReply, err error) {
+	err = c.Call("tx.VoteProposal", req, &out)
+	return
+}
+
 func (c *ServiceClient) ListValidators() (out ListValidatorsReply, err error) {
 	err = c.Call("query.ListValidators", struct{}{}, &out)
 	return
@@ -136,6 +164,26 @@ func (c *ServiceClient) ListWitnesses(req ListWitnessesRequest) (out ListWitness
 
 func (c *ServiceClient) ListCurrencies() (out *ListCurrenciesReply, err error) {
 	err = c.Call("query.ListCurrencies", struct{}{}, &out)
+	return
+}
+
+func (c *ServiceClient) ListProposal(req ListProposalRequest) (out *ListProposalsReply, err error) {
+	err = c.Call("query.ListProposal", req, &out)
+	return
+}
+
+func (c *ServiceClient) ListProposals(req ListProposalsRequest) (out *ListProposalsReply, err error) {
+	err = c.Call("query.ListProposals", req, &out)
+	return
+}
+
+func (c *ServiceClient) ListRewards(req RewardsRequest) (out *ListRewardsReply, err error) {
+	err = c.Call("query.ListRewardsForValidator", req, &out)
+	return
+}
+
+func (c *ServiceClient) WithdrawRewards(req WithdrawRewardsRequest) (out WithdrawRewardsReply, err error) {
+	err = c.Call("tx.WithdrawRewards", req, &out)
 	return
 }
 
@@ -162,5 +210,13 @@ func (c *ServiceClient) GetTracker(name string) (out BTCGetTrackerReply, err err
 	}*/
 	request := BTCGetTrackerRequest{name}
 	err = c.Call("btc.GetTracker", &request, &out)
+	return
+}
+
+func (c *ServiceClient) CheckCommitResult(hash string, prove bool) (reply TxResponse, err error) {
+	request := &TxRequest{Hash: hash, Prove: prove}
+
+	err = c.Call("query.Tx", request, &reply)
+
 	return
 }

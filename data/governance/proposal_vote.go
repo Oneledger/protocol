@@ -9,9 +9,16 @@ import (
 )
 
 type ProposalVote struct {
-	Validator keys.Address
-	Opinion   VoteOpinion
-	Power     int64
+	Validator keys.Address `json:"validator"`
+	Opinion   VoteOpinion  `json:"opinion"`
+	Power     int64        `json:"power"`
+}
+
+type VoteStatus struct {
+	Result   VoteResult `json:"result"`
+	PowerYes int64      `json:"powerYes"`
+	PowerNo  int64      `json:"powerNo"`
+	PowerAll int64      `json:"powerAll"`
 }
 
 func NewProposalVote(validator keys.Address, opinion VoteOpinion, power int64) *ProposalVote {
@@ -19,6 +26,15 @@ func NewProposalVote(validator keys.Address, opinion VoteOpinion, power int64) *
 		Validator: validator,
 		Opinion:   opinion,
 		Power:     power,
+	}
+}
+
+func NewVoteStatus(result VoteResult, yesPower, noPower, allPower int64) *VoteStatus {
+	return &VoteStatus{
+		Result:   result,
+		PowerYes: yesPower,
+		PowerNo:  noPower,
+		PowerAll: allPower,
 	}
 }
 

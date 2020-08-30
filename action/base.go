@@ -2,13 +2,15 @@ package action
 
 import (
 	"encoding/hex"
+
 	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/kv"
+
+	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
-	"github.com/pkg/errors"
 )
 
 type MsgData []byte
@@ -78,6 +80,9 @@ func (t *SignedTx) SignedBytes() []byte {
 }
 
 func ValidateBasic(data []byte, signerAddr []Address, signatures []Signature) error {
+	if len(signatures) != len(signerAddr) {
+		return ErrUnmatchSigner
+	}
 	for i, s := range signerAddr {
 		pkey := signatures[i].Signer
 		h, err := pkey.GetHandler()
@@ -98,9 +103,11 @@ func ValidateBasic(data []byte, signerAddr []Address, signatures []Signature) er
 
 func ValidateFee(feeOpt *fees.FeeOption, fee Fee) error {
 	if fee.Price.Currency != feeOpt.FeeCurrency.Name {
+
 		return ErrInvalidFeeCurrency
 	}
-	if feeOpt.MinFee().Amount.BigInt().Cmp(fee.Price.Value.BigInt()) > 0 {
+	minFee := feeOpt.MinFee()
+	if minFee.Amount.BigInt().Cmp(fee.Price.Value.BigInt()) > 0 {
 		return ErrInvalidFeePrice
 	}
 	return nil

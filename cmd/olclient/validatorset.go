@@ -16,6 +16,7 @@ package main
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/Oneledger/protocol/identity"
 
@@ -43,18 +44,45 @@ func ListValidator(cmd *cobra.Command, args []string) {
 		return
 	}
 
+	activeList := []identity.Validator{}
+	noActiveList := []identity.Validator{}
+
 	for _, v := range out.Validators {
-		printValidator(v)
+		isActive := out.VMap[v.Address.String()]
+		if isActive {
+			activeList = append(activeList, v)
+		} else {
+			noActiveList = append(noActiveList, v)
+		}
 	}
+
+	// Order validators by power descending
+	sort.Slice(activeList, func(i, j int) bool {
+		return activeList[i].Power > activeList[j].Power
+	})
+	sort.Slice(noActiveList, func(i, j int) bool {
+		return noActiveList[i].Power > noActiveList[j].Power
+	})
+
+	// Print validators
+	for _, v := range activeList {
+		printValidator(v, true)
+	}
+	for _, v := range noActiveList {
+		printValidator(v, false)
+	}
+
 	fmt.Println("Height", out.Height)
 }
 
-func printValidator(v identity.Validator) {
+func printValidator(v identity.Validator, isActive bool) {
+	fmt.Println("Active", isActive)
 	fmt.Println("Address", v.Address)
 	fmt.Println("StakeAddress", v.StakeAddress)
 	fmt.Println("Power", v.Power)
 	fmt.Println("Name", v.Name)
 	fmt.Println("Staking", v.Staking)
+
 	fmt.Println()
 
 }
