@@ -147,11 +147,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		}
 		return false, result
 	}
-	//Get Proposal options based on type.
-	//options, err := ctx.GovernanceStore.GetProposalOptionsByType(createProposal.ProposalType)
-	//if err != nil {
-	//	helpers.LogAndReturnFalse(ctx.Logger, governance.ErrGetProposalOptions, createProposal.Tags(), err)
-	//}
+
 	if createProposal.ProposalType == governance.ProposalTypeConfigUpdate {
 		updates, ok := createProposal.ConfigUpdate.(map[string]interface{})
 		if !ok {
