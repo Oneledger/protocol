@@ -271,7 +271,7 @@ func (ctx *context) Services() (service.Map, error) {
 		Delegators:     delegation.NewDelegationStore("st", storage.NewState(ctx.chainstate)),
 		ProposalMaster: proposalMaster,
 		RewardMaster:   rewardMaster,
-		ExtStores:      ctx.extStores,
+		ExtStores:      ctx.extStores,//todo create new store for cache, follow Govern
 		Router:         ctx.actionRouter,
 		Logger:         log.NewLoggerWithPrefix(ctx.logWriter, "rpc").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
 		Services:       extSvcs,
