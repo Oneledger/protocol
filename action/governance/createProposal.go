@@ -2,6 +2,7 @@ package governance
 
 import (
 	"encoding/json"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
@@ -26,7 +27,7 @@ type CreateProposal struct {
 	FundingGoal     *balance.Amount         `json:"fundingGoal"`
 	VotingDeadline  int64                   `json:"votingDeadline"`
 	PassPercentage  int                     `json:"passPercentage"`
-	ConfigUpdate    interface{}             `json:"configUpdate"`
+	ConfigUpdate    string                  `json:"configUpdate"`
 }
 
 func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
@@ -149,19 +150,22 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	}
 
 	if createProposal.ProposalType == governance.ProposalTypeConfigUpdate {
-		updates, ok := createProposal.ConfigUpdate.(map[string]interface{})
+		//updates, ok := createProposal.ConfigUpdate.(map[string]interface{})
+		updates := createProposal.ConfigUpdate
+		splitstring := strings.Split(updates, ":")
+		updatekey := splitstring[0]
+		updateValue := splitstring[1]
+		//if !ok {
+		//	return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrValidateGovState, createProposal.Tags(), errors.New("Invalide Update Object"))
+		//}
+
+		updateFunc, ok := ctx.GovUpdate.GovernanceUpdateFunction[updatekey]
 		if !ok {
-			return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrValidateGovState, createProposal.Tags(), errors.New("Invalide Update Object"))
+			return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrValidateGovState, createProposal.Tags(), errors.New("Update "+updatekey+" Not allowed"))
 		}
-		for configUpdatePath, updateValue := range updates {
-			updateFunc, ok := ctx.GovUpdate.GovernanceUpdateFunction[configUpdatePath]
-			if !ok {
-				return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrValidateGovState, createProposal.Tags(), errors.New("Update "+configUpdatePath+" Not allowed"))
-			}
-			ok, err = updateFunc(updateValue, ctx, action.ValidateOnly)
-			if err != nil || !ok {
-				return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrValidateGovState, createProposal.Tags(), err)
-			}
+		ok, err = updateFunc(updateValue, ctx, action.ValidateOnly)
+		if err != nil || !ok {
+			return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrValidateGovState, createProposal.Tags(), err)
 		}
 
 	}

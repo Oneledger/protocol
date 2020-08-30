@@ -20,7 +20,7 @@ type CreateProposalRequest struct {
 	FundingGoal     *balance.Amount `json:"fundingGoal"`
 	VotingDeadline  int64           `json:"votingDeadline"`
 	PassPercentage  int             `json:"passPercentage"`
-	ConfigUpdate    interface{}     `json:"configUpdate"`
+	ConfigUpdate    string          `json:"configUpdate"`
 }
 
 type ListProposalRequest struct {
