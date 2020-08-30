@@ -277,7 +277,7 @@ func (ctx *context) Services() (service.Map, error) {
 		Services:       extSvcs,
 		EthTrackers:    ethTracker,
 		Trackers:       btcTrackers,
-		Govern:         ctx.govern,
+		Govern:         governance.NewStore("g", storage.NewState(ctx.chainstate)),
 		GovUpdate:      ctx.govupdate,
 	}
 
