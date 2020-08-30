@@ -1118,7 +1118,7 @@ func getNewBigInt(value interface{}) (*big.Int, error) {
 
 	n, ok = n.SetString(str, 10)
 	if !ok {
-		return n, errors.New("SetString: error")
+		return n, errors.New("SetString: error/Minimum value is 1 olt")
 	}
 	return n, nil
 }
