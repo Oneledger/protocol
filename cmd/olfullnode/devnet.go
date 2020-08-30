@@ -59,8 +59,8 @@ var (
 	ethBlockConfirmation = int64(12)
 	btcBlockConfirmation = int64(6)
 
-	proposalInitialFunding, _ = balance.NewAmountFromString("20000000000000000000", 10)
-	proposalFundingGoal, _    = balance.NewAmountFromString("1000000000000000000000", 10)
+	proposalInitialFunding, _ = balance.NewAmountFromString("1000000000", 10)
+	proposalFundingGoal, _    = balance.NewAmountFromString("10000000000", 10)
 	proposalFundingDeadline   = int64(75001)
 	proposalVotingDeadline    = int64(150000)
 	//proposalFundingDeadline     = int64(10)
