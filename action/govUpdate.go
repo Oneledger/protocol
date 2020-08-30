@@ -2,6 +2,7 @@ package action
 
 import (
 	"fmt"
+	"math/big"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -207,11 +208,11 @@ func stakingOptionsminSelfDelegationAmount(value interface{}, ctx *Context, vali
 	if err != nil {
 		return false, err
 	}
-	newValue, err := getNewValueInt64(value)
+	newValue, err := getNewBigInt(value)
 	if err != nil {
 		return false, err
 	}
-	Options.MinSelfDelegationAmount = *balance.NewAmount(newValue)
+	Options.MinSelfDelegationAmount = *balance.NewAmountFromBigInt(newValue)
 
 	ok, err := ctx.GovernanceStore.ValidateStaking(Options)
 	if err != nil {
@@ -279,7 +280,7 @@ func stakingOptionsmaturityTime(value interface{}, ctx *Context, validationOnly 
 	if err != nil {
 		return false, err
 	}
-	fmt.Println("NewValue :", newValue)
+
 	Options.MaturityTime = newValue
 
 	ok, err := ctx.GovernanceStore.ValidateStaking(Options)
@@ -310,11 +311,11 @@ func propOptionsconfigUpdateinitialFunding(value interface{}, ctx *Context, vali
 	if err != nil {
 		return false, err
 	}
-	newValue, err := getNewValueInt64(value)
+	newValue, err := getNewBigInt(value)
 	if err != nil {
 		return false, err
 	}
-	Options.ConfigUpdate.InitialFunding = balance.NewAmount(newValue)
+	Options.ConfigUpdate.InitialFunding = balance.NewAmountFromBigInt(newValue)
 
 	ok, err := ctx.GovernanceStore.ValidateProposal(Options)
 	if err != nil {
@@ -343,11 +344,11 @@ func propOptionscodeChangeinitialFunding(value interface{}, ctx *Context, valida
 	if err != nil {
 		return false, err
 	}
-	newValue, err := getNewValueInt64(value)
+	newValue, err := getNewBigInt(value)
 	if err != nil {
 		return false, err
 	}
-	Options.CodeChange.InitialFunding = balance.NewAmount(newValue)
+	Options.CodeChange.InitialFunding = balance.NewAmountFromBigInt(newValue)
 
 	ok, err := ctx.GovernanceStore.ValidateProposal(Options)
 	if err != nil {
@@ -376,11 +377,11 @@ func propOptionsgeneralinitialFunding(value interface{}, ctx *Context, validatio
 	if err != nil {
 		return false, err
 	}
-	newValue, err := getNewValueInt64(value)
+	newValue, err := getNewBigInt(value)
 	if err != nil {
 		return false, err
 	}
-	Options.General.InitialFunding = balance.NewAmount(newValue)
+	Options.General.InitialFunding = balance.NewAmountFromBigInt(newValue)
 
 	ok, err := ctx.GovernanceStore.ValidateProposal(Options)
 	if err != nil {
@@ -409,11 +410,11 @@ func propOptionsconfigUpdatefundingGoal(value interface{}, ctx *Context, validat
 	if err != nil {
 		return false, err
 	}
-	newValue, err := getNewValueInt64(value)
+	newValue, err := getNewBigInt(value)
 	if err != nil {
 		return false, err
 	}
-	Options.ConfigUpdate.FundingGoal = balance.NewAmount(newValue)
+	Options.ConfigUpdate.FundingGoal = balance.NewAmountFromBigInt(newValue)
 
 	ok, err := ctx.GovernanceStore.ValidateProposal(Options)
 	if err != nil {
@@ -442,11 +443,11 @@ func propOptionscodeChangefundingGoal(value interface{}, ctx *Context, validatio
 	if err != nil {
 		return false, err
 	}
-	newValue, err := getNewValueInt64(value)
+	newValue, err := getNewBigInt(value)
 	if err != nil {
 		return false, err
 	}
-	Options.CodeChange.FundingGoal = balance.NewAmount(newValue)
+	Options.CodeChange.FundingGoal = balance.NewAmountFromBigInt(newValue)
 
 	ok, err := ctx.GovernanceStore.ValidateProposal(Options)
 	if err != nil {
@@ -475,11 +476,11 @@ func propOptionsgeneralfundingGoal(value interface{}, ctx *Context, validationOn
 	if err != nil {
 		return false, err
 	}
-	newValue, err := getNewValueInt64(value)
+	newValue, err := getNewBigInt(value)
 	if err != nil {
 		return false, err
 	}
-	Options.General.FundingGoal = balance.NewAmount(newValue)
+	Options.General.FundingGoal = balance.NewAmountFromBigInt(newValue)
 
 	ok, err := ctx.GovernanceStore.ValidateProposal(Options)
 	if err != nil {
@@ -999,11 +1000,11 @@ func onsOptionsperBlockFees(value interface{}, ctx *Context, validationOnly Func
 	if err != nil {
 		return false, err
 	}
-	newValue, err := getNewValueInt64(value)
+	newValue, err := getNewBigInt(value)
 	if err != nil {
 		return false, err
 	}
-	onsOptions.PerBlockFees = *balance.NewAmount(newValue)
+	onsOptions.PerBlockFees = *balance.NewAmountFromBigInt(newValue)
 
 	ok, err := ctx.GovernanceStore.ValidateONS(onsOptions)
 	if err != nil {
@@ -1033,11 +1034,11 @@ func onsOptionsbaseDomainPrice(value interface{}, ctx *Context, validationOnly F
 	if err != nil {
 		return false, err
 	}
-	newValue, err := getNewValueInt64(value)
+	newValue, err := getNewBigInt(value)
 	if err != nil {
 		return false, err
 	}
-	onsOptions.BaseDomainPrice = *balance.NewAmount(newValue)
+	onsOptions.BaseDomainPrice = *balance.NewAmountFromBigInt(newValue)
 
 	ok, err := ctx.GovernanceStore.ValidateONS(onsOptions)
 	if err != nil {
@@ -1106,6 +1107,20 @@ func getNewValueInt64(value interface{}) (int64, error) {
 		return 0, err
 	}
 	return int64(intval), nil
+}
+
+func getNewBigInt(value interface{}) (*big.Int, error) {
+	str, ok := value.(string)
+	n := new(big.Int)
+	if !ok {
+		return n, errors.New("Type assertion failed")
+	}
+
+	n, ok = n.SetString(str, 10)
+	if !ok {
+		return n, errors.New("SetString: error")
+	}
+	return n, nil
 }
 
 //func getDistribution(value interface{}) (newDistribution governance.ProposalFundDistribution, err error) {

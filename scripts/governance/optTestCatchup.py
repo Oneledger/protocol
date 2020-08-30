@@ -6,22 +6,22 @@ _pid_fail = "id_50061"
 _pid_pass = "id_50063"
 _pid_pass2 = "id_50064"
 _proposer = addr_list[0]
-_initial_funding = 1000000000
+_initial_funding = 20000000000000000000
 _each_funding = (int("5") * 10 ** 9)
-_funding_goal_general = (int("10") * 10 ** 9)
-_initial_funding_too_less = 50
+_funding_goal_general = 1000000000000000000000
+_initial_funding_too_less = 10000000000000000000
 
 
 def test_catchup():
     # Create Proposal should Fail becuase funding is too less
     _prop = Proposal(_pid_fail, "configUpdate", "proposal for vote", "Headline", _proposer, _initial_funding_too_less,
-                     "propOptions.configUpdate.initialFunding:10")
+                     "propOptions.configUpdate.initialFunding:10000000000000000000")
     _prop.send_create()
     time.sleep(3)
 
     # Update Proposal to decrese initial funding
     _prop = Proposal(_pid_pass, "configUpdate", "proposal for vote", "Headline", _proposer, _initial_funding,
-                     "propOptions.configUpdate.initialFunding:10")
+                     "propOptions.configUpdate.initialFunding:10000000000000000000")
     _prop.send_create()
     time.sleep(3)
     encoded_pid = _prop.pid
@@ -48,7 +48,7 @@ def test_catchup():
 
     # Create propsal with lesser funding amount should now pass
     _prop = Proposal(_pid_fail, "configUpdate", "proposal for vote", "Headline", _proposer, _initial_funding_too_less,
-                     "propOptions.configUpdate.initialFunding: 20")
+                     "propOptions.configUpdate.initialFunding: 20000000000000000000")
     _prop.send_create()
     time.sleep(3)
 

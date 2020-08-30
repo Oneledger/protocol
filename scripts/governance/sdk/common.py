@@ -243,10 +243,10 @@ def clean_and_catchup():
 def test_change_gov_options(update, pid):
     addr_list = addresses()
     _proposer = addr_list[0]
-    _initial_funding = (int("2") * 10 ** 9)
+    _initial_funding = 20000000000000000000
     _each_funding = (int("5") * 10 ** 9)
-    _funding_goal_general = (int("10") * 10 ** 9)
-    _funding_goal_general = (int("10") * 10 ** 9)
+    _funding_goal_general = 1000000000000000000000
+    _funding_goal_general = 1000000000000000000000
     _prop = Proposal(pid, "configUpdate", "proposal for vote", "Headline", _proposer, _initial_funding,
                      update)
     # create proposal
