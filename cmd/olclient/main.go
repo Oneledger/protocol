@@ -32,9 +32,9 @@ import (
 )
 
 const (
-	keyStorePath = "keystore/"
+	keyStorePath    = "keystore/"
 	queryTxInternal = 4
-	queryTxTimes = 5
+	queryTxTimes    = 5
 )
 
 var logger = log.NewLoggerWithPrefix(os.Stdout, "olclient")
@@ -135,7 +135,6 @@ func checkTransactionResult(ctx *Context, hash string, prove bool) (*ctypes.Resu
 	}
 	return &result.Result, true
 }
-
 
 func PollTxResult(ctx *Context, hash string) bool {
 	fmt.Println("Checking the transaction result...")

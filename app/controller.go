@@ -120,8 +120,14 @@ func (app *App) blockBeginner() blockBeginner {
 		defer app.handlePanic()
 		gc := getGasCalculator(app.genesisDoc.ConsensusParams)
 		app.Context.deliver = storage.NewState(app.Context.chainstate).WithGas(gc)
+
+		feeOpt, err := app.Context.govern.GetFeeOption()
+		if err != nil {
+			app.logger.Error("failed to get feeOption", err)
+		}
+		app.Context.feePool.SetupOpt(feeOpt)
 		// update the validator set
-		err := app.Context.validators.Setup(req, app.Context.node.ValidatorAddress())
+		err = app.Context.validators.Setup(req, app.Context.node.ValidatorAddress())
 		if err != nil {
 			app.logger.Error("validator set with error", err)
 		}
@@ -410,7 +416,7 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 
 		if t.Type == ethereum.ProcessTypeLock || t.Type == ethereum.ProcessTypeLockERC {
 
-			logger.Debug("Processing Tracker : ", t.Type.String(), " | State :", t.State.String())
+			logger.Debug("Processing Tracker : ", t.Type.String(), " | Tracker Name ", t.TrackerName.String(), " | State :", t.State.String(), " | Finality Votes :", t.FinalityVotes)
 			_, err := event.EthLockEngine.Process(t.NextStep(), ctx, transition.Status(t.State))
 			if err != nil {
 				logger.Error("failed to process eth tracker ProcessTypeLock", err)
@@ -418,7 +424,7 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 			}
 
 		} else if t.Type == ethereum.ProcessTypeRedeem || t.Type == ethereum.ProcessTypeRedeemERC {
-			logger.Debug("Processing Tracker : ", t.Type.String(), " | State :", t.State.String())
+			logger.Debug("Processing Tracker : ", t.Type.String(), " | Tracker Name ", t.TrackerName.String(), " | State :", t.State.String(), " | Finality Votes :", t.FinalityVotes)
 			_, err := event.EthRedeemEngine.Process(t.NextStep(), ctx, transition.Status(t.State))
 			if err != nil {
 				logger.Error("failed to process eth tracker ProcessTypeRedeem", err)
