@@ -86,11 +86,8 @@ func (r RenewDomainTx) Validate(ctx *action.Context, signedTx action.SignedTx) (
 	}
 
 	//Verify fee currency is valid and the amount exceeds the minimum.
-	feeOpt, err := ctx.GovernanceStore.GetFeeOption()
-	if err != nil {
-		return false, gov.ErrGetFeeOptions
-	}
-	err = action.ValidateFee(feeOpt, signedTx.Fee)
+
+	err = action.ValidateFee(ctx.FeeOpt, signedTx.Fee)
 	if err != nil {
 		return false, errors.Wrap(err, err.Error())
 	}

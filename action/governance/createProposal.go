@@ -41,11 +41,8 @@ func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) 
 	if err != nil {
 		return false, err
 	}
-	feeOpt, err := ctx.GovernanceStore.GetFeeOption()
-	if err != nil {
-		return false, governance.ErrGetFeeOptions
-	}
-	err = action.ValidateFee(feeOpt, signedTx.Fee)
+
+	err = action.ValidateFee(ctx.FeeOpt, signedTx.Fee)
 	if err != nil {
 		return false, err
 	}
