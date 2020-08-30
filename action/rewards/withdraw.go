@@ -105,12 +105,6 @@ func runWithdraw(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrUnserializable, withdraw.Tags(), err)
 	}
 
-	//2. Get the difference of amount earned vs amount withdrawn for the validator issuing this transaction
-	//3. Check how much he is eligible to withdraw
-	//4. If the amount withdrawn is less than or equal to amount eligible to be withdrawn, make the transaction success.
-	//5. In case of no failure, add this amount the person withdrew, to total withdrawn amount in cumulative rewards db
-	//maturedBalance, _ := ctx.RewardMasterStore.RewardCm.GetMaturedRewards(withdraw.ValidatorAddress)
-	//fmt.Println("Matured Balance :", maturedBalance, withdraw.ValidatorAddress)
 	withDrawCoin := withdraw.WithdrawAmount.ToCoinWithBase(ctx.Currencies)
 	err = ctx.RewardMasterStore.RewardCm.WithdrawRewards(withdraw.ValidatorAddress, withDrawCoin.Amount)
 	if err != nil {
