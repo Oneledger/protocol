@@ -52,7 +52,7 @@ class bcolors:
 class Proposal:
     def __init__(self, pid, pType, description, headline, proposer, init_fund, updatevalue=None):
         if updatevalue is None:
-            updatevalue = {"feeOption.minFeeDecimal": 9}
+            updatevalue = "feeOption.minFeeDecimal:9"
         self.pid = pid
         self.pty = pType
         self.headline = headline
@@ -163,7 +163,6 @@ class Proposal:
 
         # broadcast Tx
         result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
-
         if "ok" in result:
             if not result["ok"]:
                 print "Send Create Failed : ", result
@@ -184,7 +183,7 @@ class Proposal:
 
         if "ok" in result:
             if result["ok"]:
-                sys.exit(-1)
+                 sys.exit(-1)
 
     def get_encoded_pid(self):
         hash_handler = hashlib.sha256()

@@ -91,11 +91,7 @@ func (ethLockTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, 
 	}
 
 	// validate fee
-	feeOpt, err := ctx.GovernanceStore.GetFeeOption()
-	if err != nil {
-		return false, gov.ErrGetFeeOptions
-	}
-	err = action.ValidateFee(feeOpt, signedTx.Fee)
+	err = action.ValidateFee(ctx.FeePool.GetOpt(), signedTx.Fee)
 	if err != nil {
 		ctx.Logger.Error("validate fee failed", err)
 		return false, err
@@ -214,7 +210,12 @@ func runLock(ctx *action.Context, lock *Lock) (bool, action.Response) {
 		}
 	}
 	if ctx.ETHTrackers.WithPrefixType(ethereum.PrefixFailed).Exists(name) {
-		ctx.ETHTrackers.WithPrefixType(ethereum.PrefixFailed).Delete(name)
+		res, err := ctx.ETHTrackers.WithPrefixType(ethereum.PrefixFailed).Delete(name)
+		if err != nil || !res {
+			return false, action.Response{
+				Log: "Error deleting tracker from store",
+			}
+		}
 	}
 	// Create ethereum tracker
 	tracker := ethereum.NewTracker(

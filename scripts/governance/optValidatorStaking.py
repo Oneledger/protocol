@@ -71,7 +71,7 @@ if __name__ == "__main__":
         sys.exit(-1)
     print bcolors.OKBLUE + "#### Active Validator count : " + str(getActiveValidators()) + bcolors.ENDC
     update_param = 10
-    update = {"stakingOptions.topValidatorCount": update_param}
+    update = "stakingOptions.topValidatorCount:" + str(update_param)
     update_options(update)
     time.sleep(1)
     opt = query_governanceState()

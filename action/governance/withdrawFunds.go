@@ -34,11 +34,8 @@ func (wp WithdrawFunds) Validate(ctx *action.Context, signedTx action.SignedTx) 
 		return false, err
 	}
 	//validate fee
-	feeOpt, err := ctx.GovernanceStore.GetFeeOption()
-	if err != nil {
-		return false, governance.ErrGetFeeOptions
-	}
-	err = action.ValidateFee(feeOpt, signedTx.Fee)
+
+	err = action.ValidateFee(ctx.FeePool.GetOpt(), signedTx.Fee)
 
 	if err != nil {
 		return false, err

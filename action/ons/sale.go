@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/action/helpers"
 	gov "github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/ons"
 )
@@ -100,11 +101,7 @@ func (domainSaleTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, err
 		return false, err
 	}
 
-	feeOpt, err := ctx.GovernanceStore.GetFeeOption()
-	if err != nil {
-		return false, gov.ErrGetFeeOptions
-	}
-	err = action.ValidateFee(feeOpt, tx.Fee)
+	err = action.ValidateFee(ctx.FeePool.GetOpt(), tx.Fee)
 	if err != nil {
 		return false, err
 	}
@@ -127,14 +124,6 @@ func (domainSaleTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, err
 	}
 	if c.Name != sale.Price.Currency {
 		return false, errors.Wrap(action.ErrInvalidAmount, sale.Price.String())
-	}
-	opt, err := ctx.GovernanceStore.GetONSOptions()
-	if err != nil {
-		return false, gov.ErrGetONSOptions
-	}
-	coin := sale.Price.ToCoin(ctx.Currencies)
-	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromAmount(opt.PerBlockFees)) {
-		return false, action.ErrNotEnoughFund
 	}
 
 	return true, nil
@@ -160,6 +149,15 @@ func runDomainSale(ctx *action.Context, tx action.RawTx) (bool, action.Response)
 	err := sale.Unmarshal(tx.Data)
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
+	}
+
+	opt, err := ctx.GovernanceStore.GetONSOptions()
+	if err != nil {
+		return helpers.LogAndReturnFalse(ctx.Logger, gov.ErrGetONSOptions, sale.Tags(), err)
+	}
+	coin := sale.Price.ToCoin(ctx.Currencies)
+	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromAmount(opt.PerBlockFees)) {
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrNotEnoughFund, sale.Tags(), err)
 	}
 
 	if !sale.Price.IsValid(ctx.Currencies) {

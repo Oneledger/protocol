@@ -15,13 +15,13 @@ _initial_funding_too_less = 50
 def test_catchup():
     # Create Proposal should Fail becuase funding is too less
     _prop = Proposal(_pid_fail, "configUpdate", "proposal for vote", "Headline", _proposer, _initial_funding_too_less,
-                     {"propOptions.configUpdate.initialFunding": 10})
+                     "propOptions.configUpdate.initialFunding:10")
     _prop.send_create()
     time.sleep(3)
 
     # Update Proposal to decrese initial funding
     _prop = Proposal(_pid_pass, "configUpdate", "proposal for vote", "Headline", _proposer, _initial_funding,
-                     {"propOptions.configUpdate.initialFunding": 10})
+                     "propOptions.configUpdate.initialFunding:10")
     _prop.send_create()
     time.sleep(3)
     encoded_pid = _prop.pid
@@ -48,7 +48,7 @@ def test_catchup():
 
     # Create propsal with lesser funding amount should now pass
     _prop = Proposal(_pid_fail, "configUpdate", "proposal for vote", "Headline", _proposer, _initial_funding_too_less,
-                     {"propOptions.configUpdate.initialFunding": 20})
+                     "propOptions.configUpdate.initialFunding: 20")
     _prop.send_create()
     time.sleep(3)
 
