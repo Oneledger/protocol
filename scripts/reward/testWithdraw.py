@@ -12,7 +12,7 @@ def testrewardswithdraw(validatorAccounts, result, error_message):
         node = str(i) + "-Node"
         nodedir = os.path.join(devnet, node)
         # query balance after
-        withdrawAmount = 12
+        withdrawAmount = 1
         args = ['olclient', 'rewards', 'withdraw', '--address', validatorAccounts[i], '--amount', str(withdrawAmount),
                 '--password', '1234']
         process = subprocess.Popen(args, cwd=nodedir, stdout=subprocess.PIPE)
