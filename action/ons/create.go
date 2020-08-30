@@ -148,11 +148,11 @@ func runCreate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	// the buying amount should be more than base creation price for domains
 	opt, err := ctx.GovernanceStore.GetONSOptions()
 	if err != nil {
-		helpers.LogAndReturnFalse(ctx.Logger, gov.ErrGetONSOptions, create.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, gov.ErrGetONSOptions, create.Tags(), err)
 	}
 	coin := create.BuyingPrice.ToCoin(ctx.Currencies)
 	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromAmount(opt.BaseDomainPrice)) {
-		helpers.LogAndReturnFalse(ctx.Logger, action.ErrInvalidAmount, create.Tags(), errors.New("Invalid Base Domain Price"))
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrInvalidAmount, create.Tags(), errors.New("Invalid Base Domain Price"))
 	}
 
 	isSub := create.Name.IsSub()

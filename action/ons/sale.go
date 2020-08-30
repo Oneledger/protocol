@@ -153,11 +153,11 @@ func runDomainSale(ctx *action.Context, tx action.RawTx) (bool, action.Response)
 
 	opt, err := ctx.GovernanceStore.GetONSOptions()
 	if err != nil {
-		helpers.LogAndReturnFalse(ctx.Logger, gov.ErrGetONSOptions, sale.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, gov.ErrGetONSOptions, sale.Tags(), err)
 	}
 	coin := sale.Price.ToCoin(ctx.Currencies)
 	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromAmount(opt.PerBlockFees)) {
-		helpers.LogAndReturnFalse(ctx.Logger, action.ErrNotEnoughFund, sale.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrNotEnoughFund, sale.Tags(), err)
 	}
 
 	if !sale.Price.IsValid(ctx.Currencies) {

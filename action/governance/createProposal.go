@@ -69,7 +69,6 @@ func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) 
 	default:
 		return false, governance.ErrInvalidProposalType
 	}
-
 	//Check if proposer address is valid oneLedger address
 	err = createProposal.Proposer.Err()
 	if err != nil {
@@ -110,7 +109,7 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
 	options, err := ctx.GovernanceStore.GetProposalOptionsByType(createProposal.ProposalType)
 	if err != nil {
-		helpers.LogAndReturnFalse(ctx.Logger, governance.ErrGetProposalOptions, createProposal.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrGetProposalOptions, createProposal.Tags(), err)
 	}
 	//Get Proposal options based on type.
 	coin := createProposal.InitialFunding.ToCoin(ctx.Currencies)
@@ -118,25 +117,25 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	coinGoal := coin.Currency.NewCoinFromAmount(*options.FundingGoal)
 	//Check if initial funding is not less than minimum amount based on type.
 	if coin.LessThanCoin(coinInit) {
-		helpers.LogAndReturnFalse(ctx.Logger, action.ErrInvalidAmount, createProposal.Tags(), errors.New("Funding Less than initial funding"))
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrInvalidAmount, createProposal.Tags(), errors.New("Funding Less than initial funding"))
 	}
 
 	//Check if initial funding is more than funding goal.
 	if coinGoal.LessThanEqualCoin(coin) {
-		helpers.LogAndReturnFalse(ctx.Logger, action.ErrInvalidAmount, createProposal.Tags(), errors.New("Funding More than Funding goal"))
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrInvalidAmount, createProposal.Tags(), errors.New("Funding More than Funding goal"))
 	}
 
 	if !createProposal.FundingGoal.Equals(*options.FundingGoal) {
-		helpers.LogAndReturnFalse(ctx.Logger, governance.ErrInvalidFundingGoal, createProposal.Tags(), errors.New("Funding goal"))
+		return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrInvalidFundingGoal, createProposal.Tags(), errors.New("Funding goal"))
 	}
 
 	if createProposal.PassPercentage != options.PassPercentage {
-		helpers.LogAndReturnFalse(ctx.Logger, governance.ErrInvalidPassPercentage, createProposal.Tags(), errors.New("Pass percentage"))
+		return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrInvalidPassPercentage, createProposal.Tags(), errors.New("Pass percentage"))
 	}
 
 	//Validate voting height
 	if createProposal.VotingDeadline-createProposal.FundingDeadline != options.VotingDeadline {
-		helpers.LogAndReturnFalse(ctx.Logger, governance.ErrInvalidVotingDeadline, createProposal.Tags(), errors.New("Voting Deadline"))
+		return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrInvalidVotingDeadline, createProposal.Tags(), errors.New("Voting Deadline"))
 
 	}
 

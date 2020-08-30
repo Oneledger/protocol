@@ -163,7 +163,6 @@ class Proposal:
 
         # broadcast Tx
         result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
-
         if "ok" in result:
             if not result["ok"]:
                 print "Send Create Failed : ", result
@@ -184,7 +183,7 @@ class Proposal:
 
         if "ok" in result:
             if result["ok"]:
-                sys.exit(-1)
+                 sys.exit(-1)
 
     def get_encoded_pid(self):
         hash_handler = hashlib.sha256()

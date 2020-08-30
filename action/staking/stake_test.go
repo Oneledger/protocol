@@ -99,11 +99,11 @@ func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, se
 		MinFeeDecimal: 9,
 	}
 	ctx.FeePool = fees.NewStore("tf", cs)
-	ctx.FeePool.SetupOpt(ctx.FeePool.GetOpt())
+	ctx.FeePool.SetupOpt(ctx.FeeOpt)
 	ctx.GovernanceStore = governance.NewStore("tg", cs)
 	ctx.Delegators = delegation.NewDelegationStore("tst", cs)
 	ctx.Validators = identity.NewValidatorStore("tv", "purged", cs)
-	ctx.GovernanceStore.SetFeeOption(*ctx.FeePool.GetOpt())
+	ctx.GovernanceStore.SetFeeOption(*ctx.FeeOpt)
 	validator := identity.NewValidator(
 		from.Bytes(),
 		from.Bytes(),

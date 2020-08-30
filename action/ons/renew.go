@@ -136,11 +136,11 @@ func runRenew(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
 	opt, err := ctx.GovernanceStore.GetONSOptions()
 	if err != nil {
-		helpers.LogAndReturnFalse(ctx.Logger, gov.ErrGetONSOptions, renewDomain.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, gov.ErrGetONSOptions, renewDomain.Tags(), err)
 	}
 	coin := renewDomain.BuyingPrice.ToCoin(ctx.Currencies)
 	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromAmount(opt.PerBlockFees)) {
-		helpers.LogAndReturnFalse(ctx.Logger, action.ErrNotEnoughFund, renewDomain.Tags(), errors.New("Less than per block fees"))
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrNotEnoughFund, renewDomain.Tags(), errors.New("Less than per block fees"))
 	}
 
 	// domain should not be a sub domain
