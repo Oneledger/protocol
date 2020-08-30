@@ -64,7 +64,7 @@ func (withdrawTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool,
 		return false, err
 	}
 
-	err = action.ValidateFee(ctx.FeeOpt, signedTx.Fee)
+	err = action.ValidateFee(ctx.FeePool.GetOpt(), signedTx.Fee)
 	if err != nil {
 		return false, err
 	}

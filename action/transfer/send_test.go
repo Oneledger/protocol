@@ -151,7 +151,7 @@ func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, se
 
 	ctx.GovernanceStore = governance.NewStore("tg", cs)
 	ctx.FeePool = &fees.Store{}
-	ctx.FeePool.SetupOpt(ctx.FeeOpt)
+	ctx.FeePool.SetupOpt(ctx.FeePool.GetOpt())
 	proposalStore := governance.ProposalStore{}
 	pOpt := governance.ProposalOptionSet{
 		ConfigUpdate:      governance.ProposalOption{},
@@ -174,7 +174,7 @@ func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, se
 		RewardPoolAddress: "rewardspool",
 	}
 	ctx.RewardMasterStore.SetOptions(&rewardOptions)
-	ctx.GovernanceStore.WithHeight(0).SetFeeOption(*ctx.FeeOpt)
+	ctx.GovernanceStore.WithHeight(0).SetFeeOption(*ctx.FeePool.GetOpt())
 	ctx.GovernanceStore.WithHeight(0).SetProposalOptions(pOpt)
 	ctx.GovernanceStore.WithHeight(0).SetRewardOptions(rewardOptions)
 	ctx.GovernanceStore.WithHeight(0).SetAllLUH()

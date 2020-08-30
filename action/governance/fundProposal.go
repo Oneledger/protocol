@@ -79,7 +79,7 @@ func (fundProposalTx) Validate(ctx *action.Context, signedTx action.SignedTx) (b
 		return false, err
 	}
 	//Validate Fee for funding request
-	err = action.ValidateFee(ctx.FeeOpt, signedTx.Fee)
+	err = action.ValidateFee(ctx.FeePool.GetOpt(), signedTx.Fee)
 	if err != nil {
 		return false, err
 	}

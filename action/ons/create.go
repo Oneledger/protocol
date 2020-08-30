@@ -97,7 +97,7 @@ func (domainCreateTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, e
 
 	//Verify fee currency is valid and the amount exceeds the minimum.
 
-	err = action.ValidateFee(ctx.FeeOpt, tx.Fee)
+	err = action.ValidateFee(ctx.FeePool.GetOpt(), tx.Fee)
 	if err != nil {
 		return false, err
 	}

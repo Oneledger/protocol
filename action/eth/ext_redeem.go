@@ -87,7 +87,7 @@ func (ethRedeemTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool
 	}
 
 	// validate fee
-	err = action.ValidateFee(ctx.FeeOpt, signedTx.Fee)
+	err = action.ValidateFee(ctx.FeePool.GetOpt(), signedTx.Fee)
 	if err != nil {
 		ctx.Logger.Error("validate fee failed", err)
 		return false, err

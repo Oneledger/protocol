@@ -42,12 +42,11 @@ func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) 
 		return false, err
 	}
 
-	err = action.ValidateFee(ctx.FeeOpt, signedTx.Fee)
+	err = action.ValidateFee(ctx.FeePool.GetOpt(), signedTx.Fee)
 	if err != nil {
 		return false, err
 	}
 
-	//options := ctx.ProposalMasterStore.Proposal.GetOptionsByType(createProposal.ProposalType)
 	options, err := ctx.GovernanceStore.GetProposalOptionsByType(createProposal.ProposalType)
 	if err != nil {
 		return false, governance.ErrGetProposalOptions
