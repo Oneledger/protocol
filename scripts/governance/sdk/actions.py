@@ -52,7 +52,7 @@ class bcolors:
 class Proposal:
     def __init__(self, pid, pType, description, headline, proposer, init_fund, updatevalue=None):
         if updatevalue is None:
-            updatevalue = {"feeOption.minFeeDecimal": 9}
+            updatevalue = "feeOption.minFeeDecimal:9"
         self.pid = pid
         self.pty = pType
         self.headline = headline
