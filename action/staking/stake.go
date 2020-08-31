@@ -221,7 +221,7 @@ func runCheckStake(ctx *action.Context, tx action.RawTx) (bool, action.Response)
 		return false, action.Response{Log: errors.Wrap(err, st.StakeAddress.String()).Error()}
 	}
 
-	err = ctx.Validators.HandleStake(stake, updateStakeAddress)
+	err = ctx.Validators.HandleStake(stake, updateStakeAddress, ctx.Header.Height)
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
 	}

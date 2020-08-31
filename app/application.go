@@ -192,7 +192,7 @@ func (app *App) setupState(stateBytes []byte) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to handle delegators staking")
 		}
-		err = app.Context.validators.WithState(app.Context.deliver).HandleStake(identity.Stake(stake), false)
+		err = app.Context.validators.WithState(app.Context.deliver).HandleStake(identity.Stake(stake), false, 0)
 		if err != nil {
 			return errors.Wrap(err, "failed to handle initial staking")
 		}

@@ -143,7 +143,7 @@ func runCheckUnstake(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		return false, action.Response{Log: errors.Wrap(err, ust.StakeAddress.String()).Error()}
 	}
 
-	err = ctx.Validators.HandleUnstake(unstake)
+	err = ctx.Validators.HandleUnstake(unstake, height)
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
 	}
