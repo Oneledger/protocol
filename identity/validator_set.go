@@ -363,7 +363,7 @@ func (vs *ValidatorStore) HandleUnstake(unstake Unstake, height int64) error {
 		return errors.New("failed to get last purge height")
 	}
 	if purgeHeight > 0 && purgeHeight+2 > height {
-		return errors.New("not allowed to unstake within 2 blocks after stake")
+		return errors.New("not allowed to unstake within 2 blocks after unstake")
 	}
 	err = vs.set(*validator)
 	if err != nil {
