@@ -370,12 +370,14 @@ func (st *DelegationStore) UpdateWithdrawReward(height int64) {
 		// taking into apply delegator bound amount
 		delegatorBoundCoin, err := st.GetDelegatorBoundedAmount(m.Address)
 		if err != nil {
+			fmt.Println("failed to get GetDelegatorBoundedAmount!!!")
 			continue
 		}
 
 		// update current bound delegator amount with unlocked unstaked amount
 		err = st.SetDelegatorBoundedAmount(m.Address, *delegatorBoundCoin.Plus(m.Amount))
 		if err != nil {
+			fmt.Println("failed to get SetDelegatorBoundedAmount!!!")
 			continue
 		}
 	}
