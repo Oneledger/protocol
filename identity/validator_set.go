@@ -278,7 +278,7 @@ func (vs *ValidatorStore) IsValidatorAddress(addr keys.Address) bool {
 }
 
 // handle stake action
-func (vs *ValidatorStore) HandleStake(apply Stake, updateStakeAddress bool) error {
+func (vs *ValidatorStore) HandleStake(apply Stake, updateStakeAddress bool, height int64) error {
 	validator := &Validator{}
 	if !vs.Exists(apply.ValidatorAddress) {
 		validator = NewValidator(
@@ -305,8 +305,15 @@ func (vs *ValidatorStore) HandleStake(apply Stake, updateStakeAddress bool) erro
 			validator.StakeAddress = apply.StakeAddress
 		}
 	}
+	purgeHeight, err := vs.GetLastPurgeHeight(validator.Address)
+	if err != nil {
+		return errors.New("failed to get last purge height")
+	}
+	if purgeHeight > 0 && purgeHeight+2 > height {
+		return errors.New("not allowed to stake within 2 blocks after unstake")
+	}
 
-	err := vs.set(*validator)
+	err = vs.set(*validator)
 	if err != nil {
 		return errors.Wrap(err, "failed to set validator for stake")
 	}
@@ -339,7 +346,7 @@ func makingslash(vs *ValidatorStore, evidences []types.Evidence) []Validator {
 	return remove
 }
 
-func (vs *ValidatorStore) HandleUnstake(unstake Unstake) error {
+func (vs *ValidatorStore) HandleUnstake(unstake Unstake, height int64) error {
 	validator := &Validator{}
 
 	validator, err := vs.Get(unstake.Address)
@@ -351,6 +358,13 @@ func (vs *ValidatorStore) HandleUnstake(unstake Unstake) error {
 
 	validator.Staking = *balance.NewAmountFromBigInt(amt)
 	validator.Power = calculatePower(validator.Staking)
+	purgeHeight, err := vs.GetLastPurgeHeight(validator.Address)
+	if err != nil {
+		return errors.New("failed to get last purge height")
+	}
+	if purgeHeight > 0 && purgeHeight+2 > height {
+		return errors.New("not allowed to unstake within 2 blocks after stake")
+	}
 	err = vs.set(*validator)
 	if err != nil {
 		return errors.Wrap(err, "failed to set validator for unstake")
@@ -503,7 +517,6 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 				PubKey: pub,
 				Power:  0,
 			})
-
 			// update last purge height
 			err = vs.SetLastPurgeHeight(keys.Address(addr), height)
 			if err != nil {
