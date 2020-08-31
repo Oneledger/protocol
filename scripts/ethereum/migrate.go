@@ -15,7 +15,6 @@ transaction cost 	62027 gas
 package main
 
 import (
-	"bufio"
 	"crypto/ecdsa"
 	"encoding/base64"
 	"fmt"
@@ -45,16 +44,16 @@ import (
 )
 
 var (
-	oldValidatorsDir              = "/home/tanmay/Codebase/Test/Testing Migrate/devnetOld/"
-	newValidatorsDir              = "/home/tanmay/Codebase/Test/Testing Migrate/devnetNew/"
+	oldValidatorsDir              = "/home/tanmay/Codebase/Test/MainnetMigration/Kainos/"
+	newValidatorsDir              = "" ///home/tanmay/Codebase/MainnetMigration/devnetNew/
 	lockRedeemContractAddr        = "0xeEbB7F34D1489A0ed859299b1061104413B40dFb"
 	lockRedeem_KratosContractAddr = ""                      //Generated while migrating
 	numofValidatorsOld            = big.NewInt(8)           // Kainos Validators
 	lock_period                   = big.NewInt(3600)        // Approx 2 hours
 	gasPriceM                     = big.NewInt(18000000000) // Not Used currently multiplying suggested gas price
-	gasLimitM                     = uint64(1700000)
+	gasLimitM                     = uint64(21000)
 	validatorInitialFund          = big.NewInt(1000000000000000000) // 1 Ether
-	Cfg                           = config.DefaultEthConfig("rinkeby", "de5e96cbb6284d5ea1341bf6cb7fa401")
+	Cfg                           = config.DefaultEthConfig("mainnet", "de5e96cbb6284d5ea1341bf6cb7fa401")
 
 	lockRedeemABI              = contract.LockRedeemABI
 	lockRedeemKratosABI        = contract.LockRedeemKratosABI
@@ -67,7 +66,7 @@ var (
 	KratosSmartContractAddress = common.HexToAddress(lockRedeem_KratosContractAddr)
 
 	Deployer         = ""
-	DeployersAddress = common.Address{}
+	DeployersAddress = common.HexToAddress("0xb5fd71D7eD4a22194df8F09c462bCe84E838dA6a")
 )
 
 func init() {
@@ -78,33 +77,62 @@ func init() {
 }
 
 func main() {
-	if lock_period.Int64() == 0 {
-		Log.Info("Lock Period is zero")
-		return
-	}
-	gasPrice, err := Client.SuggestGasPrice(context.Background())
-	if err != nil {
-		Log.Fatal(err)
-	}
-	gasPriceM = big.NewInt(0).Add(gasPrice, big.NewInt(0).Div(gasPrice, big.NewInt(2)))
-	fmt.Printf("New Validator PrivateKeys at location : %s \nValidators Fund amount : %s \n", newValidatorsDir, validatorInitialFund)
-	fmt.Printf("New Block Period  : %d \nNumber of Validators in Kainos : %d \nKainos Smart Comtract Address :%s  \n", lock_period.Int64(), numofValidatorsOld, OldSmartContractAddress.String())
-
-	fmt.Printf("Gaslimit  : %d \nGasPrice : %d \n", gasLimitM, gasPriceM)
-	fmt.Printf("Press the Enter Key to continue")
-	bufio.NewReader(os.Stdin).ReadBytes('\n')
-	address := ethDeployKratoscontract()
-	KratosSmartContractAddress = address
-	fmt.Printf("Press the Enter Key to continue Migrate From : %s To %s \n", OldSmartContractAddress.String(), KratosSmartContractAddress.String())
-	bufio.NewReader(os.Stdin).ReadBytes('\n')
-	fmt.Println("New contract isActive : ", checkIsActive())
-	fmt.Printf("Press the Enter Key to continue , Old Validator PrivateKeys at location : %s", oldValidatorsDir)
-	bufio.NewReader(os.Stdin).ReadBytes('\n')
-	migrateContract()
-	time.Sleep(time.Second * 15)
-	fmt.Println("New contract isActive/ Wait for tx to be confirmed on ethereum  if not active : ", checkIsActive())
-	fmt.Printf("Press Enter to trasfer fund from old Validator :")
-	bufio.NewReader(os.Stdin).ReadBytes('\n')
+	//err := os.Setenv("ETHPKPATH", "/tmp/pkdata")
+	//if err != nil {
+	//	Log.Error("Unable to set ETHPKPATH")
+	//	return
+	//}
+	//f, err := os.Open(os.Getenv("ETHPKPATH"))
+	//if err != nil {
+	//	return
+	//}
+	//b1 := make([]byte, 64)
+	//pk, err := f.Read(b1)
+	//if err != nil {
+	//	return
+	//}
+	////fmt.Println("Private key used to deploy : ", string(b1[:pk]))
+	//pkStr := string(b1[:pk])
+	//privatekey, err := crypto.HexToECDSA(pkStr)
+	//
+	//if err != nil {
+	//	return
+	//}
+	//publicKey := privatekey.Public()
+	//publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+	//if !ok {
+	//	return
+	//}
+	//
+	//fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+	//DeployersAddress = fromAddress
+	//if lock_period.Int64() == 0 {
+	//	Log.Info("Lock Period is zero")
+	//	return
+	//}
+	//gasPrice, err := Client.SuggestGasPrice(context.Background())
+	//if err != nil {
+	//	Log.Fatal(err)
+	//}
+	//gasPriceM = big.NewInt(0).Add(gasPrice, big.NewInt(0).Div(gasPrice, big.NewInt(2)))
+	//fmt.Printf("New Validator PrivateKeys at location : %s \nValidators Fund amount : %s \n", newValidatorsDir, validatorInitialFund)
+	//fmt.Printf("New Block Period  : %d \nNumber of Validators in Kainos : %d \nKainos Smart Comtract Address :%s  \n", lock_period.Int64(), numofValidatorsOld, OldSmartContractAddress.String())
+	//
+	//fmt.Printf("Gaslimit  : %d \nGasPrice : %d \n", gasLimitM, gasPriceM)
+	//fmt.Printf("Press the Enter Key to continue")
+	//bufio.NewReader(os.Stdin).ReadBytes('\n')
+	//address := ethDeployKratoscontract()
+	//KratosSmartContractAddress = address
+	//fmt.Printf("Press the Enter Key to continue Migrate From : %s To %s \n", OldSmartContractAddress.String(), KratosSmartContractAddress.String())
+	//bufio.NewReader(os.Stdin).ReadBytes('\n')
+	//fmt.Println("New contract isActive : ", checkIsActive())
+	//fmt.Printf("Press the Enter Key to continue , Old Validator PrivateKeys at location : %s", oldValidatorsDir)
+	//bufio.NewReader(os.Stdin).ReadBytes('\n')
+	//migrateContract()
+	//time.Sleep(time.Second * 15)
+	//fmt.Println("New contract isActive/ Wait for tx to be confirmed on ethereum  if not active : ", checkIsActive())
+	//fmt.Printf("Press Enter to trasfer fund from old Validator :")
+	//bufio.NewReader(os.Stdin).ReadBytes('\n')
 	takeFunds()
 }
 
@@ -400,12 +428,15 @@ func takeFunds() {
 			fmt.Println(err)
 			return
 		}
+		//fmt.Println("Current Balance :", validatorAddress.String(), " : ", currentBalance)
 		currentBalance.Sub(currentBalance, gasCost)
 		g, err := Client.SuggestGasPrice(context.Background())
 		if err != nil {
 			Log.Fatal(err)
 			return
 		}
+		//fmt.Println("GasCost  :", gasCost)
+		//fmt.Println("Current Balance :", validatorAddress.String(), " Sending Amount : ", currentBalance)
 		tx := types.NewTransaction(nonce, DeployersAddress, currentBalance, uint64(gasLimit), g, nil)
 		chainID, err := Client.ChainID(context.Background())
 		if err != nil {
