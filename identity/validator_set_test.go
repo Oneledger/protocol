@@ -181,7 +181,7 @@ func TestValidatorStore_Set(t *testing.T) {
 	t.Run("update validator set successfully with valid stake", func(t *testing.T) {
 		vs := setup()
 		req2, _, _, stake := setupForSet()
-		err := vs.HandleStake(stake, false)
+		err := vs.HandleStake(stake, false, 0)
 		assert.Nil(t, err)
 		vs.store.Commit()
 		err = vs.Setup(req2, keys.Address{})
@@ -207,11 +207,11 @@ func TestValidatorStore_HandleStake(t *testing.T) {
 	vaList, _ := vs.GetValidatorSet()
 	assert.Empty(t, vaList)
 
-	assert.NoError(t, vs.HandleStake(apply, false))
+	assert.NoError(t, vs.HandleStake(apply, false, 0))
 
 	vs.store.Commit()
 
-	assert.NoError(t, vs.HandleStake(apply, false))
+	assert.NoError(t, vs.HandleStake(apply, false, 0))
 
 	vaList, _ = vs.GetValidatorSet()
 	assert.NotEmpty(t, vaList)
@@ -226,15 +226,15 @@ func TestValidatorStore_HandleUnstake(t *testing.T) {
 	t.Run("check chainstate exist, should return an error", func(t *testing.T) {
 		vs := setup()
 		unstake, _ := setupForUnHandleStake()
-		err := vs.HandleUnstake(unstake)
+		err := vs.HandleUnstake(unstake, 0)
 		assert.Error(t, err)
 	})
 	t.Run("check chainstate get, should return no error", func(t *testing.T) {
 		vs := setup()
 		unstake, stake := setupForUnHandleStake()
-		vs.HandleStake(stake, false)
+		vs.HandleStake(stake, false, 0)
 		vs.store.Commit()
-		err := vs.HandleUnstake(unstake)
+		err := vs.HandleUnstake(unstake, 0)
 		assert.NoError(t, err)
 	})
 	//t.Run("unstake with invalid currency type, should return error", func(t *testing.T) {
@@ -278,7 +278,7 @@ func TestValidatorStore_GetEndBlockUpdate(t *testing.T) {
 	queued := utils.NewQueued(validatorAddr, 0, 1)
 	vs.queue.append(queued)
 	vs.queue.Init()
-	err := vs.HandleStake(stake, false)
+	err := vs.HandleStake(stake, false, 0)
 	assert.Nil(t, err)
 	vs.store.Commit()
 
@@ -286,7 +286,7 @@ func TestValidatorStore_GetEndBlockUpdate(t *testing.T) {
 	queued1 := utils.NewQueued([]byte("nonsenceaddress"), 0, 1)
 	vs.queue.append(queued1)
 	vs.queue.Init()
-	err = vs.HandleStake(stake1, false)
+	err = vs.HandleStake(stake1, false, 0)
 	assert.Nil(t, err)
 	vs.store.Commit()
 
@@ -300,7 +300,7 @@ func TestValidatorStore_GetEndBlockUpdate(t *testing.T) {
 func TestValidatorStore_Commit(t *testing.T) {
 	vs := setup()
 	apply := setupForHandleStake()
-	err := vs.HandleStake(apply, false)
+	err := vs.HandleStake(apply, false, 0)
 	assert.Nil(t, err)
 	result, index := vs.store.Commit()
 	assert.NotEmpty(t, result)
