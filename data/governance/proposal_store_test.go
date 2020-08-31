@@ -93,11 +93,9 @@ func init() {
 		}
 
 		fundingGoal := balance.NewAmountFromBigInt(opt.FundingGoal.BigInt())
-		configUpdate := make(map[string]interface{})
-		configUpdate["feeOption.minFeeDecimal"] = 10
 
 		proposals = append(proposals, NewProposal(ProposalID(time.Now().String()), ProposalType(k), "Test Proposal",
-			"Test Headline", proposer, opt.FundingDeadline, fundingGoal, opt.VotingDeadline, opt.PassPercentage, configUpdate))
+			"Test Headline", proposer, opt.FundingDeadline, fundingGoal, opt.VotingDeadline, opt.PassPercentage, "feeOption.minFeeDecimal:10"))
 	}
 
 	//Create Test DB
