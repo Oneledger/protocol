@@ -15,6 +15,7 @@ Copyright 2017 - 2019 OneLedger
 package balance
 
 import (
+	"bytes"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -92,15 +93,20 @@ func (st *Store) IterateAll(fn func(addr keys.Address, c string, amt Amount) boo
 				return true
 			}
 
-			arr := strings.Split(string(key), storage.DB_PREFIX)
-			addr := keys.Address{}
-			err = addr.UnmarshalText([]byte(arr[1]))
-			if err != nil {
+			//Parse Address
+			addrStartIndex := bytes.IndexByte(key, storage.DB_PREFIX[0]) + 1
+			addrEndIndex := bytes.LastIndexByte(key, storage.DB_PREFIX[0])
+			if addrStartIndex == -1 || addrEndIndex == -1 {
 				return true
 			}
 
+			var address = make([]byte, addrEndIndex-addrStartIndex, 100)
+			copy(address, key[addrStartIndex:addrEndIndex])
+
+			//Parse currency
+			arr := strings.Split(string(key), storage.DB_PREFIX)
 			curr := arr[len(arr)-1]
-			return fn(addr, curr, *amt)
+			return fn(address, curr, *amt)
 		},
 	)
 }
