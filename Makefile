@@ -82,7 +82,7 @@ withdrawtest: reset
 # run governance tests
 #
 
-govtest: resetInvalidValues
+govtest: reset
 	@./scripts/testsend
 	python scripts/governance/createProposals.py
 	python scripts/governance/fundProposals.py
@@ -100,7 +100,7 @@ govtest: resetInvalidValues
 #
 # run staking tests
 #
-stakingtest: resetInvalidValues
+stakingtest: reset
 	python scripts/staking/self_staking.py
 	@./scripts/stopNodes
 

@@ -136,6 +136,7 @@ type testnetConfig struct {
 	maturityTime         int64
 	votingDeadline       int64
 	fundingDeadline      int64
+	timeoutcommit        int64
 }
 
 func init() {
@@ -159,6 +160,7 @@ func init() {
 	testnetCmd.Flags().Int64Var(&testnetArgs.maturityTime, "maturity_time", 109200, "Set Maturity time for staking")
 	testnetCmd.Flags().Int64Var(&testnetArgs.fundingDeadline, "funding_deadline", 75001, "Set Maturity time for staking")
 	testnetCmd.Flags().Int64Var(&testnetArgs.votingDeadline, "voting_deadline", 150000, "Set Maturity time for staking")
+	testnetCmd.Flags().Int64Var(&testnetArgs.timeoutcommit, "timeout_commit", 1000, "Set timecommit for blocks")
 
 }
 
@@ -339,6 +341,8 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		} else {
 			cfg.Consensus.CreateEmptyBlocks = false
 		}
+
+		cfg.Consensus.TimeoutCommit = config.Duration(testnetArgs.timeoutcommit)
 
 		cfg.Network.RPCAddress = generateAddress(generatePort(), true)
 		cfg.Network.P2PAddress = generateAddress(generatePort(), true)
@@ -706,9 +710,6 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 	f, err := os.Open(os.Getenv("ETHPKPATH"))
 	if err != nil {
 		return nil, errors.Wrap(err, "Error Reading File")
-	}
-	if err != nil {
-		return nil, errors.Wrap(err, "Error Reading File Wallet Address")
 	}
 	b1 := make([]byte, 64)
 	pk, err := f.Read(b1)
