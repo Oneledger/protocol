@@ -4,6 +4,7 @@ import (
 	"github.com/Oneledger/protocol/external_apps/common/common_action"
 	"github.com/Oneledger/protocol/external_apps/common/common_data"
 	"github.com/Oneledger/protocol/external_apps/common/common_rpc/common_rpc_query"
+	"github.com/Oneledger/protocol/storage"
 )
 
 type ExtAppData struct {
@@ -16,7 +17,7 @@ type ExtAppData struct {
 	extBlockEnderFuncs
 }
 
-func LoadExtAppData() *ExtAppData{
+func LoadExtAppData(cs *storage.ChainState) *ExtAppData{
 
 	return &ExtAppData{}
 }

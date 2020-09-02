@@ -135,7 +135,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.lockScriptStore = bitcoin.NewLockScriptStore(cfg, ctx.dbDir())
 	ctx.actionRouter = action.NewRouter("action")
 	ctx.internalRouter = action.NewRouter("internal")
-	ctx.extApp = common.LoadExtAppData()
+	ctx.extApp = common.LoadExtAppData(ctx.chainstate)
 	//todo ext stuff below will be moved to extApp
 	ctx.extStores = data.NewStorageRouter()
 	err = ctx.AddExternalStore("bidMaster", NewBidMasterStore(ctx.chainstate))
