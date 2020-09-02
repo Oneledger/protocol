@@ -2,6 +2,7 @@ package app
 
 import (
 	"github.com/Oneledger/protocol/data/bidding"
+	"github.com/Oneledger/protocol/external_apps/common"
 	"io"
 	"os"
 	"path/filepath"
@@ -83,6 +84,7 @@ type context struct {
 	transaction     *transactions.TransactionStore
 	logWriter       io.Writer
 	govupdate       *action.GovernaceUpdateAndValidate
+	extApp          *common.ExtAppData
 }
 
 func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (context, error) {
@@ -133,6 +135,8 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.lockScriptStore = bitcoin.NewLockScriptStore(cfg, ctx.dbDir())
 	ctx.actionRouter = action.NewRouter("action")
 	ctx.internalRouter = action.NewRouter("internal")
+	ctx.extApp = common.LoadExtAppData()
+	//todo ext stuff below will be moved to extApp
 	ctx.extStores = data.NewStorageRouter()
 	err = ctx.AddExternalStore("bidMaster", NewBidMasterStore(ctx.chainstate))
 	//this store is used to store txs in block beginner&ender to expire bid conversations
