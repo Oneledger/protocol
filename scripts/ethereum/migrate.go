@@ -435,8 +435,8 @@ func takeFunds() {
 			Log.Fatal(err)
 			return
 		}
-		//fmt.Println("GasCost  :", gasCost)
-		//fmt.Println("Current Balance :", validatorAddress.String(), " Sending Amount : ", currentBalance)
+		//fmt.Println("GasCost  :", gasCost, "Sending To :", DeployersAddress.String())
+		//fmt.Println("Current Balance :", validatorAddress.String(), " Sending Amount : ", currentBalance, " |", nonce, g)
 		tx := types.NewTransaction(nonce, DeployersAddress, currentBalance, uint64(gasLimit), g, nil)
 		chainID, err := Client.ChainID(context.Background())
 		if err != nil {
