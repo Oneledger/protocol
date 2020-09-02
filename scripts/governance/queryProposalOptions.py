@@ -8,4 +8,4 @@ class bcolors:
 
 if __name__ == "__main__":
     print bcolors.WARNING + "*** Proposal Options ***" + bcolors.ENDC
-    query_proposal_options()
+    print query_proposal_options()

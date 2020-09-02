@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"math/big"
+	"sort"
 
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
@@ -277,7 +278,7 @@ func (vs *ValidatorStore) IsValidatorAddress(addr keys.Address) bool {
 }
 
 // handle stake action
-func (vs *ValidatorStore) HandleStake(apply Stake, updateStakeAddress bool) error {
+func (vs *ValidatorStore) HandleStake(apply Stake, updateStakeAddress bool, height int64) error {
 	validator := &Validator{}
 	if !vs.Exists(apply.ValidatorAddress) {
 		validator = NewValidator(
@@ -304,8 +305,15 @@ func (vs *ValidatorStore) HandleStake(apply Stake, updateStakeAddress bool) erro
 			validator.StakeAddress = apply.StakeAddress
 		}
 	}
+	purgeHeight, err := vs.GetLastPurgeHeight(validator.Address)
+	if err != nil {
+		return errors.New("failed to get last purge height")
+	}
+	if purgeHeight > 0 && purgeHeight+2 > height {
+		return errors.New("not allowed to stake within 2 blocks after unstake")
+	}
 
-	err := vs.set(*validator)
+	err = vs.set(*validator)
 	if err != nil {
 		return errors.Wrap(err, "failed to set validator for stake")
 	}
@@ -338,7 +346,7 @@ func makingslash(vs *ValidatorStore, evidences []types.Evidence) []Validator {
 	return remove
 }
 
-func (vs *ValidatorStore) HandleUnstake(unstake Unstake) error {
+func (vs *ValidatorStore) HandleUnstake(unstake Unstake, height int64) error {
 	validator := &Validator{}
 
 	validator, err := vs.Get(unstake.Address)
@@ -350,6 +358,13 @@ func (vs *ValidatorStore) HandleUnstake(unstake Unstake) error {
 
 	validator.Staking = *balance.NewAmountFromBigInt(amt)
 	validator.Power = calculatePower(validator.Staking)
+	purgeHeight, err := vs.GetLastPurgeHeight(validator.Address)
+	if err != nil {
+		return errors.New("failed to get last purge height")
+	}
+	if purgeHeight > 0 && purgeHeight+2 > height {
+		return errors.New("not allowed to unstake within 2 blocks after unstake")
+	}
 	err = vs.set(*validator)
 	if err != nil {
 		return errors.Wrap(err, "failed to set validator for unstake")
@@ -407,7 +422,6 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 	}
 
 	minSelfDelegationAmount := stakingOptions.MinSelfDelegationAmount.BigInt().Int64()
-
 	if height > 1 || (len(vs.byzantine) > 0) {
 		// map for non top-power validators
 		nonTopValidators := make(map[string]types.PubKey)
@@ -430,7 +444,6 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 				logger.Errorf("Validator: %s not found", addrHuman)
 				continue
 			}
-
 			updateTendermint := false
 
 			if validator.Power >= minSelfDelegationAmount && cnt < stakingOptions.TopValidatorCount {
@@ -441,6 +454,7 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 			// delete validator who's power is 0
 			if validator.Power <= 0 {
 				vKey := append(vs.prefix, validator.Address.Bytes()...)
+				fmt.Println("Deleting :", validator.Address.String())
 				//TODO: validator delete will not properly delete the item because of state implementation
 				ok, err := vs.store.Delete(vKey)
 				if !ok {
@@ -462,6 +476,7 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 			//distribute the fee for validators
 			if distribute {
 				feeShare := total.MultiplyInt64(queued.Priority()).DivideInt64(vs.totalPower)
+
 				err = ctx.FeePool.MinusFromPool(feeShare)
 				if err != nil {
 					logger.Fatal("failed to minus from fee pool")
@@ -472,9 +487,14 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 				}
 			}
 		}
-
 		// purge all other active validators if not among the top
-		for addr, power := range vs.lastActive {
+		keysLA := make([]string, 0, len(vs.lastActive))
+		for k := range vs.lastActive {
+			keysLA = append(keysLA, k)
+		}
+		sort.Strings(keysLA)
+
+		for _, addr := range keysLA {
 			addrHuman := keys.Address(addr).Humanize()
 			pub, ok := nonTopValidators[addrHuman]
 			if !ok {
@@ -492,25 +512,32 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 			}
 
 			// add to validator update list
-			logger.Infof("Validator for purge ready: %s - with power: %d\n", addrHuman, power)
+			logger.Infof("Validator for purge ready: %s - with power: %d\n", addrHuman, vs.lastActive[addr])
 			validatorUpdates = append(validatorUpdates, types.ValidatorUpdate{
 				PubKey: pub,
 				Power:  0,
 			})
-
 			// update last purge height
 			err = vs.SetLastPurgeHeight(keys.Address(addr), height)
 			if err != nil {
 				logger.Fatalf("failed  set last purge height, validator: %s", addrHuman)
+
 			}
+
 		}
 
 		// delegation
 		ctx.Delegators.UpdateWithdrawReward(height)
+
 	}
 	logger.Detailf("GetEndBlockUpdate end at block: %d\n", height)
 
 	// TODO : get the final updates from vs.cached
+
+	sort.Slice(validatorUpdates, func(i, j int) bool {
+		return bytes.Compare(validatorUpdates[i].PubKey.GetData(), validatorUpdates[j].PubKey.GetData()) < 0
+	})
+
 	return validatorUpdates
 }
 

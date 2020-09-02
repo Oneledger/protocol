@@ -9,6 +9,7 @@ url_1 = "http://127.0.0.1:26605/jsonrpc"
 url_2 = "http://127.0.0.1:26608/jsonrpc"
 url_3 = "http://127.0.0.1:26611/jsonrpc"
 url_4 = "http://127.0.0.1:26614/jsonrpc"
+url_5 = "http://127.0.0.1:26617/jsonrpc"
 
 devnet = os.path.join(os.environ['OLDATA'], "devnet")
 node_0 = os.path.join(devnet, "0-Node")

@@ -7,7 +7,6 @@ import (
 	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
-	gov "github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/identity"
 )
@@ -75,11 +74,7 @@ func (us unstakeTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, err
 		return false, err
 	}
 
-	feeOpt, err := ctx.GovernanceStore.GetFeeOption()
-	if err != nil {
-		return false, gov.ErrGetFeeOptions
-	}
-	err = action.ValidateFee(feeOpt, tx.Fee)
+	err = action.ValidateFee(ctx.FeePool.GetOpt(), tx.Fee)
 	if err != nil {
 		return false, err
 	}
@@ -148,7 +143,7 @@ func runCheckUnstake(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		return false, action.Response{Log: errors.Wrap(err, ust.StakeAddress.String()).Error()}
 	}
 
-	err = ctx.Validators.HandleUnstake(unstake)
+	err = ctx.Validators.HandleUnstake(unstake, height)
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
 	}

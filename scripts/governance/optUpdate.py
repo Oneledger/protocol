@@ -1,57 +1,65 @@
+from random import randint
+
 from sdk import *
 
 addr_list = addresses()
 
-_pid_pass = "id_20065"
+_pid_pass_0 = "id_20067"
+_pid_pass_1 = "id_20068"
+_pid_pass_2 = "id_20069"
 _proposer = addr_list[0]
 _initial_funding = (int("2") * 10 ** 9)
 _each_funding = (int("5") * 10 ** 9)
 _funding_goal_general = (int("10") * 10 ** 9)
 
-
-def test_change_gov_options():
-    _prop = Proposal(_pid_pass, "configUpdate", "proposal for vote", "Headline", _proposer, _initial_funding)
-    # create proposal
-    _prop.send_create()
-    time.sleep(3)
-    encoded_pid = _prop.pid
-
-    # 1st fund
-    fund_proposal(encoded_pid, _funding_goal_general, addr_list[0])
-
-    # 1st vote --> 25%
-    vote_proposal(encoded_pid, OPIN_POSITIVE, url_0, addr_list[0])
-    # check_proposal_state(encoded_pid, ProposalStateActive, ProposalStatusVoting)
-
-    # 2nd vote --> 25%
-    vote_proposal(encoded_pid, OPIN_NEGATIVE, url_1, addr_list[0])
-    # check_proposal_state(encoded_pid, ProposalStateActive, ProposalStatusVoting)
-
-    # 3rd vote --> 50%
-    vote_proposal(encoded_pid, OPIN_POSITIVE, url_2, addr_list[0])
-    # check_proposal_state(encoded_pid, ProposalStateActive, ProposalStatusVoting)
-
-    # 4th vote --> 75%
-    vote_proposal(encoded_pid, OPIN_POSITIVE, url_3, addr_list[0])
-    # check_proposal_state(encoded_pid, ProposalStatePassed, ProposalStatusCompleted)
-
-    time.sleep(3)
-
-
 if __name__ == "__main__":
-    print "#### Governance State Before : ####"
-    opt = query_governanceState()
-    print "Last Update Height:" + str(opt["lastUpdateHeight"])
-    test_change_gov_options()
-    #
-    # print "#### FINALIZED PROPOSALS: ####"
-    # proposalstats = query_proposals(0X34)
-    print "#### Governance State After : ####"
-    opt = query_governanceState()
-    print "Last Update Height:" + str(opt["lastUpdateHeight"])
+    # update_param = "
+    #     "burn:10" 10,
+    #     "executionCost": 20,
+    #     "bountyPool": 50,
+    #     "validators": 10,
+    #     "proposerReward": 0,
+    #     "feePool": 10
+    # "
+    update = "propOptions.configUpdate.passedFundDistribution:10"
+    updateGov(update, "proposal", "id_" + str(randint(10000, 99999)), False, False)
 
-#
-# print proposalstats["height"]
-#
-# print "#### FINALIZEFAILED PROPOSALS: ####"
-# query_proposals("finalizeFailed")
+    update_param = 109201
+    update = "stakingOptions.maturityTime:109201"
+    updateGov(update, "staking", "id_" + str(randint(10000, 99999)), True)
+
+    update_param = 10
+    update = "feeOption.minFeeDecimal:10"
+    updateGov(update, "fee", "id_" + str(randint(10000, 99999)), True)
+
+    update_param = 800
+    update = "evidenceOptions.minVotesRequired:" + str(update_param)
+    updateGov(update, "evidence", "id_" + str(randint(10000, 99999)), True)
+
+    update_param = 100000000000
+    update = "onsOptions.perBlockFees:" + str(update_param)
+    updateGov(update, "ons", "id_" + str(randint(10000, 99999)), True, False)
+
+    update_param = 10000
+    update = "evidenceOptions.blockVotesDiff:" + str(update_param)
+    updateGov(update, "evidence", "id_" + str(randint(10000, 99999)), False)
+
+    update_param = 1000
+    update = "evidenceOptions.blockVotesDiff:" + str(update_param)
+    updateGov(update, "evidence", "id_" + str(randint(10000, 99999)), True)
+
+    # update_param = {
+    #     "penaltyBountyPercentage": 20,
+    #     "penaltyBurnPercentage": 80,
+    # }
+    # update = {"evidenceOptions.penaltyPercentage": update_param}
+    # updateGov(update, "evidence", "id_" + str(randint(10000, 99999)), False, False)
+    # #
+    # update_param = {
+    #     "penaltyBountyPercentage": 10,
+    #     "penaltyBurnPercentage": 80,
+    # }
+    update = "evidenceOptions.penaltyPercentage:10"
+    updateGov(update, "evidence", "id_" + str(randint(10000, 99999)), False, False)
+
+    clean_and_catchup()

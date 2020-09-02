@@ -82,6 +82,7 @@ type context struct {
 	rewardMaster    *rewards.RewardMasterStore
 	transaction     *transactions.TransactionStore
 	logWriter       io.Writer
+	govupdate       *action.GovernaceUpdateAndValidate
 }
 
 func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (context, error) {
@@ -148,6 +149,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	if err != nil {
 		return ctx, errors.Wrap(err, "pop expire bid tx from queue failed")
 	}
+	ctx.govupdate = action.NewGovUpdate()
 	testEnv := os.Getenv("OLTEST")
 
 	btime := 600 * time.Second
@@ -229,6 +231,7 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.rewardMaster.WithState(state),
 		ctx.govern.WithState(state),
 		ctx.extStores,
+		ctx.govupdate,
 	)
 
 	return actionCtx
@@ -289,16 +292,17 @@ func (ctx *context) Services() (service.Map, error) {
 		ValidatorSet:   identity.NewValidatorStore("v", "purged", storage.NewState(ctx.chainstate)),
 		WitnessSet:     identity.NewWitnessStore("w", storage.NewState(ctx.chainstate)),
 		Domains:        onsStore,
-		Delegators:     ctx.delegators,
+		Delegators:     delegation.NewDelegationStore("st", storage.NewState(ctx.chainstate)),
 		ProposalMaster: proposalMaster,
 		RewardMaster:   rewardMaster,
-		ExtStores:      ctx.extStores,
+		ExtStores:      ctx.extStores,//todo create new store for cache, follow Govern
 		Router:         ctx.actionRouter,
 		Logger:         log.NewLoggerWithPrefix(ctx.logWriter, "rpc").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
 		Services:       extSvcs,
 		EthTrackers:    ethTracker,
 		Trackers:       btcTrackers,
-		Govern:         ctx.govern,
+		Govern:         governance.NewStore("g", storage.NewState(ctx.chainstate)),
+		GovUpdate:      ctx.govupdate,
 	}
 
 	return service.NewMap(svcCtx)

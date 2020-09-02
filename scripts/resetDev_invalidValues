@@ -7,9 +7,10 @@ rm -rf $OLDATA/devnet/*
 olfullnode init devnet --dir $OLDATA/devnet --nonvalidators 5 \
   --empty_blocks \
   --loglevel 4 \
-  --total_funds 1000000000
-#  --deploy_smart_contracts \
-#  --eth_rpc https://rinkeby.infura.io/v3
+  --total_funds 1000000000 \
+  --maturity_time 10 \
+  --funding_deadline 10 \
+  --voting_deadline 12
 #--eth_rpc HTTP://127.0.0.1:7545 \
 
 #--deploy_smart_contracts \

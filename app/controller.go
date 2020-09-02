@@ -121,13 +121,17 @@ func (app *App) blockBeginner() blockBeginner {
 		gc := getGasCalculator(app.genesisDoc.ConsensusParams)
 		app.Context.deliver = storage.NewState(app.Context.chainstate).WithGas(gc)
 
+		feeOpt, err := app.Context.govern.GetFeeOption()
+		if err != nil {
+			app.logger.Error("failed to get feeOption", err)
+		}
+		app.Context.feePool.SetupOpt(feeOpt)
 		// update the validator set
-		err := app.Context.validators.Setup(req, app.Context.node.ValidatorAddress())
+		err = app.Context.validators.Setup(req, app.Context.node.ValidatorAddress())
 		if err != nil {
 			app.logger.Error("validator set with error", err)
 		}
 
-		// update Block Rewards
 		blockRewardEvent := handleBlockRewards(app.Context.validators, app.Context.balances,
 			app.Context.rewardMaster.WithState(app.Context.deliver), app.Context.currencies, req)
 
@@ -147,6 +151,7 @@ func (app *App) blockBeginner() blockBeginner {
 				function(app)
 			}
 		}
+
 		app.logger.Detail("Begin Block:", result, "height:", req.Header.Height, "AppHash:", hex.EncodeToString(req.Header.AppHash))
 		return result
 	}
@@ -154,6 +159,7 @@ func (app *App) blockBeginner() blockBeginner {
 
 // mempool connection: for checking if transactions should be relayed before they are committed
 func (app *App) txChecker() txChecker {
+
 	return func(msg RequestCheckTx) ResponseCheckTx {
 		defer app.handlePanic()
 
@@ -216,6 +222,7 @@ func (app *App) txChecker() txChecker {
 }
 
 func (app *App) txDeliverer() txDeliverer {
+
 	return func(msg RequestDeliverTx) ResponseDeliverTx {
 		defer app.handlePanic()
 
@@ -299,7 +306,6 @@ func (app *App) blockEnder() blockEnder {
 		result := ResponseEndBlock{
 			ValidatorUpdates: updates,
 		}
-
 		app.logger.Detail("End Block: ", result, "height:", req.Height)
 
 		return result
@@ -309,7 +315,6 @@ func (app *App) blockEnder() blockEnder {
 func (app *App) commitor() commitor {
 	return func() ResponseCommit {
 		defer app.handlePanic()
-
 		hash, ver := app.Context.deliver.Commit()
 		app.logger.Detailf("Committed New Block height[%d], hash[%s], versions[%d]", app.header.Height, hex.EncodeToString(hash), ver)
 
@@ -411,7 +416,7 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 
 		if t.Type == ethereum.ProcessTypeLock || t.Type == ethereum.ProcessTypeLockERC {
 
-			logger.Debug("Processing Tracker : ", t.Type.String(), " | State :", t.State.String())
+			logger.Debug("Processing Tracker : ", t.Type.String(), " | Tracker Name ", t.TrackerName.String(), " | State :", t.State.String(), " | Finality Votes :", t.FinalityVotes)
 			_, err := event.EthLockEngine.Process(t.NextStep(), ctx, transition.Status(t.State))
 			if err != nil {
 				logger.Error("failed to process eth tracker ProcessTypeLock", err)
@@ -419,7 +424,7 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 			}
 
 		} else if t.Type == ethereum.ProcessTypeRedeem || t.Type == ethereum.ProcessTypeRedeemERC {
-			logger.Debug("Processing Tracker : ", t.Type.String(), " | State :", t.State.String())
+			logger.Debug("Processing Tracker : ", t.Type.String(), " | Tracker Name ", t.TrackerName.String(), " | State :", t.State.String(), " | Finality Votes :", t.FinalityVotes)
 			_, err := event.EthRedeemEngine.Process(t.NextStep(), ctx, transition.Status(t.State))
 			if err != nil {
 				logger.Error("failed to process eth tracker ProcessTypeRedeem", err)

@@ -527,15 +527,21 @@ func GetGovernance(gs *governance.Store) *governance.GovernanceState {
 		fmt.Print("Error Reading Staking options: ", err)
 		return nil
 	}
+	evidenceOptions, err := gs.GetEvidenceOptions()
+	if err != nil {
+		fmt.Print("Error Reading Evidence options: ", err)
+		return nil
+	}
 
 	return &governance.GovernanceState{
-		FeeOption:      *feeOption,
-		ETHCDOption:    *ethOption,
-		BTCCDOption:    *btcOption,
-		ONSOptions:     *onsOption,
-		PropOptions:    *proposalOptions,
-		RewardOptions:  *rewardOptions,
-		StakingOptions: *stakingOptions,
+		FeeOption:       *feeOption,
+		ETHCDOption:     *ethOption,
+		BTCCDOption:     *btcOption,
+		ONSOptions:      *onsOption,
+		PropOptions:     *proposalOptions,
+		StakingOptions:  *stakingOptions,
+		EvidenceOptions: *evidenceOptions,
+		RewardOptions:   *rewardOptions,
 	}
 }
 

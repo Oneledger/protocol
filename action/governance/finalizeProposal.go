@@ -2,6 +2,8 @@ package governance
 
 import (
 	"encoding/json"
+	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
@@ -145,6 +147,27 @@ func runFinalizeProposal(ctx *action.Context, tx action.RawTx) (bool, action.Res
 	}
 	//Handle Result Passed
 	if voteStatus.Result == governance.VOTE_RESULT_PASSED {
+		if proposal.Type == governance.ProposalTypeConfigUpdate {
+			updates := proposal.GovernanceStateUpdate
+			splitstring := strings.Split(updates, ":")
+			updatekey := splitstring[0]
+			updateValue := splitstring[1]
+			updatefunc, ok := ctx.GovUpdate.GovernanceUpdateFunction[updatekey]
+			if !ok {
+				return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrFinalizeConfigUpdateFailed, finalizedProposal.Tags(), err)
+			}
+			ok, err = updatefunc(updateValue, ctx, action.ValidateAndUpdate)
+			if err != nil {
+				ctx.Logger.Debug("Governance auto update failed ", err)
+				err = setToFinalizeFailed(ctx, proposal)
+				if err != nil {
+					return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrStatusUnableToSetFinalizeFailed, finalizedProposal.Tags(), err)
+				}
+
+				return helpers.LogAndReturnTrue(ctx.Logger, finalizedProposal.Tags(), fmt.Sprintf("ConfigUpdate_Validation_Failed | %s", proposal.ProposalID))
+			}
+
+		}
 		proposalDistribution := options.PassedFundDistribution
 		distributeErr := distributeFunds(ctx, proposal, &proposalDistribution)
 		if distributeErr != nil {
@@ -152,17 +175,10 @@ func runFinalizeProposal(ctx *action.Context, tx action.RawTx) (bool, action.Res
 			if err != nil {
 				return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrStatusUnableToSetFinalizeFailed, finalizedProposal.Tags(), err)
 			}
-			ctx.Logger.Error("Distribuition of Funds failed , Set Proposal to Finalize Failed")
+			ctx.Logger.Error("Distribution of Funds failed , Set Proposal to Finalize Failed")
 			return helpers.LogAndReturnTrue(ctx.Logger, finalizedProposal.Tags(), governance.ErrFinalizeDistributtionFailed.Wrap(distributeErr).Marshal())
 		}
 
-		if proposal.Type == governance.ProposalTypeConfigUpdate {
-			ctx.Logger.Info("Auto Update of Governance State is disabled")
-			//err := executeConfigUpdate(ctx, proposal)
-			//if err != nil {
-			//	return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrFinalizeConfigUpdateFailed, finalizedProposal.Tags(), err)
-			//}
-		}
 		err = setToFinalizeFromPassed(ctx, proposal)
 		if err != nil {
 			return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrStatusUnableToSetFinalized, finalizedProposal.Tags(), err)
@@ -266,66 +282,6 @@ func distributeFunds(ctx *action.Context, proposal *governance.Proposal, proposa
 	if err != nil {
 		return err
 	}
-	return nil
-}
-
-//Function to execute Config update to governanace
-func executeConfigUpdate(ctx *action.Context, proposal *governance.Proposal) error {
-	updatedGov := proposal.GovernanceStateUpdate
-	err := ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetProposalOptions(updatedGov.PropOptions)
-	if err != nil {
-		return errors.Wrap(err, "Setup Proposal Options")
-	}
-	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetRewardOptions(updatedGov.RewardOptions)
-	if err != nil {
-		return errors.Wrap(err, "Setup Reward Options")
-	}
-	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetBTCChainDriverOption(updatedGov.BTCCDOption)
-	if err != nil {
-		return errors.Wrap(err, "Setup BTC Options")
-	}
-	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetETHChainDriverOption(updatedGov.ETHCDOption)
-	if err != nil {
-		return errors.Wrap(err, "Setup ETH Options")
-	}
-	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetONSOptions(updatedGov.ONSOptions)
-	if err != nil {
-		return errors.Wrap(err, "Setup ONS Options")
-	}
-	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetFeeOption(updatedGov.FeeOption)
-	if err != nil {
-		return errors.Wrap(err, "Setup Fee Options")
-	}
-	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetStakingOptions(updatedGov.StakingOptions)
-	if err != nil {
-		return errors.Wrap(err, "Setup Staking Options")
-	}
-	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetEvidenceOptions(updatedGov.EvidenceOptions)
-	if err != nil {
-		return errors.Wrap(err, "Setup Evidence Options")
-	}
-	//Setup Options for individual stores
-	// TODO remove these after all TX have been modified to use Gov store
-	ctx.ProposalMasterStore.Proposal.SetOptions(&updatedGov.PropOptions)
-	ctx.RewardMasterStore.RewardCm.SetOptions(&updatedGov.RewardOptions)
-	ctx.FeePool.SetupOpt(&updatedGov.FeeOption)
-	ctx.Domains.SetOptions(&updatedGov.ONSOptions)
-	ctx.ETHTrackers.SetupOption(&updatedGov.ETHCDOption)
-	ctx.BTCTrackers.SetOption(updatedGov.BTCCDOption)
-
-	//Old rewards interval
-
-	err = ctx.RewardMasterStore.Reward.UpdateOptions(ctx.Header.Height, &updatedGov.RewardOptions)
-	if err != nil {
-		return errors.Wrap(err, "Unable to set new interval ")
-	}
-
-	//Set Last Update Height
-	err = ctx.GovernanceStore.WithHeight(ctx.Header.Height).SetLUH()
-	if err != nil {
-		return errors.Wrap(err, "Unable to set last Update height ")
-	}
-	ctx.Logger.Debug("Governance options set at height : ", ctx.Header.Height)
 	return nil
 }
 

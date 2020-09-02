@@ -12,9 +12,9 @@ _funding_goal_general = (int("10") * 10 ** 9)
 _initial_funding_too_less = 5000
 
 
-def update_options():
+def update_options(update):
     # Update Proposal to increse top validator count
-    _prop = Proposal(_pid_pass, "configUpdate", "proposal for vote", "Headline", _proposer, _initial_funding)
+    _prop = Proposal(_pid_pass, "configUpdate", "proposal for vote", "Headline", _proposer, _initial_funding, update)
     # state = _prop.default_gov_state()
     # state['stakingOptions']['topValidatorCount'] = 8
     # _prop.configupdate = state
@@ -55,22 +55,31 @@ def stake_new_validators():
     stake(node_5)
     stake(node_6)
     stake(node_7)
+    stake(node_8)
 
 
 if __name__ == "__main__":
     if getActiveValidators() != 4:
         sys.exit(-1)
-    print bcolors.OKBLUE + "#### Initial Active Validator count is 4 " + bcolors.ENDC
+    print bcolors.OKBLUE + "#### Initial Active Validator count : " + str(getActiveValidators()) + bcolors.ENDC
     #  Increasing the Staking of genesis validators so that they stay on top
     stake_genesis_initialValidators()
     #  Staking of genesis validators so that they stay on top
     stake_new_validators()
     time.sleep(1)
+    if getActiveValidators() != 8:
+        sys.exit(-1)
     print bcolors.OKBLUE + "#### Active Validator count : " + str(getActiveValidators()) + bcolors.ENDC
-    update_options()
+    update_param = 10
+    update = "stakingOptions.topValidatorCount:" + str(update_param)
+    update_options(update)
     time.sleep(1)
     opt = query_governanceState()
-    print "Last Update Height:" + str(opt["lastUpdateHeight"])
-    print bcolors.OKBLUE + "#### Top Validator count updated to  8 " + bcolors.ENDC
+    print "Last Update Height:" + str(opt["lastUpdateHeight"]["staking"])
+    if getActiveValidators() != 9:
+        sys.exit(-1)
+    print bcolors.OKBLUE + "#### Top Validator count updated to : " + str(update_param) + bcolors.ENDC
     time.sleep(1)
     print bcolors.OKBLUE + "#### Active Validator count : " + str(getActiveValidators()) + bcolors.ENDC
+
+    clean_and_catchup()

@@ -169,7 +169,6 @@ func (st *DelegationStore) GetMatureAmounts(version int64) (mature *MatureBlock,
 
 func (st *DelegationStore) SetMatureAmounts(version int64, mature *MatureBlock) (err error) {
 	key := st.getMatureKey(version)
-
 	dat, err := st.szlr.Serialize(mature)
 	if err != nil {
 		return err
@@ -371,12 +370,14 @@ func (st *DelegationStore) UpdateWithdrawReward(height int64) {
 		// taking into apply delegator bound amount
 		delegatorBoundCoin, err := st.GetDelegatorBoundedAmount(m.Address)
 		if err != nil {
+			fmt.Println("failed to get GetDelegatorBoundedAmount!!!")
 			continue
 		}
 
 		// update current bound delegator amount with unlocked unstaked amount
 		err = st.SetDelegatorBoundedAmount(m.Address, *delegatorBoundCoin.Plus(m.Amount))
 		if err != nil {
+			fmt.Println("failed to get SetDelegatorBoundedAmount!!!")
 			continue
 		}
 	}

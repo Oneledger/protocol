@@ -25,6 +25,7 @@ require (
 	github.com/magiconair/properties v1.8.1
 	github.com/mattn/go-isatty v0.0.10 // indirect
 	github.com/mattn/go-runewidth v0.0.5 // indirect
+	github.com/mitchellh/mapstructure v1.3.3
 	github.com/olekukonko/tablewriter v0.0.1 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/powerman/rpc-codec v1.1.2

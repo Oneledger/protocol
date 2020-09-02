@@ -68,7 +68,7 @@ func TestStorageRouter_Add(t *testing.T) {
 	governanceDB := db.(*governance.Store)
 
 	_ = governanceDB.WithHeight(0).SetEpoch(1024)
-	governanceDB.WithHeight(0).SetLUH()
+	governanceDB.WithHeight(0).SetAllLUH()
 	db, _ = stores.Get(feeType)
 	feeDB := db.(*fees.Store)
 

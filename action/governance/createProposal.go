@@ -2,11 +2,13 @@ package governance
 
 import (
 	"encoding/json"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
@@ -15,17 +17,17 @@ import (
 var _ action.Msg = &CreateProposal{}
 
 type CreateProposal struct {
-	ProposalID      governance.ProposalID      `json:"proposalId"`
-	ProposalType    governance.ProposalType    `json:"proposalType"`
-	Headline        string                     `json:"proposalHeadline"`
-	Description     string                     `json:"proposalDescription"`
-	Proposer        keys.Address               `json:"proposerAddress"`
-	InitialFunding  action.Amount              `json:"initialFunding"`
-	FundingDeadline int64                      `json:"fundingDeadline"`
-	FundingGoal     *balance.Amount            `json:"fundingGoal"`
-	VotingDeadline  int64                      `json:"votingDeadline"`
-	PassPercentage  int                        `json:"passPercentage"`
-	ConfigUpdate    governance.GovernanceState `json:"configUpdate"`
+	ProposalID      governance.ProposalID   `json:"proposalId"`
+	ProposalType    governance.ProposalType `json:"proposalType"`
+	Headline        string                  `json:"proposalHeadline"`
+	Description     string                  `json:"proposalDescription"`
+	Proposer        keys.Address            `json:"proposerAddress"`
+	InitialFunding  action.Amount           `json:"initialFunding"`
+	FundingDeadline int64                   `json:"fundingDeadline"`
+	FundingGoal     *balance.Amount         `json:"fundingGoal"`
+	VotingDeadline  int64                   `json:"votingDeadline"`
+	PassPercentage  int                     `json:"passPercentage"`
+	ConfigUpdate    string                  `json:"configUpdate"`
 }
 
 func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
@@ -40,19 +42,10 @@ func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) 
 	if err != nil {
 		return false, err
 	}
-	feeOpt, err := ctx.GovernanceStore.GetFeeOption()
-	if err != nil {
-		return false, governance.ErrGetFeeOptions
-	}
-	err = action.ValidateFee(feeOpt, signedTx.Fee)
+
+	err = action.ValidateFee(ctx.FeePool.GetOpt(), signedTx.Fee)
 	if err != nil {
 		return false, err
-	}
-
-	//options := ctx.ProposalMasterStore.Proposal.GetOptionsByType(createProposal.ProposalType)
-	options, err := ctx.GovernanceStore.GetProposalOptionsByType(createProposal.ProposalType)
-	if err != nil {
-		return false, governance.ErrGetProposalOptions
 	}
 
 	// the currency should be OLT
@@ -69,21 +62,6 @@ func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) 
 		return false, governance.ErrInvalidProposalId
 	}
 
-	//Get Proposal options based on type.
-	coin := createProposal.InitialFunding.ToCoin(ctx.Currencies)
-	coinInit := coin.Currency.NewCoinFromAmount(*options.InitialFunding)
-	coinGoal := coin.Currency.NewCoinFromAmount(*options.FundingGoal)
-
-	//Check if initial funding is not less than minimum amount based on type.
-	if coin.LessThanCoin(coinInit) {
-		return false, errors.Wrap(action.ErrInvalidAmount, "Funding Less than initial funding")
-	}
-
-	//Check if initial funding is more than funding goal.
-	if coinGoal.LessThanEqualCoin(coin) {
-		return false, errors.Wrap(action.ErrInvalidAmount, "Funding More than Funding goal")
-	}
-
 	//Check if Proposal Type is valid
 	switch createProposal.ProposalType {
 	case governance.ProposalTypeGeneral:
@@ -92,7 +70,6 @@ func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) 
 	default:
 		return false, governance.ErrInvalidProposalType
 	}
-
 	//Check if proposer address is valid oneLedger address
 	err = createProposal.Proposer.Err()
 	if err != nil {
@@ -101,20 +78,6 @@ func (c CreateProposal) Validate(ctx *action.Context, signedTx action.SignedTx) 
 
 	if len(createProposal.Description) == 0 {
 		return false, governance.ErrInvalidProposalDesc
-	}
-
-	//Validate funding goal and pass percentage
-	if !createProposal.FundingGoal.Equals(*options.FundingGoal) {
-		return false, governance.ErrInvalidFundingGoal
-	}
-
-	if createProposal.PassPercentage != options.PassPercentage {
-		return false, governance.ErrInvalidPassPercentage
-	}
-
-	//Validate voting height
-	if createProposal.VotingDeadline-createProposal.FundingDeadline != options.VotingDeadline {
-		return false, governance.ErrInvalidVotingDeadline
 	}
 
 	return true, nil
@@ -145,6 +108,38 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false, result
 	}
 
+	options, err := ctx.GovernanceStore.GetProposalOptionsByType(createProposal.ProposalType)
+	if err != nil {
+		return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrGetProposalOptions, createProposal.Tags(), err)
+	}
+	//Get Proposal options based on type.
+	coin := createProposal.InitialFunding.ToCoin(ctx.Currencies)
+	coinInit := coin.Currency.NewCoinFromAmount(*options.InitialFunding)
+	coinGoal := coin.Currency.NewCoinFromAmount(*options.FundingGoal)
+	//Check if initial funding is not less than minimum amount based on type.
+	if coin.LessThanCoin(coinInit) {
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrInvalidAmount, createProposal.Tags(), errors.New("Funding Less than initial funding"))
+	}
+
+	//Check if initial funding is more than funding goal.
+	if coinGoal.LessThanEqualCoin(coin) {
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrInvalidAmount, createProposal.Tags(), errors.New("Funding More than Funding goal"))
+	}
+
+	if !createProposal.FundingGoal.Equals(*options.FundingGoal) {
+		return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrInvalidFundingGoal, createProposal.Tags(), errors.New("Funding goal"))
+	}
+
+	if createProposal.PassPercentage != options.PassPercentage {
+		return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrInvalidPassPercentage, createProposal.Tags(), errors.New("Pass percentage"))
+	}
+
+	//Validate voting height
+	if createProposal.VotingDeadline-createProposal.FundingDeadline != options.VotingDeadline {
+		return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrInvalidVotingDeadline, createProposal.Tags(), errors.New("Voting Deadline"))
+
+	}
+
 	//Validate funding height, this one is put here because in validate() we cannot always get valid ctx.Header
 	if createProposal.FundingDeadline <= ctx.Header.Height {
 		result := action.Response{
@@ -153,17 +148,25 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		}
 		return false, result
 	}
-	//Get Proposal options based on type.
-	//options, err := ctx.GovernanceStore.GetProposalOptionsByType(createProposal.ProposalType)
-	//if err != nil {
-	//	helpers.LogAndReturnFalse(ctx.Logger, governance.ErrGetProposalOptions, createProposal.Tags(), err)
-	//}
+
 	if createProposal.ProposalType == governance.ProposalTypeConfigUpdate {
-		ctx.Logger.Info("Auto update disabled")
-		//ok, err := ctx.GovernanceStore.ValidateGov(createProposal.ConfigUpdate)
-		//if err != nil || !ok {
-		//	return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrValidateGovState, createProposal.Tags(), err)
+		//updates, ok := createProposal.ConfigUpdate.(map[string]interface{})
+		updates := createProposal.ConfigUpdate
+		splitstring := strings.Split(updates, ":")
+		updatekey := splitstring[0]
+		updateValue := splitstring[1]
+		//if !ok {
+		//	return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrValidateGovState, createProposal.Tags(), errors.New("Invalide Update Object"))
 		//}
+
+		updateFunc, ok := ctx.GovUpdate.GovernanceUpdateFunction[updatekey]
+		if !ok {
+			return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrValidateGovState, createProposal.Tags(), errors.New("Update "+updatekey+" Not allowed"))
+		}
+		ok, err = updateFunc(updateValue, ctx, action.ValidateOnly)
+		if err != nil || !ok {
+			return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrValidateGovState, createProposal.Tags(), err)
+		}
 
 	}
 

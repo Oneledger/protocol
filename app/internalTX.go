@@ -121,7 +121,6 @@ func FinalizeProposals(header *Header, ctx *context, logger *log.Logger) {
 		finalizeProposals = append(finalizeProposals, *tx)
 		return false
 	})
-
 	for _, proposal := range finalizeProposals {
 		ctx.deliver.BeginTxSession()
 		actionctx := ctx.Action(header, ctx.deliver)

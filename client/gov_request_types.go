@@ -8,19 +8,19 @@ import (
 )
 
 type CreateProposalRequest struct {
-	ProposalID      string                     `json:"proposalId"`
-	ProposalType    string                     `json:"proposalType"`
-	Headline        string                     `json:"headline"`
-	Description     string                     `json:"description"`
-	Proposer        keys.Address               `json:"proposer"`
-	InitialFunding  action.Amount              `json:"initialFunding"`
-	GasPrice        action.Amount              `json:"gasPrice"`
-	Gas             int64                      `json:"gas"`
-	FundingDeadline int64                      `json:"fundingDeadline"`
-	FundingGoal     *balance.Amount            `json:"fundingGoal"`
-	VotingDeadline  int64                      `json:"votingDeadline"`
-	PassPercentage  int                        `json:"passPercentage"`
-	ConfigUpdate    governance.GovernanceState `json:"configUpdate"`
+	ProposalID      string          `json:"proposalId"`
+	ProposalType    string          `json:"proposalType"`
+	Headline        string          `json:"headline"`
+	Description     string          `json:"description"`
+	Proposer        keys.Address    `json:"proposer"`
+	InitialFunding  action.Amount   `json:"initialFunding"`
+	GasPrice        action.Amount   `json:"gasPrice"`
+	Gas             int64           `json:"gas"`
+	FundingDeadline int64           `json:"fundingDeadline"`
+	FundingGoal     *balance.Amount `json:"fundingGoal"`
+	VotingDeadline  int64           `json:"votingDeadline"`
+	PassPercentage  int             `json:"passPercentage"`
+	ConfigUpdate    string          `json:"configUpdate"`
 }
 
 type ListProposalRequest struct {
@@ -44,11 +44,22 @@ type ListProposalsReply struct {
 	Height        int64          `json:"height"`
 }
 
+type LastUpdateHeights struct {
+	Proposal int64 `json:"proposal"`
+	Rewards  int64 `json:"rewards"`
+	Ons      int64 `json:"ons"`
+	Eth      int64 `json:"eth"`
+	Btc      int64 `json:"btc"`
+	Staking  int64 `json:"staking"`
+	Currency int64 `json:"currency"`
+	Fee      int64 `json:"fee"`
+	Evidence int64 `json:"evidence"`
+}
 type GovernanceOptionsRequest struct {
 }
 type GovernanceOptionsReply struct {
 	GovOptions       governance.GovernanceState `json:"govOptions"`
-	LastUpdateHeight int64                      `json:"lastUpdateHeight"`
+	LastUpdateHeight LastUpdateHeights          `json:"lastUpdateHeight"`
 }
 
 type VoteProposalRequest struct {
@@ -104,10 +115,10 @@ type GetProposalOptionsReply struct {
 }
 
 type GetFundsForProposalByFunderRequest struct {
-	ProposalId    governance.ProposalID `json:"proposalId"`
-	Funder        keys.Address          `json:"funderAddress"`
+	ProposalId governance.ProposalID `json:"proposalId"`
+	Funder     keys.Address          `json:"funderAddress"`
 }
 
 type GetFundsForProposalByFunderReply struct {
-	Amount    balance.Amount        `json:"amount"`
+	Amount balance.Amount `json:"amount"`
 }

@@ -119,7 +119,7 @@ func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, se
 		MaturityTime:            10,
 	}
 	ctx.GovernanceStore.WithHeight(0).SetStakingOptions(delop)
-	ctx.GovernanceStore.WithHeight(0).SetLUH()
+	ctx.GovernanceStore.WithHeight(0).SetAllLUH()
 	return ctx
 }
 
