@@ -26,6 +26,11 @@ type CreateBid struct {
 	Amount     action.Amount        `json:"amount"`
 	Deadline   int64                `json:"deadline"`
 }
+//todo see cancelProposal
+var _ action.Tx = createBidTx{}
+
+type createBidTx struct {
+}
 
 func (c CreateBid) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
 	createBid := CreateBid{}

@@ -1,6 +1,7 @@
 package common
 
 import (
+	"fmt"
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/service/query"
@@ -14,23 +15,28 @@ type ExtTx struct {
 	Msg action.Msg
 }
 
+//type HandlerList []func(ExtAppData)
+
+
 var Handlers HandlerList
 
 type ExtAppData struct {
 	// we need txs, data stores, services, block functions
 	extTxs	[]ExtTx
-	extStores	storelist
+	//extStores	storelist
 	extQueryServices query.Service
 	extTxServices tx.Service
 	//extBlockFuncs common_block.ControllerRouter
+	test string
 }
 
 func LoadExtAppData(cs *storage.ChainState) *ExtAppData{
+	//this will return everything of all external apps
 	//todo
-
 	appData := ExtAppData{}
 
-	for handler := HandlerList {
+	for handler := range Handlers {
+		//this is to extract data from this handler to appData
 		handler(appData)
 	}
 
@@ -38,15 +44,18 @@ func LoadExtAppData(cs *storage.ChainState) *ExtAppData{
 }
 
 func RegisterExtApp(cs *storage.ChainState, ar action.Router, dr data.Router) error {
-	ExtAppData := LoadExtAppData(cs)
+	//todo pass the external rpc router into here
+	extAppData := LoadExtAppData(cs)
+	//test
+	fmt.Println(extAppData.test)
 	//register external txs using action.router
-	for _, tx := range ExtAppData.extTxs {
+	for _, tx := range extAppData.extTxs {
 		err := ar.AddHandler(tx.Msg.Type(), tx.Tx)
 		if err != nil {
 			return errors.Wrap(err, "error adding external tx")
 		}
 	}
 	// add extStores to the data router
-	ExtAppData.extStores
+	//ExtAppData.extStores
 	return nil
 }

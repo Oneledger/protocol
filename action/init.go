@@ -10,6 +10,7 @@ import (
 type Type int
 
 type TxTypeMap map[int]string
+
 var txTypeMap TxTypeMap
 
 const (
@@ -70,6 +71,7 @@ func init() {
 
 	serialize.RegisterInterface(new(Msg))
 	logger = log.NewLoggerWithPrefix(os.Stdout, "action")
+	txTypeMap  = TxTypeMap{}
 }
 //todo in all txs, register tx type use this func(proposal is done)
 func RegisterTxType(value int, name string, ) {
