@@ -11,31 +11,30 @@ import (
 )
 
 type ExtTx struct {
-	Tx action.Tx
+	Tx  action.Tx
 	Msg action.Msg
 }
 
-//type HandlerList []func(ExtAppData)
+type HandlerList []func(*ExtAppData)
 
-
-var Handlers HandlerList
+var Handlers = HandlerList{}
 
 type ExtAppData struct {
 	// we need txs, data stores, services, block functions
-	extTxs	[]ExtTx
+	ExtTxs []ExtTx
 	//extStores	storelist
-	extQueryServices query.Service
-	extTxServices tx.Service
+	ExtQueryServices query.Service
+	ExtTxServices    tx.Service
 	//extBlockFuncs common_block.ControllerRouter
-	test string
+	Test string
 }
 
-func LoadExtAppData(cs *storage.ChainState) *ExtAppData{
+func LoadExtAppData(cs *storage.ChainState) *ExtAppData {
 	//this will return everything of all external apps
 	//todo
-	appData := ExtAppData{}
+	appData := &ExtAppData{}
 
-	for handler := range Handlers {
+	for _, handler := range Handlers {
 		//this is to extract data from this handler to appData
 		handler(appData)
 	}
@@ -47,9 +46,9 @@ func RegisterExtApp(cs *storage.ChainState, ar action.Router, dr data.Router) er
 	//todo pass the external rpc router into here
 	extAppData := LoadExtAppData(cs)
 	//test
-	fmt.Println(extAppData.test)
+	fmt.Println(extAppData.Test)
 	//register external txs using action.router
-	for _, tx := range extAppData.extTxs {
+	for _, tx := range extAppData.ExtTxs {
 		err := ar.AddHandler(tx.Msg.Type(), tx.Tx)
 		if err != nil {
 			return errors.Wrap(err, "error adding external tx")
@@ -58,4 +57,8 @@ func RegisterExtApp(cs *storage.ChainState, ar action.Router, dr data.Router) er
 	// add extStores to the data router
 	//ExtAppData.extStores
 	return nil
+}
+
+func (h *HandlerList) Register(fn func(*ExtAppData)) {
+	*h = append(*h, fn)
 }

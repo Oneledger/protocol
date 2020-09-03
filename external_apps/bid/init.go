@@ -1,6 +1,7 @@
 package bid
 
 import (
+	"fmt"
 	"github.com/Oneledger/protocol/external_apps/common"
 )
 
@@ -15,10 +16,13 @@ type AppData struct {
 }
 
 func init() {
-	common.HandlerList.register(loadAppData)
+	common.Handlers.Register(LoadAppData)
 }
 
-func loadAppData() AppData {
+func LoadAppData(appData *common.ExtAppData) {
+
+	appData.Test = "TEST BID APPLICATION"
+	fmt.Println("LOADING BID DATA !!!")
 	//this will include everything about this external app
 	//extxs := make([]common.ExtTx, 10)
 	//bidCreate := common.ExtTx{
@@ -26,9 +30,7 @@ func loadAppData() AppData {
 	//	Msg: &bid_action.CreateBid{},
 	//}
 	//append(extxs, bid_action.BID_CREATE)
-	return AppData{
-		Test: "my test",
-	}
+
 	//load txs
 	//load services
 	//load stores
