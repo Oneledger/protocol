@@ -16,7 +16,8 @@ type AppData struct {
 }
 
 func init() {
-	common.Handlers.Register(LoadAppData)
+	//fmt.Println("init from bid/init")
+	//common.Handlers.Register(LoadAppData)
 }
 
 func LoadAppData(appData *common.ExtAppData) {

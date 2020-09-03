@@ -1,7 +1,9 @@
 package app
 
 import (
+	"fmt"
 	"github.com/Oneledger/protocol/data/bidding"
+	"github.com/Oneledger/protocol/external_apps"
 	"github.com/Oneledger/protocol/external_apps/common"
 	"io"
 	"os"
@@ -134,7 +136,8 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.lockScriptStore = bitcoin.NewLockScriptStore(cfg, ctx.dbDir())
 	ctx.actionRouter = action.NewRouter("action")
 	ctx.internalRouter = action.NewRouter("internal")
-	err = common.RegisterExtApp(ctx.chainstate, ctx.actionRouter, ctx.extStores)
+	err = external_apps.RegisterExtApp(ctx.chainstate, ctx.actionRouter, ctx.extStores)
+	fmt.Println("just pass registerExtApp")
 
 	//todo ext stuff below will be moved to extApp
 	ctx.extStores = data.NewStorageRouter()
