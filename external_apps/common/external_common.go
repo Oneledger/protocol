@@ -14,7 +14,7 @@ type ExtTx struct {
 	Msg action.Msg
 }
 
-var sfddsfs handler list
+var Handlers HandlerList
 
 type ExtAppData struct {
 	// we need txs, data stores, services, block functions
@@ -27,6 +27,13 @@ type ExtAppData struct {
 
 func LoadExtAppData(cs *storage.ChainState) *ExtAppData{
 	//todo
+
+	appData := ExtAppData{}
+
+	for handler := HandlerList {
+		handler(appData)
+	}
+
 	return &ExtAppData{}
 }
 
