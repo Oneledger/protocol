@@ -11,6 +11,13 @@ func init() {
 	serialize.RegisterConcrete(new(CreateProposal), "action_cp")
 	serialize.RegisterConcrete(new(CancelProposal), "action_ccp")
 	serialize.RegisterConcrete(new(VoteProposal), "action_vp")
+	action.RegisterTxType(0x30, "PROPOSAL_CREATE")
+	action.RegisterTxType(0x31, "PROPOSAL_CANCEL")
+	action.RegisterTxType(0x32, "PROPOSAL_FUND")
+	action.RegisterTxType(0x33, "PROPOSAL_VOTE")
+	action.RegisterTxType(0x34, "PROPOSAL_FINALIZE")
+	action.RegisterTxType(0x35, "EXPIRE_VOTES")
+	action.RegisterTxType(0x36, "PROPOSAL_WITHDRAW_FUNDS")
 }
 
 func EnableGovernance(r action.Router) error {

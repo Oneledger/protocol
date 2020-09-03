@@ -1,4 +1,4 @@
-package bidding
+package bid_action
 
 import (
 	"github.com/Oneledger/protocol/action"

@@ -9,6 +9,9 @@ import (
 
 type Type int
 
+type TxTypeMap map[int]string
+var txTypeMap TxTypeMap
+
 const (
 	SEND     Type = 0x01
 	SENDPOOL Type = 0x02
@@ -54,14 +57,6 @@ const (
 	//Rewards
 	WITHDRAW_REWARD Type = 0x41
 
-	//Bid
-	BID_CREATE          Type = 0x101
-	BID_CONTER_OFFER    Type = 0x102
-	BID_CANCEL          Type = 0x103
-	BID_BIDDER_DECISION Type = 0x104
-	BID_EXPIRE          Type = 0x105
-	BID_OWNER_DECISION  Type = 0x106
-
 	//EOF here Only used as a marker to mark the end of Type list
 	//So that the query for Types can return all Types dynamically
 	//, when there is a change made in Type list
@@ -76,78 +71,17 @@ func init() {
 	serialize.RegisterInterface(new(Msg))
 	logger = log.NewLoggerWithPrefix(os.Stdout, "action")
 }
+//todo in all txs, register tx type use this func(proposal is done)
+func RegisterTxType(value int, name string, ) {
+	if dupName, ok := txTypeMap[value]; ok {
+		logger.Errorf("Trying to register tx type %s failed, type value conflicts with existing type: %d: %s", value, dupName)
+	}
+	txTypeMap[value] = name
+}
 
 func (t Type) String() string {
-	switch t {
-	case SEND:
-		return "SEND"
-	case STAKE:
-		return "STAKE"
-	case UNSTAKE:
-		return "UNSTAKE"
-	case SENDPOOL:
-		return "SENDPOOL"
-	case WITHDRAW:
-		return "WITHDRAW"
-	case DOMAIN_CREATE:
-		return "DOMAIN_CREATE"
-	case DOMAIN_UPDATE:
-		return "DOMAIN_UPDATE"
-	case DOMAIN_SELL:
-		return "DOMAIN_SELL"
-	case DOMAIN_PURCHASE:
-		return "DOMAIN_PURCHASE"
-	case DOMAIN_SEND:
-		return "DOMAIN_SEND"
-	case DOMAIN_DELETE_SUB:
-		return "DOMAIN_DELETE_SUB"
-	case DOMAIN_RENEW:
-		return "DOMAIN_RENEW"
-
-	case BTC_LOCK:
-		return "BTC_LOCK"
-	case BTC_ADD_SIGNATURE:
-		return "BTC_ADD_SIGNATURE"
-	case BTC_BROADCAST_SUCCESS:
-		return "BTC_BROADCAST_SUCCESS"
-	case BTC_REPORT_FINALITY_MINT:
-		return "BTC_REPORT_FINALITY_MINT"
-	case BTC_EXT_MINT:
-		return "BTC_EXT_MINT"
-	case BTC_REDEEM:
-		return "BTC_REDEEM"
-	case BTC_FAILED_BROADCAST_RESET:
-		return "BTC_FAILED_BROADCAST_RESET"
-
-	case ETH_LOCK:
-		return "ETH_LOCK"
-	case ETH_REPORT_FINALITY_MINT:
-		return "ETH_REPORT_FINALITY_MINT"
-	case ETH_REDEEM:
-		return "ETH_REDEEM"
-	case ERC20_LOCK:
-		return "ERC20_LOCK"
-	case ERC20_REDEEM:
-		return "ERC20_REDEEM"
-
-	case PROPOSAL_CREATE:
-		return "PROPOSAL_CREATE"
-	case PROPOSAL_CANCEL:
-		return "PROPOSAL_CANCEL"
-	case PROPOSAL_FUND:
-		return "PROPOSAL_FUND"
-	case PROPOSAL_VOTE:
-		return "PROPOSAL_VOTE"
-	case PROPOSAL_FINALIZE:
-		return "PROPOSAL_FINALIZE"
-
-	case PROPOSAL_WITHDRAW_FUNDS:
-		return "PROPOSAL_WITHDRAW_FUNDS"
-	case EXPIRE_VOTES:
-		return "EXPIRE_VOTES"
-	case WITHDRAW_REWARD:
-		return "WITHDRAW_REWARD"
-	default:
-		return "UNKNOWN"
+	if name, ok := txTypeMap[int(t)]; ok {
+		return name
 	}
+	return "UNKNOWN"
 }

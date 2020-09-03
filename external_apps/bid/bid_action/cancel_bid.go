@@ -1,4 +1,4 @@
-package bidding
+package bid_action
 
 import (
 	"encoding/json"
@@ -141,7 +141,7 @@ func (c CancelBid) Signers() []action.Address {
 }
 
 func (c CancelBid) Type() action.Type {
-	return action.BID_CANCEL
+	return BID_CANCEL
 }
 
 func (c CancelBid) Tags() kv.Pairs {

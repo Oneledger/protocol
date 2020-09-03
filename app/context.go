@@ -21,7 +21,6 @@ import (
 	action_gov "github.com/Oneledger/protocol/action/governance"
 	action_ons "github.com/Oneledger/protocol/action/ons"
 	action_rewards "github.com/Oneledger/protocol/action/rewards"
-	action_bidding "github.com/Oneledger/protocol/action/bidding"
 	"github.com/Oneledger/protocol/action/staking"
 	"github.com/Oneledger/protocol/action/transfer"
 	"github.com/Oneledger/protocol/app/node"
@@ -135,7 +134,8 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.lockScriptStore = bitcoin.NewLockScriptStore(cfg, ctx.dbDir())
 	ctx.actionRouter = action.NewRouter("action")
 	ctx.internalRouter = action.NewRouter("internal")
-	ctx.extApp = common.LoadExtAppData(ctx.chainstate)
+	err = common.RegisterExtApp(ctx.chainstate, ctx.actionRouter)
+
 	//todo ext stuff below will be moved to extApp
 	ctx.extStores = data.NewStorageRouter()
 	err = ctx.AddExternalStore("bidMaster", NewBidMasterStore(ctx.chainstate))
@@ -183,8 +183,6 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	_ = action_gov.EnableGovernance(ctx.actionRouter)
 	_ = action_gov.EnableInternalGovernance(ctx.internalRouter)
 	_ = staking.EnableStaking(ctx.actionRouter)
-	_ = action_bidding.EnableBidding(ctx.actionRouter)
-	_ = action_bidding.EnableInternalBidding(ctx.actionRouter)
 
 	return ctx, nil
 }

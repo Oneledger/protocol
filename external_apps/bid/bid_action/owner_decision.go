@@ -1,4 +1,4 @@
-package bidding
+package bid_action
 
 import (
 	"encoding/json"
@@ -163,7 +163,7 @@ func (o OwnerDecision) Signers() []action.Address {
 }
 
 func (o OwnerDecision) Type() action.Type {
-	return action.BID_OWNER_DECISION
+	return BID_OWNER_DECISION
 }
 
 func (o OwnerDecision) Tags() kv.Pairs {

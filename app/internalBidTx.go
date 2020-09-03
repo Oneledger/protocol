@@ -3,10 +3,10 @@ package app
 import (
 	"fmt"
 	"github.com/Oneledger/protocol/action"
-	bid_action "github.com/Oneledger/protocol/action/bidding"
 	"github.com/Oneledger/protocol/data/bidding"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/data/transactions"
+	"github.com/Oneledger/protocol/external_apps/bid/bid_action"
 	"github.com/google/uuid"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
 	"time"
@@ -130,7 +130,7 @@ func PopExpireBidTxFromQueue(i interface{}) {
 		}
 		uuidNew, _ := uuid.NewUUID()
 		rawTx := action.RawTx{
-			Type: action.BID_EXPIRE,
+			Type: bid_action.BID_EXPIRE,
 			Data: txData,
 			Fee:  action.Fee{},
 			Memo: uuidNew.String(),
