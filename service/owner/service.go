@@ -20,6 +20,7 @@ type Service struct {
 func NewService(accts accounts.Wallet, logger *log.Logger) *Service {
 	return &Service{
 		accounts: accts,
+		logger:   logger,
 	}
 }
 
