@@ -153,6 +153,9 @@ func runTx(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		//updates, ok := createProposal.ConfigUpdate.(map[string]interface{})
 		updates := createProposal.ConfigUpdate
 		splitstring := strings.Split(updates, ":")
+		if len(splitstring) != 2 {
+			return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrInvalidOptions, createProposal.Tags(), errors.New("Invalid options string"))
+		}
 		updatekey := splitstring[0]
 		updateValue := splitstring[1]
 		//if !ok {

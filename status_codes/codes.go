@@ -170,6 +170,7 @@ const (
 	GovErrErrGettingPoolList              = 700156
 	TxErrValidateGovState                 = 700156
 	TxErrGetStakingOptions                = 700158
+	TxErrInvalidOptions                   = 700159
 
 	//Rewards Error
 	RewardsUnableToGetMaturedAmount = 800001
