@@ -1,7 +1,6 @@
 package app
 
 import (
-	"fmt"
 	"github.com/Oneledger/protocol/external_apps"
 	"github.com/Oneledger/protocol/external_apps/common"
 	"io"
@@ -140,17 +139,8 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.internalRouter = action.NewRouter("internal")
 
 	err = external_apps.RegisterExtApp(ctx.chainstate, ctx.actionRouter, ctx.extStores, ctx.extServiceMap)
-	fmt.Println("just pass registerExtApp")
 
 	//todo ext stuff below will be moved to extApp
-	//ctx.extStores = data.NewStorageRouter()
-	//
-	//err = ctx.AddExternalStore("bidMaster", NewBidMasterStore(ctx.chainstate))
-	////this store is used to store txs in block beginner&ender to expire bid conversations
-	//err = ctx.AddExternalStore("internalBidTx", transactions.NewTransactionStore("intxBid", cs))
-	//if err != nil {
-	//	return ctx, errors.Wrap(err, "add internalBidTx store to external stores failed")
-	//}
 	//ctx.controllerFunctions = NewRouter()
 	//err = ctx.controllerFunctions.Add(BlockBeginner,AddExpireBidTxToQueue)
 	//if err != nil {
@@ -299,6 +289,7 @@ func (ctx *context) Services() (service.Map, error) {
 		ProposalMaster: proposalMaster,
 		RewardMaster:   rewardMaster,
 		ExtStores:      ctx.extStores,//todo create new store for cache, follow Govern
+		ExtServiceMap:  ctx.extServiceMap,
 		Router:         ctx.actionRouter,
 		Logger:         log.NewLoggerWithPrefix(ctx.logWriter, "rpc").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
 		Services:       extSvcs,

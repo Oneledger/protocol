@@ -1,63 +1,45 @@
 package bid_rpc_query
 
 import (
-	"github.com/Oneledger/protocol/client"
-	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/data/balance"
-	"github.com/Oneledger/protocol/data/fees"
-	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/external_apps/bid/bid_data"
 	"github.com/Oneledger/protocol/external_apps/bid/bid_rpc"
-	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
 	codes "github.com/Oneledger/protocol/status_codes"
 	"github.com/pkg/errors"
 )
 
 type Service struct {
-	ext            client.ExtServiceContext
 	balances       *balance.Store
 	currencies     *balance.CurrencySet
-	validators     *identity.ValidatorStore
 	ons            *ons.DomainStore
-	feePool        *fees.Store
-	governance     *governance.Store
 	logger         *log.Logger
-	extStores  	   data.Router
+	bidMaster  	   *bid_data.BidMasterStore
 }
-//todo delete this if not used
 func Name() string {
-	return "ext_query"
+	return "bid_query"
 }
 
-func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencies *balance.CurrencySet, validators *identity.ValidatorStore,
-	domains *ons.DomainStore, govern *governance.Store, feePool *fees.Store, logger *log.Logger, extStores data.Router) *Service {
+func NewService(balances *balance.Store, currencies *balance.CurrencySet,
+	domains *ons.DomainStore, logger *log.Logger, bidMaster *bid_data.BidMasterStore) *Service {
 	return &Service{
-		ext:            ctx,
 		currencies:     currencies,
 		balances:       balances,
-		validators:     validators,
 		ons:            domains,
-		feePool:        feePool,
 		logger:         logger,
-		governance:     govern,
-		extStores:      extStores,
+		bidMaster:      bidMaster,
 	}
 }
 
 func (svc *Service) ShowBidConv(req bid_rpc.ListBidConvRequest, reply *bid_rpc.ListBidConvsReply) error {
-	bidMaster, err := GetBidMasterStore(svc.extStores)
-	if err != nil {
-		return err
-	}
-	bidConv, _, err := bidMaster.BidConv.QueryAllStores(req.BidConvId)
+	bidConv, _, err := svc.bidMaster.BidConv.QueryAllStores(req.BidConvId)
 	if err != nil {
 		svc.logger.Error("error getting bid conversation", err)
 		return codes.ErrGettingBidConv
 	}
 
-	bidOffers := bidMaster.BidOffer.GetOffers(bidConv.BidConvId, bid_data.BidOfferInvalid, bid_data.TypeInvalid)
+	bidOffers := svc.bidMaster.BidOffer.GetOffers(bidConv.BidConvId, bid_data.BidOfferInvalid, bid_data.TypeInvalid)
 
 	bcs := bid_rpc.BidConvStat{
 		BidConv: *bidConv,
@@ -66,7 +48,7 @@ func (svc *Service) ShowBidConv(req bid_rpc.ListBidConvRequest, reply *bid_rpc.L
 
 	*reply = bid_rpc.ListBidConvsReply{
 		BidConvStats: []bid_rpc.BidConvStat{bcs},
-		Height:       bidMaster.BidConv.GetState().Version(),
+		Height:       svc.bidMaster.BidConv.GetState().Version(),
 	}
 	return nil
 }
@@ -88,21 +70,16 @@ func (svc *Service) ListBidConvs(req bid_rpc.ListBidConvsRequest, reply *bid_rpc
 		}
 	}
 
-	bidMaster, err := GetBidMasterStore(svc.extStores)
-	if err != nil {
-		return err
-	}
-
 	// Query in single store if specified
 	var bidConvs []bid_data.BidConv
 	if req.State != bid_data.BidStateInvalid {
-		bidConvs = bidMaster.BidConv.FilterBidConvs(req.State, req.Owner, req.AssetName, req.AssetType, req.Bidder)
+		bidConvs = svc.bidMaster.BidConv.FilterBidConvs(req.State, req.Owner, req.AssetName, req.AssetType, req.Bidder)
 	} else { // Query in all stores otherwise
-		active := bidMaster.BidConv.FilterBidConvs(bid_data.BidStateActive, req.Owner, req.AssetName, req.AssetType, req.Bidder)
-		succeed := bidMaster.BidConv.FilterBidConvs(bid_data.BidStateSucceed, req.Owner, req.AssetName, req.AssetType, req.Bidder)
-		rejected := bidMaster.BidConv.FilterBidConvs(bid_data.BidStateRejected, req.Owner, req.AssetName, req.AssetType, req.Bidder)
-		expired := bidMaster.BidConv.FilterBidConvs(bid_data.BidStateExpired, req.Owner, req.AssetName, req.AssetType, req.Bidder)
-		cancelled := bidMaster.BidConv.FilterBidConvs(bid_data.BidStateCancelled, req.Owner, req.AssetName, req.AssetType, req.Bidder)
+		active := svc.bidMaster.BidConv.FilterBidConvs(bid_data.BidStateActive, req.Owner, req.AssetName, req.AssetType, req.Bidder)
+		succeed := svc.bidMaster.BidConv.FilterBidConvs(bid_data.BidStateSucceed, req.Owner, req.AssetName, req.AssetType, req.Bidder)
+		rejected := svc.bidMaster.BidConv.FilterBidConvs(bid_data.BidStateRejected, req.Owner, req.AssetName, req.AssetType, req.Bidder)
+		expired := svc.bidMaster.BidConv.FilterBidConvs(bid_data.BidStateExpired, req.Owner, req.AssetName, req.AssetType, req.Bidder)
+		cancelled := svc.bidMaster.BidConv.FilterBidConvs(bid_data.BidStateCancelled, req.Owner, req.AssetName, req.AssetType, req.Bidder)
 		bidConvs = append(bidConvs, active...)
 		bidConvs = append(bidConvs, succeed...)
 		bidConvs = append(bidConvs, rejected...)
@@ -114,7 +91,7 @@ func (svc *Service) ListBidConvs(req bid_rpc.ListBidConvsRequest, reply *bid_rpc
 	// Bid conversations and their offers
 	bidConvStats := make([]bid_rpc.BidConvStat, len(bidConvs))
 	for i, bidConv := range bidConvs {
-		bidOffers := bidMaster.BidOffer.GetOffers(bidConv.BidConvId, bid_data.BidOfferInvalid, bid_data.TypeInvalid)
+		bidOffers := svc.bidMaster.BidOffer.GetOffers(bidConv.BidConvId, bid_data.BidOfferInvalid, bid_data.TypeInvalid)
 		bcs := bid_rpc.BidConvStat{
 			BidConv: bidConv,
 			Offers: bidOffers,
@@ -124,7 +101,7 @@ func (svc *Service) ListBidConvs(req bid_rpc.ListBidConvsRequest, reply *bid_rpc
 
 	*reply = bid_rpc.ListBidConvsReply{
 		BidConvStats: bidConvStats,
-		Height:       bidMaster.BidConv.GetState().Version(),
+		Height:       svc.bidMaster.BidConv.GetState().Version(),
 	}
 	return nil
 }
@@ -145,17 +122,12 @@ func (svc *Service) ListActiveOffers(req bid_rpc.ListActiveOffersRequest, reply 
 			return errors.New("invalid asset bidder address")
 		}
 	}
-	bidMaster, err := GetBidMasterStore(svc.extStores)
-	if err != nil {
-		return err
-	}
-
 	// get all active offers
-	offers := bidMaster.BidOffer.GetOffers("", bid_data.BidOfferActive, req.OfferType)
+	offers := svc.bidMaster.BidOffer.GetOffers("", bid_data.BidOfferActive, req.OfferType)
 	activeOfferStats := make([]bid_rpc.ActiveOfferStat, len(offers))
 	for i, offer := range offers {
 		// get corresponding bid conversation to show the detail
-		bidConv, err := bidMaster.BidConv.WithPrefixType(bid_data.BidStateActive).Get(offer.BidConvId)
+		bidConv, err := svc.bidMaster.BidConv.WithPrefixType(bid_data.BidStateActive).Get(offer.BidConvId)
 		if err != nil {
 			svc.logger.Error("error getting bid conversation", err)
 			return codes.ErrGettingBidConv
@@ -181,20 +153,7 @@ func (svc *Service) ListActiveOffers(req bid_rpc.ListActiveOffersRequest, reply 
 
 	*reply = bid_rpc.ListActiveOffersReply{
 		ActiveOffers: activeOfferStats,
-		Height:       bidMaster.BidConv.GetState().Version(),
+		Height:       svc.bidMaster.BidConv.GetState().Version(),
 	}
 	return nil
-}
-
-func GetBidMasterStore(extStores data.Router) (*bid_data.BidMasterStore, error) {
-	store, err := extStores.Get("bidMaster")
-	if err != nil {
-		return nil, err
-	}
-	bidMasterStore, ok := store.(*bid_data.BidMasterStore)
-	if ok == false {
-		return nil, err
-	}
-
-	return bidMasterStore, nil
 }

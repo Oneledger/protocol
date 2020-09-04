@@ -3,13 +3,16 @@ package bid
 import (
 	"fmt"
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/chain"
+	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/external_apps/bid/bid_action"
 	"github.com/Oneledger/protocol/external_apps/bid/bid_data"
 	"github.com/Oneledger/protocol/external_apps/bid/bid_rpc/bid_rpc_query"
+	"github.com/Oneledger/protocol/external_apps/bid/bid_rpc/bid_rpc_tx"
 	"github.com/Oneledger/protocol/external_apps/common"
 	"github.com/Oneledger/protocol/log"
-	"github.com/Oneledger/protocol/service/query"
 	"github.com/Oneledger/protocol/storage"
+	"os"
 )
 
 var logger *log.Logger
@@ -66,12 +69,22 @@ func LoadAppData(appData *common.ExtAppData) {
 	}
 
 	//load services
-	//first to grab stores from chainstate
 	balances := balance.NewStore("b", storage.NewState(appData.ChainState))
-	//todo follow this and add any store that is needed from chainstate, this is copying existing stuff to service
-	//todo and use ctx.ExtServiceMap in map.go to combine two maps
-	appData.ExtServiceMap["bid_query"] = bid_rpc_query.NewService()
+	domains := ons.NewDomainStore("ons", storage.NewState(appData.ChainState))
+	olt := balance.Currency{Id: 0, Name: "OLT", Chain: chain.ONELEDGER, Decimal: 18, Unit: "nue"}
+	currencies := balance.NewCurrencySet()
+	err := currencies.Register(olt)
+	if err != nil {
+		logger.Errorf("failed to register currency %s", olt.Name, err)
+		return
+	}
+	logWriter := os.Stdout
+	logger := log.NewLoggerWithPrefix(logWriter, "rpc").WithLevel(log.Level(4))
+	appData.ExtServiceMap[bid_rpc_query.Name()] = bid_rpc_query.NewService(balances, currencies, domains, logger, bid_data.NewBidMasterStore(appData.ChainState))
+	appData.ExtServiceMap[bid_rpc_tx.Name()] = bid_rpc_tx.NewService(balances, logger)
 
 	//load beginner and ender functions
-	//todo just like
+
+	//add my funcs to map router
+
 }

@@ -3,7 +3,6 @@ package app
 import (
 	"fmt"
 	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/data/bidding"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/data/transactions"
 	"github.com/Oneledger/protocol/external_apps/bid/bid_action"

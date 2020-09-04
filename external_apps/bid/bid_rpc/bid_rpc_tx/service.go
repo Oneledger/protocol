@@ -2,54 +2,32 @@ package bid_rpc_tx
 
 import (
 	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/app/node"
 	"github.com/Oneledger/protocol/client"
-	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
-	"github.com/Oneledger/protocol/data/fees"
-	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/external_apps/bid/bid_action"
 	"github.com/Oneledger/protocol/external_apps/bid/bid_rpc"
-	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/serialize"
 	codes "github.com/Oneledger/protocol/status_codes"
 	"github.com/google/uuid"
 )
-//todo delete this if not used
+
 func Name() string {
-	return "ext_tx"
+	return "bid_tx"
 }
 
 type Service struct {
 	balances    *balance.Store
 	router      action.Router
-	accounts    accounts.Wallet
-	validators  *identity.ValidatorStore
-	govern      *governance.Store
-	feeOpt      *fees.FeeOption
 	logger      *log.Logger
-	nodeContext node.Context
 }
 
 func NewService(
 	balances *balance.Store,
-	router action.Router,
-	accounts accounts.Wallet,
-	validators *identity.ValidatorStore,
-	govern *governance.Store,
-	feeOpt *fees.FeeOption,
-	nodeCtx node.Context,
 	logger *log.Logger,
 ) *Service {
 	return &Service{
 		balances:    balances,
-		router:      router,
-		nodeContext: nodeCtx,
-		accounts:    accounts,
-		validators:  validators,
-		govern:      govern,
-		feeOpt:      feeOpt,
 		logger:      logger,
 	}
 }

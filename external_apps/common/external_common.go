@@ -13,12 +13,14 @@ type ExtTx struct {
 	Msg action.Msg
 }
 
+type ExtServiceMap map[string]interface{}
+
 type ExtAppData struct {
 	// we need txs, data stores, services, block functions
 	ChainState *storage.ChainState
 	ExtTxs []ExtTx
 	ExtStores	map[string]interface{}
-	ExtServiceMap map[string]interface{}
+	ExtServiceMap ExtServiceMap
 	ExtQueryServices query.Service
 	ExtTxServices    tx.Service
 	//extBlockFuncs common_block.ControllerRouter
@@ -27,7 +29,6 @@ type ExtAppData struct {
 
 func LoadExtAppData(cs *storage.ChainState) *ExtAppData {
 	//this will return everything of all external apps
-	//todo
 	appData := &ExtAppData{}
 	appData.ChainState = cs
 	fmt.Println("LoadExtAppData runs, and the Handlers: ", Handlers)
