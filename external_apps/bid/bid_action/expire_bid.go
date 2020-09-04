@@ -3,7 +3,7 @@ package bid_action
 import (
 	"encoding/json"
 	"github.com/Oneledger/protocol/action/helpers"
-	"github.com/Oneledger/protocol/data/bidding"
+	"github.com/Oneledger/protocol/external_apps/bid/bid_data"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
@@ -15,11 +15,16 @@ import (
 var _ action.Msg = &ExpireBid{}
 
 type ExpireBid struct {
-	BidConvId        bidding.BidConvId `json:"bidConvId"`
+	BidConvId        bid_data.BidConvId `json:"bidConvId"`
 	ValidatorAddress action.Address    `json:"validatorAddress"`
 }
 
-func (e ExpireBid) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
+var _ action.Tx = &ExpireBidTx{}
+
+type ExpireBidTx struct {
+}
+
+func (e ExpireBidTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
 	expireBid := ExpireBid{}
 	err := expireBid.Unmarshal(signedTx.Data)
 	if err != nil {
@@ -42,7 +47,7 @@ func (e ExpireBid) Validate(ctx *action.Context, signedTx action.SignedTx) (bool
 
 	//Check if bid ID is valid
 	if expireBid.BidConvId.Err() != nil {
-		return false, bidding.ErrInvalidBidConvId
+		return false, bid_data.ErrInvalidBidConvId
 	}
 
 	//Check if validator address is valid oneLedger address
@@ -55,17 +60,17 @@ func (e ExpireBid) Validate(ctx *action.Context, signedTx action.SignedTx) (bool
 	return true, nil
 }
 
-func (e ExpireBid) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+func (e ExpireBidTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	ctx.Logger.Detail("Processing CreateProposal Transaction for CheckTx", tx)
 	return runExpireBid(ctx, tx)
 }
 
-func (e ExpireBid) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+func (e ExpireBidTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	ctx.Logger.Detail("Processing CreateProposal Transaction for DeliverTx", tx)
 	return runExpireBid(ctx, tx)
 }
 
-func (e ExpireBid) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (e ExpireBidTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
 
@@ -79,36 +84,36 @@ func runExpireBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 	//1. verify bidConvId exists in ACTIVE store
 	bidMasterStore, err := GetBidMasterStore(ctx)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingBidMasterStore, expireBid.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrGettingBidMasterStore, expireBid.Tags(), err)
 	}
-	if !bidMasterStore.BidConv.WithPrefixType(bidding.BidStateActive).Exists(expireBid.BidConvId) {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrBidConvNotFound, expireBid.Tags(), err)
+	if !bidMasterStore.BidConv.WithPrefixType(bid_data.BidStateActive).Exists(expireBid.BidConvId) {
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrBidConvNotFound, expireBid.Tags(), err)
 	}
 
-	bidConv, err := bidMasterStore.BidConv.WithPrefixType(bidding.BidStateActive).Get(expireBid.BidConvId)
+	bidConv, err := bidMasterStore.BidConv.WithPrefixType(bid_data.BidStateActive).Get(expireBid.BidConvId)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingBidConv, expireBid.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrGettingBidConv, expireBid.Tags(), err)
 	}
 
 	//2. get the active offer(bid offer or counter offer)
-	activeOffers := bidMasterStore.BidOffer.GetOffers(expireBid.BidConvId, bidding.BidOfferActive, bidding.TypeInvalid)
+	activeOffers := bidMasterStore.BidOffer.GetOffers(expireBid.BidConvId, bid_data.BidOfferActive, bid_data.TypeInvalid)
 	// in this case there must be an offer
 	if len(activeOffers) == 0 {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingActiveOffer, expireBid.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrGettingActiveOffer, expireBid.Tags(), err)
 	} else if len(activeOffers) > 1 {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrTooManyActiveOffers, expireBid.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrTooManyActiveOffers, expireBid.Tags(), err)
 	}
 	activeOffer := activeOffers[0]
 
 	//3. unlock amount and set offer to inactive(if active offer is bid offer from bidder)
 	err = DeactivateOffer(false, bidConv.Bidder, ctx, &activeOffer, bidMasterStore)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrDeactivateOffer, expireBid.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrDeactivateOffer, expireBid.Tags(), err)
 	}
 
-	err = CloseBidConv(bidConv, bidMasterStore, bidding.BidStateExpired)
+	err = CloseBidConv(bidConv, bidMasterStore, bid_data.BidStateExpired)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrCloseBidConv, expireBid.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrCloseBidConv, expireBid.Tags(), err)
 	}
 
 	return helpers.LogAndReturnTrue(ctx.Logger, expireBid.Tags(), "expire_bid_success")

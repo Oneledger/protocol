@@ -3,7 +3,7 @@ package bid_action
 import (
 	"encoding/json"
 	"github.com/Oneledger/protocol/action/helpers"
-	"github.com/Oneledger/protocol/data/bidding"
+	"github.com/Oneledger/protocol/external_apps/bid/bid_data"
 	"time"
 
 	"github.com/pkg/errors"
@@ -17,12 +17,17 @@ import (
 var _ action.Msg = &OwnerDecision{}
 
 type OwnerDecision struct {
-	BidConvId bidding.BidConvId   `json:"bidConvId"`
+	BidConvId bid_data.BidConvId   `json:"bidConvId"`
 	Owner     keys.Address        `json:"owner"`
-	Decision  bidding.BidDecision `json:"decision"`
+	Decision  bid_data.BidDecision `json:"decision"`
 }
 
-func (o OwnerDecision) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
+var _ action.Tx = &OwnerDecisionTx{}
+
+type OwnerDecisionTx struct {
+}
+
+func (o OwnerDecisionTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
 	ownerDecision := OwnerDecision{}
 	err := ownerDecision.Unmarshal(signedTx.Data)
 	if err != nil {
@@ -45,7 +50,7 @@ func (o OwnerDecision) Validate(ctx *action.Context, signedTx action.SignedTx) (
 
 	//Check if bid ID is valid
 	if ownerDecision.BidConvId.Err() != nil {
-		return false, bidding.ErrInvalidBidConvId
+		return false, bid_data.ErrInvalidBidConvId
 	}
 
 	//Check if owner address is valid oneLedger address
@@ -57,17 +62,17 @@ func (o OwnerDecision) Validate(ctx *action.Context, signedTx action.SignedTx) (
 	return true, nil
 }
 
-func (o OwnerDecision) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+func (o OwnerDecisionTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	ctx.Logger.Detail("Processing CreateProposal Transaction for CheckTx", tx)
 	return runOwnerDecision(ctx, tx)
 }
 
-func (o OwnerDecision) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+func (o OwnerDecisionTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	ctx.Logger.Detail("Processing CreateProposal Transaction for DeliverTx", tx)
 	return runOwnerDecision(ctx, tx)
 }
 
-func (o OwnerDecision) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (o OwnerDecisionTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
 
@@ -81,55 +86,55 @@ func runOwnerDecision(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 	//1. verify bidConvId exists in ACTIVE store
 	bidMasterStore, err := GetBidMasterStore(ctx)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingBidMasterStore, ownerDecision.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrGettingBidMasterStore, ownerDecision.Tags(), err)
 	}
-	if !bidMasterStore.BidConv.WithPrefixType(bidding.BidStateActive).Exists(ownerDecision.BidConvId) {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrBidConvNotFound, ownerDecision.Tags(), err)
+	if !bidMasterStore.BidConv.WithPrefixType(bid_data.BidStateActive).Exists(ownerDecision.BidConvId) {
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrBidConvNotFound, ownerDecision.Tags(), err)
 	}
-	bidConv, err := bidMasterStore.BidConv.WithPrefixType(bidding.BidStateActive).Get(ownerDecision.BidConvId)
+	bidConv, err := bidMasterStore.BidConv.WithPrefixType(bid_data.BidStateActive).Get(ownerDecision.BidConvId)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingBidConv, ownerDecision.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrGettingBidConv, ownerDecision.Tags(), err)
 	}
 
 	//2. check expiry
 	deadLine := time.Unix(bidConv.DeadlineUTC, 0)
 
 	if deadLine.Before(ctx.Header.Time.UTC()) {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrExpiredBid, ownerDecision.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrExpiredBid, ownerDecision.Tags(), err)
 	}
 
 	//1. check asset availability
 	assetOk, err := bidConv.Asset.ValidateAsset(ctx, bidConv.AssetOwner)
 	if err != nil || assetOk == false {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrInvalidAsset, ownerDecision.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrInvalidAsset, ownerDecision.Tags(), err)
 	}
 
 	//2. check owner's identity
 	if !ownerDecision.Owner.Equal(bidConv.AssetOwner) {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrWrongAssetOwner, ownerDecision.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrWrongAssetOwner, ownerDecision.Tags(), err)
 	}
 
 	//2. get active bid offer
-	activeOffers := bidMasterStore.BidOffer.GetOffers(ownerDecision.BidConvId, bidding.BidOfferActive, bidding.TypeOffer)
+	activeOffers := bidMasterStore.BidOffer.GetOffers(ownerDecision.BidConvId, bid_data.BidOfferActive, bid_data.TypeOffer)
 	// in this case, there must be an existing active offer
 	if len(activeOffers) == 0 {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingActiveBidOffer, ownerDecision.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrGettingActiveBidOffer, ownerDecision.Tags(), err)
 	} else if len(activeOffers) > 1 {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrTooManyActiveOffers, ownerDecision.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrTooManyActiveOffers, ownerDecision.Tags(), err)
 	}
 	activeOffer := activeOffers[0]
 
 	//4. if reject
-	if ownerDecision.Decision == bidding.RejectBid {
+	if ownerDecision.Decision == bid_data.RejectBid {
 		// deactivate offer and unlock amount depends on active offer type
 		err = DeactivateOffer(false, bidConv.Bidder, ctx, &activeOffer, bidMasterStore)
 		if err != nil {
-			return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrDeactivateOffer, ownerDecision.Tags(), err)
+			return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrDeactivateOffer, ownerDecision.Tags(), err)
 		}
 		// close bid conversation
-		err = CloseBidConv(bidConv, bidMasterStore, bidding.BidStateRejected)
+		err = CloseBidConv(bidConv, bidMasterStore, bid_data.BidStateRejected)
 		if err != nil {
-			return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrCloseBidConv, ownerDecision.Tags(), err)
+			return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrCloseBidConv, ownerDecision.Tags(), err)
 		}
 
 		return helpers.LogAndReturnTrue(ctx.Logger, ownerDecision.Tags(), "owner_reject_bid_success")
@@ -140,19 +145,19 @@ func runOwnerDecision(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 	activeOfferCoin := activeOffer.Amount.ToCoin(ctx.Currencies)
 	err = ctx.Balances.AddToAddress(bidConv.AssetOwner.Bytes(), activeOfferCoin)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrAdddingAmountToOwner, ownerDecision.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrAdddingAmountToOwner, ownerDecision.Tags(), err)
 	}
 
 	//6. change offer status to inactive and add it back to bid offer store
 	err = DeactivateOffer(true, bidConv.Bidder, ctx, &activeOffer, bidMasterStore)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrDeactivateOffer, ownerDecision.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrDeactivateOffer, ownerDecision.Tags(), err)
 	}
 
 	//7. close the bid conversation
-	err = CloseBidConv(bidConv, bidMasterStore, bidding.BidStateSucceed)
+	err = CloseBidConv(bidConv, bidMasterStore, bid_data.BidStateSucceed)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrCloseBidConv, ownerDecision.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrCloseBidConv, ownerDecision.Tags(), err)
 	}
 
 	return helpers.LogAndReturnTrue(ctx.Logger, ownerDecision.Tags(), "owner_accept_bid_success")

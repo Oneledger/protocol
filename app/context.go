@@ -2,7 +2,6 @@ package app
 
 import (
 	"fmt"
-	"github.com/Oneledger/protocol/data/bidding"
 	"github.com/Oneledger/protocol/external_apps"
 	"github.com/Oneledger/protocol/external_apps/common"
 	"io"
@@ -60,8 +59,6 @@ type context struct {
 	check      *storage.State
 	deliver    *storage.State
 
-	extStores           data.Router
-	controllerFunctions Router //External Stores
 	balances            *balance.Store
 	domains             *ons.DomainStore
 	validators          *identity.ValidatorStore // Set of validators currently active
@@ -86,6 +83,11 @@ type context struct {
 	logWriter       io.Writer
 	govupdate       *action.GovernaceUpdateAndValidate
 	extApp          *common.ExtAppData
+	extStores           data.Router
+	//todo create this map type in common
+	extServiceMap   *common.ExtServiceMap
+	//todo put this type defination in common
+	controllerFunctions Router //External Stores
 }
 
 func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (context, error) {
@@ -136,26 +138,28 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.lockScriptStore = bitcoin.NewLockScriptStore(cfg, ctx.dbDir())
 	ctx.actionRouter = action.NewRouter("action")
 	ctx.internalRouter = action.NewRouter("internal")
-	err = external_apps.RegisterExtApp(ctx.chainstate, ctx.actionRouter, ctx.extStores)
+
+	err = external_apps.RegisterExtApp(ctx.chainstate, ctx.actionRouter, ctx.extStores, ctx.extServiceMap)
 	fmt.Println("just pass registerExtApp")
 
 	//todo ext stuff below will be moved to extApp
-	ctx.extStores = data.NewStorageRouter()
-	err = ctx.AddExternalStore("bidMaster", NewBidMasterStore(ctx.chainstate))
-	//this store is used to store txs in block beginner&ender to expire bid conversations
-	err = ctx.AddExternalStore("internalBidTx", transactions.NewTransactionStore("intxBid", cs))
-	if err != nil {
-		return ctx, errors.Wrap(err, "add internalBidTx store to external stores failed")
-	}
-	ctx.controllerFunctions = NewRouter()
-	err = ctx.controllerFunctions.Add(BlockBeginner,AddExpireBidTxToQueue)
-	if err != nil {
-		return ctx, errors.Wrap(err, "add expire bid tx to queue failed")
-	}
-	err = ctx.controllerFunctions.Add(BlockEnder, PopExpireBidTxFromQueue)
-	if err != nil {
-		return ctx, errors.Wrap(err, "pop expire bid tx from queue failed")
-	}
+	//ctx.extStores = data.NewStorageRouter()
+	//
+	//err = ctx.AddExternalStore("bidMaster", NewBidMasterStore(ctx.chainstate))
+	////this store is used to store txs in block beginner&ender to expire bid conversations
+	//err = ctx.AddExternalStore("internalBidTx", transactions.NewTransactionStore("intxBid", cs))
+	//if err != nil {
+	//	return ctx, errors.Wrap(err, "add internalBidTx store to external stores failed")
+	//}
+	//ctx.controllerFunctions = NewRouter()
+	//err = ctx.controllerFunctions.Add(BlockBeginner,AddExpireBidTxToQueue)
+	//if err != nil {
+	//	return ctx, errors.Wrap(err, "add expire bid tx to queue failed")
+	//}
+	//err = ctx.controllerFunctions.Add(BlockEnder, PopExpireBidTxFromQueue)
+	//if err != nil {
+	//	return ctx, errors.Wrap(err, "pop expire bid tx from queue failed")
+	//}
 	ctx.govupdate = action.NewGovUpdate()
 	testEnv := os.Getenv("OLTEST")
 
@@ -201,12 +205,6 @@ func NewRewardMasterStore(chainstate *storage.ChainState) *rewards.RewardMasterS
 	reward := rewards.NewRewardStore("rwz", "ri", "rwaddr", storage.NewState(chainstate))
 	rewardCumula := rewards.NewRewardCumulativeStore("rwcum", storage.NewState(chainstate))
 	return rewards.NewRewardMasterStore(reward, rewardCumula)
-}
-
-func NewBidMasterStore(chainstate *storage.ChainState) *bidding.BidMasterStore {
-	bidConv := bidding.NewBidConvStore("bidConvActive", "bidConvSucceed", "bidConvCancelled", "bidConvExpired", "bidConvExpiredFailed", storage.NewState(chainstate))
-	bidOffer := bidding.NewBidOfferStore("bidOffer", storage.NewState(chainstate))
-	return bidding.NewBidMasterStore(bidConv, bidOffer)
 }
 
 func (ctx context) dbDir() string {

@@ -15,8 +15,7 @@ func init() {
 	common.Handlers.Register(bid.LoadAppData)
 }
 
-func RegisterExtApp(cs *storage.ChainState, ar action.Router, dr data.Router) error {
-	//todo pass the external rpc router into here
+func RegisterExtApp(cs *storage.ChainState, ar action.Router, dr data.Router, sm common.ExtServiceMap) error {
 	extAppData := common.LoadExtAppData(cs)
 	//test
 	fmt.Println("extAppData.Test", extAppData.Test)
@@ -28,9 +27,16 @@ func RegisterExtApp(cs *storage.ChainState, ar action.Router, dr data.Router) er
 		}
 	}
 
-	// add extStores to the data router
-	//for _, stores := range extAppData.
-	//ExtAppData.extStores
+	// add extStores to app data
+	for name, store := range extAppData.ExtStores {
+		err := dr.Add(name, store)
+		if err != nil {
+			return errors.Wrap(err, "error adding external store")
+		}
+	}
+	// add services
+	//todo
+	//add block beginner & ender function router here
 	return nil
 }
 

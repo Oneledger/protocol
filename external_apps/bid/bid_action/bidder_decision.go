@@ -3,7 +3,7 @@ package bid_action
 import (
 	"encoding/json"
 	"github.com/Oneledger/protocol/action/helpers"
-	"github.com/Oneledger/protocol/data/bidding"
+	"github.com/Oneledger/protocol/external_apps/bid/bid_data"
 	"time"
 
 	"github.com/pkg/errors"
@@ -17,12 +17,17 @@ import (
 var _ action.Msg = &BidderDecision{}
 
 type BidderDecision struct {
-	BidConvId bidding.BidConvId   `json:"bidConvId"`
+	BidConvId bid_data.BidConvId   `json:"bidConvId"`
 	Bidder    keys.Address        `json:"bidder"`
-	Decision  bidding.BidDecision `json:"decision"`
+	Decision  bid_data.BidDecision `json:"decision"`
 }
 
-func (b BidderDecision) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
+var _ action.Tx = &BidderDecisionTx{}
+
+type BidderDecisionTx struct {
+}
+
+func (b BidderDecisionTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
 	bidderDecision := BidderDecision{}
 	err := bidderDecision.Unmarshal(signedTx.Data)
 	if err != nil {
@@ -45,7 +50,7 @@ func (b BidderDecision) Validate(ctx *action.Context, signedTx action.SignedTx) 
 
 	//Check if bid ID is valid
 	if bidderDecision.BidConvId.Err() != nil {
-		return false, bidding.ErrInvalidBidConvId
+		return false, bid_data.ErrInvalidBidConvId
 	}
 
 	//Check if bidder address is valid oneLedger address
@@ -57,17 +62,17 @@ func (b BidderDecision) Validate(ctx *action.Context, signedTx action.SignedTx) 
 	return true, nil
 }
 
-func (b BidderDecision) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+func (b BidderDecisionTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	ctx.Logger.Detail("Processing CreateProposal Transaction for CheckTx", tx)
 	return runBidderDecision(ctx, tx)
 }
 
-func (b BidderDecision) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+func (b BidderDecisionTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	ctx.Logger.Detail("Processing CreateProposal Transaction for DeliverTx", tx)
 	return runBidderDecision(ctx, tx)
 }
 
-func (b BidderDecision) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (b BidderDecisionTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
 
@@ -81,55 +86,55 @@ func runBidderDecision(ctx *action.Context, tx action.RawTx) (bool, action.Respo
 	//1. verify bidConvId exists in ACTIVE store
 	bidMasterStore, err := GetBidMasterStore(ctx)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingBidMasterStore, bidderDecision.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrGettingBidMasterStore, bidderDecision.Tags(), err)
 	}
-	if !bidMasterStore.BidConv.WithPrefixType(bidding.BidStateActive).Exists(bidderDecision.BidConvId) {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrBidConvNotFound, bidderDecision.Tags(), err)
+	if !bidMasterStore.BidConv.WithPrefixType(bid_data.BidStateActive).Exists(bidderDecision.BidConvId) {
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrBidConvNotFound, bidderDecision.Tags(), err)
 	}
-	bidConv, err := bidMasterStore.BidConv.WithPrefixType(bidding.BidStateActive).Get(bidderDecision.BidConvId)
+	bidConv, err := bidMasterStore.BidConv.WithPrefixType(bid_data.BidStateActive).Get(bidderDecision.BidConvId)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingBidConv, bidderDecision.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrGettingBidConv, bidderDecision.Tags(), err)
 	}
 
 	//2. check expiry
 	deadLine := time.Unix(bidConv.DeadlineUTC, 0)
 
 	if deadLine.Before(ctx.Header.Time.UTC()) {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrExpiredBid, bidderDecision.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrExpiredBid, bidderDecision.Tags(), err)
 	}
 
 	//1. check asset availability
 	assetOk, err := bidConv.Asset.ValidateAsset(ctx, bidConv.AssetOwner)
 	if err != nil || assetOk == false {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrInvalidAsset, bidderDecision.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrInvalidAsset, bidderDecision.Tags(), err)
 	}
 
 	//3. check bidder's identity
 	if !bidderDecision.Bidder.Equal(bidConv.Bidder) {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrWrongBidder, bidderDecision.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrWrongBidder, bidderDecision.Tags(), err)
 	}
 
 	//4. get the active counter offer
-	activeOffers := bidMasterStore.BidOffer.GetOffers(bidderDecision.BidConvId, bidding.BidOfferActive, bidding.TypeCounterOffer)
+	activeOffers := bidMasterStore.BidOffer.GetOffers(bidderDecision.BidConvId, bid_data.BidOfferActive, bid_data.TypeCounterOffer)
 	// in this case there must be a counter offer from owner
 	if len(activeOffers) == 0 {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingActiveCounterOffer, bidderDecision.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrGettingActiveCounterOffer, bidderDecision.Tags(), err)
 	} else if len(activeOffers) > 1 {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrTooManyActiveOffers, bidderDecision.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrTooManyActiveOffers, bidderDecision.Tags(), err)
 	}
 	activeOffer := activeOffers[0]
 
 	//5. if reject
-	if bidderDecision.Decision == bidding.RejectBid {
+	if bidderDecision.Decision == bid_data.RejectBid {
 		// deactivate offer and unlock amount depends on active offer type
 		err = DeactivateOffer(false, bidConv.Bidder, ctx, &activeOffer, bidMasterStore)
 		if err != nil {
-			return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrDeactivateOffer, bidderDecision.Tags(), err)
+			return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrDeactivateOffer, bidderDecision.Tags(), err)
 		}
 		// close bid conversation
-		err = CloseBidConv(bidConv, bidMasterStore, bidding.BidStateRejected)
+		err = CloseBidConv(bidConv, bidMasterStore, bid_data.BidStateRejected)
 		if err != nil {
-			return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrCloseBidConv, bidderDecision.Tags(), err)
+			return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrCloseBidConv, bidderDecision.Tags(), err)
 		}
 
 		return helpers.LogAndReturnTrue(ctx.Logger, bidderDecision.Tags(), "bidder_reject_bid_success")
@@ -140,25 +145,25 @@ func runBidderDecision(ctx *action.Context, tx action.RawTx) (bool, action.Respo
 	activeOfferCoin := activeOffer.Amount.ToCoin(ctx.Currencies)
 	err = ctx.Balances.MinusFromAddress(bidderDecision.Bidder.Bytes(), activeOfferCoin)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrDeductingAmountFromBidder, bidderDecision.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrDeductingAmountFromBidder, bidderDecision.Tags(), err)
 	}
 
 	//7. add the amount to owner
 	err = ctx.Balances.AddToAddress(bidConv.AssetOwner.Bytes(), activeOfferCoin)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrAdddingAmountToOwner, bidderDecision.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrAdddingAmountToOwner, bidderDecision.Tags(), err)
 	}
 
 	//8. change offer status to inactive and add it back to bid offer store
 	err = DeactivateOffer(true, bidConv.Bidder, ctx, &activeOffer, bidMasterStore)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrDeactivateOffer, bidderDecision.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrDeactivateOffer, bidderDecision.Tags(), err)
 	}
 
 	//9. close the bid conversation
-	err = CloseBidConv(bidConv, bidMasterStore, bidding.BidStateSucceed)
+	err = CloseBidConv(bidConv, bidMasterStore, bid_data.BidStateSucceed)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrCloseBidConv, bidderDecision.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrCloseBidConv, bidderDecision.Tags(), err)
 	}
 
 	return helpers.LogAndReturnTrue(ctx.Logger, bidderDecision.Tags(), "bidder_accept_bid_success")

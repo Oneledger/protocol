@@ -73,9 +73,15 @@ func (bm *BidMasterStore) WithState(state *storage.State) *BidMasterStore {
 	return bm
 }
 
-func NewBidMasterStore(bc *BidConvStore, bo *BidOfferStore) *BidMasterStore {
+func ConstructBidMasterStore(bc *BidConvStore, bo *BidOfferStore) *BidMasterStore {
 	return &BidMasterStore{
 		BidConv:  bc,
 		BidOffer: bo,
 	}
+}
+
+func NewBidMasterStore(chainstate *storage.ChainState) *BidMasterStore {
+	bidConv := NewBidConvStore("bidConvActive", "bidConvSucceed", "bidConvCancelled", "bidConvExpired", "bidConvExpiredFailed", storage.NewState(chainstate))
+	bidOffer := NewBidOfferStore("bidOffer", storage.NewState(chainstate))
+	return ConstructBidMasterStore(bidConv, bidOffer)
 }

@@ -3,7 +3,7 @@ package bid_action
 import (
 	"encoding/json"
 	"github.com/Oneledger/protocol/action/helpers"
-	"github.com/Oneledger/protocol/data/bidding"
+	"github.com/Oneledger/protocol/external_apps/bid/bid_data"
 	"time"
 
 	"github.com/pkg/errors"
@@ -17,11 +17,16 @@ import (
 var _ action.Msg = &CancelBid{}
 
 type CancelBid struct {
-	BidConvId bidding.BidConvId `json:"bidConvId"`
+	BidConvId bid_data.BidConvId `json:"bidConvId"`
 	Bidder    keys.Address      `json:"bidder"`
 }
 
-func (c CancelBid) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
+var _ action.Tx = &CancelBidTx{}
+
+type CancelBidTx struct {
+}
+
+func (c CancelBidTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
 	cancelBid := CancelBid{}
 	err := cancelBid.Unmarshal(signedTx.Data)
 	if err != nil {
@@ -44,7 +49,7 @@ func (c CancelBid) Validate(ctx *action.Context, signedTx action.SignedTx) (bool
 
 	//Check if bid ID is valid
 	if cancelBid.BidConvId.Err() != nil {
-		return false, bidding.ErrInvalidBidConvId
+		return false, bid_data.ErrInvalidBidConvId
 	}
 
 	//Check if bidder address is valid oneLedger address
@@ -57,17 +62,17 @@ func (c CancelBid) Validate(ctx *action.Context, signedTx action.SignedTx) (bool
 	return true, nil
 }
 
-func (c CancelBid) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+func (c CancelBidTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	ctx.Logger.Detail("Processing CreateProposal Transaction for CheckTx", tx)
 	return runCancelBid(ctx, tx)
 }
 
-func (c CancelBid) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+func (c CancelBidTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	ctx.Logger.Detail("Processing CreateProposal Transaction for DeliverTx", tx)
 	return runCancelBid(ctx, tx)
 }
 
-func (c CancelBid) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (c CancelBidTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
 
@@ -81,36 +86,36 @@ func runCancelBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 	//1. verify bidConvId exists in ACTIVE store
 	bidMasterStore, err := GetBidMasterStore(ctx)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingBidMasterStore, cancelBid.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrGettingBidMasterStore, cancelBid.Tags(), err)
 	}
-	if !bidMasterStore.BidConv.WithPrefixType(bidding.BidStateActive).Exists(cancelBid.BidConvId) {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrBidConvNotFound, cancelBid.Tags(), err)
+	if !bidMasterStore.BidConv.WithPrefixType(bid_data.BidStateActive).Exists(cancelBid.BidConvId) {
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrBidConvNotFound, cancelBid.Tags(), err)
 	}
 
-	bidConv, err := bidMasterStore.BidConv.WithPrefixType(bidding.BidStateActive).Get(cancelBid.BidConvId)
+	bidConv, err := bidMasterStore.BidConv.WithPrefixType(bid_data.BidStateActive).Get(cancelBid.BidConvId)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingBidConv, cancelBid.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrGettingBidConv, cancelBid.Tags(), err)
 	}
 
 	//3. check bidder's identity
 	if !cancelBid.Bidder.Equal(bidConv.Bidder) {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrWrongBidder, cancelBid.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrWrongBidder, cancelBid.Tags(), err)
 	}
 
 	//2. check expiry
 	deadLine := time.Unix(bidConv.DeadlineUTC, 0)
 
 	if deadLine.Before(ctx.Header.Time.UTC()) {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrExpiredBid, cancelBid.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrExpiredBid, cancelBid.Tags(), err)
 	}
 
 	//3. get the active counter offer
-	activeOffers := bidMasterStore.BidOffer.GetOffers(cancelBid.BidConvId, bidding.BidOfferActive, bidding.TypeCounterOffer)
+	activeOffers := bidMasterStore.BidOffer.GetOffers(cancelBid.BidConvId, bid_data.BidOfferActive, bid_data.TypeCounterOffer)
 	// in this case there must be a counter offer from owner
 	if len(activeOffers) == 0 {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingActiveCounterOffer, cancelBid.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrGettingActiveCounterOffer, cancelBid.Tags(), err)
 	} else if len(activeOffers) > 1 {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrTooManyActiveOffers, cancelBid.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrTooManyActiveOffers, cancelBid.Tags(), err)
 	}
 	activeOffer := activeOffers[0]
 
@@ -118,19 +123,19 @@ func runCancelBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 	activeOfferCoin := activeOffer.Amount.ToCoin(ctx.Currencies)
 	err = ctx.Balances.AddToAddress(cancelBid.Bidder.Bytes(), activeOfferCoin)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrUnlockAmount, cancelBid.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrUnlockAmount, cancelBid.Tags(), err)
 	}
 
 	//6. change amount status to unlocked and deactivate it
 	err = DeactivateOffer(false, bidConv.Bidder, ctx, &activeOffer, bidMasterStore)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrDeactivateOffer, cancelBid.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrDeactivateOffer, cancelBid.Tags(), err)
 	}
 
 	//7. close bid and put to CANCELLED store
-	err = CloseBidConv(bidConv, bidMasterStore, bidding.BidStateCancelled)
+	err = CloseBidConv(bidConv, bidMasterStore, bid_data.BidStateCancelled)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrCloseBidConv, cancelBid.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrCloseBidConv, cancelBid.Tags(), err)
 	}
 
 	return helpers.LogAndReturnTrue(ctx.Logger, cancelBid.Tags(), "cancel_bid_success")

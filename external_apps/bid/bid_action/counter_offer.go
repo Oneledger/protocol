@@ -3,7 +3,7 @@ package bid_action
 import (
 	"encoding/json"
 	"github.com/Oneledger/protocol/action/helpers"
-	"github.com/Oneledger/protocol/data/bidding"
+	"github.com/Oneledger/protocol/external_apps/bid/bid_data"
 	"time"
 
 	"github.com/pkg/errors"
@@ -17,12 +17,17 @@ import (
 var _ action.Msg = &CounterOffer{}
 
 type CounterOffer struct {
-	BidConvId  bidding.BidConvId `json:"bidConvId"`
+	BidConvId  bid_data.BidConvId `json:"bidConvId"`
 	AssetOwner keys.Address      `json:"assetOwner"`
 	Amount     action.Amount     `json:"amount"`
 }
 
-func (c CounterOffer) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
+var _ action.Tx = &CounterOfferTx{}
+
+type CounterOfferTx struct {
+}
+
+func (c CounterOfferTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
 	counterOffer := CounterOffer{}
 	err := counterOffer.Unmarshal(signedTx.Data)
 	if err != nil {
@@ -54,7 +59,7 @@ func (c CounterOffer) Validate(ctx *action.Context, signedTx action.SignedTx) (b
 
 	//Check if bid ID is valid
 	if counterOffer.BidConvId.Err() != nil {
-		return false, bidding.ErrInvalidBidConvId
+		return false, bid_data.ErrInvalidBidConvId
 	}
 
 	//Check if owner address is valid oneLedger address
@@ -66,17 +71,17 @@ func (c CounterOffer) Validate(ctx *action.Context, signedTx action.SignedTx) (b
 	return true, nil
 }
 
-func (c CounterOffer) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+func (c CounterOfferTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	ctx.Logger.Detail("Processing CreateProposal Transaction for CheckTx", tx)
 	return runCounterOffer(ctx, tx)
 }
 
-func (c CounterOffer) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+func (c CounterOfferTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	ctx.Logger.Detail("Processing CreateProposal Transaction for DeliverTx", tx)
 	return runCounterOffer(ctx, tx)
 }
 
-func (c CounterOffer) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (c CounterOfferTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
 
@@ -90,43 +95,43 @@ func runCounterOffer(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 	//1. verify bidConvId exists in ACTIVE store
 	bidMasterStore, err := GetBidMasterStore(ctx)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingBidMasterStore, counterOffer.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrGettingBidMasterStore, counterOffer.Tags(), err)
 	}
 
-	if !bidMasterStore.BidConv.WithPrefixType(bidding.BidStateActive).Exists(counterOffer.BidConvId) {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrBidConvNotFound, counterOffer.Tags(), err)
+	if !bidMasterStore.BidConv.WithPrefixType(bid_data.BidStateActive).Exists(counterOffer.BidConvId) {
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrBidConvNotFound, counterOffer.Tags(), err)
 	}
 
-	bidConv, err := bidMasterStore.BidConv.WithPrefixType(bidding.BidStateActive).Get(counterOffer.BidConvId)
+	bidConv, err := bidMasterStore.BidConv.WithPrefixType(bid_data.BidStateActive).Get(counterOffer.BidConvId)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingBidConv, counterOffer.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrGettingBidConv, counterOffer.Tags(), err)
 	}
 
 	//3. check owner's identity
 	if !counterOffer.AssetOwner.Equal(bidConv.AssetOwner) {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrWrongAssetOwner, counterOffer.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrWrongAssetOwner, counterOffer.Tags(), err)
 	}
 
 	//2. check expiry
 	deadLine := time.Unix(bidConv.DeadlineUTC, 0)
 
 	if deadLine.Before(ctx.Header.Time.UTC()) {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrExpiredBid, counterOffer.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrExpiredBid, counterOffer.Tags(), err)
 	}
 
 	//1. check asset availability
 	assetOk, err := bidConv.Asset.ValidateAsset(ctx, bidConv.AssetOwner)
 	if err != nil || assetOk == false {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrInvalidAsset, counterOffer.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrInvalidAsset, counterOffer.Tags(), err)
 	}
 
 	//2. get active bid offer
-	activeOffers := bidMasterStore.BidOffer.GetOffers(counterOffer.BidConvId, bidding.BidOfferActive, bidding.TypeOffer)
+	activeOffers := bidMasterStore.BidOffer.GetOffers(counterOffer.BidConvId, bid_data.BidOfferActive, bid_data.TypeOffer)
 	// in this case, there must be an existing active offer
 	if len(activeOffers) == 0 {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrGettingActiveBidOffer, counterOffer.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrGettingActiveBidOffer, counterOffer.Tags(), err)
 	} else if len(activeOffers) > 1 {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrTooManyActiveOffers, counterOffer.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrTooManyActiveOffers, counterOffer.Tags(), err)
 	}
 	activeOffer := activeOffers[0]
 
@@ -134,7 +139,7 @@ func runCounterOffer(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 	offerCoin := counterOffer.Amount.ToCoin(ctx.Currencies)
 	activeOfferCoin := activeOffer.Amount.ToCoin(ctx.Currencies)
 	if offerCoin.LessThanEqualCoin(activeOfferCoin) {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrAmountLessThanActiveOffer, counterOffer.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrAmountLessThanActiveOffer, counterOffer.Tags(), err)
 	}
 
 	//4. unlock bidder's previous amount and deactivate the bidder's offer
@@ -143,21 +148,21 @@ func runCounterOffer(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 
 	err = DeactivateOffer(false, bidConv.Bidder, ctx, &activeOffer, bidMasterStore)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrDeactivateOffer, counterOffer.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrDeactivateOffer, counterOffer.Tags(), err)
 	}
 
 	//5. add new counter offer to offer store
-	createCounterOffer := bidding.NewBidOffer(
+	createCounterOffer := bid_data.NewBidOffer(
 		counterOffer.BidConvId,
-		bidding.TypeCounterOffer,
+		bid_data.TypeCounterOffer,
 		ctx.Header.Time.UTC().Unix(),
 		counterOffer.Amount,
-		bidding.CounterOfferAmount,
+		bid_data.CounterOfferAmount,
 	)
 
 	err = bidMasterStore.BidOffer.SetOffer(*createCounterOffer)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, bidding.ErrAddingCounterOffer, counterOffer.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrAddingCounterOffer, counterOffer.Tags(), err)
 	}
 
 	return helpers.LogAndReturnTrue(ctx.Logger, counterOffer.Tags(), "create_counter_offer_success")

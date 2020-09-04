@@ -1,7 +1,6 @@
 package service
 
 import (
-	"github.com/Oneledger/protocol/data/bidding"
 	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/data"
@@ -93,6 +92,8 @@ func NewMap(ctx *Context) (Map, error) {
 			return serviceMap, errors.Wrap(errors.New("Service doesn't exist "), serviceName)
 		}
 	}
+
+	//todo get ExtServiceMap from ctx and combine to serviceMap
 
 	return serviceMap, nil
 }

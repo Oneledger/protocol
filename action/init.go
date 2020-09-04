@@ -77,6 +77,7 @@ func init() {
 func RegisterTxType(value int, name string, ) {
 	if dupName, ok := txTypeMap[value]; ok {
 		logger.Errorf("Trying to register tx type %s failed, type value conflicts with existing type: %d: %s", value, dupName)
+		return
 	}
 	txTypeMap[value] = name
 }
