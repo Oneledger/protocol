@@ -39,6 +39,7 @@ func (b BidderDecisionTx) Validate(ctx *action.Context, signedTx action.SignedTx
 	if err != nil {
 		return false, err
 	}
+	//todo change all txs in bid, do not read chainstate here
 	feeOpt, err := ctx.GovernanceStore.GetFeeOption()
 	if err != nil {
 		return false, governance.ErrGetFeeOptions

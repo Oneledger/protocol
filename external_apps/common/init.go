@@ -1,13 +1,14 @@
 package common
 
-import "fmt"
+import abci "github.com/tendermint/tendermint/abci/types"
 
-type HandlerList []func(*ExtAppData)
+type HandlerList []func(*ExtAppData, abci.Header)
 
 var Handlers HandlerList
 
+var FunctionRouter ControllerRouter
+
 func init() {
-	//todo remove
-	fmt.Println("init from common/init")
 	Handlers = HandlerList{}
+	FunctionRouter = ControllerRouter{}
 }

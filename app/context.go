@@ -83,10 +83,8 @@ type context struct {
 	govupdate       *action.GovernaceUpdateAndValidate
 	extApp          *common.ExtAppData
 	extStores           data.Router
-	//todo create this map type in common
 	extServiceMap   *common.ExtServiceMap
-	//todo put this type defination in common
-	controllerFunctions Router //External Stores
+	controllerFunctions common.Router //External Stores
 }
 
 func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (context, error) {
@@ -137,8 +135,10 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.lockScriptStore = bitcoin.NewLockScriptStore(cfg, ctx.dbDir())
 	ctx.actionRouter = action.NewRouter("action")
 	ctx.internalRouter = action.NewRouter("internal")
-
-	err = external_apps.RegisterExtApp(ctx.chainstate, ctx.actionRouter, ctx.extStores, ctx.extServiceMap)
+	ctx.extStores = data.NewStorageRouter()
+	ctx.extServiceMap = common.NewExtServiceMap()
+	err = external_apps.RegisterExtApp(ctx.chainstate, ctx.actionRouter, ctx.extStores, ctx.extServiceMap, ctx.controllerFunctions
+	ctx.deliver)
 
 	//todo ext stuff below will be moved to extApp
 	//ctx.controllerFunctions = NewRouter()
@@ -223,6 +223,7 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.proposalMaster.WithState(state),
 		ctx.rewardMaster.WithState(state),
 		ctx.govern.WithState(state),
+		//todo delete this if not used
 		ctx.extStores,
 		ctx.govupdate,
 	)

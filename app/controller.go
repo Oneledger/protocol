@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/Oneledger/protocol/external_apps/common"
 	"math"
 	"math/big"
 	"runtime/debug"
@@ -145,13 +146,12 @@ func (app *App) blockBeginner() blockBeginner {
 		//Transaction store is not part of chainstate ,it just maintains a list of proposals from BlockBeginner to BlockEnder .Gets cleared at each Block Ender
 		AddInternalTX(app.Context.proposalMaster, app.Context.node.ValidatorAddress(), app.header.Height, app.Context.transaction, app.logger)
 
-		functionList, err := app.Context.controllerFunctions.Iterate(BlockBeginner)
+		functionList, err := app.Context.controllerFunctions.Iterate(common.BlockBeginner)
 		if err == nil {
-			for _, function := range functionList {
-				function(app)
+			for _, controllerFunction := range functionList {
+				controllerFunction.Function(controllerFunction.FunctionParam)
 			}
 		}
-
 		app.logger.Detail("Begin Block:", result, "height:", req.Header.Height, "AppHash:", hex.EncodeToString(req.Header.AppHash))
 		return result
 	}
@@ -297,10 +297,10 @@ func (app *App) blockEnder() blockEnder {
 		ExpireProposals(&app.header, &app.Context, app.logger)
 		FinalizeProposals(&app.header, &app.Context, app.logger)
 
-		functionList, err := app.Context.controllerFunctions.Iterate(BlockEnder)
+		functionList, err := app.Context.controllerFunctions.Iterate(common.BlockEnder)
 		if err == nil {
-			for _, function := range functionList {
-				function(app)
+			for _, controllerFunction := range functionList {
+				controllerFunction.Function(controllerFunction.FunctionParam)
 			}
 		}
 		result := ResponseEndBlock{

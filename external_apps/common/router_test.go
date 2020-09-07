@@ -1,4 +1,4 @@
-package app
+package common
 
 import (
 	"fmt"
@@ -35,18 +35,18 @@ func init() {
 func TestRouter_AddBlockBeginner(t *testing.T) {
 
 	err := cRouter.Add(BlockBeginner, Cfunction{
-		function:      internalTX1,
-		functionParam: parameterStruct{name: "TEST"},
+		Function:      internalTX1,
+		FunctionParam: parameterStruct{name: "TEST"},
 	})
 	assert.NoError(t, err)
 	err = cRouter.Add(BlockBeginner, Cfunction{
-		function:      internalTX2,
-		functionParam: parameterStruct{name: "TEST2"},
+		Function:      internalTX2,
+		FunctionParam: parameterStruct{name: "TEST2"},
 	})
 	assert.NoError(t, err)
 	err = cRouter.Add(BlockEnder, Cfunction{
-		function:      internalTX2,
-		functionParam: parameterStruct{name: "TEST3"},
+		Function:      internalTX2,
+		FunctionParam: parameterStruct{name: "TEST3"},
 	})
 }
 
@@ -55,13 +55,13 @@ func TestRouter_IterateBlockBeginner(t *testing.T) {
 	assert.Len(t, functionlist, 2)
 	assert.NoError(t, err)
 	for _, function := range functionlist {
-		function.function(function.functionParam)
+		function.Function(function.FunctionParam)
 	}
 	functionlist, err = cRouter.Iterate(BlockEnder)
 	assert.Len(t, functionlist, 1)
 	assert.NoError(t, err)
 	for _, function := range functionlist {
-		function.function(function.functionParam)
+		function.Function(function.FunctionParam)
 	}
 	functionlist, err = cRouter.Iterate(3)
 	assert.Error(t, err)

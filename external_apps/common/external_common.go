@@ -15,6 +15,10 @@ type ExtTx struct {
 
 type ExtServiceMap map[string]interface{}
 
+func NewExtServiceMap() *ExtServiceMap {
+	return &ExtServiceMap{}
+}
+
 type ExtAppData struct {
 	// we need txs, data stores, services, block functions
 	ChainState *storage.ChainState
@@ -23,7 +27,7 @@ type ExtAppData struct {
 	ExtServiceMap ExtServiceMap
 	ExtQueryServices query.Service
 	ExtTxServices    tx.Service
-	//extBlockFuncs common_block.ControllerRouter
+	ExtBlockFuncs ControllerRouter
 	Test string
 }
 
@@ -33,7 +37,7 @@ func LoadExtAppData(cs *storage.ChainState) *ExtAppData {
 	appData.ChainState = cs
 	fmt.Println("LoadExtAppData runs, and the Handlers: ", Handlers)
 	for _, handler := range Handlers {
-		//this is to extract data from this handler to appData
+		//this is to put external app data to appData
 		fmt.Println("inside for loop")
 		handler(appData)
 	}

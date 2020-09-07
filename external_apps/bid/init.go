@@ -6,12 +6,14 @@ import (
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/external_apps/bid/bid_action"
+	"github.com/Oneledger/protocol/external_apps/bid/bid_block_func"
 	"github.com/Oneledger/protocol/external_apps/bid/bid_data"
 	"github.com/Oneledger/protocol/external_apps/bid/bid_rpc/bid_rpc_query"
 	"github.com/Oneledger/protocol/external_apps/bid/bid_rpc/bid_rpc_tx"
 	"github.com/Oneledger/protocol/external_apps/common"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/storage"
+	abci "github.com/tendermint/tendermint/abci/types"
 	"os"
 )
 
@@ -19,11 +21,13 @@ var logger *log.Logger
 
 func init() {
 	//fmt.Println("init from bid/init")
+	//todo this is registered at 2 places, see which one to remove
 	common.Handlers.Register(LoadAppData)
 }
 
 //this is the handler function, it will add a bunch of things into appData
-func LoadAppData(appData *common.ExtAppData) {
+//todo add more parameters here to pass into block funcs
+func LoadAppData(appData *common.ExtAppData, header abci.Header) {
 
 	appData.Test = "TEST BID APPLICATION"
 	fmt.Println("LOADING BID DATA !!!")
@@ -84,7 +88,15 @@ func LoadAppData(appData *common.ExtAppData) {
 	appData.ExtServiceMap[bid_rpc_tx.Name()] = bid_rpc_tx.NewService(balances, logger)
 
 	//load beginner and ender functions
+	//todo
+	err := appData.ExtBlockFuncs.Add(common.BlockBeginner, common.Cfunction{
+		Function:      bid_block_func.AddExpireBidTxToQueue,
+		FunctionParam: bid_block_func.BidParam{
+			BidMasterStore: bid_data.NewBidMasterStore(appData.ChainState),
+			Logger: logger,
+			Header: header,
 
-	//add my funcs to map router
+		},
+	})
 
 }

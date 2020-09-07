@@ -11,6 +11,7 @@ func init() {
 	serialize.RegisterConcrete(new(CreateProposal), "action_cp")
 	serialize.RegisterConcrete(new(CancelProposal), "action_ccp")
 	serialize.RegisterConcrete(new(VoteProposal), "action_vp")
+	//todo maybe put this part into action init
 	action.RegisterTxType(0x30, "PROPOSAL_CREATE")
 	action.RegisterTxType(0x31, "PROPOSAL_CANCEL")
 	action.RegisterTxType(0x32, "PROPOSAL_FUND")
