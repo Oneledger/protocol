@@ -35,6 +35,12 @@ func LoadExtAppData(cs *storage.ChainState) *ExtAppData {
 	//this will return everything of all external apps
 	appData := &ExtAppData{}
 	appData.ChainState = cs
+	appData.ExtStores = make(map[string]interface{})
+	appData.ExtServiceMap = make(ExtServiceMap)
+	functionList := make(map[txblock][]func(interface{}))
+	appData.ExtBlockFuncs = ControllerRouter{
+		functionlist: functionList,
+	}
 	fmt.Println("LoadExtAppData runs, and the Handlers: ", Handlers)
 	for _, handler := range Handlers {
 		//this is to put external app data to appData

@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/Oneledger/protocol/external_apps/bid/bid_block_func"
 	"github.com/Oneledger/protocol/external_apps/common"
 	"math"
 	"math/big"
@@ -147,9 +148,18 @@ func (app *App) blockBeginner() blockBeginner {
 		AddInternalTX(app.Context.proposalMaster, app.Context.node.ValidatorAddress(), app.header.Height, app.Context.transaction, app.logger)
 
 		functionList, err := app.Context.controllerFunctions.Iterate(common.BlockBeginner)
+		functionParam := bid_block_func.BidParam{
+			ExternalStores: app.Context.extStores,
+			InternalTxStore: app.Context.transaction,
+			Logger: app.logger,
+			ActionCtx: *app.Context.Action(&app.header, app.Context.deliver),
+			Validator: app.Context.node.ValidatorAddress(),
+			Header: app.header,
+			Deliver: app.Context.deliver,
+		}
 		if err == nil {
-			for _, controllerFunction := range functionList {
-				controllerFunction.Function(controllerFunction.FunctionParam)
+			for _, function := range functionList {
+				function(functionParam)
 			}
 		}
 		app.logger.Detail("Begin Block:", result, "height:", req.Header.Height, "AppHash:", hex.EncodeToString(req.Header.AppHash))
@@ -298,9 +308,18 @@ func (app *App) blockEnder() blockEnder {
 		FinalizeProposals(&app.header, &app.Context, app.logger)
 
 		functionList, err := app.Context.controllerFunctions.Iterate(common.BlockEnder)
+		functionParam := bid_block_func.BidParam{
+			ExternalStores: app.Context.extStores,
+			InternalTxStore: app.Context.transaction,
+			Logger: app.logger,
+			ActionCtx: *app.Context.Action(&app.header, app.Context.deliver),
+			Validator: app.Context.node.ValidatorAddress(),
+			Header: app.header,
+			Deliver: app.Context.deliver,
+		}
 		if err == nil {
-			for _, controllerFunction := range functionList {
-				controllerFunction.Function(controllerFunction.FunctionParam)
+			for _, function := range functionList {
+				function(functionParam)
 			}
 		}
 		result := ResponseEndBlock{

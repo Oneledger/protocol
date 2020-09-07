@@ -22,8 +22,16 @@ func AddExpireBidTxToQueue(i interface{}) {
 	if ok == false {
 		fmt.Println("failed to assert bidParam in block beginner")
 	}
+	bidMaster, err := bidParam.ExternalStores.Get("bidMaster")
+	if err != nil {
+		bidParam.Logger.Error("failed to get bid master store in block beginner", err)
+	}
+	bidMasterStore, ok := bidMaster.(*bid_data.BidMasterStore)
+	if ok == false {
+		bidParam.Logger.Error("failed to assert bid master store in block beginner", err)
+	}
 
-	bidConvStore := bidParam.BidMasterStore.BidConv
+	bidConvStore := bidMasterStore.BidConv
 
 
 	// 2. iterate all the bid conversations and pick the ones that need to be expired
@@ -33,7 +41,7 @@ func AddExpireBidTxToQueue(i interface{}) {
 
 		if deadLine.Before(bidParam.Header.Time) {
 			// get tx
-			tx, err := GetExpireBidTX(bidConv.BidConvId, app.Context.node.ValidatorAddress())
+			tx, err := GetExpireBidTX(bidConv.BidConvId, bidParam.Validator)
 			if err != nil {
 				bidParam.Logger.Error("Error in building TX of type RequestDeliverTx(expire)", err)
 				return true
@@ -82,7 +90,7 @@ func PopExpireBidTxFromQueue(i interface{}) {
 	//1. get the internal bid tx store
 	bidParam, ok := i.(*BidParam)
 	if ok == false {
-		fmt.Println("failed to assert bidPara in block ender")
+		fmt.Println("failed to assert bidParam in block ender")
 	}
 
 	//2. get all the pending txs
@@ -95,7 +103,7 @@ func PopExpireBidTxFromQueue(i interface{}) {
 	//3. execute all the txs
 	for _, bidConv := range expiredBidConvs {
 		bidParam.Deliver.BeginTxSession()
-		actionctx := app.Context.Action(&app.header, app.Context.deliver)
+		actionctx := bidParam.ActionCtx
 		txData := bidConv.Tx
 		newExpireTx := bid_action.ExpireBidTx{}
 		newExpire := bid_action.ExpireBid{}
@@ -111,7 +119,7 @@ func PopExpireBidTxFromQueue(i interface{}) {
 			Fee:  action.Fee{},
 			Memo: uuidNew.String(),
 		}
-		ok, _ := newExpireTx.ProcessDeliver(actionctx, rawTx)
+		ok, _ := newExpireTx.ProcessDeliver(&actionctx, rawTx)
 		if !ok {
 			bidParam.Logger.Error("Failed to Expire : ", txData, "Error : ", err)
 			bidParam.Deliver.DiscardTxSession()

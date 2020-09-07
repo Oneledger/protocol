@@ -13,7 +13,6 @@ import (
 	"github.com/Oneledger/protocol/external_apps/common"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/storage"
-	abci "github.com/tendermint/tendermint/abci/types"
 	"os"
 )
 
@@ -21,18 +20,16 @@ var logger *log.Logger
 
 func init() {
 	//fmt.Println("init from bid/init")
-	//todo this is registered at 2 places, see which one to remove
 	common.Handlers.Register(LoadAppData)
 }
 
 //this is the handler function, it will add a bunch of things into appData
-//todo add more parameters here to pass into block funcs
-func LoadAppData(appData *common.ExtAppData, header abci.Header) {
+func LoadAppData(appData *common.ExtAppData) {
 
 	appData.Test = "TEST BID APPLICATION"
 	fmt.Println("LOADING BID DATA !!!")
-	//load txs
 
+	//load txs
 	bidCreate := common.ExtTx{
 		Tx: bid_action.CreateBidTx{},
 		Msg: &bid_action.CreateBid{},
@@ -88,15 +85,15 @@ func LoadAppData(appData *common.ExtAppData, header abci.Header) {
 	appData.ExtServiceMap[bid_rpc_tx.Name()] = bid_rpc_tx.NewService(balances, logger)
 
 	//load beginner and ender functions
-	//todo
-	err := appData.ExtBlockFuncs.Add(common.BlockBeginner, common.Cfunction{
-		Function:      bid_block_func.AddExpireBidTxToQueue,
-		FunctionParam: bid_block_func.BidParam{
-			BidMasterStore: bid_data.NewBidMasterStore(appData.ChainState),
-			Logger: logger,
-			Header: header,
-
-		},
-	})
+	err = appData.ExtBlockFuncs.Add(common.BlockBeginner, bid_block_func.AddExpireBidTxToQueue)
+	if err != nil {
+		logger.Errorf("failed to load block beginner func", err)
+		return
+	}
+	err = appData.ExtBlockFuncs.Add(common.BlockEnder, bid_block_func.PopExpireBidTxFromQueue)
+	if err != nil {
+		logger.Errorf("failed to load block ender func", err)
+		return
+	}
 
 }

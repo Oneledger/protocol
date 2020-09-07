@@ -33,21 +33,16 @@ func init() {
 }
 
 func TestRouter_AddBlockBeginner(t *testing.T) {
-
-	err := cRouter.Add(BlockBeginner, Cfunction{
-		Function:      internalTX1,
-		FunctionParam: parameterStruct{name: "TEST"},
-	})
+	err := cRouter.Add(BlockBeginner, internalTX1)
 	assert.NoError(t, err)
-	err = cRouter.Add(BlockBeginner, Cfunction{
-		Function:      internalTX2,
-		FunctionParam: parameterStruct{name: "TEST2"},
-	})
+	err = cRouter.Add(BlockBeginner, internalTX2)
 	assert.NoError(t, err)
-	err = cRouter.Add(BlockEnder, Cfunction{
-		Function:      internalTX2,
-		FunctionParam: parameterStruct{name: "TEST3"},
-	})
+	err = cRouter.Add(BlockEnder, internalTX2)
+	assert.NoError(t, err)
+	err = cRouter.Add(3, internalTX2)
+	assert.Error(t, err)
+	err = cRouter.Add(BlockBeginner, nil)
+	assert.Error(t, err)
 }
 
 func TestRouter_IterateBlockBeginner(t *testing.T) {
@@ -55,13 +50,13 @@ func TestRouter_IterateBlockBeginner(t *testing.T) {
 	assert.Len(t, functionlist, 2)
 	assert.NoError(t, err)
 	for _, function := range functionlist {
-		function.Function(function.FunctionParam)
+		function(app)
 	}
 	functionlist, err = cRouter.Iterate(BlockEnder)
 	assert.Len(t, functionlist, 1)
 	assert.NoError(t, err)
 	for _, function := range functionlist {
-		function.Function(function.FunctionParam)
+		function(app)
 	}
 	functionlist, err = cRouter.Iterate(3)
 	assert.Error(t, err)

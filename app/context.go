@@ -137,19 +137,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.internalRouter = action.NewRouter("internal")
 	ctx.extStores = data.NewStorageRouter()
 	ctx.extServiceMap = common.NewExtServiceMap()
-	err = external_apps.RegisterExtApp(ctx.chainstate, ctx.actionRouter, ctx.extStores, ctx.extServiceMap, ctx.controllerFunctions
-	ctx.deliver)
-
-	//todo ext stuff below will be moved to extApp
-	//ctx.controllerFunctions = NewRouter()
-	//err = ctx.controllerFunctions.Add(BlockBeginner,AddExpireBidTxToQueue)
-	//if err != nil {
-	//	return ctx, errors.Wrap(err, "add expire bid tx to queue failed")
-	//}
-	//err = ctx.controllerFunctions.Add(BlockEnder, PopExpireBidTxFromQueue)
-	//if err != nil {
-	//	return ctx, errors.Wrap(err, "pop expire bid tx from queue failed")
-	//}
+	err = external_apps.RegisterExtApp(ctx.chainstate, ctx.actionRouter, ctx.extStores, ctx.extServiceMap, ctx.controllerFunctions)
 	ctx.govupdate = action.NewGovUpdate()
 	testEnv := os.Getenv("OLTEST")
 
