@@ -9,7 +9,6 @@ import (
 	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/data/governance"
 )
 
 var _ action.Msg = &ExpireBid{}
@@ -36,11 +35,7 @@ func (e ExpireBidTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bo
 	if err != nil {
 		return false, err
 	}
-	feeOpt, err := ctx.GovernanceStore.GetFeeOption()
-	if err != nil {
-		return false, governance.ErrGetFeeOptions
-	}
-	err = action.ValidateFee(feeOpt, signedTx.Fee)
+	err = action.ValidateFee(ctx.FeePool.GetOpt(), signedTx.Fee)
 	if err != nil {
 		return false, err
 	}

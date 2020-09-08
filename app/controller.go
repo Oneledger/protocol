@@ -146,7 +146,6 @@ func (app *App) blockBeginner() blockBeginner {
 		//Adds proposals that meet the requirements to either Expired or Finalizing Keys from transaction store
 		//Transaction store is not part of chainstate ,it just maintains a list of proposals from BlockBeginner to BlockEnder .Gets cleared at each Block Ender
 		AddInternalTX(app.Context.proposalMaster, app.Context.node.ValidatorAddress(), app.header.Height, app.Context.transaction, app.logger)
-
 		functionList, err := app.Context.controllerFunctions.Iterate(common.BlockBeginner)
 		functionParam := bid_block_func.BidParam{
 			ExternalStores: app.Context.extStores,
@@ -306,7 +305,6 @@ func (app *App) blockEnder() blockEnder {
 		// These functions iterate the transactions store
 		ExpireProposals(&app.header, &app.Context, app.logger)
 		FinalizeProposals(&app.header, &app.Context, app.logger)
-
 		functionList, err := app.Context.controllerFunctions.Iterate(common.BlockEnder)
 		functionParam := bid_block_func.BidParam{
 			ExternalStores: app.Context.extStores,

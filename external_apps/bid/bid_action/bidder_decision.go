@@ -10,7 +10,6 @@ import (
 	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
 )
 
@@ -39,12 +38,7 @@ func (b BidderDecisionTx) Validate(ctx *action.Context, signedTx action.SignedTx
 	if err != nil {
 		return false, err
 	}
-	//todo change all bid txs in validate part, do not read chainstate here
-	feeOpt, err := ctx.GovernanceStore.GetFeeOption()
-	if err != nil {
-		return false, governance.ErrGetFeeOptions
-	}
-	err = action.ValidateFee(feeOpt, signedTx.Fee)
+	err = action.ValidateFee(ctx.FeePool.GetOpt(), signedTx.Fee)
 	if err != nil {
 		return false, err
 	}

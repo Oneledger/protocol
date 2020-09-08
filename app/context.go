@@ -137,7 +137,11 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.internalRouter = action.NewRouter("internal")
 	ctx.extStores = data.NewStorageRouter()
 	ctx.extServiceMap = common.NewExtServiceMap()
+	ctx.controllerFunctions = common.NewRouter()
 	err = external_apps.RegisterExtApp(ctx.chainstate, ctx.actionRouter, ctx.extStores, ctx.extServiceMap, ctx.controllerFunctions)
+	if err != nil {
+		return ctx, errors.Wrap(err, "error in registering external apps")
+	}
 	ctx.govupdate = action.NewGovUpdate()
 	testEnv := os.Getenv("OLTEST")
 

@@ -6,7 +6,6 @@ import (
 	"github.com/Oneledger/protocol/external_apps/bid/bid_data"
 	"github.com/Oneledger/protocol/external_apps/bid/bid_rpc"
 	"github.com/Oneledger/protocol/log"
-	codes "github.com/Oneledger/protocol/status_codes"
 	"github.com/pkg/errors"
 )
 
@@ -36,7 +35,7 @@ func (svc *Service) ShowBidConv(req bid_rpc.ListBidConvRequest, reply *bid_rpc.L
 	bidConv, _, err := svc.bidMaster.BidConv.QueryAllStores(req.BidConvId)
 	if err != nil {
 		svc.logger.Error("error getting bid conversation", err)
-		return codes.ErrGettingBidConv
+		return bid_data.ErrGettingBidConv
 	}
 
 	bidOffers := svc.bidMaster.BidOffer.GetOffers(bidConv.BidConvId, bid_data.BidOfferInvalid, bid_data.TypeInvalid)
@@ -130,7 +129,7 @@ func (svc *Service) ListActiveOffers(req bid_rpc.ListActiveOffersRequest, reply 
 		bidConv, err := svc.bidMaster.BidConv.WithPrefixType(bid_data.BidStateActive).Get(offer.BidConvId)
 		if err != nil {
 			svc.logger.Error("error getting bid conversation", err)
-			return codes.ErrGettingBidConv
+			return bid_data.ErrGettingBidConv
 		}
 		if len(req.Bidder) != 0 && !req.Bidder.Equal(bidConv.Bidder) {
 			continue
