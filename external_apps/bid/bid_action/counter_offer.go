@@ -102,26 +102,26 @@ func runCounterOffer(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrGettingBidConv, counterOffer.Tags(), err)
 	}
 
-	//3. check owner's identity
+	//2. check owner's identity
 	if !counterOffer.AssetOwner.Equal(bidConv.AssetOwner) {
 		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrWrongAssetOwner, counterOffer.Tags(), err)
 	}
 
-	//2. check expiry
+	//3. check expiry
 	deadLine := time.Unix(bidConv.DeadlineUTC, 0)
 
 	if deadLine.Before(ctx.Header.Time.UTC()) {
 		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrExpiredBid, counterOffer.Tags(), err)
 	}
 
-	//1. check asset availability
-	assetOk, err := bidConv.Asset.ValidateAsset(ctx, bidConv.AssetOwner)
-	if err != nil || assetOk == false {
+	//4. check asset availability
+	available, err := IsAssetAvailable(ctx, bidConv.AssetName, bidConv.AssetType, bidConv.AssetOwner)
+	if err != nil || available == false {
 		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrInvalidAsset, counterOffer.Tags(), err)
 	}
 
-	//2. get active bid offer
-	activeOffers := bidMasterStore.BidOffer.GetOffers(counterOffer.BidConvId, bid_data.BidOfferActive, bid_data.TypeOffer)
+	//5. get active bid offer
+	activeOffers := bidMasterStore.BidOffer.GetOffers(counterOffer.BidConvId, bid_data.BidOfferActive, bid_data.TypeBidOffer)
 	// in this case, there must be an existing active offer
 	if len(activeOffers) == 0 {
 		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrGettingActiveBidOffer, counterOffer.Tags(), err)
@@ -130,14 +130,14 @@ func runCounterOffer(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 	}
 	activeOffer := activeOffers[0]
 
-	//3. amount needs to be large than active bid offer from bidder
+	//6. amount needs to be large than active bid offer from bidder
 	offerCoin := counterOffer.Amount.ToCoin(ctx.Currencies)
 	activeOfferCoin := activeOffer.Amount.ToCoin(ctx.Currencies)
 	if offerCoin.LessThanEqualCoin(activeOfferCoin) {
 		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrAmountLessThanActiveOffer, counterOffer.Tags(), err)
 	}
 
-	//4. unlock bidder's previous amount and deactivate the bidder's offer
+	//7. unlock bidder's previous amount and deactivate the bidder's offer
 	// this way we only lock amount from a bid offer from bidder
 	// if the active offer is a counter offer from owner, no amount is locked from the bidder
 
@@ -146,7 +146,7 @@ func runCounterOffer(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrDeactivateOffer, counterOffer.Tags(), err)
 	}
 
-	//5. add new counter offer to offer store
+	//8. add new counter offer to offer store
 	createCounterOffer := bid_data.NewBidOffer(
 		counterOffer.BidConvId,
 		bid_data.TypeCounterOffer,

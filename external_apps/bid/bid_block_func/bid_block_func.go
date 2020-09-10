@@ -18,17 +18,20 @@ func AddExpireBidTxToQueue(i interface{}) {
 	// Add transaction to the queue from there .
 
 	// 1. get all the needed stores
-	bidParam, ok := i.(*BidParam)
+	bidParam, ok := i.(BidParam)
 	if ok == false {
-		fmt.Println("failed to assert bidParam in block beginner")
+		bidParam.Logger.Error("failed to assert bidParam in block beginner")
+		return
 	}
 	bidMaster, err := bidParam.ExternalStores.Get("bidMaster")
 	if err != nil {
 		bidParam.Logger.Error("failed to get bid master store in block beginner", err)
+		return
 	}
 	bidMasterStore, ok := bidMaster.(*bid_data.BidMasterStore)
 	if ok == false {
 		bidParam.Logger.Error("failed to assert bid master store in block beginner", err)
+		return
 	}
 
 	bidConvStore := bidMasterStore.BidConv
@@ -88,9 +91,10 @@ func PopExpireBidTxFromQueue(i interface{}) {
 	//Use deliverTxSession to commit or ignore the error
 
 	//1. get the internal bid tx store
-	bidParam, ok := i.(*BidParam)
+	bidParam, ok := i.(BidParam)
 	if ok == false {
-		fmt.Println("failed to assert bidParam in block ender")
+		bidParam.Logger.Error("failed to assert bidParam in block ender")
+		return
 	}
 
 	//2. get all the pending txs
@@ -102,6 +106,7 @@ func PopExpireBidTxFromQueue(i interface{}) {
 
 	//3. execute all the txs
 	for _, bidConv := range expiredBidConvs {
+		fmt.Println("there is tx to be executed in block ender")
 		bidParam.Deliver.BeginTxSession()
 		actionctx := bidParam.ActionCtx
 		txData := bidConv.Tx

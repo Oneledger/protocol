@@ -2,6 +2,7 @@ package bid_action
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/Oneledger/protocol/external_apps/bid/bid_data"
 	"strconv"
@@ -18,12 +19,12 @@ var _ action.Msg = &CreateBid{}
 
 type CreateBid struct {
 	BidConvId  bid_data.BidConvId    `json:"bidConvId"`
-	AssetOwner keys.Address         `json:"assetOwner"`
-	Asset      bid_data.BidAsset     `json:"asset"`
+	AssetOwner keys.Address          `json:"assetOwner"`
+	AssetName  string                `json:"assetName"`
 	AssetType  bid_data.BidAssetType `json:"assetType"`
-	Bidder     keys.Address         `json:"bidder"`
-	Amount     action.Amount        `json:"amount"`
-	Deadline   int64                `json:"deadline"`
+	Bidder     keys.Address          `json:"bidder"`
+	Amount     action.Amount         `json:"amount"`
+	Deadline   int64                 `json:"deadline"`
 }
 
 var _ action.Tx = &CreateBidTx{}
@@ -37,6 +38,7 @@ func (c CreateBidTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bo
 	if err != nil {
 		return false, errors.Wrap(action.ErrWrongTxType, err.Error())
 	}
+	fmt.Println("createBid: ", createBid)
 
 	//validate basic signature
 	err = action.ValidateBasic(signedTx.RawBytes(), createBid.Signers(), signedTx.Signatures)
@@ -93,27 +95,28 @@ func (c CreateBidTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, s
 }
 
 func runCreateBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	// if this is to create bid conversation, everything except bidConvId is needed
+	// if this is just to add an offer from bidder, only needs bidConvId, bidder, amount
 	createBid := CreateBid{}
 	err := createBid.Unmarshal(tx.Data)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrWrongTxType, createBid.Tags(), err)
 	}
 
-	//1. check asset availability
-	assetOk, err := createBid.Asset.ValidateAsset(ctx, createBid.AssetOwner)
-	if err != nil || assetOk == false {
-		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrInvalidAsset, createBid.Tags(), err)
-	}
-
-	//2. check if this is to create a bid conversation or just add an offer
+	//1. check if this is to create a bid conversation or just add an offer
 	if len(createBid.BidConvId) == 0 {
-		err := createBid.createBidConv(ctx)
+		// check asset availability
+		available, err := IsAssetAvailable(ctx, createBid.AssetName, createBid.AssetType, createBid.AssetOwner)
+		if err != nil || available == false {
+			return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrInvalidAsset, createBid.Tags(), err)
+		}
+		err = createBid.createBidConv(ctx)
 		if err != nil {
 			return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrFailedCreateBidConv, createBid.Tags(), err)
 		}
 	}
 
-	//3. verify bidConvId exists in ACTIVE store
+	//2. verify bidConvId exists in ACTIVE store
 	bidMasterStore, err := GetBidMasterStore(ctx)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrGettingBidMasterStore, createBid.Tags(), err)
@@ -128,6 +131,13 @@ func runCreateBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrGettingBidConv, createBid.Tags(), err)
 	}
 
+	//3. check asset availability if this is just to add an offer
+	if len(createBid.BidConvId) != 0 {
+		available, err := IsAssetAvailable(ctx, bidConv.AssetName, bidConv.AssetType, bidConv.AssetOwner)
+		if err != nil || available == false {
+			return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrInvalidAsset, createBid.Tags(), err)
+		}
+	}
 	//3. check bidder's identity
 	if !createBid.Bidder.Equal(bidConv.Bidder) {
 		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrWrongBidder, createBid.Tags(), err)
@@ -159,6 +169,7 @@ func runCreateBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		if err != nil {
 			return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrDeactivateOffer, createBid.Tags(), err)
 		}
+
 	}
 
 	//7. lock amount
@@ -170,7 +181,7 @@ func runCreateBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 	//8. add new offer to offer store
 	createBidOffer := bid_data.NewBidOffer(
 		createBid.BidConvId,
-		bid_data.TypeOffer,
+		bid_data.TypeBidOffer,
 		ctx.Header.Time.UTC().Unix(),
 		createBid.Amount,
 		bid_data.BidAmountLocked,
@@ -209,7 +220,7 @@ func (c CreateBid) Tags() kv.Pairs {
 	}
 	tag3 := kv.Pair{
 		Key:   []byte("tx.asset"),
-		Value: []byte(c.Asset.ToString()),
+		Value: []byte(c.AssetName),
 	}
 	tag4 := kv.Pair{
 		Key:   []byte("tx.assetType"),
@@ -231,7 +242,7 @@ func (c *CreateBid) Unmarshal(bytes []byte) error {
 func (c *CreateBid) createBidConv(ctx *action.Context) error {
 	createBidConv := bid_data.NewBidConv(
 		c.AssetOwner,
-		c.Asset,
+		c.AssetName,
 		c.AssetType,
 		c.Bidder,
 		c.Deadline,
@@ -250,7 +261,7 @@ func (c *CreateBid) createBidConv(ctx *action.Context) error {
 		return bid_data.ErrGettingBidMasterStore.Wrap(err)
 	}
 	bidMasterStore := store.(*bid_data.BidMasterStore)
-	filteredBidConvs := bidMasterStore.BidConv.FilterBidConvs(bid_data.BidStateActive, createBidConv.AssetOwner, createBidConv.Asset.ToString(), createBidConv.AssetType, createBidConv.Bidder)
+	filteredBidConvs := bidMasterStore.BidConv.FilterBidConvs(bid_data.BidStateActive, createBidConv.AssetOwner, createBidConv.AssetName, createBidConv.AssetType, createBidConv.Bidder)
 	if len(filteredBidConvs) != 0 {
 		return bid_data.ErrActiveBidConvExists
 	}
@@ -260,6 +271,7 @@ func (c *CreateBid) createBidConv(ctx *action.Context) error {
 	if err != nil {
 		return bid_data.ErrAddingBidConvToActiveStore.Wrap(err)
 	}
-
+	//pass the generated id
+	c.BidConvId = createBidConv.BidConvId
 	return nil
 }

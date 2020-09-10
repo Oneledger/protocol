@@ -99,8 +99,8 @@ func runOwnerDecision(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 	}
 
 	//1. check asset availability
-	assetOk, err := bidConv.Asset.ValidateAsset(ctx, bidConv.AssetOwner)
-	if err != nil || assetOk == false {
+	available, err := IsAssetAvailable(ctx, bidConv.AssetName, bidConv.AssetType, bidConv.AssetOwner)
+	if err != nil || available == false {
 		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrInvalidAsset, ownerDecision.Tags(), err)
 	}
 
@@ -110,7 +110,7 @@ func runOwnerDecision(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 	}
 
 	//2. get active bid offer
-	activeOffers := bidMasterStore.BidOffer.GetOffers(ownerDecision.BidConvId, bid_data.BidOfferActive, bid_data.TypeOffer)
+	activeOffers := bidMasterStore.BidOffer.GetOffers(ownerDecision.BidConvId, bid_data.BidOfferActive, bid_data.TypeBidOffer)
 	// in this case, there must be an existing active offer
 	if len(activeOffers) == 0 {
 		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrGettingActiveBidOffer, ownerDecision.Tags(), err)
@@ -120,7 +120,9 @@ func runOwnerDecision(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 	activeOffer := activeOffers[0]
 
 	//4. if reject
-	if ownerDecision.Decision == bid_data.RejectBid {
+	if ownerDecision.Decision != bid_data.RejectBid && ownerDecision.Decision != bid_data.AcceptBid {
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrInvalidOwnerDecision, ownerDecision.Tags(), err)
+	} else if ownerDecision.Decision == bid_data.RejectBid {
 		// deactivate offer and unlock amount depends on active offer type
 		err = DeactivateOffer(false, bidConv.Bidder, ctx, &activeOffer, bidMasterStore)
 		if err != nil {

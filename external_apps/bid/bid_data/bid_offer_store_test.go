@@ -56,22 +56,22 @@ func generateIDs() {
 
 func TestBidOfferStore_AddOffer(t *testing.T) {
 	//fmt.Println("Adding New Proposer for funding")
-	err := bidOfferStore.SetOffer(*NewBidOffer(ID1, TypeOffer, offerTimes[0], *action.NewAmount("OLT", *balance.NewAmount(100)), BidAmountLocked))
+	err := bidOfferStore.SetOffer(*NewBidOffer(ID1, TypeBidOffer, offerTimes[0], *action.NewAmount("OLT", *balance.NewAmount(100)), BidAmountLocked))
 	assert.NoError(t, err, "")
 	cs.Commit()
 	err = bidOfferStore.SetOffer(*NewBidOffer(ID1, TypeCounterOffer, offerTimes[1], *action.NewAmount("OLT", *balance.NewAmount(200)), CounterOfferAmount))
 	assert.NoError(t, err, "")
 	cs.Commit()
-	err = bidOfferStore.SetOffer(*NewBidOffer(ID1, TypeOffer, offerTimes[2], *action.NewAmount("OLT", *balance.NewAmount(150)), BidAmountLocked))
+	err = bidOfferStore.SetOffer(*NewBidOffer(ID1, TypeBidOffer, offerTimes[2], *action.NewAmount("OLT", *balance.NewAmount(150)), BidAmountLocked))
 	assert.NoError(t, err, "")
 	cs.Commit()
-	err = bidOfferStore.SetOffer(*NewBidOffer(ID2, TypeOffer, offerTimes[3], *action.NewAmount("OLT", *balance.NewAmount(50)), BidAmountLocked))
+	err = bidOfferStore.SetOffer(*NewBidOffer(ID2, TypeBidOffer, offerTimes[3], *action.NewAmount("OLT", *balance.NewAmount(50)), BidAmountLocked))
 	assert.NoError(t, err, "")
 	cs.Commit()
 	err = bidOfferStore.SetOffer(*NewBidOffer(ID2, TypeCounterOffer, offerTimes[4], *action.NewAmount("OLT", *balance.NewAmount(300)), CounterOfferAmount))
 	assert.NoError(t, err, "")
 	cs.Commit()
-	err = bidOfferStore.SetOffer(*NewBidOffer(ID2, TypeOffer, offerTimes[5], *action.NewAmount("OLT", *balance.NewAmount(250)), BidAmountLocked))
+	err = bidOfferStore.SetOffer(*NewBidOffer(ID2, TypeBidOffer, offerTimes[5], *action.NewAmount("OLT", *balance.NewAmount(250)), BidAmountLocked))
 	assert.NoError(t, err, "")
 	cs.Commit()
 
@@ -88,7 +88,7 @@ func TestBidOfferStore_Iterate(t *testing.T) {
 	assert.True(t, ok, "")
 }
 
-//
+
 func TestBidOfferStore_GetOffersForBidConv(t *testing.T) {
 	fmt.Println("Get offers for ID :  ", ID1)
 	offers := bidOfferStore.GetOffers(ID1, BidOfferInvalid, TypeInvalid)

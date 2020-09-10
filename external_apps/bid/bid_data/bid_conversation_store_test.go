@@ -14,6 +14,7 @@ const (
 	numPrivateKeys = 10
 	numBids        = 10
 	testDeadline   = 1596740920
+	height = 111
 )
 
 var (
@@ -22,7 +23,7 @@ var (
 
 	bidConvStore *BidConvStore
 
-	assets []*DomainAsset
+	assetNames []string
 )
 
 func init() {
@@ -41,11 +42,11 @@ func init() {
 		k := numPrivateKeys - 1 - j //bidder address list ranges from 9 - 5
 
 		owner := addrList[j]
-		assets = append(assets, NewDomainAsset("test"+strconv.Itoa(i)+".ol"))
+		assetNames = append(assetNames, "test"+strconv.Itoa(i)+".ol")
 		bidder := addrList[k]
 
-		bidConvs = append(bidConvs, NewBidConv(owner, assets[i], BidAssetOns,
-			bidder, testDeadline))
+		bidConvs = append(bidConvs, NewBidConv(owner, assetNames[i], BidAssetOns,
+			bidder, testDeadline, height))
 	}
 
 	//Create Test DB
@@ -53,7 +54,7 @@ func init() {
 	cs := storage.NewState(storage.NewChainState("chainstate", newDB))
 
 	//Create bid conversation store
-	bidConvStore = NewBidConvStore("p_active", "p_succeed", "p_cancelled", "p_expired", "p_expiredFailed", cs)
+	bidConvStore = NewBidConvStore("p_active", "p_succeed", "p_cancelled", "p_expired", "p_rejected", cs)
 }
 
 func TestBidConvStore_Set(t *testing.T) {
@@ -102,7 +103,7 @@ func TestBidConvStore_Iterate(t *testing.T) {
 }
 
 func TestBidConvStore_FilterBidConvs(t *testing.T) {
-	bidConvs := bidConvStore.FilterBidConvs(BidStateActive, addrList[0], assets[0].ToString(), BidAssetOns,
+	bidConvs := bidConvStore.FilterBidConvs(BidStateActive, addrList[0], assetNames[0], BidAssetOns,
 		addrList[9])
 	//onsBidAddr1 := bidConvStore.FilterBidConvs(BidStateSucceed, addrList[1])
 	//onsBidAddr2 := bidConvStore.FilterBidConvs(BidStateCancelled, addrList[2])

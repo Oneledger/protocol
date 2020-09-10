@@ -1,6 +1,7 @@
 package bid_rpc_query
 
 import (
+	"fmt"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/external_apps/bid/bid_data"
@@ -68,13 +69,15 @@ func (svc *Service) ListBidConvs(req bid_rpc.ListBidConvsRequest, reply *bid_rpc
 			return errors.New("invalid asset bidder address")
 		}
 	}
-
+	fmt.Println("req: ", req)
 	// Query in single store if specified
 	var bidConvs []bid_data.BidConv
 	if req.State != bid_data.BidStateInvalid {
 		bidConvs = svc.bidMaster.BidConv.FilterBidConvs(req.State, req.Owner, req.AssetName, req.AssetType, req.Bidder)
 	} else { // Query in all stores otherwise
+		fmt.Println("check1 in service")
 		active := svc.bidMaster.BidConv.FilterBidConvs(bid_data.BidStateActive, req.Owner, req.AssetName, req.AssetType, req.Bidder)
+		fmt.Println("active: ", active)
 		succeed := svc.bidMaster.BidConv.FilterBidConvs(bid_data.BidStateSucceed, req.Owner, req.AssetName, req.AssetType, req.Bidder)
 		rejected := svc.bidMaster.BidConv.FilterBidConvs(bid_data.BidStateRejected, req.Owner, req.AssetName, req.AssetType, req.Bidder)
 		expired := svc.bidMaster.BidConv.FilterBidConvs(bid_data.BidStateExpired, req.Owner, req.AssetName, req.AssetType, req.Bidder)
@@ -140,7 +143,7 @@ func (svc *Service) ListActiveOffers(req bid_rpc.ListActiveOffersRequest, reply 
 		if req.AssetType != bid_data.BidAssetInvalid && req.AssetType != bidConv.AssetType {
 			continue
 		}
-		if req.AssetName != bidConv.Asset.ToString() {
+		if req.AssetName != bidConv.AssetName {
 			continue
 		}
 		aos := bid_rpc.ActiveOfferStat{

@@ -2,25 +2,35 @@ package bid_data
 
 import (
 	"errors"
+	"fmt"
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/ons"
 )
 
-type DomainAsset struct {
-	DomainName ons.Name `json:"name"`
-}
+var _ BidAsset = &DomainAsset{}
 
-func NewDomainAsset(name string) *DomainAsset {
-	return &DomainAsset{
-		DomainName: ons.Name(name),
-	}
+type DomainAsset struct {
+	DomainName ons.Name `json:"domainName"`
 }
 
 func (da *DomainAsset) ToString() string {
 	return string(da.DomainName)
 }
 
+func (da *DomainAsset) SetName(name string) {
+	da.DomainName = ons.GetNameFromString(name)
+	fmt.Println("da.DomainName in SetName: ", da.DomainName)
+}
+
 func (da *DomainAsset) ValidateAsset(ctx *action.Context, owner action.Address) (bool, error) {
+	// check if domain is valid
+	fmt.Println("da.DomainName.IsValid(): ", da.DomainName.IsValid())
+	fmt.Println("da.DomainName.IsSub(): ", da.DomainName.IsSub())
+	fmt.Println("da.DomainName: ", da.DomainName)
+	if !da.DomainName.IsValid() || da.DomainName.IsSub() {
+		return false, errors.New("error domain not valid")
+	}
+
 	// check domain existence
 	if !ctx.Domains.Exists(da.DomainName) {
 		return false, errors.New("domain does not exist, you can just create it")
@@ -48,7 +58,7 @@ func (da *DomainAsset) ValidateAsset(ctx *action.Context, owner action.Address) 
 	return true, nil
 }
 
-func (da *DomainAsset) ExchangeAsset(ctx *action.Context, bidder action.Address, preOwner action.Address) (bool, error) {
+func (da DomainAsset) ExchangeAsset(ctx *action.Context, bidder action.Address, preOwner action.Address) (bool, error) {
 	// change domain ownership
 	domain, err := ctx.Domains.Get(da.DomainName)
 	if err != nil {

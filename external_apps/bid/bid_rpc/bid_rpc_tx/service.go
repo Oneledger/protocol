@@ -18,7 +18,6 @@ func Name() string {
 
 type Service struct {
 	balances    *balance.Store
-	router      action.Router
 	logger      *log.Logger
 }
 
@@ -36,7 +35,7 @@ func (s *Service) CreateBid(args bid_rpc.CreateBidRequest, reply *client.CreateT
 	createBid := bid_action.CreateBid{
 		BidConvId: args.BidConvId,
 		AssetOwner: args.AssetOwner,
-		Asset: args.Asset,
+		AssetName: args.AssetName,
 		AssetType: args.AssetType,
 		Bidder: args.Bidder,
 		Amount: args.Amount,

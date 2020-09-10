@@ -142,3 +142,12 @@ func (bos *BidOfferStore) SetOffer(offer BidOffer) error {
 	}
 	return nil
 }
+
+func (bos *BidOfferStore) DeleteOffer(offer BidOffer) error {
+	key := assembleBidOfferKey(offer.BidConvId, offer.OfferStatus, offer.OfferType, offer.OfferTime)
+	_, err := bos.delete(key)
+	if err != nil {
+		return err
+	}
+	return nil
+}

@@ -3,8 +3,7 @@ package common
 import (
 	"fmt"
 	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/service/query"
-	"github.com/Oneledger/protocol/service/tx"
+	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/storage"
 )
 
@@ -15,18 +14,16 @@ type ExtTx struct {
 
 type ExtServiceMap map[string]interface{}
 
-func NewExtServiceMap() *ExtServiceMap {
-	return &ExtServiceMap{}
+func NewExtServiceMap() ExtServiceMap {
+	return ExtServiceMap{}
 }
 
 type ExtAppData struct {
 	// we need txs, data stores, services, block functions
 	ChainState *storage.ChainState
 	ExtTxs []ExtTx
-	ExtStores	map[string]interface{}
+	ExtStores	map[string]data.ExtStore
 	ExtServiceMap ExtServiceMap
-	ExtQueryServices query.Service
-	ExtTxServices    tx.Service
 	ExtBlockFuncs ControllerRouter
 	Test string
 }
@@ -35,7 +32,7 @@ func LoadExtAppData(cs *storage.ChainState) *ExtAppData {
 	//this will return everything of all external apps
 	appData := &ExtAppData{}
 	appData.ChainState = cs
-	appData.ExtStores = make(map[string]interface{})
+	appData.ExtStores = make(map[string]data.ExtStore)
 	appData.ExtServiceMap = make(ExtServiceMap)
 	functionList := make(map[txblock][]func(interface{}))
 	appData.ExtBlockFuncs = ControllerRouter{

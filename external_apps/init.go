@@ -12,13 +12,15 @@ import (
 
 func init() {
 	fmt.Println("init from externalApps/init")
+	//register new external app handler function in the last line
 	common.Handlers.Register(bid.LoadAppData)
 }
 
-func RegisterExtApp(cs *storage.ChainState, ar action.Router, dr data.Router, esm *common.ExtServiceMap, cr common.Router) error {
+func RegisterExtApp(cs *storage.ChainState, ar action.Router, dr data.Router, esm common.ExtServiceMap, cr common.Router) error {
 	extAppData := common.LoadExtAppData(cs)
 	//test
 	fmt.Println("extAppData.Test", extAppData.Test)
+	fmt.Println("extAppData.ExtServiceMap", extAppData.ExtServiceMap)
 	//register external txs using action.router
 	for _, tx := range extAppData.ExtTxs {
 		err := ar.AddHandler(tx.Msg.Type(), tx.Tx)
@@ -35,9 +37,25 @@ func RegisterExtApp(cs *storage.ChainState, ar action.Router, dr data.Router, es
 		}
 	}
 	// add services
-	esm = &extAppData.ExtServiceMap
+	for name, service := range extAppData.ExtServiceMap {
+		esm[name] = service
+	}
+
 	//add block beginner & ender function router here
-	cr = extAppData.ExtBlockFuncs
+	beginnerFuncs, _ := extAppData.ExtBlockFuncs.Iterate(common.BlockBeginner)
+	for _, function := range beginnerFuncs {
+		err := cr.Add(common.BlockBeginner, function)
+		if err != nil {
+			return errors.Wrap(err, "error adding external block beginner funcs")
+		}
+	}
+	enderFuncs, _ := extAppData.ExtBlockFuncs.Iterate(common.BlockEnder)
+	for _, function := range enderFuncs {
+		err := cr.Add(common.BlockEnder, function)
+		if err != nil {
+			return errors.Wrap(err, "error adding external block ender funcs")
+		}
+	}
 	return nil
 }
 

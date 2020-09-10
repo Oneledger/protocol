@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"github.com/Oneledger/protocol/external_apps"
 	"github.com/Oneledger/protocol/external_apps/common"
 	"io"
@@ -82,8 +83,8 @@ type context struct {
 	logWriter       io.Writer
 	govupdate       *action.GovernaceUpdateAndValidate
 	extApp          *common.ExtAppData
-	extStores           data.Router
-	extServiceMap   *common.ExtServiceMap
+	extStores           data.StorageRouter
+	extServiceMap   common.ExtServiceMap
 	controllerFunctions common.Router //External Stores
 }
 
@@ -142,6 +143,10 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	if err != nil {
 		return ctx, errors.Wrap(err, "error in registering external apps")
 	}
+	fmt.Println("ctx.actionRouter in context: ", ctx.actionRouter)
+	fmt.Println("ctx.extStores in context: ", ctx.extStores)
+	fmt.Println("ctx.extServiceMap in context: ", ctx.extServiceMap)
+	fmt.Println("ctx.controllerFunctions in context: ", ctx.controllerFunctions)
 	ctx.govupdate = action.NewGovUpdate()
 	testEnv := os.Getenv("OLTEST")
 
@@ -215,8 +220,7 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.proposalMaster.WithState(state),
 		ctx.rewardMaster.WithState(state),
 		ctx.govern.WithState(state),
-		//todo delete this if not used
-		ctx.extStores,
+		ctx.extStores.WithState(state),
 		ctx.govupdate,
 	)
 
@@ -281,7 +285,7 @@ func (ctx *context) Services() (service.Map, error) {
 		Delegators:     delegation.NewDelegationStore("st", storage.NewState(ctx.chainstate)),
 		ProposalMaster: proposalMaster,
 		RewardMaster:   rewardMaster,
-		ExtStores:      ctx.extStores,//todo create new store for cache, follow Govern
+		ExtStores:      ctx.extStores,//todo create new store for cache, follow Govern, test this
 		ExtServiceMap:  ctx.extServiceMap,
 		Router:         ctx.actionRouter,
 		Logger:         log.NewLoggerWithPrefix(ctx.logWriter, "rpc").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
@@ -393,16 +397,4 @@ func (ctx *context) JobContext() *event.JobsContext {
 		ctx.ethTrackers.WithState(ctx.deliver),
 		ctx.proposalMaster.WithState(ctx.deliver),
 		log.NewLoggerWithPrefix(ctx.logWriter, "internal_jobs").WithLevel(log.Level(ctx.cfg.Node.LogLevel)))
-}
-
-func (ctx *context) AddExternalTx(t action.Type, h action.Tx) error {
-	return ctx.actionRouter.AddHandler(t, h)
-}
-
-func (ctx *context) AddExternalStore(storeType data.Type, storeObj interface{}) error {
-	return ctx.extStores.Add(storeType, storeObj)
-}
-
-func (ctx *context) GetChainState() *storage.ChainState {
-	return ctx.chainstate
 }

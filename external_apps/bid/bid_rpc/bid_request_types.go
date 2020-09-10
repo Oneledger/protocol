@@ -27,17 +27,17 @@ type ListBidConvsReply struct {
 
 type ListBidConvsRequest struct {
 	State     bid_data.BidConvState `json:"state"`
-	Owner     keys.Address         `json:"owner"`
-	AssetName string               `json:"assetName"`
+	Owner     keys.Address          `json:"owner"`
+	AssetName string                `json:"assetName"`
 	AssetType bid_data.BidAssetType `json:"assetType"`
-	Bidder    keys.Address         `json:"bidder"`
+	Bidder    keys.Address          `json:"bidder"`
 }
 
 type ListActiveOffersRequest struct {
-	Owner     keys.Address         `json:"owner"`
-	AssetName string               `json:"assetName"`
+	Owner     keys.Address          `json:"owner"`
+	AssetName string                `json:"assetName"`
 	AssetType bid_data.BidAssetType `json:"assetType"`
-	Bidder    keys.Address         `json:"bidder"`
+	Bidder    keys.Address          `json:"bidder"`
 	OfferType bid_data.BidOfferType `json:"offerType"`
 }
 
@@ -48,43 +48,43 @@ type ListActiveOffersReply struct {
 
 type CreateBidRequest struct {
 	BidConvId  bid_data.BidConvId    `json:"bidConvId"`
-	AssetOwner keys.Address         `json:"assetOwner"`
-	Asset      bid_data.BidAsset     `json:"asset"`
+	AssetOwner keys.Address          `json:"assetOwner"`
+	AssetName  string                `json:"assetName"`
 	AssetType  bid_data.BidAssetType `json:"assetType"`
-	Bidder     keys.Address         `json:"bidder"`
-	Amount     action.Amount        `json:"amount"`
-	Deadline   int64                `json:"deadline"`
-	GasPrice   action.Amount        `json:"gasPrice"`
-	Gas        int64                `json:"gas"`
+	Bidder     keys.Address          `json:"bidder"`
+	Amount     action.Amount         `json:"amount"`
+	Deadline   int64                 `json:"deadline"`
+	GasPrice   action.Amount         `json:"gasPrice"`
+	Gas        int64                 `json:"gas"`
 }
 
 type CounterOfferRequest struct {
 	BidConvId  bid_data.BidConvId `json:"bidConvId"`
-	AssetOwner keys.Address      `json:"assetOwner"`
-	Amount     action.Amount     `json:"amount"`
-	GasPrice   action.Amount     `json:"gasPrice"`
-	Gas        int64             `json:"gas"`
+	AssetOwner keys.Address       `json:"assetOwner"`
+	Amount     action.Amount      `json:"amount"`
+	GasPrice   action.Amount      `json:"gasPrice"`
+	Gas        int64              `json:"gas"`
 }
 
 type CancelBidRequest struct {
 	BidConvId bid_data.BidConvId `json:"bidConvId"`
-	Bidder    keys.Address      `json:"bidder"`
-	GasPrice  action.Amount     `json:"gasPrice"`
-	Gas       int64             `json:"gas"`
+	Bidder    keys.Address       `json:"bidder"`
+	GasPrice  action.Amount      `json:"gasPrice"`
+	Gas       int64              `json:"gas"`
 }
 
 type OwnerDecisionRequest struct {
 	BidConvId bid_data.BidConvId   `json:"bidConvId"`
-	Owner     keys.Address        `json:"owner"`
+	Owner     keys.Address         `json:"owner"`
 	Decision  bid_data.BidDecision `json:"decision"`
-	GasPrice  action.Amount       `json:"gasPrice"`
-	Gas       int64               `json:"gas"`
+	GasPrice  action.Amount        `json:"gasPrice"`
+	Gas       int64                `json:"gas"`
 }
 
 type BidderDecisionRequest struct {
 	BidConvId bid_data.BidConvId   `json:"bidConvId"`
-	Bidder    keys.Address        `json:"bidder"`
+	Bidder    keys.Address         `json:"bidder"`
 	Decision  bid_data.BidDecision `json:"decision"`
-	GasPrice  action.Amount       `json:"gasPrice"`
-	Gas       int64               `json:"gas"`
+	GasPrice  action.Amount        `json:"gasPrice"`
+	Gas       int64                `json:"gas"`
 }

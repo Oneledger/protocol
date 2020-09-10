@@ -179,4 +179,5 @@ const (
 
 	//Ethereum Errors
 
+	//6 digit error codes starting with 99 are reserved for external apps
 )

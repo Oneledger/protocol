@@ -202,7 +202,6 @@ func (app *App) txChecker() txChecker {
 			}
 		}
 		ok, response := handler.ProcessCheck(txCtx, tx.RawTx)
-
 		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, storage.Gas(len(msg.Tx)))
 
 		logString := marshalLog(ok, response, feeResponse)

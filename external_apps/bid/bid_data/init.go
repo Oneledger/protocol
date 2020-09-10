@@ -1,6 +1,8 @@
 package bid_data
 
 import (
+	"fmt"
+	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
@@ -10,7 +12,7 @@ import (
 var logger *log.Logger
 
 func init() {
-	logger = log.NewDefaultLogger(os.Stdout).WithPrefix("bidding")
+	logger = log.NewDefaultLogger(os.Stdout).WithPrefix("bid")
 	serialize.RegisterConcrete(new(DomainAsset), "domain_asset")
 	serialize.RegisterConcrete(new(ExampleAsset), "example_asset")
 }
@@ -23,7 +25,6 @@ const (
 	BidStateCancelled BidConvState = 0x03
 	BidStateExpired   BidConvState = 0x04
 	BidStateRejected  BidConvState = 0x05
-	//BidStateExpireFailed BidConvState = 0x05
 
 	//Error Codes
 	errorSerialization   = "321"
@@ -40,7 +41,7 @@ const (
 	BidOfferInvalid  BidOfferStatus = 0x03
 
 	//Bid Offer Type
-	TypeOffer        BidOfferType = 0x01
+	TypeBidOffer     BidOfferType = 0x01
 	TypeCounterOffer BidOfferType = 0x02
 	TypeInvalid      BidOfferType = 0x03
 
@@ -51,8 +52,8 @@ const (
 	BidAmountTransferred BidOfferAmountStatus = 0x04
 
 	//Bid Decision
-	AcceptBid BidDecision = true
-	RejectBid BidDecision = false
+	AcceptBid BidDecision = 0x01
+	RejectBid BidDecision = 0x02
 
 	//Bid Asset Type
 	BidAssetInvalid BidAssetType = 0xEE
@@ -67,7 +68,10 @@ type BidMasterStore struct {
 	BidOffer *BidOfferStore
 }
 
-func (bm *BidMasterStore) WithState(state *storage.State) *BidMasterStore {
+var _ data.ExtStore = &BidMasterStore{}
+
+func (bm *BidMasterStore) WithState(state *storage.State) data.ExtStore {
+	fmt.Println("withstate for bidMasterStore: ", state)
 	bm.BidConv.WithState(state)
 	bm.BidOffer.WithState(state)
 	return bm
@@ -81,7 +85,7 @@ func ConstructBidMasterStore(bc *BidConvStore, bo *BidOfferStore) *BidMasterStor
 }
 
 func NewBidMasterStore(chainstate *storage.ChainState) *BidMasterStore {
-	bidConv := NewBidConvStore("bidConvActive", "bidConvSucceed", "bidConvCancelled", "bidConvExpired", "bidConvExpiredFailed", storage.NewState(chainstate))
+	bidConv := NewBidConvStore("bidConvActive", "bidConvSucceed", "bidConvCancelled", "bidConvExpired", "bidConvRejected", storage.NewState(chainstate))
 	bidOffer := NewBidOfferStore("bidOffer", storage.NewState(chainstate))
 	return ConstructBidMasterStore(bidConv, bidOffer)
 }

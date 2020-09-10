@@ -18,10 +18,10 @@ import (
 
 var logger *log.Logger
 
-func init() {
-	fmt.Println("init from bid/init")
-	//common.Handlers.Register(LoadAppData)
-}
+//func init() {
+//	fmt.Println("init from bid/init")
+//	//common.Handlers.Register(LoadAppData)
+//}
 
 //this is the handler function, it will add a bunch of things into appData
 func LoadAppData(appData *common.ExtAppData) {

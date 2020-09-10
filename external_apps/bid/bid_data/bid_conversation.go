@@ -3,6 +3,7 @@ package bid_data
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"github.com/Oneledger/protocol/data/keys"
 	"strconv"
 )
@@ -10,7 +11,7 @@ import (
 type BidConv struct {
 	BidConvId   BidConvId    `json:"bidId"`
 	AssetOwner  keys.Address `json:"assetOwner"`
-	Asset       BidAsset     `json:"asset"`
+	AssetName       string    `json:"assetName"`
 	AssetType   BidAssetType `json:"assetType"`
 	Bidder      keys.Address `json:"bidder"`
 	DeadlineUTC int64        `json:"deadlineUtc"`
@@ -23,14 +24,15 @@ func generateBidConvID(key string, blockHeight int64) BidConvId {
 	if err != nil {
 		return EmptyStr
 	}
+	fmt.Println("id: ", hex.EncodeToString(hashHandler.Sum(nil)))
 	return BidConvId(hex.EncodeToString(hashHandler.Sum(nil)))
 }
 
-func NewBidConv(owner keys.Address, asset BidAsset, assetType BidAssetType, bidder keys.Address, deadline int64, height int64) *BidConv {
+func NewBidConv(owner keys.Address, assetName string, assetType BidAssetType, bidder keys.Address, deadline int64, height int64) *BidConv {
 	return &BidConv{
-		BidConvId:   generateBidConvID(owner.String()+asset.ToString()+bidder.String(), height),
+		BidConvId:   generateBidConvID(owner.String()+assetName+bidder.String(), height),
 		AssetOwner:  owner,
-		Asset:       asset,
+		AssetName:       assetName,
 		AssetType:   assetType,
 		Bidder:      bidder,
 		DeadlineUTC: deadline,

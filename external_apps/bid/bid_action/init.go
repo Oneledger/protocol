@@ -1,9 +1,13 @@
 package bid_action
 
 import (
+	"fmt"
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/external_apps/bid/bid_data"
 	"github.com/Oneledger/protocol/serialize"
 )
+
+var BidAssetMap map[bid_data.BidAssetType]bid_data.BidAsset
 
 const(
 	//Bid
@@ -28,4 +32,7 @@ func init() {
 	action.RegisterTxType(0x104, "BID_BIDDER_DECISION")
 	action.RegisterTxType(0x105, "BID_EXPIRE")
 	action.RegisterTxType(0x106, "BID_OWNER_DECISION")
+	BidAssetMap = make(map[bid_data.BidAssetType]bid_data.BidAsset)
+	BidAssetMap[bid_data.BidAssetOns] = &bid_data.DomainAsset{}
+	fmt.Println("BidAssetMap in init: ", BidAssetMap)
 }
