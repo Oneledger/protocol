@@ -69,7 +69,6 @@ func (svc *Service) ListBidConvs(req bid_rpc.ListBidConvsRequest, reply *bid_rpc
 			return errors.New("invalid asset bidder address")
 		}
 	}
-	fmt.Println("req: ", req)
 	// Query in single store if specified
 	var bidConvs []bid_data.BidConv
 	if req.State != bid_data.BidStateInvalid {

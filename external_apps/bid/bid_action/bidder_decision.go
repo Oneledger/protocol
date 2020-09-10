@@ -163,6 +163,11 @@ func runBidderDecision(ctx *action.Context, tx action.RawTx) (bool, action.Respo
 		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrCloseBidConv, bidderDecision.Tags(), err)
 	}
 
+	//11. exchange asset
+	ok, err := ExchangeAsset(ctx, bidConv.AssetName, bidConv.AssetType, bidConv.AssetOwner, bidConv.Bidder)
+	if err != nil || ok == false {
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrFailedToExchangeAsset, bidderDecision.Tags(), err)
+	}
 	return helpers.LogAndReturnTrue(ctx.Logger, bidderDecision.Tags(), "bidder_accept_bid_success")
 }
 

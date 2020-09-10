@@ -98,18 +98,18 @@ func runOwnerDecision(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrExpiredBid, ownerDecision.Tags(), err)
 	}
 
-	//1. check asset availability
+	//3. check asset availability
 	available, err := IsAssetAvailable(ctx, bidConv.AssetName, bidConv.AssetType, bidConv.AssetOwner)
 	if err != nil || available == false {
 		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrInvalidAsset, ownerDecision.Tags(), err)
 	}
 
-	//2. check owner's identity
+	//4. check owner's identity
 	if !ownerDecision.Owner.Equal(bidConv.AssetOwner) {
 		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrWrongAssetOwner, ownerDecision.Tags(), err)
 	}
 
-	//2. get active bid offer
+	//5. get active bid offer
 	activeOffers := bidMasterStore.BidOffer.GetOffers(ownerDecision.BidConvId, bid_data.BidOfferActive, bid_data.TypeBidOffer)
 	// in this case, there must be an existing active offer
 	if len(activeOffers) == 0 {
@@ -119,11 +119,11 @@ func runOwnerDecision(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 	}
 	activeOffer := activeOffers[0]
 
-	//4. if reject
+	//6. if reject
 	if ownerDecision.Decision != bid_data.RejectBid && ownerDecision.Decision != bid_data.AcceptBid {
 		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrInvalidOwnerDecision, ownerDecision.Tags(), err)
 	} else if ownerDecision.Decision == bid_data.RejectBid {
-		// deactivate offer and unlock amount depends on active offer type
+		// deactivate offer and unlock amount
 		err = DeactivateOffer(false, bidConv.Bidder, ctx, &activeOffer, bidMasterStore)
 		if err != nil {
 			return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrDeactivateOffer, ownerDecision.Tags(), err)
@@ -138,23 +138,29 @@ func runOwnerDecision(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 
 	}
 
-	//5. add the amount to owner, in this case offer amount is already being locked from bidder
+	//7. add the amount to owner, in this case offer amount is already being locked from bidder
 	activeOfferCoin := activeOffer.Amount.ToCoin(ctx.Currencies)
 	err = ctx.Balances.AddToAddress(bidConv.AssetOwner.Bytes(), activeOfferCoin)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrAdddingAmountToOwner, ownerDecision.Tags(), err)
 	}
 
-	//6. change offer status to inactive and add it back to bid offer store
+	//8. change offer status to inactive and add it back to bid offer store
 	err = DeactivateOffer(true, bidConv.Bidder, ctx, &activeOffer, bidMasterStore)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrDeactivateOffer, ownerDecision.Tags(), err)
 	}
 
-	//7. close the bid conversation
+	//9. close the bid conversation
 	err = CloseBidConv(bidConv, bidMasterStore, bid_data.BidStateSucceed)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrCloseBidConv, ownerDecision.Tags(), err)
+	}
+
+	//10. exchange asset
+	ok, err := ExchangeAsset(ctx, bidConv.AssetName, bidConv.AssetType, bidConv.AssetOwner, bidConv.Bidder)
+	if err != nil || ok == false {
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrFailedToExchangeAsset, ownerDecision.Tags(), err)
 	}
 
 	return helpers.LogAndReturnTrue(ctx.Logger, ownerDecision.Tags(), "owner_accept_bid_success")

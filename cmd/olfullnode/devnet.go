@@ -342,7 +342,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 			cfg.Consensus.CreateEmptyBlocks = false
 		}
 
-		cfg.Consensus.TimeoutCommit = config.Duration(testnetArgs.timeoutcommit)
+		cfg.Consensus.TimeoutCommit = 15000
 
 		cfg.Network.RPCAddress = generateAddress(generatePort(), true)
 		cfg.Network.P2PAddress = generateAddress(generatePort(), true)

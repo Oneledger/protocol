@@ -3,7 +3,6 @@ package bid_data
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
 	"github.com/Oneledger/protocol/data/keys"
 	"strconv"
 )
@@ -24,7 +23,6 @@ func generateBidConvID(key string, blockHeight int64) BidConvId {
 	if err != nil {
 		return EmptyStr
 	}
-	fmt.Println("id: ", hex.EncodeToString(hashHandler.Sum(nil)))
 	return BidConvId(hex.EncodeToString(hashHandler.Sum(nil)))
 }
 

@@ -9,7 +9,7 @@ import (
 
 type Type int
 
-type TxTypeMap map[int]string
+type TxTypeMap map[Type]string
 
 var txTypeMap TxTypeMap
 
@@ -72,9 +72,47 @@ func init() {
 	serialize.RegisterInterface(new(Msg))
 	logger = log.NewLoggerWithPrefix(os.Stdout, "action")
 	txTypeMap  = TxTypeMap{}
+	RegisterTxType(SEND, "SEND")
+	RegisterTxType(SENDPOOL, "SENDPOOL")
+
+	RegisterTxType(STAKE, "STAKE")
+	RegisterTxType(UNSTAKE, "UNSTAKE")
+	RegisterTxType(WITHDRAW, "WITHDRAW")
+
+	RegisterTxType(DOMAIN_CREATE, "DOMAIN_CREATE")
+	RegisterTxType(DOMAIN_UPDATE, "DOMAIN_UPDATE")
+	RegisterTxType(DOMAIN_SELL, "DOMAIN_SELL")
+	RegisterTxType(DOMAIN_PURCHASE, "DOMAIN_PURCHASE")
+	RegisterTxType(DOMAIN_SEND, "DOMAIN_SEND")
+	RegisterTxType(DOMAIN_DELETE_SUB, "DOMAIN_DELETE_SUB")
+	RegisterTxType(DOMAIN_RENEW, "DOMAIN_RENEW")
+
+	RegisterTxType(BTC_LOCK, "BTC_LOCK")
+	RegisterTxType(BTC_ADD_SIGNATURE, "BTC_ADD_SIGNATURE")
+	RegisterTxType(BTC_BROADCAST_SUCCESS, "BTC_BROADCAST_SUCCESS")
+	RegisterTxType(BTC_REPORT_FINALITY_MINT, "BTC_REPORT_FINALITY_MINT")
+	RegisterTxType(BTC_EXT_MINT, "BTC_EXT_MINT")
+	RegisterTxType(BTC_REDEEM, "BTC_REDEEM")
+	RegisterTxType(BTC_FAILED_BROADCAST_RESET, "BTC_FAILED_BROADCAST_RESET")
+
+	RegisterTxType(ETH_LOCK, "ETH_LOCK")
+	RegisterTxType(ETH_REPORT_FINALITY_MINT, "ETH_REPORT_FINALITY_MINT")
+	RegisterTxType(ETH_REDEEM, "ETH_REDEEM")
+	RegisterTxType(ERC20_LOCK, "ERC20_LOCK")
+	RegisterTxType(ERC20_REDEEM, "ERC20_REDEEM")
+
+	RegisterTxType(PROPOSAL_CREATE, "PROPOSAL_CREATE")
+	RegisterTxType(PROPOSAL_CANCEL, "PROPOSAL_CANCEL")
+	RegisterTxType(PROPOSAL_FUND, "PROPOSAL_FUND")
+	RegisterTxType(PROPOSAL_VOTE, "PROPOSAL_VOTE")
+	RegisterTxType(PROPOSAL_FINALIZE, "PROPOSAL_FINALIZE")
+	RegisterTxType(EXPIRE_VOTES, "EXPIRE_VOTES")
+	RegisterTxType(PROPOSAL_WITHDRAW_FUNDS, "PROPOSAL_WITHDRAW_FUNDS")
+
+	RegisterTxType(WITHDRAW_REWARD, "WITHDRAW_REWARD")
 }
-//todo in all txs, register tx type use this func(proposal is done)
-func RegisterTxType(value int, name string, ) {
+
+func RegisterTxType(value Type, name string, ) {
 	if dupName, ok := txTypeMap[value]; ok {
 		logger.Errorf("Trying to register tx type %s failed, type value conflicts with existing type: %d: %s", value, dupName)
 		return
@@ -83,7 +121,7 @@ func RegisterTxType(value int, name string, ) {
 }
 
 func (t Type) String() string {
-	if name, ok := txTypeMap[int(t)]; ok {
+	if name, ok := txTypeMap[t]; ok {
 		return name
 	}
 	return "UNKNOWN"

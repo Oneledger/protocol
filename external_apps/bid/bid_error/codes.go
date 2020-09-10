@@ -38,4 +38,5 @@ const (
 	BidErrFailedToDeleteActiveOffer      = 990034
 	BidErrInvalidBidderDecision			 = 990035
 	BidErrInvalidOwnerDecision			 = 990036
+	BidErrFailedToExchangeAsset			 = 990037
 )

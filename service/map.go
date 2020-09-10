@@ -1,7 +1,6 @@
 package service
 
 import (
-	"fmt"
 	"github.com/Oneledger/protocol/external_apps/common"
 	"github.com/pkg/errors"
 
@@ -86,14 +85,10 @@ func NewMap(ctx *Context) (Map, error) {
 			return serviceMap, errors.Wrap(errors.New("Service doesn't exist "), serviceName)
 		}
 	}
-	fmt.Println("check1")
-	fmt.Println("ctx.ExtServiceMap: ", ctx.ExtServiceMap)
 	for name, service := range ctx.ExtServiceMap {
-		fmt.Println("check2")
 		if _, ok := defaultMap[name]; ok {
 			return serviceMap, errors.Wrap(errors.New("Error adding external service, conflict service exist: "), name)
 		} else {
-			fmt.Println("serviceName: ", name)
 			serviceMap[name] = service
 		}
 	}

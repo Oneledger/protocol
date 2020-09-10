@@ -3,6 +3,7 @@ import sys
 
 from rpc_call import *
 
+
 class bcolors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -33,7 +34,8 @@ def create_domain(name, owner_hex, price):
     return resp["result"]["rawTx"]
 
 class BidConv:
-    def __init__(self, owner, asset, assetType, bidder, amount, counter_amount, counter_bid_amount, deadline, bidConvId=None):
+    def __init__(self, owner, asset, assetType, bidder, amount, counter_amount, counter_bid_amount, deadline,
+                 bidConvId=None):
         self.bidConvId = bidConvId
         self.owner = owner
         self.asset = asset
@@ -140,40 +142,6 @@ class BidConv:
         resp = rpc_call('bid_tx.OwnerDecision', req)
         return resp["result"]["rawTx"]
 
-#     def _create_proposal_invalid_info(self, invalid_field):
-#         _proposal_info = self._calculate_proposal_info(12)
-#         req = {
-#             "proposalId": self.get_encoded_pid(),
-#             "headline": self.headline,
-#             "description": self.des,
-#             "proposer": self.proposer,
-#             "proposalType": self.pty,
-#             "initialFunding": {
-#                 "currency": "OLT",
-#                 "value": convertBigInt(self.init_fund),
-#             },
-#             "fundingGoal": _proposal_info.funding_goal,
-#             "fundingDeadline": _proposal_info.funding_deadline,
-#             "votingDeadline": _proposal_info.voting_deadline,
-#             "passPercentage": _proposal_info.pass_percentage,
-#             "gasPrice": {
-#                 "currency": "OLT",
-#                 "value": "1000000000",
-#             },
-#             "gas": 40000,
-#         }
-#         if invalid_field == 0:
-#             req["fundingGoal"] = "123"
-#         elif invalid_field == 1:
-#             req["fundingDeadline"] = 0
-#         elif invalid_field == 2:
-#             req["votingDeadline"] = 0
-#         elif invalid_field == 3:
-#             req["passPercentage"] = 1
-#
-#         resp = rpc_call('tx.CreateProposal', req)
-#         return resp["result"]["rawTx"]
-#
     def send_create(self):
         # createTx
         raw_txn = self._create_bid()
@@ -190,6 +158,17 @@ class BidConv:
             else:
                 self.txHash = "0x" + result["txHash"]
                 print "################### BidConv Created"
+
+    def send_create_async(self):
+        # createTx
+        raw_txn = self._create_bid()
+
+        # sign Tx
+        signed = sign(raw_txn, self.bidder)
+
+        # broadcast Tx
+        result = broadcast_async(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
+        return result
 
     def send_cancel(self, id):
         # createTx
@@ -272,160 +251,6 @@ class BidConv:
                 self.txHash = "0x" + result["txHash"]
                 print "################### Owner Decision Sent"
 
-#
-#     def send_create_invalid_info(self, invalid_field):
-#         # createTx
-#         raw_txn = self._create_proposal_invalid_info(invalid_field)
-#
-#         # sign Tx
-#         signed = sign(raw_txn, self.proposer)
-#
-#         # broadcast Tx
-#         result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
-#
-#         if "ok" in result:
-#             if result["ok"]:
-#                  sys.exit(-1)
-#
-#     def get_encoded_pid(self):
-#         hash_handler = hashlib.sha256()
-#         hash_handler.update(self.pid)
-#         hash_val = hash_handler.digest()
-#         return hash_val.encode('hex')
-#
-#     def tx_created(self):
-#         resp = tx_by_hash(self.txHash)
-#         return resp["result"]["tx_result"]
-#
-#
-# class ProposalInfo:
-#     def __init__(self, funding_goal, funding_deadline, voting_deadline, pass_percentage):
-#         self.funding_goal = funding_goal
-#         self.funding_deadline = funding_deadline
-#         self.voting_deadline = voting_deadline
-#         self.pass_percentage = pass_percentage
-#
-#
-# class ProposalFund:
-#     def __init__(self, pid, value, address):
-#         self.pid = pid
-#         self.value = value
-#         self.funder = address
-#
-#     def _fund_proposal(self):
-#         req = {
-#             "proposalId": self.pid,
-#             "fundValue": {
-#                 "currency": "OLT",
-#                 "value": convertBigInt(self.value),
-#             },
-#             "funderAddress": self.funder,
-#             "gasPrice": {
-#                 "currency": "OLT",
-#                 "value": "1000000000",
-#             },
-#             "gas": 40000,
-#         }
-#
-#         resp = rpc_call('tx.FundProposal', req)
-#         return resp["result"]["rawTx"]
-#
-#     def send_fund(self):
-#         # create Tx
-#         raw_txn = self._fund_proposal()
-#
-#         # sign Tx
-#         signed = sign(raw_txn, self.funder)
-#
-#         # broadcast Tx
-#         result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
-#
-#         if "ok" in result:
-#             if not result["ok"]:
-#                 sys.exit(-1)
-#             else:
-#                 print "################### proposal funded: " + self.pid
-#                 return result["txHash"]
-#
-#
-# class ProposalCancel:
-#     def __init__(self, pid, proposer, reason):
-#         self.pid = pid
-#         self.proposer = proposer
-#         self.reason = reason
-#
-#     def _cancel_proposal(self):
-#         req = {
-#             "proposalId": self.pid,
-#             "proposer": self.proposer,
-#             "reason": self.reason,
-#             "gasPrice": {
-#                 "currency": "OLT",
-#                 "value": "1000000000",
-#             },
-#             "gas": 40000,
-#         }
-#
-#         resp = rpc_call('tx.CancelProposal', req)
-#         return resp["result"]["rawTx"]
-#
-#     def send_cancel(self):
-#         # create Tx
-#         raw_txn = self._cancel_proposal()
-#
-#         # sign Tx
-#         signed = sign(raw_txn, self.proposer)
-#
-#         # broadcast Tx
-#         result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
-#
-#         if "ok" in result:
-#             if not result["ok"]:
-#                 print "################### failed to cancel proposal: " + self.pid
-#                 return False
-#             else:
-#                 print "################### proposal canceled: " + self.pid
-#                 return True
-#         else:
-#             print "################### failed to cancel proposal: " + self.pid
-#             return False
-#
-#
-# class ProposalFinalize:
-#     def __init__(self, pid, address):
-#         self.pid = pid
-#         self.proposer = address
-#
-#     def _finalize_proposal(self):
-#         req = {
-#             "proposalId": self.pid,
-#             "proposer": self.proposer,
-#             "gasPrice": {
-#                 "currency": "OLT",
-#                 "value": "1000000000",
-#             },
-#             "gas": 40000,
-#         }
-#         resp = rpc_call('tx.FinalizeProposal', req)
-#         return resp["result"]["rawTx"]
-#
-#     def send_finalize(self):
-#         # create Tx
-#         raw_txn = self._finalize_proposal()
-#
-#         # sign Tx
-#         signed = sign(raw_txn, self.proposer)
-#
-#         # broadcast Tx
-#         result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
-#
-#         if "ok" in result:
-#             if not result["ok"]:
-#                 sys.exit(-1)
-#             else:
-#                 print "################### proposal finalized: " + self.pid
-#                 return result["txHash"]
-
 
 def addresses():
     resp = rpc_call('owner.ListAccountAddresses', {})
@@ -471,6 +296,15 @@ def broadcast_sync(raw_tx, signature, pub_key):
     return resp["result"]
 
 
+def broadcast_async(raw_tx, signature, pub_key):
+    resp = rpc_call('broadcast.TxAsync', {
+        "rawTx": raw_tx,
+        "signature": signature,
+        "publicKey": pub_key,
+    })
+    return resp["result"]
+
+
 def query_bidConvs(state, owner, assetName, assetType, bidder):
     req = {
         "state": state,
@@ -497,21 +331,8 @@ def query_bidConv(bidConv_Id):
     return result
 
 
-# def query_balance(address):
-#     req = {"address": address}
-#     resp = rpc_call('query.Balance', req)
-#     print json.dumps(resp, indent=4)
-#     return resp["result"]
-#
-#
-#
-# def get_funds_for_proposal_by_funder(proposalId, funder):
-#     req = {
-#         "proposalId": proposalId,
-#         "funderAddress": funder
-#     }
-#     resp = rpc_call('query.GetFundsForProposalByFunder', req)
-#     if "result" not in resp:
-#         sys.exit(-1)
-#
-#     return resp["result"]
+def query_balance(address):
+    req = {"address": address}
+    resp = rpc_call('query.Balance', req)
+    print json.dumps(resp, indent=4)
+    return resp["result"]

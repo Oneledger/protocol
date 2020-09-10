@@ -62,12 +62,8 @@ func (bos *BidOfferStore) iterate(fn func(bidConvId BidConvId, offStatus BidOffe
 				return true
 			}
 			arr := strings.Split(string(key), storage.DB_PREFIX)
-			fmt.Println("key: ", key)
-			fmt.Println("arr: ", arr)
-			fmt.Println("arr[1]: ", arr[1])
 			// key example: bidOffer_bidConvId_offerStatus_offerType_offerTime
 			bidConvId := arr[1]
-			fmt.Println("bidConvId: ", bidConvId)
 			offerStatus, err := strconv.Atoi(arr[2])
 			if err != nil {
 				fmt.Println("Error Parsing Offer Status", err)
@@ -119,15 +115,15 @@ func (bos *BidOfferStore) GetOffers(bId BidConvId, oStatus BidOfferStatus, oType
 	return bidOffers
 }
 
-func (bos *BidOfferStore) GetActiveOfferForBidConvId(id BidConvId, offerType BidOfferType) (*BidOffer, error) {
-	activeOffers := bos.GetOffers(id, BidOfferActive, offerType)
-	if len(activeOffers) == 0 {
-		return nil, errors.New("errNoActiveOffer")
-	} else if len(activeOffers) > 1 {
-		return nil, errors.New("errTooManyActiveOffers")
-	}
-	return &activeOffers[0], nil
-}
+//func (bos *BidOfferStore) GetActiveOfferForBidConvId(id BidConvId, offerType BidOfferType) (*BidOffer, error) {
+//	activeOffers := bos.GetOffers(id, BidOfferActive, offerType)
+//	if len(activeOffers) == 0 {
+//		return nil, errors.New("errNoActiveOffer")
+//	} else if len(activeOffers) > 1 {
+//		return nil, errors.New("errTooManyActiveOffers")
+//	}
+//	return &activeOffers[0], nil
+//}
 
 func assembleBidOfferKey(bidConvId BidConvId, offerStatus BidOfferStatus, offerType BidOfferType, offerTime int64) storage.StoreKey {
 	key := storage.StoreKey(string(bidConvId) + storage.DB_PREFIX + strconv.Itoa(int(offerStatus)) + storage.DB_PREFIX + strconv.Itoa(int(offerType)) + storage.DB_PREFIX + strconv.FormatInt(offerTime, 10))

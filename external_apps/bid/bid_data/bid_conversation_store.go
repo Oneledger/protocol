@@ -1,7 +1,6 @@
 package bid_data
 
 import (
-	"fmt"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
@@ -79,15 +78,12 @@ func (bcs *BidConvStore) Iterate(fn func(id BidConvId, bid *BidConv) bool) (stop
 		storage.Rangefix(string(bcs.prefix)),
 		true,
 		func(key, value []byte) bool {
-			fmt.Println("check1 in iterate")
 			id := BidConvId(key)
 			bid := &BidConv{}
-			fmt.Println("check2 in iterate")
 			err := bcs.szlr.Deserialize(value, bid)
 			if err != nil {
 				return true
 			}
-			fmt.Println("check3 in iterate")
 			return fn(id, bid)
 		},
 	)
@@ -148,36 +144,19 @@ func (bcs *BidConvStore) QueryAllStores(key BidConvId) (*BidConv, BidConvState, 
 
 func (bcs *BidConvStore) FilterBidConvs(bidState BidConvState, owner keys.Address, assetName string, assetType BidAssetType, bidder keys.Address) []BidConv {
 	prefix := bcs.prefix
-	fmt.Println("prefix: ", prefix)
-	fmt.Println("bidState: ", bidState)
-	fmt.Println("owner: ", owner)
-	fmt.Println("assetName: ", assetName)
-	fmt.Println("assetType: ", assetType)
-	fmt.Println("bidder: ", bidder)
-
-	//defer func() { bcs.prefix = prefix }()
+	defer func() { bcs.prefix = prefix }()
 
 	bidConvs := make([]BidConv, 0)
-	fmt.Println("check before iterate")
 	bcs.WithPrefixType(bidState).Iterate(func(id BidConvId, bidConv *BidConv) bool {
-		fmt.Println("check in iterate")
-		fmt.Println("owner", owner.String())
-		fmt.Println("bidConv.AssetOwner", bidConv.AssetOwner.String())
 		if len(owner) != 0 && !bidConv.AssetOwner.Equal(owner) {
 			return false
 		}
-		fmt.Println("bidder", bidder.String())
-		fmt.Println("bidConv.Bidder", bidConv.Bidder.String())
 		if len(bidder) != 0 && !bidConv.Bidder.Equal(bidder) {
 			return false
 		}
-		fmt.Println("assetType", assetType)
-		fmt.Println("bidConv.AssetType", bidConv.AssetType)
 		if bidConv.AssetType != assetType {
 			return false
 		}
-		fmt.Println("asset", assetName)
-		fmt.Println("bidConv.AssetName", bidConv.AssetName)
 		if !cmp.Equal(assetName, bidConv.AssetName) {
 			return false
 		}

@@ -42,4 +42,6 @@ var (
 	ErrFailedToDeleteActiveOffer      = codes.ProtocolError{Code: bid_error.BidErrFailedToDeleteActiveOffer, Msg: "failed to delete active offer"}
 	ErrInvalidBidderDecision          = codes.ProtocolError{Code: bid_error.BidErrInvalidBidderDecision, Msg: "invalid bidder decision"}
 	ErrInvalidOwnerDecision          = codes.ProtocolError{Code: bid_error.BidErrInvalidOwnerDecision, Msg: "invalid owner decision"}
-	)
+	ErrFailedToExchangeAsset			= codes.ProtocolError{Code: bid_error.BidErrFailedToExchangeAsset, Msg: "failed to exchange asset"}
+
+)

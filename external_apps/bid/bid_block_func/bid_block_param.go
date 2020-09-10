@@ -2,7 +2,6 @@ package bid_block_func
 
 import (
 	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/data/transactions"
 	"github.com/Oneledger/protocol/log"
@@ -11,7 +10,6 @@ import (
 )
 
 type BidParam struct {
-	ExternalStores data.Router
 	InternalTxStore *transactions.TransactionStore
 	Logger *log.Logger
 	ActionCtx action.Context

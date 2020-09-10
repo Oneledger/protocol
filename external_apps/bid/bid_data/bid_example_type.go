@@ -2,33 +2,28 @@ package bid_data
 
 import (
 	"github.com/Oneledger/protocol/action"
-	"strconv"
 )
 
 var _ BidAsset = &ExampleAsset{}
 
 type ExampleAsset struct {
-	ExampleField int `json:"exampleField"`
+	ExampleName string `json:"exampleName"`
 }
 
-func NewExampleAsset(exampleValue int) *ExampleAsset {
-	return &ExampleAsset{
-		ExampleField: exampleValue,
-	}
+func (ea *ExampleAsset) ToString() string {
+	return ea.ExampleName
 }
 
-func (ta *ExampleAsset) ToString() string {
-	return strconv.Itoa(ta.ExampleField)
-}
-
-func (ta *ExampleAsset) ValidateAsset(ctx *action.Context, owner action.Address) (bool, error) {
+func (ea *ExampleAsset) ValidateAsset(ctx *action.Context, owner action.Address) (bool, error) {
 	return true, nil
 }
 
-func (ta *ExampleAsset) ExchangeAsset(ctx *action.Context, bidder action.Address, preOwner action.Address) (bool, error) {
+func (ea *ExampleAsset) ExchangeAsset(ctx *action.Context, bidder action.Address, preOwner action.Address) (bool, error) {
 	return true, nil
 }
 
-func (ta *ExampleAsset) SetName(name string) {
-
+func (ea *ExampleAsset) NewAssetWithName(name string) BidAsset {
+	asset := *ea
+	asset.ExampleName = name
+ 	return &asset
 }

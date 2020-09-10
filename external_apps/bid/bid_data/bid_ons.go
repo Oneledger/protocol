@@ -2,7 +2,6 @@ package bid_data
 
 import (
 	"errors"
-	"fmt"
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/ons"
 )
@@ -17,16 +16,8 @@ func (da *DomainAsset) ToString() string {
 	return string(da.DomainName)
 }
 
-func (da *DomainAsset) SetName(name string) {
-	da.DomainName = ons.GetNameFromString(name)
-	fmt.Println("da.DomainName in SetName: ", da.DomainName)
-}
-
 func (da *DomainAsset) ValidateAsset(ctx *action.Context, owner action.Address) (bool, error) {
 	// check if domain is valid
-	fmt.Println("da.DomainName.IsValid(): ", da.DomainName.IsValid())
-	fmt.Println("da.DomainName.IsSub(): ", da.DomainName.IsSub())
-	fmt.Println("da.DomainName: ", da.DomainName)
 	if !da.DomainName.IsValid() || da.DomainName.IsSub() {
 		return false, errors.New("error domain not valid")
 	}
@@ -58,15 +49,17 @@ func (da *DomainAsset) ValidateAsset(ctx *action.Context, owner action.Address) 
 	return true, nil
 }
 
-func (da DomainAsset) ExchangeAsset(ctx *action.Context, bidder action.Address, preOwner action.Address) (bool, error) {
+func (da *DomainAsset) ExchangeAsset(ctx *action.Context, bidder action.Address, preOwner action.Address) (bool, error) {
 	// change domain ownership
 	domain, err := ctx.Domains.Get(da.DomainName)
 	if err != nil {
 		return false, errors.New("error getting domain")
 	}
 
+	if !domain.IsChangeable(ctx.Header.Height) {
+		return false, errors.New("error domain not changeable")
+	}
 	domain.ResetAfterSale(bidder, bidder, 0, ctx.State.Version())
-
 	err = ctx.Domains.DeleteAllSubdomains(domain.Name)
 	if err != nil {
 		return false, err
@@ -78,4 +71,10 @@ func (da DomainAsset) ExchangeAsset(ctx *action.Context, bidder action.Address, 
 	}
 
 	return true, nil
+}
+
+func (da *DomainAsset) NewAssetWithName(name string) BidAsset {
+	asset := *da
+	asset.DomainName = ons.GetNameFromString(name)
+	return &asset
 }

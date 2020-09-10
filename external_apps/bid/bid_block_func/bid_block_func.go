@@ -1,7 +1,6 @@
 package bid_block_func
 
 import (
-	"fmt"
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/external_apps/bid/bid_action"
@@ -23,7 +22,7 @@ func AddExpireBidTxToQueue(i interface{}) {
 		bidParam.Logger.Error("failed to assert bidParam in block beginner")
 		return
 	}
-	bidMaster, err := bidParam.ExternalStores.Get("bidMaster")
+	bidMaster, err := bidParam.ActionCtx.ExtStores.Get("bidMaster")
 	if err != nil {
 		bidParam.Logger.Error("failed to get bid master store in block beginner", err)
 		return
@@ -106,7 +105,6 @@ func PopExpireBidTxFromQueue(i interface{}) {
 
 	//3. execute all the txs
 	for _, bidConv := range expiredBidConvs {
-		fmt.Println("there is tx to be executed in block ender")
 		bidParam.Deliver.BeginTxSession()
 		actionctx := bidParam.ActionCtx
 		txData := bidConv.Tx

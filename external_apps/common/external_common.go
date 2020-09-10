@@ -1,7 +1,6 @@
 package common
 
 import (
-	"fmt"
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/storage"
@@ -38,10 +37,8 @@ func LoadExtAppData(cs *storage.ChainState) *ExtAppData {
 	appData.ExtBlockFuncs = ControllerRouter{
 		functionlist: functionList,
 	}
-	fmt.Println("LoadExtAppData runs, and the Handlers: ", Handlers)
 	for _, handler := range Handlers {
 		//this is to put external app data to appData
-		fmt.Println("inside for loop")
 		handler(appData)
 	}
 

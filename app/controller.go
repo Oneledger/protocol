@@ -148,7 +148,6 @@ func (app *App) blockBeginner() blockBeginner {
 		AddInternalTX(app.Context.proposalMaster, app.Context.node.ValidatorAddress(), app.header.Height, app.Context.transaction, app.logger)
 		functionList, err := app.Context.controllerFunctions.Iterate(common.BlockBeginner)
 		functionParam := bid_block_func.BidParam{
-			ExternalStores: app.Context.extStores,
 			InternalTxStore: app.Context.transaction,
 			Logger: app.logger,
 			ActionCtx: *app.Context.Action(&app.header, app.Context.deliver),
@@ -306,7 +305,7 @@ func (app *App) blockEnder() blockEnder {
 		FinalizeProposals(&app.header, &app.Context, app.logger)
 		functionList, err := app.Context.controllerFunctions.Iterate(common.BlockEnder)
 		functionParam := bid_block_func.BidParam{
-			ExternalStores: app.Context.extStores,
+			//ExternalStores: app.Context.extStores.WithState(storage.NewState(app.Context.chainstate)),
 			InternalTxStore: app.Context.transaction,
 			Logger: app.logger,
 			ActionCtx: *app.Context.Action(&app.header, app.Context.deliver),

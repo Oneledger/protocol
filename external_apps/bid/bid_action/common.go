@@ -1,7 +1,6 @@
 package bid_action
 
 import (
-	"fmt"
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/external_apps/bid/bid_data"
@@ -21,12 +20,19 @@ func GetBidMasterStore(ctx *action.Context) (*bid_data.BidMasterStore, error) {
 }
 
 func IsAssetAvailable(ctx *action.Context, assetName string, assetType bid_data.BidAssetType, assetOwner keys.Address) (bool, error) {
-	//todo here needs to be copy(is it right now?)
-	bidAsset := BidAssetMap[assetType]
-	bidAsset.SetName(string(assetName))
-	fmt.Println("bidAsset: ", bidAsset)
+	bidAssetTemplate := BidAssetMap[assetType]
+	bidAsset := bidAssetTemplate.NewAssetWithName(assetName)
+	//fmt.Printf("bidAsset: %p %v\n", bidAsset, bidAsset)
 	assetOk, err := bidAsset.ValidateAsset(ctx, assetOwner)
 	return assetOk, err
+}
+
+func ExchangeAsset(ctx *action.Context, assetName string, assetType bid_data.BidAssetType, assetOwner keys.Address, bidder keys.Address) (bool, error) {
+	bidAssetTemplate := BidAssetMap[assetType]
+	bidAsset := bidAssetTemplate.NewAssetWithName(assetName)
+	//fmt.Printf("bidAsset: %p %v\n", bidAsset, bidAsset)
+	exchangeOk, err := bidAsset.ExchangeAsset(ctx, bidder, assetOwner)
+	return exchangeOk, err
 }
 
 func DeactivateOffer(deal bool, bidder action.Address, ctx *action.Context, activeOffer *bid_data.BidOffer, bidMasterStore *bid_data.BidMasterStore) error {

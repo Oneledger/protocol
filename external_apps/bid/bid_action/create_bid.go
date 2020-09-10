@@ -2,7 +2,6 @@ package bid_action
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/Oneledger/protocol/external_apps/bid/bid_data"
 	"strconv"
@@ -38,7 +37,6 @@ func (c CreateBidTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bo
 	if err != nil {
 		return false, errors.Wrap(action.ErrWrongTxType, err.Error())
 	}
-	fmt.Println("createBid: ", createBid)
 
 	//validate basic signature
 	err = action.ValidateBasic(signedTx.RawBytes(), createBid.Signers(), signedTx.Signatures)
@@ -171,9 +169,8 @@ func runCreateBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		}
 
 	}
-
 	//7. lock amount
-	err = ctx.Balances.MinusFromAddress(createBid.Bidder.Bytes(), offerCoin)
+	err = ctx.Balances.MinusFromAddress(createBid.Bidder, offerCoin)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrLockAmount, createBid.Tags(), err)
 	}

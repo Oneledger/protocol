@@ -1,7 +1,6 @@
 package bid_data
 
 import (
-	"fmt"
 	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/serialize"
@@ -58,6 +57,7 @@ const (
 	//Bid Asset Type
 	BidAssetInvalid BidAssetType = 0xEE
 	BidAssetOns     BidAssetType = 0x21
+	BidAssetExample BidAssetType = 0x22
 
 	//Bid Id length based on hash algorithm
 	SHA256LENGTH int = 0x40
@@ -71,7 +71,6 @@ type BidMasterStore struct {
 var _ data.ExtStore = &BidMasterStore{}
 
 func (bm *BidMasterStore) WithState(state *storage.State) data.ExtStore {
-	fmt.Println("withstate for bidMasterStore: ", state)
 	bm.BidConv.WithState(state)
 	bm.BidOffer.WithState(state)
 	return bm
