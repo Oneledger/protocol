@@ -2,6 +2,7 @@ package bid_action
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/Oneledger/protocol/external_apps/bid/bid_data"
 
@@ -91,9 +92,12 @@ func runExpireBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 	}
 
 	//2. get the active offer(bid offer or counter offer)
+	fmt.Println("getOffer from expire bid tx")
 	activeOffers := bidMasterStore.BidOffer.GetOffers(expireBid.BidConvId, bid_data.BidOfferActive, bid_data.TypeInvalid)
 	// in this case there must be an offer
 	if len(activeOffers) == 0 {
+		allOffers := bidMasterStore.BidOffer.GetOffers(expireBid.BidConvId, bid_data.BidOfferInvalid, bid_data.TypeInvalid)
+		fmt.Println("allOffers: ", allOffers)
 		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrGettingActiveOffer, expireBid.Tags(), err)
 	} else if len(activeOffers) > 1 {
 		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrTooManyActiveOffers, expireBid.Tags(), err)
@@ -105,12 +109,10 @@ func runExpireBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrDeactivateOffer, expireBid.Tags(), err)
 	}
-
 	err = CloseBidConv(bidConv, bidMasterStore, bid_data.BidStateExpired)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrCloseBidConv, expireBid.Tags(), err)
 	}
-
 	return helpers.LogAndReturnTrue(ctx.Logger, expireBid.Tags(), "expire_bid_success")
 }
 

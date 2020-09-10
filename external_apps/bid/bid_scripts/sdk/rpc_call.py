@@ -2,7 +2,6 @@ import json
 import os
 
 import requests
-
 url_tmTx = "http://127.0.0.1:26600/tx"
 url_0 = "http://127.0.0.1:26602/jsonrpc"
 url_1 = "http://127.0.0.1:26605/jsonrpc"

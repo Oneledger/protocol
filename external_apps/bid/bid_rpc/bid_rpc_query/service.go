@@ -1,7 +1,6 @@
 package bid_rpc_query
 
 import (
-	"fmt"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/external_apps/bid/bid_data"
@@ -74,9 +73,7 @@ func (svc *Service) ListBidConvs(req bid_rpc.ListBidConvsRequest, reply *bid_rpc
 	if req.State != bid_data.BidStateInvalid {
 		bidConvs = svc.bidMaster.BidConv.FilterBidConvs(req.State, req.Owner, req.AssetName, req.AssetType, req.Bidder)
 	} else { // Query in all stores otherwise
-		fmt.Println("check1 in service")
 		active := svc.bidMaster.BidConv.FilterBidConvs(bid_data.BidStateActive, req.Owner, req.AssetName, req.AssetType, req.Bidder)
-		fmt.Println("active: ", active)
 		succeed := svc.bidMaster.BidConv.FilterBidConvs(bid_data.BidStateSucceed, req.Owner, req.AssetName, req.AssetType, req.Bidder)
 		rejected := svc.bidMaster.BidConv.FilterBidConvs(bid_data.BidStateRejected, req.Owner, req.AssetName, req.AssetType, req.Bidder)
 		expired := svc.bidMaster.BidConv.FilterBidConvs(bid_data.BidStateExpired, req.Owner, req.AssetName, req.AssetType, req.Bidder)

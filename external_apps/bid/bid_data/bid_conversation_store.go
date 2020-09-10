@@ -157,7 +157,7 @@ func (bcs *BidConvStore) FilterBidConvs(bidState BidConvState, owner keys.Addres
 		if bidConv.AssetType != assetType {
 			return false
 		}
-		if !cmp.Equal(assetName, bidConv.AssetName) {
+		if len(assetName) != 0 && !cmp.Equal(assetName, bidConv.AssetName) {
 			return false
 		}
 

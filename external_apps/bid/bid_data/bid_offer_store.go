@@ -100,6 +100,11 @@ func (bos *BidOfferStore) GetOffers(bId BidConvId, oStatus BidOfferStatus, oType
 	var bidOffers []BidOffer
 
 	bos.iterate(func(bidConvId BidConvId, offerStatus BidOfferStatus, offerType BidOfferType, offerTime int64, offer BidOffer) bool {
+		//fmt.Println("iterate func in getOffer")
+		//fmt.Println("offer.BidConvId: ", offer.BidConvId)
+		//fmt.Println("offer.OfferType: ", offer.OfferType)
+		//fmt.Println("offer.OfferStatus: ", offer.OfferStatus)
+
 		if len(bId) != 0 && bId != bidConvId {
 			return false
 		}

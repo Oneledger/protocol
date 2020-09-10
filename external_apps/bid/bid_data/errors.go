@@ -34,14 +34,14 @@ var (
 	ErrWrongAssetOwner                = codes.ProtocolError{bid_error.BidErrWrongAssetOwner, "asset owner not match"}
 	ErrDeductingAmountFromBidder      = codes.ProtocolError{bid_error.BidErrDeductingAmountFromBidder, "failed to deduct amount from bidder"}
 	ErrAdddingAmountToOwner           = codes.ProtocolError{bid_error.BidErrAdddingAmountToOwner, "failed to add amount to asset owner"}
-	ErrSetOffer                       = codes.ProtocolError{Code: bid_error.BidErrSetOffer, Msg: "failed to set offer"}
-	ErrAssertingBidMasterStore        = codes.ProtocolError{Code: bid_error.BidErrAssertingBidMasterStore, Msg: "failed to assert bid master store"}
-	ErrAddingBidConvToTargetStore     = codes.ProtocolError{Code: bid_error.BidErrAddingBidConvToTargetStore, Msg: "failed to add bid conversation to target store"}
-	ErrDeletingBidConvFromActiveStore = codes.ProtocolError{Code: bid_error.BidErrDeletingBidConvFromActiveStore, Msg: "failed to delete bid conversation from active store"}
-	ErrInvalidOfferType               = codes.ProtocolError{Code: bid_error.BidErrInvalidOfferType, Msg: "invalid offer type"}
-	ErrFailedToDeleteActiveOffer      = codes.ProtocolError{Code: bid_error.BidErrFailedToDeleteActiveOffer, Msg: "failed to delete active offer"}
-	ErrInvalidBidderDecision          = codes.ProtocolError{Code: bid_error.BidErrInvalidBidderDecision, Msg: "invalid bidder decision"}
-	ErrInvalidOwnerDecision          = codes.ProtocolError{Code: bid_error.BidErrInvalidOwnerDecision, Msg: "invalid owner decision"}
-	ErrFailedToExchangeAsset			= codes.ProtocolError{Code: bid_error.BidErrFailedToExchangeAsset, Msg: "failed to exchange asset"}
+	ErrSetOffer                       = codes.ProtocolError{ bid_error.BidErrSetOffer,  "failed to set offer"}
+	ErrAssertingBidMasterStore        = codes.ProtocolError{ bid_error.BidErrAssertingBidMasterStore,  "failed to assert bid master store"}
+	ErrAddingBidConvToTargetStore     = codes.ProtocolError{ bid_error.BidErrAddingBidConvToTargetStore,  "failed to add bid conversation to target store"}
+	ErrDeletingBidConvFromActiveStore = codes.ProtocolError{ bid_error.BidErrDeletingBidConvFromActiveStore,  "failed to delete bid conversation from active store"}
+	ErrInvalidOfferType               = codes.ProtocolError{ bid_error.BidErrInvalidOfferType,  "invalid offer type"}
+	ErrFailedToDeleteActiveOffer      = codes.ProtocolError{ bid_error.BidErrFailedToDeleteActiveOffer,  "failed to delete active offer"}
+	ErrInvalidBidderDecision          = codes.ProtocolError{ bid_error.BidErrInvalidBidderDecision,  "invalid bidder decision"}
+	ErrInvalidOwnerDecision          = codes.ProtocolError{ bid_error.BidErrInvalidOwnerDecision,  "invalid owner decision"}
+	ErrFailedToExchangeAsset			= codes.ProtocolError{ bid_error.BidErrFailedToExchangeAsset,  "failed to exchange asset"}
 
 )
