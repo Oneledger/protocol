@@ -304,7 +304,6 @@ func (app *App) blockEnder() blockEnder {
 		FinalizeProposals(&app.header, &app.Context, app.logger)
 		functionList, err := app.Context.controllerFunctions.Iterate(common.BlockEnder)
 		functionParam := common.ExtParam{
-			//ExternalStores: app.Context.extStores.WithState(storage.NewState(app.Context.chainstate)),
 			InternalTxStore: app.Context.transaction,
 			Logger: app.logger,
 			ActionCtx: *app.Context.Action(&app.header, app.Context.deliver),
