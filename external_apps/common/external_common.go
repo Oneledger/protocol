@@ -23,11 +23,11 @@ func NewExtServiceMap() ExtServiceMap {
 
 type ExtAppData struct {
 	// we need txs, data stores, services, block functions
-	ChainState *storage.ChainState
-	ExtTxs []ExtTx
-	ExtStores	map[string]data.ExtStore
+	ChainState    *storage.ChainState
+	ExtTxs        []ExtTx
+	ExtStores     map[string]data.ExtStore
 	ExtServiceMap ExtServiceMap
-	ExtBlockFuncs ControllerRouter
+	ExtBlockFuncs FunctionRouter
 }
 
 func LoadExtAppData(cs *storage.ChainState) *ExtAppData {
@@ -37,7 +37,7 @@ func LoadExtAppData(cs *storage.ChainState) *ExtAppData {
 	appData.ExtStores = make(map[string]data.ExtStore)
 	appData.ExtServiceMap = make(ExtServiceMap)
 	functionList := make(map[txblock][]func(interface{}))
-	appData.ExtBlockFuncs = ControllerRouter{
+	appData.ExtBlockFuncs = FunctionRouter{
 		functionlist: functionList,
 	}
 	for _, handler := range Handlers {
@@ -54,9 +54,9 @@ func (h *HandlerList) Register(fn func(*ExtAppData)) {
 
 type ExtParam struct {
 	InternalTxStore *transactions.TransactionStore
-	Logger *log.Logger
-	ActionCtx action.Context
-	Validator keys.Address
-	Header abci.Header
-	Deliver *storage.State
+	Logger          *log.Logger
+	ActionCtx       action.Context
+	Validator       keys.Address
+	Header          abci.Header
+	Deliver         *storage.State
 }

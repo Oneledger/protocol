@@ -58,15 +58,15 @@ type context struct {
 	check      *storage.State
 	deliver    *storage.State
 
-	balances            *balance.Store
-	domains             *ons.DomainStore
-	validators          *identity.ValidatorStore // Set of validators currently active
-	witnesses           *identity.WitnessStore   // Set of witnesses currently active
-	feePool             *fees.Store
-	govern              *governance.Store
-	btcTrackers         *bitcoin.TrackerStore  // tracker for bitcoin balance UTXO
-	ethTrackers         *ethereum.TrackerStore // Tracker store for ongoing ethereum trackers
-	currencies          *balance.CurrencySet
+	balances    *balance.Store
+	domains     *ons.DomainStore
+	validators  *identity.ValidatorStore // Set of validators currently active
+	witnesses   *identity.WitnessStore   // Set of witnesses currently active
+	feePool     *fees.Store
+	govern      *governance.Store
+	btcTrackers *bitcoin.TrackerStore  // tracker for bitcoin balance UTXO
+	ethTrackers *ethereum.TrackerStore // Tracker store for ongoing ethereum trackers
+	currencies  *balance.CurrencySet
 	//storage which is not a chain state
 	accounts accounts.Wallet
 
@@ -82,9 +82,9 @@ type context struct {
 	logWriter       io.Writer
 	govupdate       *action.GovernaceUpdateAndValidate
 	extApp          *common.ExtAppData
-	extStores           data.StorageRouter
+	extStores       data.StorageRouter
 	extServiceMap   common.ExtServiceMap
-	controllerFunctions common.Router //External Stores
+	extFunctions    common.ControllerRouter
 }
 
 func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (context, error) {
@@ -137,8 +137,8 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.internalRouter = action.NewRouter("internal")
 	ctx.extStores = data.NewStorageRouter()
 	ctx.extServiceMap = common.NewExtServiceMap()
-	ctx.controllerFunctions = common.NewRouter()
-	err = external_apps.RegisterExtApp(ctx.chainstate, ctx.actionRouter, ctx.extStores, ctx.extServiceMap, ctx.controllerFunctions)
+	ctx.extFunctions = common.NewFunctionRouter()
+	err = external_apps.RegisterExtApp(ctx.chainstate, ctx.actionRouter, ctx.extStores, ctx.extServiceMap, ctx.extFunctions)
 	if err != nil {
 		return ctx, errors.Wrap(err, "error in registering external apps")
 	}
