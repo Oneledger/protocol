@@ -14,7 +14,6 @@ var (
 	ErrGettingBidConv                   = codes.ProtocolError{bid_error.BidErrGettingBidConv, "failed to get bid conversation"}
 	ErrExpiredBid                       = codes.ProtocolError{bid_error.BidErrExpiredBid, "the bid is already expired"}
 	ErrGettingActiveOffer               = codes.ProtocolError{bid_error.BidErrGettingActiveOffer, "failed to get active offer"}
-	ErrTooManyActiveOffers              = codes.ProtocolError{bid_error.BidErrTooManyActiveOffers, "error there should be only one active offer"}
 	ErrGettingActiveBidOffer            = codes.ProtocolError{bid_error.BidErrGettingActiveBidOffer, "failed to get active bid offer"}
 	ErrGettingActiveCounterOffer        = codes.ProtocolError{bid_error.BidErrGettingActiveCounterOffer, "failed to get active counter offer"}
 	ErrDeactivateOffer                  = codes.ProtocolError{bid_error.BidErrDeactivateOffer, "failed to deactivate offer"}

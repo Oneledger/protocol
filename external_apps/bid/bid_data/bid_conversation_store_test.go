@@ -105,9 +105,6 @@ func TestBidConvStore_Iterate(t *testing.T) {
 func TestBidConvStore_FilterBidConvs(t *testing.T) {
 	bidConvs := bidConvStore.FilterBidConvs(BidStateActive, addrList[0], assetNames[0], BidAssetOns,
 		addrList[9])
-	//onsBidAddr1 := bidConvStore.FilterBidConvs(BidStateSucceed, addrList[1])
-	//onsBidAddr2 := bidConvStore.FilterBidConvs(BidStateCancelled, addrList[2])
 	assert.Equal(t, 1, len(bidConvs))
-	//assert.Equal(t, 2, len(onsBidAddr1))
-	//assert.Equal(t, 2, len(onsBidAddr2))
+
 }

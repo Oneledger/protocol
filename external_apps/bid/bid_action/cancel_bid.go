@@ -72,7 +72,7 @@ func (c CancelBidTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, s
 }
 
 func runCancelBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	// bidder can cancel a bid as long as bid is active
+	// bidder can cancel a bid as long as bid is in ACTIVE store
 
 	cancelBid := CancelBid{}
 	err := cancelBid.Unmarshal(tx.Data)

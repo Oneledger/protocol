@@ -97,6 +97,23 @@ class BidConv:
         resp = rpc_call('bid_tx.CounterOffer', req)
         return resp["result"]["rawTx"]
 
+    def _counter_offer_wrong_owner(self, id):
+        req = {
+            "bidConvId": id,
+            "assetOwner": self.bidder,
+            "amount": {
+                "currency": "OLT",
+                "value": convertBigInt(self.counter_amount),
+            },
+            "gasPrice": {
+                "currency": "OLT",
+                "value": "1000000000",
+            },
+            "gas": 400000,
+        }
+        resp = rpc_call('bid_tx.CounterOffer', req)
+        return resp["result"]["rawTx"]
+
     def _bidder_decision(self, id, decision):
         req = {
             "bidConvId": id,
@@ -201,6 +218,21 @@ class BidConv:
             else:
                 self.txHash = "0x" + result["txHash"]
                 print "################### Counter Offer Sent"
+
+    def send_counter_offer_malicious(self, id):
+        # createTx
+        raw_txn = self._counter_offer(id)
+
+        # sign Tx
+        signed = sign(raw_txn, self.bidder)
+
+        # broadcast Tx
+        result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
+        if "ok" in result:
+            if result["ok"]:
+                print "Send Malicious Counter Offer Succeed : ", result
+            else:
+                print "################### Malicious Counter Offer Failed As Expected"
 
     def send_bidder_decision(self, id, decision):
         # createTx
