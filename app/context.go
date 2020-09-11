@@ -280,7 +280,6 @@ func (ctx *context) Services() (service.Map, error) {
 		Delegators:     delegation.NewDelegationStore("st", storage.NewState(ctx.chainstate)),
 		ProposalMaster: proposalMaster,
 		RewardMaster:   rewardMaster,
-		//todo create new store for cache, follow Govern, test this
 		ExtStores:      ctx.extStores,
 		ExtServiceMap:  ctx.extServiceMap,
 		Router:         ctx.actionRouter,

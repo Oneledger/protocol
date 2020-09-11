@@ -1,7 +1,6 @@
 package external_apps
 
 import (
-	"fmt"
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/external_apps/bid"
@@ -11,7 +10,6 @@ import (
 )
 
 func init() {
-	fmt.Println("init from externalApps/init")
 	//register new external app handler function in the last line
 	common.Handlers.Register(bid.LoadAppData)
 }
