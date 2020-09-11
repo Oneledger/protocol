@@ -18,9 +18,6 @@ func init() {
 
 func RegisterExtApp(cs *storage.ChainState, ar action.Router, dr data.Router, esm common.ExtServiceMap, cr common.Router) error {
 	extAppData := common.LoadExtAppData(cs)
-	//test
-	fmt.Println("extAppData.Test", extAppData.Test)
-	fmt.Println("extAppData.ExtServiceMap", extAppData.ExtServiceMap)
 	//register external txs using action.router
 	for _, tx := range extAppData.ExtTxs {
 		err := ar.AddHandler(tx.Msg.Type(), tx.Tx)

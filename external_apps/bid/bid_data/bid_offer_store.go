@@ -14,7 +14,7 @@ type BidOfferStore struct {
 	prefix []byte
 }
 
-func (bos *BidOfferStore) Set(key storage.StoreKey, offer BidOffer) error {
+func (bos *BidOfferStore) set(key storage.StoreKey, offer BidOffer) error {
 	dat, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(offer)
 	if err != nil {
 		return errors.Wrap(err, errorSerialization)
@@ -98,13 +98,7 @@ func NewBidOfferStore(prefix string, state *storage.State) *BidOfferStore {
 
 func (bos *BidOfferStore) GetOffers(bId BidConvId, oStatus BidOfferStatus, oType BidOfferType) []BidOffer {
 	var bidOffers []BidOffer
-
 	bos.iterate(func(bidConvId BidConvId, offerStatus BidOfferStatus, offerType BidOfferType, offerTime int64, offer BidOffer) bool {
-		//fmt.Println("iterate func in getOffer")
-		//fmt.Println("offer.BidConvId: ", offer.BidConvId)
-		//fmt.Println("offer.OfferType: ", offer.OfferType)
-		//fmt.Println("offer.OfferStatus: ", offer.OfferStatus)
-
 		if len(bId) != 0 && bId != bidConvId {
 			return false
 		}
@@ -120,16 +114,6 @@ func (bos *BidOfferStore) GetOffers(bId BidConvId, oStatus BidOfferStatus, oType
 	return bidOffers
 }
 
-//func (bos *BidOfferStore) GetActiveOfferForBidConvId(id BidConvId, offerType BidOfferType) (*BidOffer, error) {
-//	activeOffers := bos.GetOffers(id, BidOfferActive, offerType)
-//	if len(activeOffers) == 0 {
-//		return nil, errors.New("errNoActiveOffer")
-//	} else if len(activeOffers) > 1 {
-//		return nil, errors.New("errTooManyActiveOffers")
-//	}
-//	return &activeOffers[0], nil
-//}
-
 func assembleBidOfferKey(bidConvId BidConvId, offerStatus BidOfferStatus, offerType BidOfferType, offerTime int64) storage.StoreKey {
 	key := storage.StoreKey(string(bidConvId) + storage.DB_PREFIX + strconv.Itoa(int(offerStatus)) + storage.DB_PREFIX + strconv.Itoa(int(offerType)) + storage.DB_PREFIX + strconv.FormatInt(offerTime, 10))
 	return key
@@ -137,7 +121,7 @@ func assembleBidOfferKey(bidConvId BidConvId, offerStatus BidOfferStatus, offerT
 
 func (bos *BidOfferStore) SetOffer(offer BidOffer) error {
 	key := assembleBidOfferKey(offer.BidConvId, offer.OfferStatus, offer.OfferType, offer.OfferTime)
-	err := bos.Set(key, offer)
+	err := bos.set(key, offer)
 	if err != nil {
 		return err
 	}

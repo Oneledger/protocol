@@ -9,25 +9,25 @@ import (
 var _ BidAsset = &DomainAsset{}
 
 type DomainAsset struct {
-	DomainName ons.Name `json:"domainName"`
+	domainName ons.Name
 }
 
 func (da *DomainAsset) ToString() string {
-	return string(da.DomainName)
+	return string(da.domainName)
 }
 
 func (da *DomainAsset) ValidateAsset(ctx *action.Context, owner action.Address) (bool, error) {
 	// check if domain is valid
-	if !da.DomainName.IsValid() || da.DomainName.IsSub() {
+	if !da.domainName.IsValid() || da.domainName.IsSub() {
 		return false, errors.New("error domain not valid")
 	}
 
 	// check domain existence
-	if !ctx.Domains.Exists(da.DomainName) {
+	if !ctx.Domains.Exists(da.domainName) {
 		return false, errors.New("domain does not exist, you can just create it")
 	}
 
-	domain, err := ctx.Domains.Get(da.DomainName)
+	domain, err := ctx.Domains.Get(da.domainName)
 	if err != nil {
 		return false, errors.New("error getting domain")
 	}
@@ -51,7 +51,7 @@ func (da *DomainAsset) ValidateAsset(ctx *action.Context, owner action.Address) 
 
 func (da *DomainAsset) ExchangeAsset(ctx *action.Context, bidder action.Address, preOwner action.Address) (bool, error) {
 	// change domain ownership
-	domain, err := ctx.Domains.Get(da.DomainName)
+	domain, err := ctx.Domains.Get(da.domainName)
 	if err != nil {
 		return false, errors.New("error getting domain")
 	}
@@ -75,6 +75,6 @@ func (da *DomainAsset) ExchangeAsset(ctx *action.Context, bidder action.Address,
 
 func (da *DomainAsset) NewAssetWithName(name string) BidAsset {
 	asset := *da
-	asset.DomainName = ons.GetNameFromString(name)
+	asset.domainName = ons.GetNameFromString(name)
 	return &asset
 }

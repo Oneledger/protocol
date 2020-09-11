@@ -24,7 +24,6 @@ type ExtAppData struct {
 	ExtStores	map[string]data.ExtStore
 	ExtServiceMap ExtServiceMap
 	ExtBlockFuncs ControllerRouter
-	Test string
 }
 
 func LoadExtAppData(cs *storage.ChainState) *ExtAppData {

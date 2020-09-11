@@ -1,7 +1,6 @@
 package bid
 
 import (
-	"fmt"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/ons"
@@ -18,16 +17,8 @@ import (
 
 var logger *log.Logger
 
-//func init() {
-//	fmt.Println("init from bid/init")
-//	//common.Handlers.Register(LoadAppData)
-//}
-
-//this is the handler function, it will add a bunch of things into appData
+//this is the handler function, it will add multiple components into appData
 func LoadAppData(appData *common.ExtAppData) {
-
-	appData.Test = "TEST BID APPLICATION"
-	fmt.Println("LOADING BID DATA !!!")
 
 	//load txs
 	bidCreate := common.ExtTx{

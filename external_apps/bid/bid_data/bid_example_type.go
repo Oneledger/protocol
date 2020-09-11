@@ -7,11 +7,11 @@ import (
 var _ BidAsset = &ExampleAsset{}
 
 type ExampleAsset struct {
-	ExampleName string `json:"exampleName"`
+	exampleName string
 }
 
 func (ea *ExampleAsset) ToString() string {
-	return ea.ExampleName
+	return ea.exampleName
 }
 
 func (ea *ExampleAsset) ValidateAsset(ctx *action.Context, owner action.Address) (bool, error) {
@@ -24,6 +24,6 @@ func (ea *ExampleAsset) ExchangeAsset(ctx *action.Context, bidder action.Address
 
 func (ea *ExampleAsset) NewAssetWithName(name string) BidAsset {
 	asset := *ea
-	asset.ExampleName = name
+	asset.exampleName = name
  	return &asset
 }
