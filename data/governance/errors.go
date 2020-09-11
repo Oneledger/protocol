@@ -14,6 +14,7 @@ var (
 	ErrGetStakingOptions  = codes.ProtocolError{codes.TxErrGetStakingOptions, "failed to get Staking options"}
 	ErrGetBtcOptions      = codes.ProtocolError{codes.TxErrGettingBTCOptions, "failed to get BTC options"}
 	ErrValidateGovState   = codes.ProtocolError{codes.TxErrValidateGovState, "failed to validate gov state"}
+	ErrInvalidOptions     = codes.ProtocolError{codes.TxErrInvalidOptions, "Set Options string is invalid"}
 	ErrPoolList           = codes.ProtocolError{codes.GovErrErrGettingPoolList, "failed to get poollist from gov store"}
 
 	//Proposal
