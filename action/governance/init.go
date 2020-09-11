@@ -11,7 +11,6 @@ func init() {
 	serialize.RegisterConcrete(new(CreateProposal), "action_cp")
 	serialize.RegisterConcrete(new(CancelProposal), "action_ccp")
 	serialize.RegisterConcrete(new(VoteProposal), "action_vp")
-
 }
 
 func EnableGovernance(r action.Router) error {
