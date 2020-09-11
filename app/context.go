@@ -84,7 +84,7 @@ type context struct {
 	extApp              *common.ExtAppData
 	extStores           data.StorageRouter
 	extServiceMap       common.ExtServiceMap
-	controllerFunctions common.Router
+	controllerFunctions common.ControllerRouter
 }
 
 func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (context, error) {
@@ -137,7 +137,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.internalRouter = action.NewRouter("internal")
 	ctx.extStores = data.NewStorageRouter()
 	ctx.extServiceMap = common.NewExtServiceMap()
-	ctx.controllerFunctions = common.NewRouter()
+	ctx.controllerFunctions = common.NewFunctionRouter()
 	err = external_apps.RegisterExtApp(ctx.chainstate, ctx.actionRouter, ctx.extStores, ctx.extServiceMap, ctx.controllerFunctions)
 	if err != nil {
 		return ctx, errors.Wrap(err, "error in registering external apps")

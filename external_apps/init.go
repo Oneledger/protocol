@@ -14,7 +14,7 @@ func init() {
 	common.Handlers.Register(bid.LoadAppData)
 }
 
-func RegisterExtApp(cs *storage.ChainState, ar action.Router, dr data.Router, esm common.ExtServiceMap, cr common.Router) error {
+func RegisterExtApp(cs *storage.ChainState, ar action.Router, dr data.Router, esm common.ExtServiceMap, cr common.ControllerRouter) error {
 	extAppData := common.LoadExtAppData(cs)
 	//register external txs using action.router
 	for _, tx := range extAppData.ExtTxs {

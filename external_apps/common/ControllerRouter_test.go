@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	cRouter Router
+	cRouter ControllerRouter
 	app     parameterStruct
 )
 
@@ -29,7 +29,7 @@ func init() {
 	app = parameterStruct{
 		name: "Test App",
 	}
-	cRouter = NewRouter()
+	cRouter = NewFunctionRouter()
 }
 
 func TestRouter_AddBlockBeginner(t *testing.T) {

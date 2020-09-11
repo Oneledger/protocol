@@ -27,7 +27,7 @@ type ExtAppData struct {
 	ExtTxs        []ExtTx
 	ExtStores     map[string]data.ExtStore
 	ExtServiceMap ExtServiceMap
-	ExtBlockFuncs ControllerRouter
+	ExtBlockFuncs FunctionRouter
 }
 
 func LoadExtAppData(cs *storage.ChainState) *ExtAppData {
@@ -37,7 +37,7 @@ func LoadExtAppData(cs *storage.ChainState) *ExtAppData {
 	appData.ExtStores = make(map[string]data.ExtStore)
 	appData.ExtServiceMap = make(ExtServiceMap)
 	functionList := make(map[txblock][]func(interface{}))
-	appData.ExtBlockFuncs = ControllerRouter{
+	appData.ExtBlockFuncs = FunctionRouter{
 		functionlist: functionList,
 	}
 	for _, handler := range Handlers {
