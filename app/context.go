@@ -70,21 +70,21 @@ type context struct {
 	//storage which is not a chain state
 	accounts accounts.Wallet
 
-	jobStore            *jobs.JobStore
-	lockScriptStore     *bitcoin.LockScriptStore
-	internalRouter      action.Router
-	internalService     *event.Service
-	jobBus              *event.JobBus
-	proposalMaster      *governance.ProposalMasterStore
-	delegators          *delegation.DelegationStore
-	rewardMaster        *rewards.RewardMasterStore
-	transaction         *transactions.TransactionStore
-	logWriter           io.Writer
-	govupdate           *action.GovernaceUpdateAndValidate
-	extApp              *common.ExtAppData
-	extStores           data.StorageRouter
-	extServiceMap       common.ExtServiceMap
-	controllerFunctions common.ControllerRouter
+	jobStore        *jobs.JobStore
+	lockScriptStore *bitcoin.LockScriptStore
+	internalRouter  action.Router
+	internalService *event.Service
+	jobBus          *event.JobBus
+	proposalMaster  *governance.ProposalMasterStore
+	delegators      *delegation.DelegationStore
+	rewardMaster    *rewards.RewardMasterStore
+	transaction     *transactions.TransactionStore
+	logWriter       io.Writer
+	govupdate       *action.GovernaceUpdateAndValidate
+	extApp          *common.ExtAppData
+	extStores       data.StorageRouter
+	extServiceMap   common.ExtServiceMap
+	extFunctions    common.ControllerRouter
 }
 
 func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (context, error) {
@@ -137,8 +137,8 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.internalRouter = action.NewRouter("internal")
 	ctx.extStores = data.NewStorageRouter()
 	ctx.extServiceMap = common.NewExtServiceMap()
-	ctx.controllerFunctions = common.NewFunctionRouter()
-	err = external_apps.RegisterExtApp(ctx.chainstate, ctx.actionRouter, ctx.extStores, ctx.extServiceMap, ctx.controllerFunctions)
+	ctx.extFunctions = common.NewFunctionRouter()
+	err = external_apps.RegisterExtApp(ctx.chainstate, ctx.actionRouter, ctx.extStores, ctx.extServiceMap, ctx.extFunctions)
 	if err != nil {
 		return ctx, errors.Wrap(err, "error in registering external apps")
 	}
