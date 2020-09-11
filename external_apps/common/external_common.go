@@ -3,7 +3,11 @@ package common
 import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data"
+	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/data/transactions"
+	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/storage"
+	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 type ExtTx struct {
@@ -46,4 +50,13 @@ func LoadExtAppData(cs *storage.ChainState) *ExtAppData {
 
 func (h *HandlerList) Register(fn func(*ExtAppData)) {
 	*h = append(*h, fn)
+}
+
+type ExtParam struct {
+	InternalTxStore *transactions.TransactionStore
+	Logger *log.Logger
+	ActionCtx action.Context
+	Validator keys.Address
+	Header abci.Header
+	Deliver *storage.State
 }

@@ -5,6 +5,7 @@ import (
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/external_apps/bid/bid_action"
 	"github.com/Oneledger/protocol/external_apps/bid/bid_data"
+	"github.com/Oneledger/protocol/external_apps/common"
 	"github.com/google/uuid"
 	abci "github.com/tendermint/tendermint/abci/types"
 	"time"
@@ -17,7 +18,7 @@ func AddExpireBidTxToQueue(i interface{}) {
 	// Add transaction to the queue from there .
 
 	// 1. get all the needed stores
-	bidParam, ok := i.(BidParam)
+	bidParam, ok := i.(common.ExtParam)
 	if ok == false {
 		bidParam.Logger.Error("failed to assert bidParam in block beginner")
 		return
@@ -90,7 +91,7 @@ func PopExpireBidTxFromQueue(i interface{}) {
 	//Use deliverTxSession to commit or ignore the error
 
 	//1. get the internal bid tx store
-	bidParam, ok := i.(BidParam)
+	bidParam, ok := i.(common.ExtParam)
 	if ok == false {
 		bidParam.Logger.Error("failed to assert bidParam in block ender")
 		return

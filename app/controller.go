@@ -3,7 +3,6 @@ package app
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/Oneledger/protocol/external_apps/bid/bid_block_func"
 	"github.com/Oneledger/protocol/external_apps/common"
 	"math"
 	"math/big"
@@ -147,7 +146,7 @@ func (app *App) blockBeginner() blockBeginner {
 		//Transaction store is not part of chainstate ,it just maintains a list of proposals from BlockBeginner to BlockEnder .Gets cleared at each Block Ender
 		AddInternalTX(app.Context.proposalMaster, app.Context.node.ValidatorAddress(), app.header.Height, app.Context.transaction, app.logger)
 		functionList, err := app.Context.controllerFunctions.Iterate(common.BlockBeginner)
-		functionParam := bid_block_func.BidParam{
+		functionParam := common.ExtParam{
 			InternalTxStore: app.Context.transaction,
 			Logger: app.logger,
 			ActionCtx: *app.Context.Action(&app.header, app.Context.deliver),
@@ -304,7 +303,7 @@ func (app *App) blockEnder() blockEnder {
 		ExpireProposals(&app.header, &app.Context, app.logger)
 		FinalizeProposals(&app.header, &app.Context, app.logger)
 		functionList, err := app.Context.controllerFunctions.Iterate(common.BlockEnder)
-		functionParam := bid_block_func.BidParam{
+		functionParam := common.ExtParam{
 			//ExternalStores: app.Context.extStores.WithState(storage.NewState(app.Context.chainstate)),
 			InternalTxStore: app.Context.transaction,
 			Logger: app.logger,
