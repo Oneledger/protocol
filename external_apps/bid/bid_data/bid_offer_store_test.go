@@ -54,24 +54,40 @@ func generateIDs() {
 	ID2 = generateBidConvID("Test1", 234)
 }
 
-func TestBidOfferStore_AddOffer(t *testing.T) {
+func TestBidOfferStore_AddActiveOffer(t *testing.T) {
 	//fmt.Println("Adding New Proposer for funding")
-	err := bidOfferStore.SetOffer(*NewBidOffer(ID1, TypeBidOffer, offerTimes[0], *action.NewAmount("OLT", *balance.NewAmount(100)), BidAmountLocked))
+	err := bidOfferStore.SetActiveOffer(*NewBidOffer(ID1, TypeBidOffer, offerTimes[0], *action.NewAmount("OLT", *balance.NewAmount(100)), BidAmountLocked))
 	assert.NoError(t, err, "")
 	cs.Commit()
-	err = bidOfferStore.SetOffer(*NewBidOffer(ID1, TypeCounterOffer, offerTimes[1], *action.NewAmount("OLT", *balance.NewAmount(200)), CounterOfferAmount))
+	err = bidOfferStore.SetActiveOffer(*NewBidOffer(ID1, TypeCounterOffer, offerTimes[1], *action.NewAmount("OLT", *balance.NewAmount(200)), CounterOfferAmount))
 	assert.NoError(t, err, "")
 	cs.Commit()
-	err = bidOfferStore.SetOffer(*NewBidOffer(ID1, TypeBidOffer, offerTimes[2], *action.NewAmount("OLT", *balance.NewAmount(150)), BidAmountLocked))
+	err = bidOfferStore.SetActiveOffer(*NewBidOffer(ID1, TypeBidOffer, offerTimes[2], *action.NewAmount("OLT", *balance.NewAmount(150)), BidAmountLocked))
 	assert.NoError(t, err, "")
 	cs.Commit()
-	err = bidOfferStore.SetOffer(*NewBidOffer(ID2, TypeBidOffer, offerTimes[3], *action.NewAmount("OLT", *balance.NewAmount(50)), BidAmountLocked))
+	err = bidOfferStore.SetActiveOffer(*NewBidOffer(ID2, TypeBidOffer, offerTimes[3], *action.NewAmount("OLT", *balance.NewAmount(50)), BidAmountLocked))
 	assert.NoError(t, err, "")
 	cs.Commit()
-	err = bidOfferStore.SetOffer(*NewBidOffer(ID2, TypeCounterOffer, offerTimes[4], *action.NewAmount("OLT", *balance.NewAmount(300)), CounterOfferAmount))
+	err = bidOfferStore.SetActiveOffer(*NewBidOffer(ID2, TypeCounterOffer, offerTimes[4], *action.NewAmount("OLT", *balance.NewAmount(300)), CounterOfferAmount))
 	assert.NoError(t, err, "")
 	cs.Commit()
-	err = bidOfferStore.SetOffer(*NewBidOffer(ID2, TypeBidOffer, offerTimes[5], *action.NewAmount("OLT", *balance.NewAmount(250)), BidAmountLocked))
+	err = bidOfferStore.SetActiveOffer(*NewBidOffer(ID2, TypeBidOffer, offerTimes[5], *action.NewAmount("OLT", *balance.NewAmount(250)), BidAmountLocked))
+	assert.NoError(t, err, "")
+	cs.Commit()
+}
+
+func TestBidOfferStore_SetInActiveOffer(t *testing.T) {
+	//fmt.Println("Adding New Proposer for funding")
+	err := bidOfferStore.SetInActiveOffer(*NewBidOffer(ID1, TypeBidOffer, offerTimes[0], *action.NewAmount("OLT", *balance.NewAmount(100)), BidAmountLocked))
+	assert.NoError(t, err, "")
+	cs.Commit()
+	err = bidOfferStore.SetInActiveOffer(*NewBidOffer(ID1, TypeCounterOffer, offerTimes[1], *action.NewAmount("OLT", *balance.NewAmount(200)), CounterOfferAmount))
+	assert.NoError(t, err, "")
+	cs.Commit()
+	err = bidOfferStore.SetInActiveOffer(*NewBidOffer(ID2, TypeBidOffer, offerTimes[3], *action.NewAmount("OLT", *balance.NewAmount(50)), BidAmountLocked))
+	assert.NoError(t, err, "")
+	cs.Commit()
+	err = bidOfferStore.SetInActiveOffer(*NewBidOffer(ID2, TypeCounterOffer, offerTimes[4], *action.NewAmount("OLT", *balance.NewAmount(300)), CounterOfferAmount))
 	assert.NoError(t, err, "")
 	cs.Commit()
 
@@ -80,7 +96,7 @@ func TestBidOfferStore_AddOffer(t *testing.T) {
 func TestBidOfferStore_Iterate(t *testing.T) {
 	//fmt.Println("Iterating Stores")
 	IDLIST := []BidConvId{ID2, ID1}
-	ok := bidOfferStore.iterate(func(bidConvId BidConvId, offerStatus BidOfferStatus, offerType BidOfferType, offerTime int64, offer BidOffer) bool {
+	ok := bidOfferStore.iterate(func(bidConvId BidConvId, offerType BidOfferType, offerTime int64, offer BidOffer) bool {
 		fmt.Println("BidConvId : ", bidConvId, "BidOfferType :", offerType, "BidOfferTime :", offerTime)
 		assert.Contains(t, IDLIST, bidConvId, "")
 		return false
@@ -89,20 +105,28 @@ func TestBidOfferStore_Iterate(t *testing.T) {
 }
 
 
-func TestBidOfferStore_GetOffersForBidConv(t *testing.T) {
+func TestBidOfferStore_GetOffers(t *testing.T) {
 	fmt.Println("Get offers for ID :  ", ID1)
-	offers := bidOfferStore.GetOffers(ID1, BidOfferInvalid, TypeInvalid)
+	offer, err := bidOfferStore.GetActiveOffer(ID1, TypeInvalid)
+	if err != nil {
+		assert.Error(t, err,"")
+	}
+	fmt.Print(offer.Amount)
+	offer, err = bidOfferStore.GetActiveOffer(ID2, TypeInvalid)
+	if err != nil {
+		assert.Error(t, err,"")
+	}
+	fmt.Print(offer.Amount)
+
+	offers := bidOfferStore.GetInActiveOffers(ID1, TypeInvalid)
 	for _, offer := range offers {
 		fmt.Print(offer.Amount)
 	}
-	assert.EqualValues(t, 3, len(offers), "")
-}
+	assert.EqualValues(t, 2, len(offers), "")
 
-//
-//func TestBidOfferStore_GetActiveOfferForBidConvId(t *testing.T) {
-//	//fmt.Println("Get active offer for id :")
-//
-//	offer, err := bidOfferStore.GetActiveOfferForBidConvId(ID1)
-//	assert.NoError(t, err, "")
-//	assert.NotEmpty(t, offer)
-//}
+	offers = bidOfferStore.GetInActiveOffers(ID1, TypeInvalid)
+	for _, offer := range offers {
+		fmt.Print(offer.Amount)
+	}
+	assert.EqualValues(t, 2, len(offers), "")
+}

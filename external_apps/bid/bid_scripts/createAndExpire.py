@@ -32,7 +32,7 @@ if __name__ == "__main__":
     query_balance(bidConv.bidder)
     print "owner balance"
     query_balance(bidConv.owner)
-    bidConv.send_create_async()
+    bidConv.send_create()
 
     time.sleep(3)
     print "bidder balance"

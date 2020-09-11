@@ -107,17 +107,12 @@ func runCancelBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 	}
 
 	//4. get the active offer/counter offer
-	activeOffers := bidMasterStore.BidOffer.GetOffers(cancelBid.BidConvId, bid_data.BidOfferActive, bid_data.TypeInvalid)
-	// in this case there must be a counter offer or bid offer
-	if len(activeOffers) == 0 {
+	activeOffer, err := bidMasterStore.BidOffer.GetActiveOffer(cancelBid.BidConvId, bid_data.TypeInvalid)
+	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrGettingActiveOffer, cancelBid.Tags(), err)
-	} else if len(activeOffers) > 1 {
-		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrTooManyActiveOffers, cancelBid.Tags(), err)
 	}
-	activeOffer := activeOffers[0]
-
 	//5. unlock amount if needed and deactivate it
-	err = DeactivateOffer(false, bidConv.Bidder, ctx, &activeOffer, bidMasterStore)
+	err = DeactivateOffer(false, bidConv.Bidder, ctx, activeOffer, bidMasterStore)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrDeactivateOffer, cancelBid.Tags(), err)
 	}

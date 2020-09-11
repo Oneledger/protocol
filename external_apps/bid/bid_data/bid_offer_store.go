@@ -25,15 +25,15 @@ func (bos *BidOfferStore) set(key storage.StoreKey, offer BidOffer) error {
 }
 
 func (bos *BidOfferStore) get(key storage.StoreKey) (offer *BidOffer, err error) {
-	prefixed := append(bos.prefix, storage.StoreKey(key)...)
+	prefixed := append(bos.prefix, key...)
 	dat, err := bos.State.Get(prefixed)
-	//fmt.Println("dat :", dat, "err", err)
 	if err != nil {
 		return nil, errors.Wrap(err, errorGettingRecord)
 	}
 	if len(dat) == 0 {
 		return
 	}
+	offer = &BidOffer{}
 	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(dat, offer)
 	if err != nil {
 		err = errors.Wrap(err, errorDeSerialization)
@@ -50,10 +50,15 @@ func (bos *BidOfferStore) delete(key storage.StoreKey) (bool, error) {
 	return res, err
 }
 
-func (bos *BidOfferStore) iterate(fn func(bidConvId BidConvId, offStatus BidOfferStatus, offerType BidOfferType, offerTime int64, offer BidOffer) bool) bool {
+func assembleInactiveOfferPrefix(prefix []byte) []byte {
+	prefixString := string(prefix) + InactiveOfferPrefix
+	return storage.Prefix(prefixString)
+}
+
+func (bos *BidOfferStore) iterate(fn func(bidConvId BidConvId, offerType BidOfferType, offerTime int64, offer BidOffer) bool) bool {
 	return bos.State.IterateRange(
-		bos.prefix,
-		storage.Rangefix(string(bos.prefix)),
+		assembleInactiveOfferPrefix(bos.prefix),
+		storage.Rangefix(string(assembleInactiveOfferPrefix(bos.prefix))),
 		true,
 		func(key, value []byte) bool {
 			offer := &BidOffer{}
@@ -62,13 +67,8 @@ func (bos *BidOfferStore) iterate(fn func(bidConvId BidConvId, offStatus BidOffe
 				return true
 			}
 			arr := strings.Split(string(key), storage.DB_PREFIX)
-			// key example: bidOffer_bidConvId_offerStatus_offerType_offerTime
-			bidConvId := arr[1]
-			offerStatus, err := strconv.Atoi(arr[2])
-			if err != nil {
-				fmt.Println("Error Parsing Offer Status", err)
-				return true
-			}
+			// key example: bidOffer_INACTIVE_bidConvId_offerType_offerTime
+			bidConvId := arr[2]
 			offerType, err := strconv.Atoi(arr[3])
 			if err != nil {
 				fmt.Println("Error Parsing Offer Type", err)
@@ -79,7 +79,7 @@ func (bos *BidOfferStore) iterate(fn func(bidConvId BidConvId, offStatus BidOffe
 				fmt.Println("Error Parsing Offer Time", err)
 				return true
 			}
-			return fn(BidConvId(bidConvId), BidOfferStatus(offerStatus), BidOfferType(offerType), int64(offerTime), *offer)
+			return fn(BidConvId(bidConvId), BidOfferType(offerType), int64(offerTime), *offer)
 		},
 	)
 }
@@ -96,13 +96,10 @@ func NewBidOfferStore(prefix string, state *storage.State) *BidOfferStore {
 	}
 }
 
-func (bos *BidOfferStore) GetOffers(bId BidConvId, oStatus BidOfferStatus, oType BidOfferType) []BidOffer {
+func (bos *BidOfferStore) GetInActiveOffers(bId BidConvId, oType BidOfferType) []BidOffer {
 	var bidOffers []BidOffer
-	bos.iterate(func(bidConvId BidConvId, offerStatus BidOfferStatus, offerType BidOfferType, offerTime int64, offer BidOffer) bool {
+	bos.iterate(func(bidConvId BidConvId, offerType BidOfferType, offerTime int64, offer BidOffer) bool {
 		if len(bId) != 0 && bId != bidConvId {
-			return false
-		}
-		if oStatus != BidOfferInvalid && offerStatus != oStatus {
 			return false
 		}
 		if oType != TypeInvalid && offerType != oType {
@@ -114,13 +111,33 @@ func (bos *BidOfferStore) GetOffers(bId BidConvId, oStatus BidOfferStatus, oType
 	return bidOffers
 }
 
-func assembleBidOfferKey(bidConvId BidConvId, offerStatus BidOfferStatus, offerType BidOfferType, offerTime int64) storage.StoreKey {
-	key := storage.StoreKey(string(bidConvId) + storage.DB_PREFIX + strconv.Itoa(int(offerStatus)) + storage.DB_PREFIX + strconv.Itoa(int(offerType)) + storage.DB_PREFIX + strconv.FormatInt(offerTime, 10))
+func (bos *BidOfferStore) GetActiveOffer(bId BidConvId, oType BidOfferType) (*BidOffer, error) {
+	key := assembleActiveOfferKey(bId)
+	offer, err := bos.get(key)
+	if err != nil {
+		return nil, err
+	}
+	if offer == nil {
+		return nil, nil
+	}
+	if oType != TypeInvalid && offer.OfferType != oType {
+		return nil, errors.New("wrong type for active offer")
+	}
+	return offer, nil
+}
+
+func assembleOfferKey(bidConvId BidConvId, offerType BidOfferType, offerTime int64) storage.StoreKey {
+	key := storage.StoreKey(InactiveOfferPrefix + storage.DB_PREFIX + string(bidConvId) + storage.DB_PREFIX + strconv.Itoa(int(offerType)) + storage.DB_PREFIX + strconv.FormatInt(offerTime, 10))
 	return key
 }
 
-func (bos *BidOfferStore) SetOffer(offer BidOffer) error {
-	key := assembleBidOfferKey(offer.BidConvId, offer.OfferStatus, offer.OfferType, offer.OfferTime)
+func assembleActiveOfferKey(bidConvId BidConvId) storage.StoreKey {
+	key := storage.StoreKey(ActiveOfferPrefix + storage.DB_PREFIX + string(bidConvId))
+	return key
+}
+
+func (bos *BidOfferStore) SetInActiveOffer(offer BidOffer) error {
+	key := assembleOfferKey(offer.BidConvId, offer.OfferType, offer.OfferTime)
 	err := bos.set(key, offer)
 	if err != nil {
 		return err
@@ -128,11 +145,23 @@ func (bos *BidOfferStore) SetOffer(offer BidOffer) error {
 	return nil
 }
 
-func (bos *BidOfferStore) DeleteOffer(offer BidOffer) error {
-	key := assembleBidOfferKey(offer.BidConvId, offer.OfferStatus, offer.OfferType, offer.OfferTime)
-	_, err := bos.delete(key)
+func (bos *BidOfferStore) SetActiveOffer(offer BidOffer) error {
+	key := assembleActiveOfferKey(offer.BidConvId)
+	err := bos.set(key, offer)
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+func (bos *BidOfferStore) DeleteActiveOffer(offer BidOffer) error {
+	key := assembleActiveOfferKey(offer.BidConvId)
+	ok, err := bos.delete(key)
+	if err != nil {
+		return err
+	}
+	if ok == false {
+		return errors.New("failed to delete active offer")
 	}
 	return nil
 }

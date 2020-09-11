@@ -40,10 +40,7 @@ func ExchangeAsset(ctx *action.Context, assetName string, assetType bid_data.Bid
 func DeactivateOffer(deal bool, bidder action.Address, ctx *action.Context, activeOffer *bid_data.BidOffer, bidMasterStore *bid_data.BidMasterStore) error {
 	_, file, no, ok := runtime.Caller(1)
 	fmt.Printf("called from %s#%d\n, ok: %s", file, no, ok)
-	//previousOffer := *activeOffer
 	activeOfferCoin := activeOffer.Amount.ToCoin(ctx.Currencies)
-	// change offer status to inactive
-	activeOffer.OfferStatus = bid_data.BidOfferInactive
 	if activeOffer.OfferType == bid_data.TypeBidOffer {
 		// unlock the amount if no deal
 		if deal == false {
@@ -72,13 +69,13 @@ func DeactivateOffer(deal bool, bidder action.Address, ctx *action.Context, acti
 	} else {
 		return bid_data.ErrInvalidOfferType
 	}
-	// add updated offer
-	err := bidMasterStore.BidOffer.SetOffer(*activeOffer)
+	// add updated offer as inactive offer
+	err := bidMasterStore.BidOffer.SetInActiveOffer(*activeOffer)
 	if err != nil {
 		return bid_data.ErrSetOffer
 	}
-	//delete active offer
-	err = bidMasterStore.BidOffer.DeleteOffer(*activeOffer)
+	//delete active offer, here only use bidConvId, same object is ok to be passed in
+	err = bidMasterStore.BidOffer.DeleteActiveOffer(*activeOffer)
 	if err != nil {
 		fmt.Println("err in delete offer: ", err)
 		return bid_data.ErrFailedToDeleteActiveOffer

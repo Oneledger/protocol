@@ -110,21 +110,17 @@ func runBidderDecision(ctx *action.Context, tx action.RawTx) (bool, action.Respo
 	}
 
 	//5. get the active counter offer
-	activeOffers := bidMasterStore.BidOffer.GetOffers(bidderDecision.BidConvId, bid_data.BidOfferActive, bid_data.TypeCounterOffer)
-	// in this case there must be a counter offer from owner
-	if len(activeOffers) == 0 {
+	activeOffer, err := bidMasterStore.BidOffer.GetActiveOffer(bidderDecision.BidConvId, bid_data.TypeCounterOffer)
+	if err != nil || activeOffer == nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrGettingActiveCounterOffer, bidderDecision.Tags(), err)
-	} else if len(activeOffers) > 1 {
-		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrTooManyActiveOffers, bidderDecision.Tags(), err)
 	}
-	activeOffer := activeOffers[0]
 
 	//6. if reject
 	if bidderDecision.Decision != bid_data.RejectBid && bidderDecision.Decision != bid_data.AcceptBid {
 		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrInvalidBidderDecision, bidderDecision.Tags(), err)
 	} else if bidderDecision.Decision == bid_data.RejectBid {
 		// deactivate offer
-		err = DeactivateOffer(false, bidConv.Bidder, ctx, &activeOffer, bidMasterStore)
+		err = DeactivateOffer(false, bidConv.Bidder, ctx, activeOffer, bidMasterStore)
 		if err != nil {
 			return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrDeactivateOffer, bidderDecision.Tags(), err)
 		}
@@ -151,8 +147,8 @@ func runBidderDecision(ctx *action.Context, tx action.RawTx) (bool, action.Respo
 		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrAdddingAmountToOwner, bidderDecision.Tags(), err)
 	}
 
-	//9. change offer status to inactive and add it back to bid offer store
-	err = DeactivateOffer(true, bidConv.Bidder, ctx, &activeOffer, bidMasterStore)
+	//9. deactivate offer
+	err = DeactivateOffer(true, bidConv.Bidder, ctx, activeOffer, bidMasterStore)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrDeactivateOffer, bidderDecision.Tags(), err)
 	}

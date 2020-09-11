@@ -6,7 +6,7 @@ import (
 
 type BidOffer struct {
 	BidConvId    BidConvId            `json:"bidConvId"`
-	OfferStatus  BidOfferStatus       `json:"offerStatus"`
+	//OfferStatus  BidOfferStatus       `json:"offerStatus"`
 	OfferType    BidOfferType         `json:"offerType"`
 	OfferTime    int64                `json:"offerTime"`
 	AcceptTime   int64                `json:"acceptTime"`
@@ -15,6 +15,10 @@ type BidOffer struct {
 	AmountStatus BidOfferAmountStatus `json:"amountStatus"`
 }
 
+//func NewBidOffer(bidConvId BidConvId, offerType BidOfferType, offerTime int64, amount action.Amount, amountStatus BidOfferAmountStatus) *BidOffer {
+//	return &BidOffer{BidConvId: bidConvId, OfferStatus: BidOfferActive, OfferType: offerType, OfferTime: offerTime, AcceptTime: 0, RejectTime: 0, Amount: amount, AmountStatus: amountStatus}
+//}
+
 func NewBidOffer(bidConvId BidConvId, offerType BidOfferType, offerTime int64, amount action.Amount, amountStatus BidOfferAmountStatus) *BidOffer {
-	return &BidOffer{BidConvId: bidConvId, OfferStatus: BidOfferActive, OfferType: offerType, OfferTime: offerTime, AcceptTime: 0, RejectTime: 0, Amount: amount, AmountStatus: amountStatus}
+	return &BidOffer{BidConvId: bidConvId, OfferType: offerType, OfferTime: offerTime, AcceptTime: 0, RejectTime: 0, Amount: amount, AmountStatus: amountStatus}
 }

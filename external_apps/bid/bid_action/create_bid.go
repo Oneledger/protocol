@@ -152,12 +152,12 @@ func runCreateBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 	offerCoin := createBid.Amount.ToCoin(ctx.Currencies)
 
 	//5. get the active counter offer
-	activeOffers := bidMasterStore.BidOffer.GetOffers(createBid.BidConvId, bid_data.BidOfferActive, bid_data.TypeCounterOffer)
-	// in this case there can be no counter offer if this is the beginning of bid
-	if len(activeOffers) > 1 {
-		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrTooManyActiveOffers, createBid.Tags(), err)
-	} else if len(activeOffers) == 1 {
-		activeOffer := activeOffers[0]
+	activeOffer, err := bidMasterStore.BidOffer.GetActiveOffer(createBid.BidConvId, bid_data.TypeCounterOffer)
+	// in this case there can be no counter offer if this is the beginning of bid conversation
+	if err != nil {
+		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrGettingActiveCounterOffer, createBid.Tags(), err)
+	}
+	if activeOffer != nil {
 		//5. amount needs to be less than active counter offer from owner
 		activeOfferCoin := activeOffer.Amount.ToCoin(ctx.Currencies)
 		if activeOfferCoin.LessThanEqualCoin(offerCoin) {
@@ -165,7 +165,7 @@ func runCreateBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		}
 		fmt.Println("active counter offer in create bid: ", activeOffer)
 		//6. set active counter offer to inactive
-		err = DeactivateOffer(false, bidConv.Bidder, ctx, &activeOffer, bidMasterStore)
+		err = DeactivateOffer(false, bidConv.Bidder, ctx, activeOffer, bidMasterStore)
 		if err != nil {
 			return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrDeactivateOffer, createBid.Tags(), err)
 		}
@@ -186,7 +186,7 @@ func runCreateBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		bid_data.BidAmountLocked,
 	)
 
-	err = bidMasterStore.BidOffer.SetOffer(*createBidOffer)
+	err = bidMasterStore.BidOffer.SetActiveOffer(*createBidOffer)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrAddingOffer, createBid.Tags(), err)
 	}

@@ -12,12 +12,8 @@ type ListBidConvRequest struct {
 
 type BidConvStat struct {
 	BidConv bid_data.BidConv    `json:"bidConv"`
-	Offers  []bid_data.BidOffer `json:"bidOffers"`
-}
-
-type ActiveOfferStat struct {
 	ActiveOffer bid_data.BidOffer `json:"activeOffer"`
-	BidConv     bid_data.BidConv  `json:"bidConv"`
+	InactiveOffers  []bid_data.BidOffer `json:"inactiveOffers"`
 }
 
 type ListBidConvsReply struct {
@@ -31,19 +27,6 @@ type ListBidConvsRequest struct {
 	AssetName string                `json:"assetName"`
 	AssetType bid_data.BidAssetType `json:"assetType"`
 	Bidder    keys.Address          `json:"bidder"`
-}
-
-type ListActiveOffersRequest struct {
-	Owner     keys.Address          `json:"owner"`
-	AssetName string                `json:"assetName"`
-	AssetType bid_data.BidAssetType `json:"assetType"`
-	Bidder    keys.Address          `json:"bidder"`
-	OfferType bid_data.BidOfferType `json:"offerType"`
-}
-
-type ListActiveOffersReply struct {
-	ActiveOffers []ActiveOfferStat `json:"activeOffers"`
-	Height       int64             `json:"height"`
 }
 
 type CreateBidRequest struct {

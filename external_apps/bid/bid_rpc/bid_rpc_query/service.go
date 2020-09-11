@@ -38,11 +38,20 @@ func (svc *Service) ShowBidConv(req bid_rpc.ListBidConvRequest, reply *bid_rpc.L
 		return bid_data.ErrGettingBidConv
 	}
 
-	bidOffers := svc.bidMaster.BidOffer.GetOffers(bidConv.BidConvId, bid_data.BidOfferInvalid, bid_data.TypeInvalid)
+	inactiveOffers := svc.bidMaster.BidOffer.GetInActiveOffers(bidConv.BidConvId, bid_data.TypeInvalid)
+	activeOffer, err := svc.bidMaster.BidOffer.GetActiveOffer(bidConv.BidConvId, bid_data.TypeInvalid)
+	if err != nil {
+		return bid_data.ErrGettingActiveBidOffer.Wrap(err)
+	}
+	activeOfferField := bid_data.BidOffer{}
+	if activeOffer != nil {
+		activeOfferField = *activeOffer
+	}
 
 	bcs := bid_rpc.BidConvStat{
 		BidConv: *bidConv,
-		Offers:  bidOffers,
+		ActiveOffer: activeOfferField,
+		InactiveOffers:  inactiveOffers,
 	}
 
 	*reply = bid_rpc.ListBidConvsReply{
@@ -89,68 +98,26 @@ func (svc *Service) ListBidConvs(req bid_rpc.ListBidConvsRequest, reply *bid_rpc
 	// Bid conversations and their offers
 	bidConvStats := make([]bid_rpc.BidConvStat, len(bidConvs))
 	for i, bidConv := range bidConvs {
-		bidOffers := svc.bidMaster.BidOffer.GetOffers(bidConv.BidConvId, bid_data.BidOfferInvalid, bid_data.TypeInvalid)
+		inactiveOffers := svc.bidMaster.BidOffer.GetInActiveOffers(bidConv.BidConvId, bid_data.TypeInvalid)
+		activeOffer, err := svc.bidMaster.BidOffer.GetActiveOffer(bidConv.BidConvId, bid_data.TypeInvalid)
+		if err != nil {
+			return bid_data.ErrGettingActiveBidOffer.Wrap(err)
+		}
+		activeOfferField := bid_data.BidOffer{}
+		if activeOffer != nil {
+			activeOfferField = *activeOffer
+		}
+
 		bcs := bid_rpc.BidConvStat{
 			BidConv: bidConv,
-			Offers: bidOffers,
+			ActiveOffer: activeOfferField,
+			InactiveOffers:  inactiveOffers,
 		}
 		bidConvStats[i] = bcs
 	}
 
 	*reply = bid_rpc.ListBidConvsReply{
 		BidConvStats: bidConvStats,
-		Height:       svc.bidMaster.BidConv.GetState().Version(),
-	}
-	return nil
-}
-
-// list active offers
-func (svc *Service) ListActiveOffers(req bid_rpc.ListActiveOffersRequest, reply *bid_rpc.ListActiveOffersReply) error {
-	// Validate parameters
-	if len(req.Owner) != 0 {
-		err := req.Owner.Err()
-		if err != nil {
-			return errors.New("invalid asset owner address")
-		}
-	}
-
-	if len(req.Bidder) != 0 {
-		err := req.Bidder.Err()
-		if err != nil {
-			return errors.New("invalid asset bidder address")
-		}
-	}
-	// get all active offers
-	offers := svc.bidMaster.BidOffer.GetOffers("", bid_data.BidOfferActive, req.OfferType)
-	activeOfferStats := make([]bid_rpc.ActiveOfferStat, len(offers))
-	for i, offer := range offers {
-		// get corresponding bid conversation to show the detail
-		bidConv, err := svc.bidMaster.BidConv.WithPrefixType(bid_data.BidStateActive).Get(offer.BidConvId)
-		if err != nil {
-			svc.logger.Error("error getting bid conversation", err)
-			return bid_data.ErrGettingBidConv
-		}
-		if len(req.Bidder) != 0 && !req.Bidder.Equal(bidConv.Bidder) {
-			continue
-		}
-		if len(req.Owner) != 0 && !req.Owner.Equal(bidConv.AssetOwner) {
-			continue
-		}
-		if req.AssetType != bid_data.BidAssetInvalid && req.AssetType != bidConv.AssetType {
-			continue
-		}
-		if req.AssetName != bidConv.AssetName {
-			continue
-		}
-		aos := bid_rpc.ActiveOfferStat{
-			ActiveOffer: offer,
-			BidConv: *bidConv,
-		}
-		activeOfferStats[i] = aos
-	}
-
-	*reply = bid_rpc.ListActiveOffersReply{
-		ActiveOffers: activeOfferStats,
 		Height:       svc.bidMaster.BidConv.GetState().Version(),
 	}
 	return nil
