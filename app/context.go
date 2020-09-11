@@ -58,33 +58,33 @@ type context struct {
 	check      *storage.State
 	deliver    *storage.State
 
-	balances            *balance.Store
-	domains             *ons.DomainStore
-	validators          *identity.ValidatorStore // Set of validators currently active
-	witnesses           *identity.WitnessStore   // Set of witnesses currently active
-	feePool             *fees.Store
-	govern              *governance.Store
-	btcTrackers         *bitcoin.TrackerStore  // tracker for bitcoin balance UTXO
-	ethTrackers         *ethereum.TrackerStore // Tracker store for ongoing ethereum trackers
-	currencies          *balance.CurrencySet
+	balances    *balance.Store
+	domains     *ons.DomainStore
+	validators  *identity.ValidatorStore // Set of validators currently active
+	witnesses   *identity.WitnessStore   // Set of witnesses currently active
+	feePool     *fees.Store
+	govern      *governance.Store
+	btcTrackers *bitcoin.TrackerStore  // tracker for bitcoin balance UTXO
+	ethTrackers *ethereum.TrackerStore // Tracker store for ongoing ethereum trackers
+	currencies  *balance.CurrencySet
 	//storage which is not a chain state
 	accounts accounts.Wallet
 
-	jobStore        *jobs.JobStore
-	lockScriptStore *bitcoin.LockScriptStore
-	internalRouter  action.Router
-	internalService *event.Service
-	jobBus          *event.JobBus
-	proposalMaster  *governance.ProposalMasterStore
-	delegators      *delegation.DelegationStore
-	rewardMaster    *rewards.RewardMasterStore
-	transaction     *transactions.TransactionStore
-	logWriter       io.Writer
-	govupdate       *action.GovernaceUpdateAndValidate
-	extApp          *common.ExtAppData
+	jobStore            *jobs.JobStore
+	lockScriptStore     *bitcoin.LockScriptStore
+	internalRouter      action.Router
+	internalService     *event.Service
+	jobBus              *event.JobBus
+	proposalMaster      *governance.ProposalMasterStore
+	delegators          *delegation.DelegationStore
+	rewardMaster        *rewards.RewardMasterStore
+	transaction         *transactions.TransactionStore
+	logWriter           io.Writer
+	govupdate           *action.GovernaceUpdateAndValidate
+	extApp              *common.ExtAppData
 	extStores           data.StorageRouter
-	extServiceMap   common.ExtServiceMap
-	controllerFunctions common.Router //External Stores
+	extServiceMap       common.ExtServiceMap
+	controllerFunctions common.Router
 }
 
 func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (context, error) {

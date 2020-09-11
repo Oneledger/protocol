@@ -17,7 +17,7 @@ var _ action.Msg = &OwnerDecision{}
 
 type OwnerDecision struct {
 	BidConvId bid_data.BidConvId   `json:"bidConvId"`
-	Owner     keys.Address        `json:"owner"`
+	Owner     keys.Address         `json:"owner"`
 	Decision  bid_data.BidDecision `json:"decision"`
 }
 

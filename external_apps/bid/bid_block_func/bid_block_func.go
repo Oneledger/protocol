@@ -36,7 +36,6 @@ func AddExpireBidTxToQueue(i interface{}) {
 
 	bidConvStore := bidMasterStore.BidConv
 
-
 	// 2. iterate all the bid conversations and pick the ones that need to be expired
 	bidConvStore.Iterate(func(id bid_data.BidConvId, bidConv *bid_data.BidConv) bool {
 		// check expiry
@@ -65,7 +64,7 @@ func AddExpireBidTxToQueue(i interface{}) {
 
 func GetExpireBidTX(bidConvId bid_data.BidConvId, validatorAddress keys.Address) (abci.RequestDeliverTx, error) {
 	expireBid := &bid_action.ExpireBid{
-		BidConvId:       bidConvId,
+		BidConvId:        bidConvId,
 		ValidatorAddress: validatorAddress,
 	}
 
@@ -82,7 +81,6 @@ func GetExpireBidTX(bidConvId bid_data.BidConvId, validatorAddress keys.Address)
 	}
 	return internalFinalizeTx, nil
 }
-
 
 //Function for block Ender
 func PopExpireBidTxFromQueue(i interface{}) {

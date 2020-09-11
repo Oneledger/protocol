@@ -104,17 +104,16 @@ func TestBidOfferStore_Iterate(t *testing.T) {
 	assert.True(t, ok, "")
 }
 
-
 func TestBidOfferStore_GetOffers(t *testing.T) {
 	fmt.Println("Get offers for ID :  ", ID1)
 	offer, err := bidOfferStore.GetActiveOffer(ID1, TypeInvalid)
 	if err != nil {
-		assert.Error(t, err,"")
+		assert.Error(t, err, "")
 	}
 	fmt.Print(offer.Amount)
 	offer, err = bidOfferStore.GetActiveOffer(ID2, TypeInvalid)
 	if err != nil {
-		assert.Error(t, err,"")
+		assert.Error(t, err, "")
 	}
 	fmt.Print(offer.Amount)
 

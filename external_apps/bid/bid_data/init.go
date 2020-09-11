@@ -62,7 +62,7 @@ const (
 	//Bid Id length based on hash algorithm
 	SHA256LENGTH int = 0x40
 
-	ActiveOfferPrefix string = "ACTIVE"
+	ActiveOfferPrefix   string = "ACTIVE"
 	InactiveOfferPrefix string = "INACTIVE"
 )
 

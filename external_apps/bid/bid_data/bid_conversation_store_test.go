@@ -14,7 +14,7 @@ const (
 	numPrivateKeys = 10
 	numBids        = 10
 	testDeadline   = 1596740920
-	height = 111
+	height         = 111
 )
 
 var (

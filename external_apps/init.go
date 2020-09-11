@@ -53,4 +53,3 @@ func RegisterExtApp(cs *storage.ChainState, ar action.Router, dr data.Router, es
 	}
 	return nil
 }
-

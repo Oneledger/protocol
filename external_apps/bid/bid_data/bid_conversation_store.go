@@ -180,13 +180,13 @@ func (bcs *BidConvStore) GetIdForBidConv(bidState BidConvState, owner keys.Addre
 
 func NewBidConvStore(prefixActive string, prefixSucceed string, prefixCancelled string, prefixExpired string, prefixRejected string, state *storage.State) *BidConvStore {
 	return &BidConvStore{
-		state:               state,
-		szlr:                serialize.GetSerializer(serialize.LOCAL),
-		prefix:              []byte(prefixActive),
-		prefixActive:        []byte(prefixActive),
-		prefixSucceed:       []byte(prefixSucceed),
-		prefixCancelled:     []byte(prefixCancelled),
-		prefixExpired:       []byte(prefixExpired),
-		prefixRejected: []byte(prefixRejected),
+		state:           state,
+		szlr:            serialize.GetSerializer(serialize.LOCAL),
+		prefix:          []byte(prefixActive),
+		prefixActive:    []byte(prefixActive),
+		prefixSucceed:   []byte(prefixSucceed),
+		prefixCancelled: []byte(prefixCancelled),
+		prefixExpired:   []byte(prefixExpired),
+		prefixRejected:  []byte(prefixRejected),
 	}
 }

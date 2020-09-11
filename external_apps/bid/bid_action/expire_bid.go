@@ -16,7 +16,7 @@ var _ action.Msg = &ExpireBid{}
 
 type ExpireBid struct {
 	BidConvId        bid_data.BidConvId `json:"bidConvId"`
-	ValidatorAddress action.Address    `json:"validatorAddress"`
+	ValidatorAddress action.Address     `json:"validatorAddress"`
 }
 
 var _ action.Tx = &ExpireBidTx{}

@@ -9,7 +9,7 @@ import (
 
 var BidAssetMap map[bid_data.BidAssetType]bid_data.BidAsset
 
-const(
+const (
 	//Bid
 	BID_CREATE          action.Type = 0x101
 	BID_CONTER_OFFER    action.Type = 0x102

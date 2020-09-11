@@ -22,27 +22,27 @@ func LoadAppData(appData *common.ExtAppData) {
 
 	//load txs
 	bidCreate := common.ExtTx{
-		Tx: bid_action.CreateBidTx{},
+		Tx:  bid_action.CreateBidTx{},
 		Msg: &bid_action.CreateBid{},
 	}
 	bidCancel := common.ExtTx{
-		Tx: bid_action.CancelBidTx{},
+		Tx:  bid_action.CancelBidTx{},
 		Msg: &bid_action.CancelBid{},
 	}
 	bidExpire := common.ExtTx{
-		Tx: bid_action.ExpireBidTx{},
+		Tx:  bid_action.ExpireBidTx{},
 		Msg: &bid_action.ExpireBid{},
 	}
 	counterOffer := common.ExtTx{
-		Tx: bid_action.CounterOfferTx{},
+		Tx:  bid_action.CounterOfferTx{},
 		Msg: &bid_action.CounterOffer{},
 	}
 	bidderDecision := common.ExtTx{
-		Tx: bid_action.BidderDecisionTx{},
+		Tx:  bid_action.BidderDecisionTx{},
 		Msg: &bid_action.BidderDecision{},
 	}
 	ownerDecision := common.ExtTx{
-		Tx: bid_action.OwnerDecisionTx{},
+		Tx:  bid_action.OwnerDecisionTx{},
 		Msg: &bid_action.OwnerDecision{},
 	}
 	appData.ExtTxs = append(appData.ExtTxs, bidCreate)

@@ -25,5 +25,5 @@ func (ea *ExampleAsset) ExchangeAsset(ctx *action.Context, bidder action.Address
 func (ea *ExampleAsset) NewAssetWithName(name string) BidAsset {
 	asset := *ea
 	asset.exampleName = name
- 	return &asset
+	return &asset
 }

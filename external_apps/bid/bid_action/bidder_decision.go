@@ -17,7 +17,7 @@ var _ action.Msg = &BidderDecision{}
 
 type BidderDecision struct {
 	BidConvId bid_data.BidConvId   `json:"bidConvId"`
-	Bidder    keys.Address        `json:"bidder"`
+	Bidder    keys.Address         `json:"bidder"`
 	Decision  bid_data.BidDecision `json:"decision"`
 }
 

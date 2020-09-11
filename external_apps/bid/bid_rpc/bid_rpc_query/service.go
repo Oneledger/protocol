@@ -10,12 +10,13 @@ import (
 )
 
 type Service struct {
-	balances       *balance.Store
-	currencies     *balance.CurrencySet
-	ons            *ons.DomainStore
-	logger         *log.Logger
-	bidMaster  	   *bid_data.BidMasterStore
+	balances   *balance.Store
+	currencies *balance.CurrencySet
+	ons        *ons.DomainStore
+	logger     *log.Logger
+	bidMaster  *bid_data.BidMasterStore
 }
+
 func Name() string {
 	return "bid_query"
 }
@@ -23,11 +24,11 @@ func Name() string {
 func NewService(balances *balance.Store, currencies *balance.CurrencySet,
 	domains *ons.DomainStore, logger *log.Logger, bidMaster *bid_data.BidMasterStore) *Service {
 	return &Service{
-		currencies:     currencies,
-		balances:       balances,
-		ons:            domains,
-		logger:         logger,
-		bidMaster:      bidMaster,
+		currencies: currencies,
+		balances:   balances,
+		ons:        domains,
+		logger:     logger,
+		bidMaster:  bidMaster,
 	}
 }
 
@@ -49,9 +50,9 @@ func (svc *Service) ShowBidConv(req bid_rpc.ListBidConvRequest, reply *bid_rpc.L
 	}
 
 	bcs := bid_rpc.BidConvStat{
-		BidConv: *bidConv,
-		ActiveOffer: activeOfferField,
-		InactiveOffers:  inactiveOffers,
+		BidConv:        *bidConv,
+		ActiveOffer:    activeOfferField,
+		InactiveOffers: inactiveOffers,
 	}
 
 	*reply = bid_rpc.ListBidConvsReply{
@@ -109,9 +110,9 @@ func (svc *Service) ListBidConvs(req bid_rpc.ListBidConvsRequest, reply *bid_rpc
 		}
 
 		bcs := bid_rpc.BidConvStat{
-			BidConv: bidConv,
-			ActiveOffer: activeOfferField,
-			InactiveOffers:  inactiveOffers,
+			BidConv:        bidConv,
+			ActiveOffer:    activeOfferField,
+			InactiveOffers: inactiveOffers,
 		}
 		bidConvStats[i] = bcs
 	}

@@ -17,8 +17,8 @@ var _ action.Msg = &CounterOffer{}
 
 type CounterOffer struct {
 	BidConvId  bid_data.BidConvId `json:"bidConvId"`
-	AssetOwner keys.Address      `json:"assetOwner"`
-	Amount     action.Amount     `json:"amount"`
+	AssetOwner keys.Address       `json:"assetOwner"`
+	Amount     action.Amount      `json:"amount"`
 }
 
 var _ action.Tx = &CounterOfferTx{}

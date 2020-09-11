@@ -148,11 +148,11 @@ func (app *App) blockBeginner() blockBeginner {
 		functionList, err := app.Context.controllerFunctions.Iterate(common.BlockBeginner)
 		functionParam := common.ExtParam{
 			InternalTxStore: app.Context.transaction,
-			Logger: app.logger,
-			ActionCtx: *app.Context.Action(&app.header, app.Context.deliver),
-			Validator: app.Context.node.ValidatorAddress(),
-			Header: app.header,
-			Deliver: app.Context.deliver,
+			Logger:          app.logger,
+			ActionCtx:       *app.Context.Action(&app.header, app.Context.deliver),
+			Validator:       app.Context.node.ValidatorAddress(),
+			Header:          app.header,
+			Deliver:         app.Context.deliver,
 		}
 		if err == nil {
 			for _, function := range functionList {
@@ -304,13 +304,12 @@ func (app *App) blockEnder() blockEnder {
 		FinalizeProposals(&app.header, &app.Context, app.logger)
 		functionList, err := app.Context.controllerFunctions.Iterate(common.BlockEnder)
 		functionParam := common.ExtParam{
-			//ExternalStores: app.Context.extStores.WithState(storage.NewState(app.Context.chainstate)),
 			InternalTxStore: app.Context.transaction,
-			Logger: app.logger,
-			ActionCtx: *app.Context.Action(&app.header, app.Context.deliver),
-			Validator: app.Context.node.ValidatorAddress(),
-			Header: app.header,
-			Deliver: app.Context.deliver,
+			Logger:          app.logger,
+			ActionCtx:       *app.Context.Action(&app.header, app.Context.deliver),
+			Validator:       app.Context.node.ValidatorAddress(),
+			Header:          app.header,
+			Deliver:         app.Context.deliver,
 		}
 		if err == nil {
 			for _, function := range functionList {

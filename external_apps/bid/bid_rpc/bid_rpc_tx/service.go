@@ -17,8 +17,8 @@ func Name() string {
 }
 
 type Service struct {
-	balances    *balance.Store
-	logger      *log.Logger
+	balances *balance.Store
+	logger   *log.Logger
 }
 
 func NewService(
@@ -26,20 +26,20 @@ func NewService(
 	logger *log.Logger,
 ) *Service {
 	return &Service{
-		balances:    balances,
-		logger:      logger,
+		balances: balances,
+		logger:   logger,
 	}
 }
 
 func (s *Service) CreateBid(args bid_rpc.CreateBidRequest, reply *client.CreateTxReply) error {
 	createBid := bid_action.CreateBid{
-		BidConvId: args.BidConvId,
+		BidConvId:  args.BidConvId,
 		AssetOwner: args.AssetOwner,
-		AssetName: args.AssetName,
-		AssetType: args.AssetType,
-		Bidder: args.Bidder,
-		Amount: args.Amount,
-		Deadline: args.Deadline,
+		AssetName:  args.AssetName,
+		AssetType:  args.AssetType,
+		Bidder:     args.Bidder,
+		Amount:     args.Amount,
+		Deadline:   args.Deadline,
 	}
 
 	data, err := createBid.Marshal()
@@ -73,9 +73,9 @@ func (s *Service) CreateBid(args bid_rpc.CreateBidRequest, reply *client.CreateT
 func (s *Service) CounterOffer(args bid_rpc.CounterOfferRequest, reply *client.CreateTxReply) error {
 
 	counterOffer := bid_action.CounterOffer{
-		BidConvId: args.BidConvId,
+		BidConvId:  args.BidConvId,
 		AssetOwner: args.AssetOwner,
-		Amount: args.Amount,
+		Amount:     args.Amount,
 	}
 
 	data, err := counterOffer.Marshal()
@@ -109,7 +109,7 @@ func (s *Service) CounterOffer(args bid_rpc.CounterOfferRequest, reply *client.C
 func (s *Service) CancelBid(args bid_rpc.CancelBidRequest, reply *client.CreateTxReply) error {
 	cancelBid := bid_action.CancelBid{
 		BidConvId: args.BidConvId,
-		Bidder: args.Bidder,
+		Bidder:    args.Bidder,
 	}
 
 	data, err := cancelBid.Marshal()
@@ -139,8 +139,8 @@ func (s *Service) CancelBid(args bid_rpc.CancelBidRequest, reply *client.CreateT
 func (s *Service) OwnerDecision(args bid_rpc.OwnerDecisionRequest, reply *client.CreateTxReply) error {
 	ownerDecision := bid_action.OwnerDecision{
 		BidConvId: args.BidConvId,
-		Owner: args.Owner,
-		Decision: args.Decision,
+		Owner:     args.Owner,
+		Decision:  args.Decision,
 	}
 
 	data, err := ownerDecision.Marshal()
@@ -174,8 +174,8 @@ func (s *Service) OwnerDecision(args bid_rpc.OwnerDecisionRequest, reply *client
 func (s *Service) BidderDecision(args bid_rpc.BidderDecisionRequest, reply *client.CreateTxReply) error {
 	bidderDecision := bid_action.BidderDecision{
 		BidConvId: args.BidConvId,
-		Bidder: args.Bidder,
-		Decision: args.Decision,
+		Bidder:    args.Bidder,
+		Decision:  args.Decision,
 	}
 
 	data, err := bidderDecision.Marshal()

@@ -11,9 +11,9 @@ type ListBidConvRequest struct {
 }
 
 type BidConvStat struct {
-	BidConv bid_data.BidConv    `json:"bidConv"`
-	ActiveOffer bid_data.BidOffer `json:"activeOffer"`
-	InactiveOffers  []bid_data.BidOffer `json:"inactiveOffers"`
+	BidConv        bid_data.BidConv    `json:"bidConv"`
+	ActiveOffer    bid_data.BidOffer   `json:"activeOffer"`
+	InactiveOffers []bid_data.BidOffer `json:"inactiveOffers"`
 }
 
 type ListBidConvsReply struct {

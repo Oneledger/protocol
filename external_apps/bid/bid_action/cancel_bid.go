@@ -17,7 +17,7 @@ var _ action.Msg = &CancelBid{}
 
 type CancelBid struct {
 	BidConvId bid_data.BidConvId `json:"bidConvId"`
-	Bidder    keys.Address      `json:"bidder"`
+	Bidder    keys.Address       `json:"bidder"`
 }
 
 var _ action.Tx = &CancelBidTx{}
