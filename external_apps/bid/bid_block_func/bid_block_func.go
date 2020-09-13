@@ -13,9 +13,6 @@ import (
 
 // Function for block Beginner
 func AddExpireBidTxToQueue(i interface{}) {
-	// Add a store similar to the transaction store to external stores .
-	// Access that store through app.Context.extStores.
-	// Add transaction to the queue from there .
 
 	// 1. get all the needed stores
 	extParam, ok := i.(common.ExtParam)
@@ -36,7 +33,7 @@ func AddExpireBidTxToQueue(i interface{}) {
 
 	bidConvStore := bidMasterStore.BidConv
 
-	// 2. iterate all the bid conversations and pick the ones that need to be expired
+	// 2. iterate all the bid conversations and pick the ones that needs to be expired
 	bidConvStore.Iterate(func(id bid_data.BidConvId, bidConv *bid_data.BidConv) bool {
 		// check expiry
 		deadLine := time.Unix(bidConv.DeadlineUTC, 0)
@@ -48,8 +45,8 @@ func AddExpireBidTxToQueue(i interface{}) {
 				extParam.Logger.Error("Error in building TX of type RequestDeliverTx(expire)", err)
 				return true
 			}
-			// Add tx to expired prefix of transaction store
-			err = extParam.InternalTxStore.AddCustom("bidExpire", string(bidConv.BidConvId), &tx)
+			// Add tx to expire prefix of transaction store
+			err = extParam.InternalTxStore.AddCustom("extBidExpire", string(bidConv.BidConvId), &tx)
 			if err != nil {
 				extParam.Logger.Error("Error in adding to Expired Queue :", err)
 				return true
@@ -84,9 +81,6 @@ func GetExpireBidTX(bidConvId bid_data.BidConvId, validatorAddress keys.Address)
 
 //Function for block Ender
 func PopExpireBidTxFromQueue(i interface{}) {
-	//Same as above
-	//Pop The TX ,call deliverTX on it
-	//Use deliverTxSession to commit or ignore the error
 
 	//1. get the internal bid tx store
 	bidParam, ok := i.(common.ExtParam)
@@ -97,7 +91,7 @@ func PopExpireBidTxFromQueue(i interface{}) {
 
 	//2. get all the pending txs
 	var expiredBidConvs []abci.RequestDeliverTx
-	bidParam.InternalTxStore.IterateCustom("bidExpire", func(key string, tx *abci.RequestDeliverTx) bool {
+	bidParam.InternalTxStore.IterateCustom("extBidExpire", func(key string, tx *abci.RequestDeliverTx) bool {
 		expiredBidConvs = append(expiredBidConvs, *tx)
 		return false
 	})
@@ -131,10 +125,10 @@ func PopExpireBidTxFromQueue(i interface{}) {
 	}
 
 	//4. clear txs in transaction store
-	bidParam.InternalTxStore.IterateCustom("bidExpire", func(key string, tx *abci.RequestDeliverTx) bool {
-		ok, err := bidParam.InternalTxStore.DeleteCustom("bidExpire", key)
+	bidParam.InternalTxStore.IterateCustom("extBidExpire", func(key string, tx *abci.RequestDeliverTx) bool {
+		ok, err := bidParam.InternalTxStore.DeleteCustom("extBidExpire", key)
 		if !ok {
-			bidParam.Logger.Error("Failed to clear expired proposals queue :", err)
+			bidParam.Logger.Error("Failed to clear expired bids queue :", err)
 			return true
 		}
 		return false
