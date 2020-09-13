@@ -36,4 +36,8 @@ const (
 	BidErrInvalidBidderDecision            = 990032
 	BidErrInvalidOwnerDecision             = 990033
 	BidErrFailedToExchangeAsset            = 990034
+	BidErrGettingBidConvInQuery            = 990035
+	BidErrGettingActiveOfferInQuery        = 990036
+	BidErrInvalidOwnerAddressInQuery       = 990037
+	BidErrInvalidBidderAddressInQuery      = 990038
 )

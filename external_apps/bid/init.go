@@ -15,11 +15,10 @@ import (
 	"os"
 )
 
-var logger *log.Logger
-
 //this is the handler function, it will add multiple components into appData
 func LoadAppData(appData *common.ExtAppData) {
-
+	logWriter := os.Stdout
+	logger := log.NewLoggerWithPrefix(logWriter, "extApp").WithLevel(log.Level(4))
 	//load txs
 	bidCreate := common.ExtTx{
 		Tx:  bid_action.CreateBidTx{},
@@ -70,8 +69,6 @@ func LoadAppData(appData *common.ExtAppData) {
 		logger.Errorf("failed to register currency %s", olt.Name, err)
 		return
 	}
-	logWriter := os.Stdout
-	logger := log.NewLoggerWithPrefix(logWriter, "rpc").WithLevel(log.Level(4))
 	appData.ExtServiceMap[bid_rpc_query.Name()] = bid_rpc_query.NewService(balances, currencies, domains, logger, bid_data.NewBidMasterStore(appData.ChainState))
 	appData.ExtServiceMap[bid_rpc_tx.Name()] = bid_rpc_tx.NewService(balances, logger)
 

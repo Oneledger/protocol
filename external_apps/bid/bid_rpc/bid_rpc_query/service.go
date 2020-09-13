@@ -6,7 +6,6 @@ import (
 	"github.com/Oneledger/protocol/external_apps/bid/bid_data"
 	"github.com/Oneledger/protocol/external_apps/bid/bid_rpc"
 	"github.com/Oneledger/protocol/log"
-	"github.com/pkg/errors"
 )
 
 type Service struct {
@@ -35,14 +34,13 @@ func NewService(balances *balance.Store, currencies *balance.CurrencySet,
 func (svc *Service) ShowBidConv(req bid_rpc.ListBidConvRequest, reply *bid_rpc.ListBidConvsReply) error {
 	bidConv, _, err := svc.bidMaster.BidConv.QueryAllStores(req.BidConvId)
 	if err != nil {
-		svc.logger.Error("error getting bid conversation", err)
-		return bid_data.ErrGettingBidConv
+		return bid_rpc.ErrGettingBidConvInQuery.Wrap(err)
 	}
 
 	inactiveOffers := svc.bidMaster.BidOffer.GetInActiveOffers(bidConv.BidConvId, bid_data.TypeInvalid)
 	activeOffer, err := svc.bidMaster.BidOffer.GetActiveOffer(bidConv.BidConvId, bid_data.TypeInvalid)
 	if err != nil {
-		return bid_data.ErrGettingActiveBidOffer.Wrap(err)
+		return bid_rpc.ErrGettingActiveOfferInQuery.Wrap(err)
 	}
 	activeOfferField := bid_data.BidOffer{}
 	if activeOffer != nil {
@@ -68,14 +66,14 @@ func (svc *Service) ListBidConvs(req bid_rpc.ListBidConvsRequest, reply *bid_rpc
 	if len(req.Owner) != 0 {
 		err := req.Owner.Err()
 		if err != nil {
-			return errors.New("invalid asset owner address")
+			return bid_rpc.ErrInvalidOwnerAddressInQuery.Wrap(err)
 		}
 	}
 
 	if len(req.Bidder) != 0 {
 		err := req.Bidder.Err()
 		if err != nil {
-			return errors.New("invalid asset bidder address")
+			return bid_rpc.ErrInvalidBidderAddressInQuery.Wrap(err)
 		}
 	}
 	// Query in single store if specified
@@ -102,7 +100,7 @@ func (svc *Service) ListBidConvs(req bid_rpc.ListBidConvsRequest, reply *bid_rpc
 		inactiveOffers := svc.bidMaster.BidOffer.GetInActiveOffers(bidConv.BidConvId, bid_data.TypeInvalid)
 		activeOffer, err := svc.bidMaster.BidOffer.GetActiveOffer(bidConv.BidConvId, bid_data.TypeInvalid)
 		if err != nil {
-			return bid_data.ErrGettingActiveBidOffer.Wrap(err)
+			return bid_rpc.ErrGettingActiveOfferInQuery.Wrap(err)
 		}
 		activeOfferField := bid_data.BidOffer{}
 		if activeOffer != nil {
