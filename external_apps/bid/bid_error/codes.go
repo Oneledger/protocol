@@ -45,6 +45,5 @@ const (
 	BidErrSettingRecord                    = 990041
 	BidErrGettingRecord                    = 990042
 	BidErrDeletingRecord                   = 990043
-	BidErrTooManyActiveBidConvs            = 990044
-	BidErrWrongTypeForActiveOffer          = 990045
+	BidErrWrongTypeForActiveOffer          = 990044
 )

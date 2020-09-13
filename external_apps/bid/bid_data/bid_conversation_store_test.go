@@ -106,5 +106,4 @@ func TestBidConvStore_FilterBidConvs(t *testing.T) {
 	bidConvs := bidConvStore.FilterBidConvs(BidStateActive, addrList[0], assetNames[0], BidAssetOns,
 		addrList[9])
 	assert.Equal(t, 1, len(bidConvs))
-
 }

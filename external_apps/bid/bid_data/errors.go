@@ -45,6 +45,5 @@ var (
 	ErrSettingRecord                    = codes.ProtocolError{bid_error.BidErrSettingRecord, "failed to set record"}
 	ErrGettingRecord                    = codes.ProtocolError{bid_error.BidErrGettingRecord, "failed to get record"}
 	ErrDeletingRecord                   = codes.ProtocolError{bid_error.BidErrDeletingRecord, "failed to delete record"}
-	ErrTooManyActiveBidConvs            = codes.ProtocolError{bid_error.BidErrTooManyActiveBidConvs, "too many active bid conversations"}
 	ErrWrongTypeForActiveOffer          = codes.ProtocolError{bid_error.BidErrWrongTypeForActiveOffer, "active offer type is incorrect"}
 )

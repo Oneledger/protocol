@@ -2,16 +2,11 @@ package bid_data
 
 import (
 	"github.com/Oneledger/protocol/data"
-	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
-	"os"
 )
 
-var logger *log.Logger
-
 func init() {
-	logger = log.NewDefaultLogger(os.Stdout).WithPrefix("extBid")
 	serialize.RegisterConcrete(new(DomainAsset), "domain_asset")
 	serialize.RegisterConcrete(new(ExampleAsset), "example_asset")
 }
@@ -24,13 +19,6 @@ const (
 	BidStateCancelled BidConvState = 0x03
 	BidStateExpired   BidConvState = 0x04
 	BidStateRejected  BidConvState = 0x05
-
-	//Error Codes
-	errorSerialization   = "321"
-	errorDeSerialization = "322"
-	errorSettingRecord   = "323"
-	errorGettingRecord   = "324"
-	errorDeletingRecord  = "325"
 
 	EmptyStr = ""
 
