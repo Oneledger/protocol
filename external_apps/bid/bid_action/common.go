@@ -71,7 +71,7 @@ func DeactivateOffer(deal bool, bidder action.Address, ctx *action.Context, acti
 	//delete active offer, here only use bidConvId, same object is ok to be passed in
 	err = bidMasterStore.BidOffer.DeleteActiveOffer(*activeOffer)
 	if err != nil {
-		return bid_data.ErrFailedToDeleteActiveOffer.Wrap(err)
+		return err
 	}
 	return nil
 }

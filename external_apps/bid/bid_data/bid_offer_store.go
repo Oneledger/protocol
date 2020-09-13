@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
-	"github.com/pkg/errors"
 	"strconv"
 	"strings"
 )
@@ -17,11 +16,14 @@ type BidOfferStore struct {
 func (bos *BidOfferStore) set(key storage.StoreKey, offer BidOffer) error {
 	dat, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(offer)
 	if err != nil {
-		return errors.Wrap(err, errorSerialization)
+		return ErrFailedInSerialization.Wrap(err)
 	}
 	prefixed := append(bos.prefix, key...)
 	err = bos.State.Set(prefixed, dat)
-	return errors.Wrap(err, errorSettingRecord)
+	if err != nil {
+		return ErrSettingRecord.Wrap(err)
+	}
+	return nil
 }
 
 func (bos *BidOfferStore) get(key storage.StoreKey) (offer *BidOffer, err error) {
@@ -161,7 +163,7 @@ func (bos *BidOfferStore) DeleteActiveOffer(offer BidOffer) error {
 		return err
 	}
 	if ok == false {
-		return errors.New("failed to delete active offer")
+		return ErrFailedToDeleteActiveOffer
 	}
 	return nil
 }

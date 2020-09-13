@@ -29,8 +29,11 @@ func (bcs *BidConvStore) Set(bid *BidConv) error {
 	}
 
 	err = bcs.state.Set(prefixed, data)
+	if err != nil {
+		return ErrSettingRecord.Wrap(err)
+	}
 
-	return ErrSettingRecord.Wrap(err)
+	return nil
 }
 
 func (bcs *BidConvStore) Get(bidId BidConvId) (*BidConv, error) {
@@ -65,10 +68,6 @@ func (bcs *BidConvStore) Delete(key BidConvId) (bool, error) {
 		return false, ErrDeletingRecord.Wrap(err)
 	}
 	return res, err
-}
-
-func (bcs *BidConvStore) GetIterable() storage.Iterable {
-	return bcs.state.GetIterable()
 }
 
 func (bcs *BidConvStore) Iterate(fn func(id BidConvId, bid *BidConv) bool) (stopped bool) {

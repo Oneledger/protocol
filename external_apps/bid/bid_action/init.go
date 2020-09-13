@@ -1,7 +1,6 @@
 package bid_action
 
 import (
-	"fmt"
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/external_apps/bid/bid_data"
 	"github.com/Oneledger/protocol/serialize"
@@ -35,5 +34,4 @@ func init() {
 	BidAssetMap = make(map[bid_data.BidAssetType]bid_data.BidAsset)
 	BidAssetMap[bid_data.BidAssetOns] = &bid_data.DomainAsset{}
 	BidAssetMap[bid_data.BidAssetExample] = &bid_data.ExampleAsset{}
-	fmt.Println("BidAssetMap in init: ", BidAssetMap)
 }
