@@ -10,11 +10,12 @@ import (
 
 type BidOfferStore struct {
 	State  *storage.State
+	szlr   serialize.Serializer
 	prefix []byte
 }
 
 func (bos *BidOfferStore) set(key storage.StoreKey, offer BidOffer) error {
-	dat, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(offer)
+	dat, err := bos.szlr.Serialize(offer)
 	if err != nil {
 		return ErrFailedInSerialization.Wrap(err)
 	}
@@ -36,7 +37,7 @@ func (bos *BidOfferStore) get(key storage.StoreKey) (offer *BidOffer, err error)
 		return
 	}
 	offer = &BidOffer{}
-	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(dat, offer)
+	err = bos.szlr.Deserialize(dat, offer)
 	if err != nil {
 		err = ErrFailedInDeserialization.Wrap(err)
 	}
@@ -64,7 +65,7 @@ func (bos *BidOfferStore) iterate(fn func(bidConvId BidConvId, offerType BidOffe
 		true,
 		func(key, value []byte) bool {
 			offer := &BidOffer{}
-			err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(value, offer)
+			err := bos.szlr.Deserialize(value, offer)
 			if err != nil {
 				return true
 			}
@@ -94,6 +95,7 @@ func (bos *BidOfferStore) WithState(state *storage.State) *BidOfferStore {
 func NewBidOfferStore(prefix string, state *storage.State) *BidOfferStore {
 	return &BidOfferStore{
 		State:  state,
+		szlr:   serialize.GetSerializer(serialize.PERSISTENT),
 		prefix: storage.Prefix(prefix),
 	}
 }

@@ -165,17 +165,6 @@ func (bcs *BidConvStore) FilterBidConvs(bidState BidConvState, owner keys.Addres
 	return bidConvs
 }
 
-func (bcs *BidConvStore) GetIdForBidConv(bidState BidConvState, owner keys.Address, assetName string, assetType BidAssetType, bidder keys.Address) (BidConvId, error) {
-	prefix := bcs.prefix
-	defer func() { bcs.prefix = prefix }()
-
-	bidConvs := bcs.FilterBidConvs(bidState, owner, assetName, assetType, bidder)
-	if len(bidConvs) > 1 || len(bidConvs) == 0 {
-		return "", ErrTooManyActiveBidConvs
-	}
-	return bidConvs[0].BidConvId, nil
-}
-
 func NewBidConvStore(prefixActive string, prefixSucceed string, prefixCancelled string, prefixExpired string, prefixRejected string, state *storage.State) *BidConvStore {
 	return &BidConvStore{
 		state:           state,
