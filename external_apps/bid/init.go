@@ -52,11 +52,11 @@ func LoadAppData(appData *common.ExtAppData) {
 	appData.ExtTxs = append(appData.ExtTxs, ownerDecision)
 
 	//load stores
-	if dupName, ok := appData.ExtStores["bidMaster"]; ok {
+	if dupName, ok := appData.ExtStores["extBidMaster"]; ok {
 		logger.Errorf("Trying to register external store %s failed, same name already exists", dupName)
 		return
 	} else {
-		appData.ExtStores["bidMaster"] = bid_data.NewBidMasterStore(appData.ChainState)
+		appData.ExtStores["extBidMaster"] = bid_data.NewBidMasterStore(appData.ChainState)
 	}
 
 	//load services

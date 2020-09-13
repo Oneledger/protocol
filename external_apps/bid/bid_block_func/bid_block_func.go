@@ -18,19 +18,19 @@ func AddExpireBidTxToQueue(i interface{}) {
 	// Add transaction to the queue from there .
 
 	// 1. get all the needed stores
-	bidParam, ok := i.(common.ExtParam)
+	extParam, ok := i.(common.ExtParam)
 	if ok == false {
-		bidParam.Logger.Error("failed to assert bidParam in block beginner")
+		extParam.Logger.Error("failed to assert extParam in block beginner")
 		return
 	}
-	bidMaster, err := bidParam.ActionCtx.ExtStores.Get("bidMaster")
+	bidMaster, err := extParam.ActionCtx.ExtStores.Get("extBidMaster")
 	if err != nil {
-		bidParam.Logger.Error("failed to get bid master store in block beginner", err)
+		extParam.Logger.Error("failed to get bid master store in block beginner", err)
 		return
 	}
 	bidMasterStore, ok := bidMaster.(*bid_data.BidMasterStore)
 	if ok == false {
-		bidParam.Logger.Error("failed to assert bid master store in block beginner", err)
+		extParam.Logger.Error("failed to assert bid master store in block beginner", err)
 		return
 	}
 
@@ -41,22 +41,22 @@ func AddExpireBidTxToQueue(i interface{}) {
 		// check expiry
 		deadLine := time.Unix(bidConv.DeadlineUTC, 0)
 
-		if deadLine.Before(bidParam.Header.Time) {
+		if deadLine.Before(extParam.Header.Time) {
 			// get tx
-			tx, err := GetExpireBidTX(bidConv.BidConvId, bidParam.Validator)
+			tx, err := GetExpireBidTX(bidConv.BidConvId, extParam.Validator)
 			if err != nil {
-				bidParam.Logger.Error("Error in building TX of type RequestDeliverTx(expire)", err)
+				extParam.Logger.Error("Error in building TX of type RequestDeliverTx(expire)", err)
 				return true
 			}
 			// Add tx to expired prefix of transaction store
-			err = bidParam.InternalTxStore.AddCustom("bidExpire", string(bidConv.BidConvId), &tx)
+			err = extParam.InternalTxStore.AddCustom("bidExpire", string(bidConv.BidConvId), &tx)
 			if err != nil {
-				bidParam.Logger.Error("Error in adding to Expired Queue :", err)
+				extParam.Logger.Error("Error in adding to Expired Queue :", err)
 				return true
 			}
 
 			// Commit the state
-			bidParam.InternalTxStore.State.Commit()
+			extParam.InternalTxStore.State.Commit()
 		}
 		return false
 	})

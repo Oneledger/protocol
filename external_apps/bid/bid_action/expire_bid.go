@@ -2,7 +2,6 @@ package bid_action
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/Oneledger/protocol/external_apps/bid/bid_data"
 
@@ -92,7 +91,6 @@ func runExpireBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 	}
 
 	//2. get the active offer(bid offer or counter offer)
-	fmt.Println("getOffer from expire bid tx")
 	activeOffer, err := bidMasterStore.BidOffer.GetActiveOffer(expireBid.BidConvId, bid_data.TypeInvalid)
 	// in this case there must be an offer
 	if err != nil || activeOffer == nil {

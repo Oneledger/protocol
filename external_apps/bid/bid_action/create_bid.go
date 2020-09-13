@@ -255,7 +255,7 @@ func (c *CreateBid) createBidConv(ctx *action.Context) error {
 	}
 
 	//Check if any bid conversation with same asset, owner, bidder already exists in active store
-	store, err := ctx.ExtStores.Get("bidMaster")
+	store, err := ctx.ExtStores.Get("extBidMaster")
 	if err != nil {
 		return bid_data.ErrGettingBidMasterStore.Wrap(err)
 	}

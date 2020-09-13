@@ -5,11 +5,10 @@ import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/external_apps/bid/bid_data"
-	"runtime"
 )
 
 func GetBidMasterStore(ctx *action.Context) (*bid_data.BidMasterStore, error) {
-	store, err := ctx.ExtStores.Get("bidMaster")
+	store, err := ctx.ExtStores.Get("extBidMaster")
 	if err != nil {
 		return nil, bid_data.ErrGettingBidMasterStore.Wrap(err)
 	}
@@ -38,8 +37,6 @@ func ExchangeAsset(ctx *action.Context, assetName string, assetType bid_data.Bid
 }
 
 func DeactivateOffer(deal bool, bidder action.Address, ctx *action.Context, activeOffer *bid_data.BidOffer, bidMasterStore *bid_data.BidMasterStore) error {
-	_, file, no, ok := runtime.Caller(1)
-	fmt.Printf("called from %s#%d\n, ok: %s", file, no, ok)
 	activeOfferCoin := activeOffer.Amount.ToCoin(ctx.Currencies)
 	if activeOffer.OfferType == bid_data.TypeBidOffer {
 		// unlock the amount if no deal

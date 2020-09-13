@@ -11,7 +11,7 @@ import (
 var logger *log.Logger
 
 func init() {
-	logger = log.NewDefaultLogger(os.Stdout).WithPrefix("bid")
+	logger = log.NewDefaultLogger(os.Stdout).WithPrefix("extBid")
 	serialize.RegisterConcrete(new(DomainAsset), "domain_asset")
 	serialize.RegisterConcrete(new(ExampleAsset), "example_asset")
 }
@@ -33,11 +33,6 @@ const (
 	errorDeletingRecord  = "325"
 
 	EmptyStr = ""
-
-	//Bid Offer Status
-	BidOfferActive   BidOfferStatus = 0x01
-	BidOfferInactive BidOfferStatus = 0x02
-	BidOfferInvalid  BidOfferStatus = 0x03
 
 	//Bid Offer Type
 	TypeBidOffer     BidOfferType = 0x01
@@ -87,7 +82,7 @@ func ConstructBidMasterStore(bc *BidConvStore, bo *BidOfferStore) *BidMasterStor
 }
 
 func NewBidMasterStore(chainstate *storage.ChainState) *BidMasterStore {
-	bidConv := NewBidConvStore("bidConvActive", "bidConvSucceed", "bidConvCancelled", "bidConvExpired", "bidConvRejected", storage.NewState(chainstate))
-	bidOffer := NewBidOfferStore("bidOffer", storage.NewState(chainstate))
+	bidConv := NewBidConvStore("extBidConvActive", "extBidConvSucceed", "extBidConvCancelled", "extBidConvExpired", "extBidConvRejected", storage.NewState(chainstate))
+	bidOffer := NewBidOfferStore("extBidOffer", storage.NewState(chainstate))
 	return ConstructBidMasterStore(bidConv, bidOffer)
 }
