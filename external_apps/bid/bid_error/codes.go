@@ -40,4 +40,11 @@ const (
 	BidErrGettingActiveOfferInQuery        = 990036
 	BidErrInvalidOwnerAddressInQuery       = 990037
 	BidErrInvalidBidderAddressInQuery      = 990038
+	BidErrFailedInSerialization            = 990039
+	BidErrFailedInDeserialization          = 990040
+	BidErrSettingRecord                    = 990041
+	BidErrGettingRecord                    = 990042
+	BidErrDeletingRecord                   = 990043
+	BidErrTooManyActiveBidConvs            = 990044
+	BidErrWrongTypeForActiveOffer          = 990045
 )

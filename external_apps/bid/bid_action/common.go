@@ -1,7 +1,6 @@
 package bid_action
 
 import (
-	"fmt"
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/external_apps/bid/bid_data"
@@ -23,7 +22,6 @@ func GetBidMasterStore(ctx *action.Context) (*bid_data.BidMasterStore, error) {
 func IsAssetAvailable(ctx *action.Context, assetName string, assetType bid_data.BidAssetType, assetOwner keys.Address) (bool, error) {
 	bidAssetTemplate := BidAssetMap[assetType]
 	bidAsset := bidAssetTemplate.NewAssetWithName(assetName)
-	//fmt.Printf("bidAsset: %p %v\n", bidAsset, bidAsset)
 	assetOk, err := bidAsset.ValidateAsset(ctx, assetOwner)
 	return assetOk, err
 }
@@ -31,7 +29,6 @@ func IsAssetAvailable(ctx *action.Context, assetName string, assetType bid_data.
 func ExchangeAsset(ctx *action.Context, assetName string, assetType bid_data.BidAssetType, assetOwner keys.Address, bidder keys.Address) (bool, error) {
 	bidAssetTemplate := BidAssetMap[assetType]
 	bidAsset := bidAssetTemplate.NewAssetWithName(assetName)
-	//fmt.Printf("bidAsset: %p %v\n", bidAsset, bidAsset)
 	exchangeOk, err := bidAsset.ExchangeAsset(ctx, bidder, assetOwner)
 	return exchangeOk, err
 }
@@ -69,13 +66,12 @@ func DeactivateOffer(deal bool, bidder action.Address, ctx *action.Context, acti
 	// add updated offer as inactive offer
 	err := bidMasterStore.BidOffer.SetInActiveOffer(*activeOffer)
 	if err != nil {
-		return bid_data.ErrSetOffer
+		return bid_data.ErrSetOffer.Wrap(err)
 	}
 	//delete active offer, here only use bidConvId, same object is ok to be passed in
 	err = bidMasterStore.BidOffer.DeleteActiveOffer(*activeOffer)
 	if err != nil {
-		fmt.Println("err in delete offer: ", err)
-		return bid_data.ErrFailedToDeleteActiveOffer
+		return bid_data.ErrFailedToDeleteActiveOffer.Wrap(err)
 	}
 	return nil
 }

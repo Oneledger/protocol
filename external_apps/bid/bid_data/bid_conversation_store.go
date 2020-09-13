@@ -5,7 +5,6 @@ import (
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/google/go-cmp/cmp"
-	"github.com/pkg/errors"
 )
 
 type BidConvStore struct {
@@ -26,12 +25,12 @@ func (bcs *BidConvStore) Set(bid *BidConv) error {
 	prefixed := append(bcs.prefix, bid.BidConvId...)
 	data, err := bcs.szlr.Serialize(bid)
 	if err != nil {
-		return errors.Wrap(err, errorSerialization)
+		return ErrFailedInSerialization.Wrap(err)
 	}
 
 	err = bcs.state.Set(prefixed, data)
 
-	return errors.Wrap(err, errorSettingRecord)
+	return ErrSettingRecord.Wrap(err)
 }
 
 func (bcs *BidConvStore) Get(bidId BidConvId) (*BidConv, error) {
@@ -39,11 +38,11 @@ func (bcs *BidConvStore) Get(bidId BidConvId) (*BidConv, error) {
 	prefixed := append(bcs.prefix, bidId...)
 	data, err := bcs.state.Get(prefixed)
 	if err != nil {
-		return nil, errors.Wrap(err, errorGettingRecord)
+		return nil, ErrGettingRecord.Wrap(err)
 	}
 	err = bcs.szlr.Deserialize(data, bid)
 	if err != nil {
-		return nil, errors.Wrap(err, errorDeSerialization)
+		return nil, ErrFailedInDeserialization.Wrap(err)
 	}
 
 	return bid, nil
@@ -63,7 +62,7 @@ func (bcs *BidConvStore) Delete(key BidConvId) (bool, error) {
 	prefixed := append(bcs.prefix, key...)
 	res, err := bcs.state.Delete(prefixed)
 	if err != nil {
-		return false, errors.Wrap(err, errorDeletingRecord)
+		return false, ErrDeletingRecord.Wrap(err)
 	}
 	return res, err
 }
@@ -139,7 +138,7 @@ func (bcs *BidConvStore) QueryAllStores(key BidConvId) (*BidConv, BidConvState, 
 	if err == nil {
 		return bid, BidStateExpired, nil
 	}
-	return nil, BidStateInvalid, errors.Wrap(err, errorGettingRecord)
+	return nil, BidStateInvalid, ErrGettingRecord.Wrap(err)
 }
 
 func (bcs *BidConvStore) FilterBidConvs(bidState BidConvState, owner keys.Address, assetName string, assetType BidAssetType, bidder keys.Address) []BidConv {
@@ -173,7 +172,7 @@ func (bcs *BidConvStore) GetIdForBidConv(bidState BidConvState, owner keys.Addre
 
 	bidConvs := bcs.FilterBidConvs(bidState, owner, assetName, assetType, bidder)
 	if len(bidConvs) > 1 || len(bidConvs) == 0 {
-		return "", errors.New("errTooManyActiveBidConvs")
+		return "", ErrTooManyActiveBidConvs
 	}
 	return bidConvs[0].BidConvId, nil
 }

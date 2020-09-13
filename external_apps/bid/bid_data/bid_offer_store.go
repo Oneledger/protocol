@@ -28,7 +28,7 @@ func (bos *BidOfferStore) get(key storage.StoreKey) (offer *BidOffer, err error)
 	prefixed := append(bos.prefix, key...)
 	dat, err := bos.State.Get(prefixed)
 	if err != nil {
-		return nil, errors.Wrap(err, errorGettingRecord)
+		return nil, ErrGettingRecord.Wrap(err)
 	}
 	if len(dat) == 0 {
 		return
@@ -36,7 +36,7 @@ func (bos *BidOfferStore) get(key storage.StoreKey) (offer *BidOffer, err error)
 	offer = &BidOffer{}
 	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(dat, offer)
 	if err != nil {
-		err = errors.Wrap(err, errorDeSerialization)
+		err = ErrFailedInDeserialization.Wrap(err)
 	}
 	return
 }
@@ -45,7 +45,7 @@ func (bos *BidOfferStore) delete(key storage.StoreKey) (bool, error) {
 	prefixed := append(bos.prefix, key...)
 	res, err := bos.State.Delete(prefixed)
 	if err != nil {
-		return false, errors.Wrap(err, errorDeletingRecord)
+		return false, ErrDeletingRecord.Wrap(err)
 	}
 	return res, err
 }
@@ -121,7 +121,7 @@ func (bos *BidOfferStore) GetActiveOffer(bId BidConvId, oType BidOfferType) (*Bi
 		return nil, nil
 	}
 	if oType != TypeInvalid && offer.OfferType != oType {
-		return nil, errors.New("wrong type for active offer")
+		return nil, ErrWrongTypeForActiveOffer
 	}
 	return offer, nil
 }
