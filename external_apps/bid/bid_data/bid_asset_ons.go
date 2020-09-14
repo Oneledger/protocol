@@ -1,7 +1,6 @@
 package bid_data
 
 import (
-	"errors"
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/ons"
 )
