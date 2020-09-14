@@ -10,12 +10,12 @@ var BidAssetMap map[bid_data.BidAssetType]bid_data.BidAsset
 
 const (
 	//Bid
-	BID_CREATE          action.Type = 0x101
-	BID_CONTER_OFFER    action.Type = 0x102
-	BID_CANCEL          action.Type = 0x103
-	BID_BIDDER_DECISION action.Type = 0x104
-	BID_EXPIRE          action.Type = 0x105
-	BID_OWNER_DECISION  action.Type = 0x106
+	BID_CREATE          action.Type = 0x901
+	BID_CONTER_OFFER    action.Type = 0x902
+	BID_CANCEL          action.Type = 0x903
+	BID_BIDDER_DECISION action.Type = 0x904
+	BID_EXPIRE          action.Type = 0x905
+	BID_OWNER_DECISION  action.Type = 0x906
 )
 
 func init() {
@@ -31,6 +31,7 @@ func init() {
 	action.RegisterTxType(BID_BIDDER_DECISION, "BID_BIDDER_DECISION")
 	action.RegisterTxType(BID_EXPIRE, "BID_EXPIRE")
 	action.RegisterTxType(BID_OWNER_DECISION, "BID_OWNER_DECISION")
+	// Register bid asset
 	BidAssetMap = make(map[bid_data.BidAssetType]bid_data.BidAsset)
 	BidAssetMap[bid_data.BidAssetOns] = &bid_data.DomainAsset{}
 	BidAssetMap[bid_data.BidAssetExample] = &bid_data.ExampleAsset{}
