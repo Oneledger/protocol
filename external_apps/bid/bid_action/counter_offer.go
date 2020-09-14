@@ -67,12 +67,12 @@ func (c CounterOfferTx) Validate(ctx *action.Context, signedTx action.SignedTx) 
 }
 
 func (c CounterOfferTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	ctx.Logger.Detail("Processing CreateProposal Transaction for CheckTx", tx)
+	ctx.Logger.Detail("Processing CounterOffer Transaction for CheckTx", tx)
 	return runCounterOffer(ctx, tx)
 }
 
 func (c CounterOfferTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	ctx.Logger.Detail("Processing CreateProposal Transaction for DeliverTx", tx)
+	ctx.Logger.Detail("Processing CounterOffer Transaction for DeliverTx", tx)
 	return runCounterOffer(ctx, tx)
 }
 

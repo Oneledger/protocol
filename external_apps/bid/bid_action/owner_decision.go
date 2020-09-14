@@ -58,12 +58,12 @@ func (o OwnerDecisionTx) Validate(ctx *action.Context, signedTx action.SignedTx)
 }
 
 func (o OwnerDecisionTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	ctx.Logger.Detail("Processing CreateProposal Transaction for CheckTx", tx)
+	ctx.Logger.Detail("Processing OwnerDecision Transaction for CheckTx", tx)
 	return runOwnerDecision(ctx, tx)
 }
 
 func (o OwnerDecisionTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	ctx.Logger.Detail("Processing CreateProposal Transaction for DeliverTx", tx)
+	ctx.Logger.Detail("Processing OwnerDecision Transaction for DeliverTx", tx)
 	return runOwnerDecision(ctx, tx)
 }
 

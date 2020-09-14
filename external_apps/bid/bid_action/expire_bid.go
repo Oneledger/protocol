@@ -56,12 +56,12 @@ func (e ExpireBidTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bo
 }
 
 func (e ExpireBidTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	ctx.Logger.Detail("Processing CreateProposal Transaction for CheckTx", tx)
+	ctx.Logger.Detail("Processing ExpireBid Transaction for CheckTx", tx)
 	return runExpireBid(ctx, tx)
 }
 
 func (e ExpireBidTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	ctx.Logger.Detail("Processing CreateProposal Transaction for DeliverTx", tx)
+	ctx.Logger.Detail("Processing ExpireBid Transaction for DeliverTx", tx)
 	return runExpireBid(ctx, tx)
 }
 

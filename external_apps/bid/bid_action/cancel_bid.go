@@ -58,12 +58,12 @@ func (c CancelBidTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bo
 }
 
 func (c CancelBidTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	ctx.Logger.Detail("Processing CreateProposal Transaction for CheckTx", tx)
+	ctx.Logger.Detail("Processing CancelBid Transaction for CheckTx", tx)
 	return runCancelBid(ctx, tx)
 }
 
 func (c CancelBidTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	ctx.Logger.Detail("Processing CreateProposal Transaction for DeliverTx", tx)
+	ctx.Logger.Detail("Processing CancelBid Transaction for DeliverTx", tx)
 	return runCancelBid(ctx, tx)
 }
 

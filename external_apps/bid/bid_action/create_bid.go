@@ -80,12 +80,12 @@ func (c CreateBidTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bo
 }
 
 func (c CreateBidTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	ctx.Logger.Detail("Processing CreateProposal Transaction for CheckTx", tx)
+	ctx.Logger.Detail("Processing CreateBid Transaction for CheckTx", tx)
 	return runCreateBid(ctx, tx)
 }
 
 func (c CreateBidTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	ctx.Logger.Detail("Processing CreateProposal Transaction for DeliverTx", tx)
+	ctx.Logger.Detail("Processing CreateBid Transaction for DeliverTx", tx)
 	return runCreateBid(ctx, tx)
 }
 
