@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/Oneledger/protocol/external_apps/common"
 	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/data"
@@ -48,6 +49,7 @@ type Context struct {
 	RewardMaster   *rewards.RewardMasterStore
 	Govern         *governance.Store
 	ExtStores      data.Router
+	ExtServiceMap  common.ExtServiceMap
 	GovUpdate      *action.GovernaceUpdateAndValidate
 	NodeContext    node.Context
 
@@ -83,6 +85,14 @@ func NewMap(ctx *Context) (Map, error) {
 			return serviceMap, errors.Wrap(errors.New("Service doesn't exist "), serviceName)
 		}
 	}
+	for name, service := range ctx.ExtServiceMap {
+		if _, ok := defaultMap[name]; ok {
+			return serviceMap, errors.Wrap(errors.New("Error adding external service, conflict service exist: "), name)
+		} else {
+			serviceMap[name] = service
+		}
+	}
+
 
 	return serviceMap, nil
 }

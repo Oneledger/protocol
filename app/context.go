@@ -1,6 +1,8 @@
 package app
 
 import (
+	"github.com/Oneledger/protocol/external_apps"
+	"github.com/Oneledger/protocol/external_apps/common"
 	"io"
 	"os"
 	"path/filepath"
@@ -56,17 +58,15 @@ type context struct {
 	check      *storage.State
 	deliver    *storage.State
 
-	extStores           data.Router
-	controllerFunctions Router //External Stores
-	balances            *balance.Store
-	domains             *ons.DomainStore
-	validators          *identity.ValidatorStore // Set of validators currently active
-	witnesses           *identity.WitnessStore   // Set of witnesses currently active
-	feePool             *fees.Store
-	govern              *governance.Store
-	btcTrackers         *bitcoin.TrackerStore  // tracker for bitcoin balance UTXO
-	ethTrackers         *ethereum.TrackerStore // Tracker store for ongoing ethereum trackers
-	currencies          *balance.CurrencySet
+	balances    *balance.Store
+	domains     *ons.DomainStore
+	validators  *identity.ValidatorStore // Set of validators currently active
+	witnesses   *identity.WitnessStore   // Set of witnesses currently active
+	feePool     *fees.Store
+	govern      *governance.Store
+	btcTrackers *bitcoin.TrackerStore  // tracker for bitcoin balance UTXO
+	ethTrackers *ethereum.TrackerStore // Tracker store for ongoing ethereum trackers
+	currencies  *balance.CurrencySet
 	//storage which is not a chain state
 	accounts accounts.Wallet
 
@@ -81,6 +81,10 @@ type context struct {
 	transaction     *transactions.TransactionStore
 	logWriter       io.Writer
 	govupdate       *action.GovernaceUpdateAndValidate
+	extApp          *common.ExtAppData
+	extStores       data.StorageRouter
+	extServiceMap   common.ExtServiceMap
+	extFunctions    common.ControllerRouter
 }
 
 func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (context, error) {
@@ -132,7 +136,12 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.actionRouter = action.NewRouter("action")
 	ctx.internalRouter = action.NewRouter("internal")
 	ctx.extStores = data.NewStorageRouter()
-	ctx.controllerFunctions = NewRouter()
+	ctx.extServiceMap = common.NewExtServiceMap()
+	ctx.extFunctions = common.NewFunctionRouter()
+	err = external_apps.RegisterExtApp(ctx.chainstate, ctx.actionRouter, ctx.extStores, ctx.extServiceMap, ctx.extFunctions)
+	if err != nil {
+		return ctx, errors.Wrap(err, "error in registering external apps")
+	}
 	ctx.govupdate = action.NewGovUpdate()
 	testEnv := os.Getenv("OLTEST")
 
@@ -206,7 +215,7 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.proposalMaster.WithState(state),
 		ctx.rewardMaster.WithState(state),
 		ctx.govern.WithState(state),
-		ctx.extStores,
+		ctx.extStores.WithState(state),
 		ctx.govupdate,
 	)
 
@@ -271,7 +280,8 @@ func (ctx *context) Services() (service.Map, error) {
 		Delegators:     delegation.NewDelegationStore("st", storage.NewState(ctx.chainstate)),
 		ProposalMaster: proposalMaster,
 		RewardMaster:   rewardMaster,
-		ExtStores:      ctx.extStores,//todo create new store for cache, follow Govern
+		ExtStores:      ctx.extStores,
+		ExtServiceMap:  ctx.extServiceMap,
 		Router:         ctx.actionRouter,
 		Logger:         log.NewLoggerWithPrefix(ctx.logWriter, "rpc").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
 		Services:       extSvcs,
@@ -382,16 +392,4 @@ func (ctx *context) JobContext() *event.JobsContext {
 		ctx.ethTrackers.WithState(ctx.deliver),
 		ctx.proposalMaster.WithState(ctx.deliver),
 		log.NewLoggerWithPrefix(ctx.logWriter, "internal_jobs").WithLevel(log.Level(ctx.cfg.Node.LogLevel)))
-}
-
-func (ctx *context) AddExternalTx(t action.Type, h action.Tx) error {
-	return ctx.actionRouter.AddHandler(t, h)
-}
-
-func (ctx *context) AddExternalStore(storeType data.Type, storeObj interface{}) error {
-	return ctx.extStores.Add(storeType, storeObj)
-}
-
-func (ctx *context) GetChainState() *storage.ChainState {
-	return ctx.chainstate
 }

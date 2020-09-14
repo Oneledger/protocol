@@ -9,6 +9,10 @@ import (
 
 type Type int
 
+type TxTypeMap map[Type]string
+
+var txTypeMap TxTypeMap
+
 const (
 	SEND     Type = 0x01
 	SENDPOOL Type = 0x02
@@ -67,79 +71,58 @@ func init() {
 
 	serialize.RegisterInterface(new(Msg))
 	logger = log.NewLoggerWithPrefix(os.Stdout, "action")
+	txTypeMap  = TxTypeMap{}
+	RegisterTxType(SEND, "SEND")
+	RegisterTxType(SENDPOOL, "SENDPOOL")
+
+	RegisterTxType(STAKE, "STAKE")
+	RegisterTxType(UNSTAKE, "UNSTAKE")
+	RegisterTxType(WITHDRAW, "WITHDRAW")
+
+	RegisterTxType(DOMAIN_CREATE, "DOMAIN_CREATE")
+	RegisterTxType(DOMAIN_UPDATE, "DOMAIN_UPDATE")
+	RegisterTxType(DOMAIN_SELL, "DOMAIN_SELL")
+	RegisterTxType(DOMAIN_PURCHASE, "DOMAIN_PURCHASE")
+	RegisterTxType(DOMAIN_SEND, "DOMAIN_SEND")
+	RegisterTxType(DOMAIN_DELETE_SUB, "DOMAIN_DELETE_SUB")
+	RegisterTxType(DOMAIN_RENEW, "DOMAIN_RENEW")
+
+	RegisterTxType(BTC_LOCK, "BTC_LOCK")
+	RegisterTxType(BTC_ADD_SIGNATURE, "BTC_ADD_SIGNATURE")
+	RegisterTxType(BTC_BROADCAST_SUCCESS, "BTC_BROADCAST_SUCCESS")
+	RegisterTxType(BTC_REPORT_FINALITY_MINT, "BTC_REPORT_FINALITY_MINT")
+	RegisterTxType(BTC_EXT_MINT, "BTC_EXT_MINT")
+	RegisterTxType(BTC_REDEEM, "BTC_REDEEM")
+	RegisterTxType(BTC_FAILED_BROADCAST_RESET, "BTC_FAILED_BROADCAST_RESET")
+
+	RegisterTxType(ETH_LOCK, "ETH_LOCK")
+	RegisterTxType(ETH_REPORT_FINALITY_MINT, "ETH_REPORT_FINALITY_MINT")
+	RegisterTxType(ETH_REDEEM, "ETH_REDEEM")
+	RegisterTxType(ERC20_LOCK, "ERC20_LOCK")
+	RegisterTxType(ERC20_REDEEM, "ERC20_REDEEM")
+
+	RegisterTxType(PROPOSAL_CREATE, "PROPOSAL_CREATE")
+	RegisterTxType(PROPOSAL_CANCEL, "PROPOSAL_CANCEL")
+	RegisterTxType(PROPOSAL_FUND, "PROPOSAL_FUND")
+	RegisterTxType(PROPOSAL_VOTE, "PROPOSAL_VOTE")
+	RegisterTxType(PROPOSAL_FINALIZE, "PROPOSAL_FINALIZE")
+	RegisterTxType(EXPIRE_VOTES, "EXPIRE_VOTES")
+	RegisterTxType(PROPOSAL_WITHDRAW_FUNDS, "PROPOSAL_WITHDRAW_FUNDS")
+
+	RegisterTxType(WITHDRAW_REWARD, "WITHDRAW_REWARD")
+}
+
+func RegisterTxType(value Type, name string, ) {
+	if dupName, ok := txTypeMap[value]; ok {
+		logger.Errorf("Trying to register tx type %s failed, type value conflicts with existing type: %d: %s", value, dupName)
+		return
+	}
+	txTypeMap[value] = name
 }
 
 func (t Type) String() string {
-	switch t {
-	case SEND:
-		return "SEND"
-	case STAKE:
-		return "STAKE"
-	case UNSTAKE:
-		return "UNSTAKE"
-	case SENDPOOL:
-		return "SENDPOOL"
-	case WITHDRAW:
-		return "WITHDRAW"
-	case DOMAIN_CREATE:
-		return "DOMAIN_CREATE"
-	case DOMAIN_UPDATE:
-		return "DOMAIN_UPDATE"
-	case DOMAIN_SELL:
-		return "DOMAIN_SELL"
-	case DOMAIN_PURCHASE:
-		return "DOMAIN_PURCHASE"
-	case DOMAIN_SEND:
-		return "DOMAIN_SEND"
-	case DOMAIN_DELETE_SUB:
-		return "DOMAIN_DELETE_SUB"
-	case DOMAIN_RENEW:
-		return "DOMAIN_RENEW"
-
-	case BTC_LOCK:
-		return "BTC_LOCK"
-	case BTC_ADD_SIGNATURE:
-		return "BTC_ADD_SIGNATURE"
-	case BTC_BROADCAST_SUCCESS:
-		return "BTC_BROADCAST_SUCCESS"
-	case BTC_REPORT_FINALITY_MINT:
-		return "BTC_REPORT_FINALITY_MINT"
-	case BTC_EXT_MINT:
-		return "BTC_EXT_MINT"
-	case BTC_REDEEM:
-		return "BTC_REDEEM"
-	case BTC_FAILED_BROADCAST_RESET:
-		return "BTC_FAILED_BROADCAST_RESET"
-
-	case ETH_LOCK:
-		return "ETH_LOCK"
-	case ETH_REPORT_FINALITY_MINT:
-		return "ETH_REPORT_FINALITY_MINT"
-	case ETH_REDEEM:
-		return "ETH_REDEEM"
-	case ERC20_LOCK:
-		return "ERC20_LOCK"
-	case ERC20_REDEEM:
-		return "ERC20_REDEEM"
-
-	case PROPOSAL_CREATE:
-		return "PROPOSAL_CREATE"
-	case PROPOSAL_CANCEL:
-		return "PROPOSAL_CANCEL"
-	case PROPOSAL_FUND:
-		return "PROPOSAL_FUND"
-	case PROPOSAL_VOTE:
-		return "PROPOSAL_VOTE"
-	case PROPOSAL_FINALIZE:
-		return "PROPOSAL_FINALIZE"
-
-	case PROPOSAL_WITHDRAW_FUNDS:
-		return "PROPOSAL_WITHDRAW_FUNDS"
-	case EXPIRE_VOTES:
-		return "EXPIRE_VOTES"
-	case WITHDRAW_REWARD:
-		return "WITHDRAW_REWARD"
-	default:
-		return "UNKNOWN"
+	if name, ok := txTypeMap[t]; ok {
+		return name
 	}
+	return "UNKNOWN"
 }

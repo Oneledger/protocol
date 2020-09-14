@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/Oneledger/protocol/external_apps/common"
 	"math"
 	"math/big"
 	"runtime/debug"
@@ -144,14 +145,20 @@ func (app *App) blockBeginner() blockBeginner {
 		//Adds proposals that meet the requirements to either Expired or Finalizing Keys from transaction store
 		//Transaction store is not part of chainstate ,it just maintains a list of proposals from BlockBeginner to BlockEnder .Gets cleared at each Block Ender
 		AddInternalTX(app.Context.proposalMaster, app.Context.node.ValidatorAddress(), app.header.Height, app.Context.transaction, app.logger)
-
-		functionList, err := app.Context.controllerFunctions.Iterate(BlockBeginner)
+		functionList, err := app.Context.extFunctions.Iterate(common.BlockBeginner)
+		functionParam := common.ExtParam{
+			InternalTxStore: app.Context.transaction,
+			Logger:          app.logger,
+			ActionCtx:       *app.Context.Action(&app.header, app.Context.deliver),
+			Validator:       app.Context.node.ValidatorAddress(),
+			Header:          app.header,
+			Deliver:         app.Context.deliver,
+		}
 		if err == nil {
 			for _, function := range functionList {
-				function(app)
+				function(functionParam)
 			}
 		}
-
 		app.logger.Detail("Begin Block:", result, "height:", req.Header.Height, "AppHash:", hex.EncodeToString(req.Header.AppHash))
 		return result
 	}
@@ -193,7 +200,6 @@ func (app *App) txChecker() txChecker {
 			}
 		}
 		ok, response := handler.ProcessCheck(txCtx, tx.RawTx)
-
 		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, storage.Gas(len(msg.Tx)))
 
 		logString := marshalLog(ok, response, feeResponse)
@@ -296,11 +302,18 @@ func (app *App) blockEnder() blockEnder {
 		// These functions iterate the transactions store
 		ExpireProposals(&app.header, &app.Context, app.logger)
 		FinalizeProposals(&app.header, &app.Context, app.logger)
-
-		functionList, err := app.Context.controllerFunctions.Iterate(BlockEnder)
+		functionList, err := app.Context.extFunctions.Iterate(common.BlockEnder)
+		functionParam := common.ExtParam{
+			InternalTxStore: app.Context.transaction,
+			Logger:          app.logger,
+			ActionCtx:       *app.Context.Action(&app.header, app.Context.deliver),
+			Validator:       app.Context.node.ValidatorAddress(),
+			Header:          app.header,
+			Deliver:         app.Context.deliver,
+		}
 		if err == nil {
 			for _, function := range functionList {
-				function(app)
+				function(functionParam)
 			}
 		}
 		result := ResponseEndBlock{

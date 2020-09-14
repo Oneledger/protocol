@@ -38,6 +38,7 @@ const (
 	InternalErrorTrackerInsufficientBalance = 100609
 	InternalErrorListWitnesses              = 100610
 	InternalErrorGettingProposal            = 100611
+	InternalErrorGettingBidConv				= 100612
 
 	ONSError                        = 1007
 	ONSErrDomainMissing             = 100701
@@ -179,4 +180,5 @@ const (
 
 	//Ethereum Errors
 
+	//6 digit error codes starting with 99 are reserved for external apps
 )
