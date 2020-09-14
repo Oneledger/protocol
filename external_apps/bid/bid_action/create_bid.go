@@ -2,7 +2,6 @@ package bid_action
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/Oneledger/protocol/external_apps/bid/bid_data"
 	"strconv"
@@ -163,13 +162,11 @@ func runCreateBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		if activeOfferCoin.LessThanEqualCoin(offerCoin) {
 			return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrAmountMoreThanActiveCounterOffer, createBid.Tags(), err)
 		}
-		fmt.Println("active counter offer in create bid: ", activeOffer)
 		//6. set active counter offer to inactive
 		err = DeactivateOffer(false, bidConv.Bidder, ctx, activeOffer, bidMasterStore)
 		if err != nil {
 			return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrDeactivateOffer, createBid.Tags(), err)
 		}
-		fmt.Println("after deactivateOffer in create bid")
 	}
 	//7. lock amount
 	err = ctx.Balances.MinusFromAddress(createBid.Bidder, offerCoin)

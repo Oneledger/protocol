@@ -19,32 +19,32 @@ func (da *DomainAsset) ToString() string {
 func (da *DomainAsset) ValidateAsset(ctx *action.Context, owner action.Address) (bool, error) {
 	// check if domain is valid
 	if !da.domainName.IsValid() || da.domainName.IsSub() {
-		return false, errors.New("error domain not valid")
+		return false, ErrInvalidDomain
 	}
 
 	// check domain existence
 	if !ctx.Domains.Exists(da.domainName) {
-		return false, errors.New("domain does not exist, you can just create it")
+		return false, ErrDomainNotExists
 	}
 
 	domain, err := ctx.Domains.Get(da.domainName)
 	if err != nil {
-		return false, errors.New("error getting domain")
+		return false, ErrGettingDomain
 	}
 
 	// if domain is on sale
 	if domain.OnSaleFlag {
-		return false, errors.New("domain is on sale")
+		return false, ErrDomainOnSale
 	}
 
 	// if domain is belong to the owner
 	if !domain.Owner.Equal(owner) {
-		return false, errors.New("domain does not belong to this address")
+		return false, ErrDomainOwnerUnmatch
 	}
 
 	// if domain is expired
 	if ctx.State.Version() >= domain.ExpireHeight {
-		return false, errors.New("domain is expired, you can just create it")
+		return false, ErrDomainExpired
 	}
 	return true, nil
 }
@@ -53,11 +53,11 @@ func (da *DomainAsset) ExchangeAsset(ctx *action.Context, bidder action.Address,
 	// change domain ownership
 	domain, err := ctx.Domains.Get(da.domainName)
 	if err != nil {
-		return false, errors.New("error getting domain")
+		return false, ErrGettingDomain
 	}
 
 	if !domain.IsChangeable(ctx.Header.Height) {
-		return false, errors.New("error domain not changeable")
+		return false, ErrDomainNotChangeable
 	}
 	domain.ResetAfterSale(bidder, bidder, 0, ctx.State.Version())
 	err = ctx.Domains.DeleteAllSubdomains(domain.Name)

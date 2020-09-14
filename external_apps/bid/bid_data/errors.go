@@ -46,4 +46,11 @@ var (
 	ErrGettingRecord                    = codes.ProtocolError{bid_error.BidErrGettingRecord, "failed to get record"}
 	ErrDeletingRecord                   = codes.ProtocolError{bid_error.BidErrDeletingRecord, "failed to delete record"}
 	ErrWrongTypeForActiveOffer          = codes.ProtocolError{bid_error.BidErrWrongTypeForActiveOffer, "active offer type is incorrect"}
+	ErrInvalidDomain                    = codes.ProtocolError{bid_error.BidErrInvalidDomain, "error domain not valid"}
+	ErrDomainNotExists                  = codes.ProtocolError{bid_error.BidErrDomainNotExists, "error domain does not exist, you can just create it"}
+	ErrGettingDomain                    = codes.ProtocolError{bid_error.BidErrGettingDomain, "failed to get domain"}
+	ErrDomainOnSale                     = codes.ProtocolError{bid_error.BidErrDomainOnSale, "error domain is on sale, you can just buy it"}
+	ErrDomainOwnerUnmatch               = codes.ProtocolError{bid_error.BidErrDomainOwnerUnmatch, "error domain does not owned by this owner"}
+	ErrDomainExpired                    = codes.ProtocolError{bid_error.BidErrDomainExpired, "error domain expired, you can just create it"}
+	ErrDomainNotChangeable              = codes.ProtocolError{bid_error.BidErrDomainNotChangeable, "error domain not changeable, please wait for another 2 blocks"}
 )

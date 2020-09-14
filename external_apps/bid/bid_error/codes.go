@@ -46,4 +46,11 @@ const (
 	BidErrGettingRecord                    = 990042
 	BidErrDeletingRecord                   = 990043
 	BidErrWrongTypeForActiveOffer          = 990044
+	BidErrInvalidDomain                    = 990045
+	BidErrDomainNotExists                  = 990046
+	BidErrGettingDomain                    = 990047
+	BidErrDomainOnSale                     = 990048
+	BidErrDomainOwnerUnmatch               = 990049
+	BidErrDomainExpired                    = 990050
+	BidErrDomainNotChangeable              = 990051
 )
