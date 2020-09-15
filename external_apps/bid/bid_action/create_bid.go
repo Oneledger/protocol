@@ -102,13 +102,14 @@ func runCreateBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 	}
 
 	//1. check if this is to create a bid conversation or just add an offer
+	bidConvId := createBid.BidConvId
 	if len(createBid.BidConvId) == 0 {
 		// check asset availability
 		available, err := IsAssetAvailable(ctx, createBid.AssetName, createBid.AssetType, createBid.AssetOwner)
 		if err != nil || available == false {
 			return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrInvalidAsset, createBid.Tags(), err)
 		}
-		err = createBid.createBidConv(ctx)
+		bidConvId, err = createBid.createBidConv(ctx)
 		if err != nil {
 			return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrFailedCreateBidConv, createBid.Tags(), err)
 		}
@@ -120,11 +121,11 @@ func runCreateBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrGettingBidMasterStore, createBid.Tags(), err)
 	}
 
-	if !bidMasterStore.BidConv.WithPrefixType(bid_data.BidStateActive).Exists(createBid.BidConvId) {
+	if !bidMasterStore.BidConv.WithPrefixType(bid_data.BidStateActive).Exists(bidConvId) {
 		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrBidConvNotFound, createBid.Tags(), err)
 	}
 
-	bidConv, err := bidMasterStore.BidConv.WithPrefixType(bid_data.BidStateActive).Get(createBid.BidConvId)
+	bidConv, err := bidMasterStore.BidConv.WithPrefixType(bid_data.BidStateActive).Get(bidConvId)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrGettingBidConv, createBid.Tags(), err)
 	}
@@ -151,7 +152,7 @@ func runCreateBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 	offerCoin := createBid.Amount.ToCoin(ctx.Currencies)
 
 	//6. get the active counter offer
-	activeCounterOffer, err := bidMasterStore.BidOffer.GetActiveOffer(createBid.BidConvId, bid_data.TypeCounterOffer)
+	activeCounterOffer, err := bidMasterStore.BidOffer.GetActiveOffer(bidConvId, bid_data.TypeCounterOffer)
 	// in this case there can be no counter offer if this is the beginning of bid conversation
 	if err != nil || (len(createBid.BidConvId) != 0 && activeCounterOffer == nil) {
 		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrGettingActiveCounterOffer, createBid.Tags(), err)
@@ -176,7 +177,7 @@ func runCreateBid(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 
 	//10. add new offer to offer store
 	createBidOffer := bid_data.NewBidOffer(
-		createBid.BidConvId,
+		bidConvId,
 		bid_data.TypeBidOffer,
 		ctx.Header.Time.UTC().Unix(),
 		createBid.Amount,
@@ -235,7 +236,7 @@ func (c *CreateBid) Unmarshal(bytes []byte) error {
 	return json.Unmarshal(bytes, c)
 }
 
-func (c *CreateBid) createBidConv(ctx *action.Context) error {
+func (c *CreateBid) createBidConv(ctx *action.Context) (bid_data.BidConvId, error) {
 	createBidConv := bid_data.NewBidConv(
 		c.AssetOwner,
 		c.AssetName,
@@ -248,26 +249,25 @@ func (c *CreateBid) createBidConv(ctx *action.Context) error {
 	deadLine := time.Unix(createBidConv.DeadlineUTC, 0)
 
 	if deadLine.Before(ctx.Header.Time.UTC()) {
-		return bid_data.ErrInvalidDeadline
+		return "", bid_data.ErrInvalidDeadline
 	}
 
 	//Check if any bid conversation with same asset, owner, bidder already exists in active store
 	store, err := ctx.ExtStores.Get("extBidMaster")
 	if err != nil {
-		return bid_data.ErrGettingBidMasterStore.Wrap(err)
+		return "", bid_data.ErrGettingBidMasterStore.Wrap(err)
 	}
 	bidMasterStore := store.(*bid_data.BidMasterStore)
 	filteredBidConvs := bidMasterStore.BidConv.FilterBidConvs(bid_data.BidStateActive, createBidConv.AssetOwner, createBidConv.AssetName, createBidConv.AssetType, createBidConv.Bidder)
 	if len(filteredBidConvs) != 0 {
-		return bid_data.ErrActiveBidConvExists
+		return "", bid_data.ErrActiveBidConvExists
 	}
 	//Add bid conversation to DB
 	activeBidConvs := bidMasterStore.BidConv.WithPrefixType(bid_data.BidStateActive)
 	err = activeBidConvs.Set(createBidConv)
 	if err != nil {
-		return bid_data.ErrAddingBidConvToActiveStore.Wrap(err)
+		return "", bid_data.ErrAddingBidConvToActiveStore.Wrap(err)
 	}
 	//pass the generated id
-	c.BidConvId = createBidConv.BidConvId
-	return nil
+	return createBidConv.BidConvId, nil
 }

@@ -4,7 +4,7 @@ import datetime
 from sdk import *
 
 addr_list = addresses()
-domain_name = ["testcounteroffer1.ol", "testcounteroffer2.ol"]
+domain_name = ["testcounteroffer3.ol", "testcounteroffer4.ol"]
 offerAmount = int("5")*10**18
 counterOfferAmount = int("10")*10**18
 counterBidAmount = int("7")*10**18
@@ -46,6 +46,8 @@ if __name__ == "__main__":
     query_balance(bidConv[0].owner)
     bidConv[0].send_create()
     bidConvs = query_bidConvs(0x01, addr_list[0], domain_name[0], 0x21, addr_list[1])
+    if len(bidConvs["bidConvStats"]) != 1:
+        sys.exit(-1)
     id = bidConvs["bidConvStats"][0]["bidConv"]["bidId"]
     print id
 
@@ -61,7 +63,9 @@ if __name__ == "__main__":
     query_balance(bidConv[0].bidder)
     print "owner balance"
     query_balance(bidConv[0].owner)
-    query_bidConvs(0x01, addr_list[0], domain_name[0], 0x21, addr_list[1])
+    result = query_bidConvs(0x01, addr_list[0], domain_name[0], 0x21, addr_list[1])
+    if len(result["bidConvStats"]) != 1:
+        sys.exit(-1)
 
     bidConv[1].send_create()
     time.sleep(5)

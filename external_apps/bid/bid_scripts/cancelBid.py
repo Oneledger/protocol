@@ -43,4 +43,6 @@ if __name__ == "__main__":
     time.sleep(5)
     print "bidder balance"
     query_balance(bidConv.bidder)
-    query_bidConvs(0x03, addr_list[0], domain_name, 0x21, addr_list[1])
+    result = query_bidConvs(0x03, addr_list[0], domain_name, 0x21, addr_list[1])
+    if len(result["bidConvStats"]) != 1:
+        sys.exit(-1)

@@ -67,6 +67,7 @@ if __name__ == "__main__":
     query_balance(bidConv.bidder)
     print "owner balance"
     query_balance(bidConv.owner)
-    query_bidConvs(0x05, addr_list[0], domain_name, 0x21, addr_list[1])
-
+    result = query_bidConvs(0x05, addr_list[0], domain_name, 0x21, addr_list[1])
+    if len(result["bidConvStats"]) != 1:
+        sys.exit(-1)
 

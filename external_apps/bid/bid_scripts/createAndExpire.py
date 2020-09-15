@@ -4,7 +4,7 @@ import time
 from sdk import *
 
 addr_list = addresses()
-domain_name = "testcreate5.ol"
+domain_name = "testcreate.ol"
 offerAmount = int("5")*10**18
 counterOfferAmount = int("10")*10**18
 counterBidAmount = int("7")*10**18
@@ -39,12 +39,16 @@ if __name__ == "__main__":
     query_balance(bidConv.bidder)
     print "owner balance"
     query_balance(bidConv.owner)
-    query_bidConvs(0x01, addr_list[0], domain_name, 0x21, addr_list[1])
+    result = query_bidConvs(0x01, addr_list[0], domain_name, 0x21, addr_list[1])
+    if len(result["bidConvStats"]) != 1:
+        sys.exit(-1)
 
     time.sleep(20)
     print "bidder balance"
     query_balance(bidConv.bidder)
     print "owner balance"
     query_balance(bidConv.owner)
-    query_bidConvs(0x04, addr_list[0], domain_name, 0x21, addr_list[1])
+    result = query_bidConvs(0x04, addr_list[0], domain_name, 0x21, addr_list[1])
+    if len(result["bidConvStats"]) != 1:
+        sys.exit(-1)
 
