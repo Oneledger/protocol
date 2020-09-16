@@ -6,15 +6,12 @@ type Product struct {
 	FarmID          FarmID   `json:"farmId"`
 	FarmName        string   `json:"farmName"`
 	HarvestLocation string   `json:"harvestLocation"`
-	HarvestDate     string   `json:"harvestDate"`
+	HarvestDate     int64    `json:"harvestDate"`
 	Classification  string   `json:"classification"`
 	Quantity        int      `json:"quantity"`
 	Description     string   `json:"description"`
 }
 
-func newProduct(batchID BatchID, itemType ItemType, farmID FarmID, farmName string, harvestLocation string, harvestDate string, classification string, quantity int, description string) *productBatch {
+func NewProduct(batchID BatchID, itemType ItemType, farmID FarmID, farmName string, harvestLocation string, harvestDate int64, classification string, quantity int, description string) *Product {
 	return &Product{BatchID: batchID, ItemType: itemType, FarmID: farmID, FarmName: farmName, HarvestLocation: harvestLocation, HarvestDate: harvestDate, Classification: classification, Quantity: quantity, Description: description}
 }
-
-
-

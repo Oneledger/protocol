@@ -40,5 +40,32 @@ func (ps *ProductStore) Set(product *Product) error {
 
 	err = ps.state.Set(prefixed, data)
 
-	return ErrSettingRecord.Wrap(err)
+	if err != nil {
+		return ErrSettingRecord.Wrap(err)
+	}
+	return nil
+}
+
+func (ps *ProductStore) Get(batchId BatchID) (*Product, error) {
+	product := &Product{}
+	prefixed := append(ps.prefix, batchId...)
+	data, err := ps.state.Get(prefixed)
+	if err != nil {
+		return nil, ErrGettingRecord.Wrap(err)
+	}
+	err = ps.szlr.Deserialize(data, product)
+	if err != nil {
+		return nil, ErrFailedInDeserialization.Wrap(err)
+	}
+
+	return product, nil
+}
+
+func (ps *ProductStore) Delete(batchId BatchID) (bool, error) {
+	prefixed := append(ps.prefix, batchId...)
+	res, err := ps.state.Delete(prefixed)
+	if err != nil {
+		return false, ErrDeletingRecord.Wrap(err)
+	}
+	return res, err
 }
