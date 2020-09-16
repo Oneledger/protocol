@@ -118,7 +118,8 @@ func runBidderDecision(ctx *action.Context, tx action.RawTx) (bool, action.Respo
 	//6. if reject
 	if bidderDecision.Decision != bid_data.RejectBid && bidderDecision.Decision != bid_data.AcceptBid {
 		return helpers.LogAndReturnFalse(ctx.Logger, bid_data.ErrInvalidBidderDecision, bidderDecision.Tags(), err)
-	} else if bidderDecision.Decision == bid_data.RejectBid {
+	}
+	if bidderDecision.Decision == bid_data.RejectBid {
 		// deactivate offer
 		err = DeactivateOffer(false, bidConv.Bidder, ctx, activeOffer, bidMasterStore)
 		if err != nil {

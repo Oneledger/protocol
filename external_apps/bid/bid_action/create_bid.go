@@ -253,11 +253,11 @@ func (c *CreateBid) createBidConv(ctx *action.Context) (bid_data.BidConvId, erro
 	}
 
 	//Check if any bid conversation with same asset, owner, bidder already exists in active store
-	store, err := ctx.ExtStores.Get("extBidMaster")
+
+	bidMasterStore, err := GetBidMasterStore(ctx)
 	if err != nil {
 		return "", bid_data.ErrGettingBidMasterStore.Wrap(err)
 	}
-	bidMasterStore := store.(*bid_data.BidMasterStore)
 	filteredBidConvs := bidMasterStore.BidConv.FilterBidConvs(bid_data.BidStateActive, createBidConv.AssetOwner, createBidConv.AssetName, createBidConv.AssetType, createBidConv.Bidder)
 	if len(filteredBidConvs) != 0 {
 		return "", bid_data.ErrActiveBidConvExists
