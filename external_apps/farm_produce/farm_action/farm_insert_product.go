@@ -58,7 +58,7 @@ func (i InsertProduct) Marshal() ([]byte, error) {
 	return json.Marshal(i)
 }
 
-func (i InsertProduct) Unmarshal(bytes []byte) error {
+func (i *InsertProduct) Unmarshal(bytes []byte) error {
 	return json.Unmarshal(bytes, i)
 }
 
@@ -66,7 +66,7 @@ func (i InsertProductTx) Validate(ctx *action.Context, signedTx action.SignedTx)
 	insertProduct := InsertProduct{}
 	err := insertProduct.Unmarshal(signedTx.Data)
 	if err != nil {
-		return false, errors.Wrap(action.ErrWrongTxType, err.Error())
+		return false, errors.Wrap(ErrFailedToUnmarshal, err.Error())
 	}
 
 	//validate basic signature
@@ -80,13 +80,15 @@ func (i InsertProductTx) Validate(ctx *action.Context, signedTx action.SignedTx)
 	}
 
 	//Check if batch ID is valid
-	if insertProduct.BatchId.Err() != nil {
-		return false, farm_data.ErrInvalidBatchID
+	err = insertProduct.BatchId.Err()
+	if err != nil {
+		return false, farm_data.ErrInvalidBatchID.Wrap(err)
 	}
 
 	//Check if farm ID is valid
-	if insertProduct.FarmID.Err() != nil {
-		return false, farm_data.ErrInvalidFarmID
+	err = insertProduct.FarmID.Err()
+	if err != nil {
+		return false, farm_data.ErrInvalidFarmID.Wrap(err)
 	}
 
 	//Check if operator address is valid oneLedger address
@@ -115,7 +117,7 @@ func runInsertProduct(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 	insertProduct := InsertProduct{}
 	err := insertProduct.Unmarshal(tx.Data)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrWrongTxType, insertProduct.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, ErrFailedToUnmarshal, insertProduct.Tags(), err)
 	}
 
 	//1. get product store

@@ -12,4 +12,5 @@ const (
 	ErrBatchIDAlreadyExists       = 990109
 	ErrInsertingProduct           = 990110
 	ErrGettingProductBatchInQuery = 990111
+	ErrFailedToUnmarshal          = 990112
 )

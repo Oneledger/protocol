@@ -25,11 +25,11 @@ func LoadAppData(appData *common.ExtAppData) {
 
 
 	//load stores
-	if dupName, ok := appData.ExtStores["extFarm"]; ok {
+	if dupName, ok := appData.ExtStores["extProductStore"]; ok {
 		logger.Errorf("Trying to register external store %s failed, same name already exists", dupName)
 		return
 	} else {
-		appData.ExtStores["extFarm"] = farm_data.NewProductStore(storage.NewState(appData.ChainState), "extFarmPrefix")
+		appData.ExtStores["extProductStore"] = farm_data.NewProductStore(storage.NewState(appData.ChainState), "extFarmPrefix")
 	}
 
 	//load services
