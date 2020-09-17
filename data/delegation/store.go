@@ -527,9 +527,17 @@ func (st *DelegationStore) DumpState(options *Options) (state *DelegationState, 
 		state.DelegatorBoundedAmounts = append(state.DelegatorBoundedAmounts, dm)
 		return false
 	})
+
 	// dump pending mature amount
 	version := st.state.Version()
 	matureAmounts := st.GetMaturedPendingAmount(keys.Address{}, version, options.MaturityTime+1)
+
+	// Adjust maturity heights since block height will be reset to zero
+	for _, v := range matureAmounts {
+		if v.Height > version {
+			v.Height = v.Height - version
+		}
+	}
 	state.MatureAmounts = append(state.MatureAmounts, matureAmounts...)
 
 	succeed = true
