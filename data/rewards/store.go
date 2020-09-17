@@ -293,21 +293,16 @@ func (rs *RewardStore) dumpState() (state *RewardState, err error) {
 		state.Rewards = append(state.Rewards, reward)
 		return false
 	})
-	// dump intervals
-	rs.State.IterateRange(
-		rs.prefixIntervals,
-		storage.Rangefix(string(rs.prefixIntervals)),
-		true,
-		func(key, value []byte) bool {
-			interval := &Interval{}
-			err = rs.szlr.Deserialize(value, interval)
-			if err != nil {
-				return true
-			}
-			state.Intervals = append(state.Intervals, *interval)
-			return false
-		},
-	)
+
+	//Dump initial Interval
+	lastInterval := rs.GetInterval(rs.State.Version())
+	lastIndex := lastInterval.LastIndex + (rs.State.Version()-lastInterval.LastHeight)/rs.rewardOptions.RewardInterval + 1
+	initialInterval := Interval{
+		LastIndex:  lastIndex,
+		LastHeight: 2, //First height receiving rewards is 2
+	}
+	state.Intervals = append(state.Intervals, initialInterval)
+
 	// dump validator address list
 	rs.IterateAddrList(func(addr keys.Address) bool {
 		state.AddrList = append(state.AddrList, addr)
@@ -319,7 +314,7 @@ func (rs *RewardStore) dumpState() (state *RewardState, err error) {
 func (rs *RewardStore) loadState(state *RewardState) error {
 	// load rewards
 	for _, reward := range state.Rewards {
-		key := append(rs.prefix, storage.StoreKey(reward.Address.String()+storage.DB_PREFIX+string(reward.Index))...)
+		key := append(rs.prefix, storage.StoreKey(reward.Address.String()+storage.DB_PREFIX+strconv.FormatInt(reward.Index, 10))...)
 		data, err := rs.szlr.Serialize(reward.Amount)
 		if err != nil {
 			return err
