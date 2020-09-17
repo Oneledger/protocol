@@ -31,6 +31,11 @@ func (ps *ProductStore) WithState(state *storage.State) data.ExtStore {
 	return ps
 }
 
+func (ps *ProductStore) Exists(key BatchID) bool {
+	prefix := append(ps.prefix, key...)
+	return ps.state.Exists(prefix)
+}
+
 func (ps *ProductStore) Set(product *Product) error {
 	prefixed := append(ps.prefix, product.BatchID...)
 	data, err := ps.szlr.Serialize(product)
@@ -48,7 +53,7 @@ func (ps *ProductStore) Set(product *Product) error {
 
 func (ps *ProductStore) Get(batchId BatchID) (*Product, error) {
 	product := &Product{}
-	prefixed := append(ps.prefix, batchId...)
+	prefixed := append(ps.prefix, []byte(batchId)...)
 	data, err := ps.state.Get(prefixed)
 	if err != nil {
 		return nil, ErrGettingRecord.Wrap(err)

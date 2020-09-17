@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	numBatches     = 10
+	numBatches     = 9
 	prefix = "testPrefix"
 )
 
@@ -22,12 +22,12 @@ var (
 )
 
 func init() {
-	fmt.Println("####### TESTING BID CONV STORE #######")
+	fmt.Println("####### TESTING PRODUCT STORE #######")
 
 	//Create new bid conversations
 	for i := 0; i < numBatches; i++ {
 
-		products = append(products, NewProduct(BatchID("10000000" + strconv.Itoa(1)), "apples", "F12345", "countryHome", "field A", time.Now().UTC().Unix(), "AAA", 100, "very good product"))
+		products = append(products, NewProduct(BatchID("10000000" + strconv.Itoa(i)), "apples", "F12345", "countryHome", "field A", time.Now().UTC().Unix(), "AAA", 100, "very good product"))
 	}
 
 	//Create Test DB
@@ -48,6 +48,14 @@ func TestBidConvStore_Set(t *testing.T) {
 	assert.Equal(t, nil, err)
 
 	assert.Equal(t, batch.BatchID, products[0].BatchID)
+}
+
+func TestBidConvStore_Exists(t *testing.T) {
+	exists := productStore.Exists(products[0].BatchID)
+	assert.Equal(t, true, exists)
+
+	exists = productStore.Exists(products[1].BatchID)
+	assert.Equal(t, false, exists)
 }
 
 func TestBidConvStore_Delete(t *testing.T) {

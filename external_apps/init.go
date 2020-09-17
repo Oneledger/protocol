@@ -4,12 +4,14 @@ import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/external_apps/common"
+	"github.com/Oneledger/protocol/external_apps/farm_produce"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/pkg/errors"
 )
 
 func init() {
 	//register new external app handler function in the last line
+	common.Handlers.Register(farm_produce.LoadAppData)
 }
 
 func RegisterExtApp(cs *storage.ChainState, ar action.Router, dr data.Router, esm common.ExtServiceMap, cr common.ControllerRouter) error {
