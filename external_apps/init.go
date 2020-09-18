@@ -3,6 +3,7 @@ package external_apps
 import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data"
+	"github.com/Oneledger/protocol/external_apps/bid"
 	"github.com/Oneledger/protocol/external_apps/common"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/pkg/errors"
@@ -10,6 +11,7 @@ import (
 
 func init() {
 	//register new external app handler function in the last line
+	common.Handlers.Register(bid.LoadAppData)
 }
 
 func RegisterExtApp(cs *storage.ChainState, ar action.Router, dr data.Router, esm common.ExtServiceMap, cr common.ControllerRouter) error {
@@ -51,4 +53,3 @@ func RegisterExtApp(cs *storage.ChainState, ar action.Router, dr data.Router, es
 	}
 	return nil
 }
-
