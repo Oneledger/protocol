@@ -215,7 +215,7 @@ func writeListWithTag(ctx app.StorageCtx, writer io.Writer, tag string) bool {
 	case "trackers":
 		DumpTrackerToFile(ctx.Trackers, writer, writeStruct)
 	case "proposals":
-		DumpGovProposalsToFile(ctx.ProposalMaster, writer, writeStruct, ctx.Version)
+		DumpGovProposalsToFile(ctx.ProposalMaster, writer, writeStruct)
 	case "fees":
 		DumpFeesToFile(ctx.FeePool, writer, writeStruct)
 		delimiter = ""
@@ -575,7 +575,7 @@ func DumpValidatorsToFile(vs *identity.ValidatorStore, writer io.Writer, fn func
 	return
 }
 
-func DumpGovProposalsToFile(pm *governance.ProposalMasterStore, writer io.Writer, fn func(writer io.Writer, obj interface{}) bool, version int64) {
+func DumpGovProposalsToFile(pm *governance.ProposalMasterStore, writer io.Writer, fn func(writer io.Writer, obj interface{}) bool) {
 	iterator := 0
 	delimiter := ","
 	stateList := []governance.ProposalState{governance.ProposalStateActive,
@@ -593,7 +593,9 @@ func DumpGovProposalsToFile(pm *governance.ProposalMasterStore, writer io.Writer
 					return true
 				}
 			}
+			version := pm.Proposal.GetState().Version()
 			if state == governance.ProposalStateActive {
+				pm.Proposal.GetState().Version()
 				proposal.FundingDeadline = proposal.FundingDeadline - version
 				proposal.VotingDeadline = proposal.VotingDeadline - version
 				if proposal.FundingDeadline < 0 {
