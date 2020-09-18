@@ -593,7 +593,18 @@ func DumpGovProposalsToFile(pm *governance.ProposalMasterStore, writer io.Writer
 					return true
 				}
 			}
-
+			version := pm.Proposal.GetState().Version()
+			if state == governance.ProposalStateActive {
+				pm.Proposal.GetState().Version()
+				proposal.FundingDeadline = proposal.FundingDeadline - version
+				proposal.VotingDeadline = proposal.VotingDeadline - version
+				if proposal.FundingDeadline < 0 {
+					proposal.FundingDeadline = 0
+				}
+				if proposal.VotingDeadline < 0 {
+					proposal.VotingDeadline = 0
+				}
+			}
 			govProp := governance.GovProposal{
 				Prop:          *proposal,
 				ProposalVotes: pm.GetProposalVotes(proposal.ProposalID),
