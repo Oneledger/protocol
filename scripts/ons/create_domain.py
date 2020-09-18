@@ -22,7 +22,7 @@ if __name__ == "__main__":
     signed = sign(raw_txn, addrs[0])
     print "signed create domain tx:", signed
     print
-
+    time.sleep(1)
     result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
     print result
     print "###################"
@@ -90,7 +90,7 @@ if __name__ == "__main__":
     print
     if result["ok"] != True:
         sys.exit(-1)
-
+    time.sleep(3)
     raw_txn = send_domain(name2, addrs[0], (int("100")*10**18))
     print raw_txn
 

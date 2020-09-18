@@ -51,10 +51,10 @@ var (
 	TestTokenABI     = contract.ERC20BasicABI
 	LockRedeemERCABI = contract.LockRedeemERCABI
 	// LockRedeemERC20ABI = contract.ContextABI
-	LockRedeemContractAddr      = "0x99e709597677ea3FB5160E46E8eA3d4989F8dFc0"
+	LockRedeemContractAddr      = ""
 	TestTokenContractAddr       = "0x0000000000000000000000000000000000000000"
 	LockRedeemERC20ContractAddr = "0x0000000000000000000000000000000000000000"
-	readDir                     = "/home/tanmay/Codebase/Test/Testing Migrate/devnetNew/"
+	readDir                     = ""
 
 	cfg = config.DefaultEthConfig("rinkeby", "de5e96cbb6284d5ea1341bf6cb7fa401")
 	//cfg               = config.DefaultEthConfig("", "")
@@ -140,15 +140,14 @@ func init() {
 //Insufficient Funds    :Refund   ok
 //InsufficientFunds(50% Validators) + Panic (50 % Validators): Refund
 func main() {
-	//ethManualDeploy()
-	//getstatus(lock())
-	//time.Sleep(time.Second * 5)
-	//getstatus(redeem())
+	getstatus(lock())
+	time.Sleep(time.Second * 5)
+	getstatus(redeem())
 	//sendTrasactions(12)
 	//erc20lock()
 	///time.Sleep(10 * time.Second)
 	//erc20Redeem()
-	takeValidatorFunds(4)
+	//takeValidatorFunds(4)
 }
 
 func takeValidatorFunds(noOfValidators int) {
@@ -459,16 +458,17 @@ func redeem() []byte {
 	acc := accReply.Accounts[0]
 
 	//acc := keys.Address{}
-	//err = acc.UnmarshalText([]byte("0x416e9cc0abc4ea98b4066823a62bfa6515180582"))
+	//err = acc.UnmarshalText([]byte(""))
 	//if err != nil {
 	//	return nil
 	//}
-	//wallet, err := accounts.NewWalletKeyStore("/home/tanmay/Codebase/Test/WalletStore/keystore")
+	//wallet, err := accounts.NewWalletKeyStore("")
 	//if err != nil {
 	//	return nil
 	//}
-	//wallet.Open(acc, "123")
+	//wallet.Open(acc, "1234")
 
+	//addresslist, _ := wallet.ListAddresses()
 	result := &oclient.ListCurrenciesReply{}
 	err = rpcclient.Call("query.ListCurrencies", struct{}{}, result)
 	if err != nil {
@@ -476,7 +476,6 @@ func redeem() []byte {
 		return nil
 	}
 	olt, _ := result.Currencies.GetCurrencySet().GetCurrencyByName("OLT")
-
 	rr := se.RedeemRequest{
 		acc.Address(),
 		common.BytesToAddress(redeemAddress),
@@ -489,6 +488,7 @@ func redeem() []byte {
 	err = rpcclient.Call("eth.CreateRawExtRedeem", rr, reply)
 
 	signReply := &oclient.SignRawTxResponse{}
+	//pubkey, signature, err := wallet.SignWithAddress(reply.RawTX, addresslist[0])
 	err = rpcclient.Call("owner.SignWithAddress", oclient.SignRawTxRequest{
 		RawTx:   reply.RawTX,
 		Address: acc.Address(),
@@ -497,7 +497,6 @@ func redeem() []byte {
 		fmt.Println(err)
 		return nil
 	}
-
 	bresult2 := &oclient.BroadcastReply{}
 	err = rpcclient.Call("broadcast.TxSync", oclient.BroadcastRequest{
 		RawTx:     reply.RawTX,

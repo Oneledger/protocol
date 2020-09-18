@@ -10,7 +10,6 @@ import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/Oneledger/protocol/data/balance"
-	gov "github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/rewards"
 )
 
@@ -65,11 +64,7 @@ func (withdrawTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool,
 		return false, err
 	}
 
-	feeOpt, err := ctx.GovernanceStore.GetFeeOption()
-	if err != nil {
-		return false, gov.ErrGetFeeOptions
-	}
-	err = action.ValidateFee(feeOpt, signedTx.Fee)
+	err = action.ValidateFee(ctx.FeePool.GetOpt(), signedTx.Fee)
 	if err != nil {
 		return false, err
 	}
@@ -110,17 +105,11 @@ func runWithdraw(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrUnserializable, withdraw.Tags(), err)
 	}
 
-	//2. Get the difference of amount earned vs amount withdrawn for the validator issuing this transaction
-	//3. Check how much he is eligible to withdraw
-	//4. If the amount withdrawn is less than or equal to amount eligible to be withdrawn, make the transaction success.
-	//5. In case of no failure, add this amount the person withdrew, to total withdrawn amount in cumulative rewards db
-	//maturedBalance, _ := ctx.RewardMasterStore.RewardCm.GetMaturedRewards(withdraw.ValidatorAddress)
-	//fmt.Println("Matured Balance :", maturedBalance, withdraw.ValidatorAddress)
-	err = ctx.RewardMasterStore.RewardCm.WithdrawRewards(withdraw.ValidatorAddress, &withdraw.WithdrawAmount.Value)
+	withDrawCoin := withdraw.WithdrawAmount.ToCoinWithBase(ctx.Currencies)
+	err = ctx.RewardMasterStore.RewardCm.WithdrawRewards(withdraw.ValidatorAddress, withDrawCoin.Amount)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, rewards.UnableToWithdraw, withdraw.Tags(), err)
 	}
-
 	if ctx.Validators.Exists(withdraw.ValidatorAddress) {
 		validator, err := ctx.Validators.Get(withdraw.ValidatorAddress)
 		if err != nil {
@@ -135,7 +124,7 @@ func runWithdraw(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	}
 
 	//6. Update the balance db with the withdrawn amount for that validator
-	withDrawCoin := withdraw.WithdrawAmount.ToCoinWithBase(ctx.Currencies)
+
 	rewardsPool := action.Address(ctx.RewardMasterStore.GetOptions().RewardPoolAddress)
 
 	err = ctx.Balances.MinusFromAddress(rewardsPool, withDrawCoin)

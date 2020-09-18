@@ -96,11 +96,8 @@ func (domainCreateTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, e
 	}
 
 	//Verify fee currency is valid and the amount exceeds the minimum.
-	feeOpt, err := ctx.GovernanceStore.GetFeeOption()
-	if err != nil {
-		return false, gov.ErrGetFeeOptions
-	}
-	err = action.ValidateFee(feeOpt, tx.Fee)
+
+	err = action.ValidateFee(ctx.FeePool.GetOpt(), tx.Fee)
 	if err != nil {
 		return false, err
 	}
@@ -120,16 +117,6 @@ func (domainCreateTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, e
 	}
 	if c.Name != create.BuyingPrice.Currency {
 		return false, errors.Wrap(action.ErrInvalidAmount, create.BuyingPrice.String())
-	}
-
-	// the buying amount should be more than base creation price for domains
-	opt, err := ctx.GovernanceStore.GetONSOptions()
-	if err != nil {
-		return false, gov.ErrGetONSOptions
-	}
-	coin := create.BuyingPrice.ToCoin(ctx.Currencies)
-	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromAmount(opt.BaseDomainPrice)) {
-		return false, action.ErrInvalidAmount
 	}
 
 	return true, nil
@@ -158,6 +145,16 @@ func runCreate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		}
 	}
 
+	// the buying amount should be more than base creation price for domains
+	opt, err := ctx.GovernanceStore.GetONSOptions()
+	if err != nil {
+		return helpers.LogAndReturnFalse(ctx.Logger, gov.ErrGetONSOptions, create.Tags(), err)
+	}
+	coin := create.BuyingPrice.ToCoin(ctx.Currencies)
+	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromAmount(opt.BaseDomainPrice)) {
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrInvalidAmount, create.Tags(), errors.New("Invalid Base Domain Price"))
+	}
+
 	isSub := create.Name.IsSub()
 
 	// check domain existence and set to db
@@ -182,11 +179,6 @@ func runCreate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false, action.Response{
 			Log: codes.ErrAddingToFeePool.Wrap(err).Marshal(),
 		}
-	}
-
-	opt, err := ctx.GovernanceStore.GetONSOptions()
-	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, gov.ErrGetONSOptions, create.Tags(), err)
 	}
 
 	ok := verifyDomainName(create.Name, opt)
@@ -262,6 +254,7 @@ func runCreate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		ctx.Header.Height,
 		create.Uri,
 		expiry,
+		true,
 	)
 	if err != nil {
 		return false, action.Response{

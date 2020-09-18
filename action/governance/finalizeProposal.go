@@ -3,6 +3,7 @@ package governance
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
@@ -147,26 +148,28 @@ func runFinalizeProposal(ctx *action.Context, tx action.RawTx) (bool, action.Res
 	//Handle Result Passed
 	if voteStatus.Result == governance.VOTE_RESULT_PASSED {
 		if proposal.Type == governance.ProposalTypeConfigUpdate {
-			updates, ok := proposal.GovernanceStateUpdate.(map[string]interface{})
+			updates := proposal.GovernanceStateUpdate
+			splitstring := strings.Split(updates, ":")
+			if len(splitstring) != 2 {
+				return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrInvalidOptions, finalizedProposal.Tags(), errors.New("Invalid options string"))
+			}
+			updatekey := splitstring[0]
+			updateValue := splitstring[1]
+			updatefunc, ok := ctx.GovUpdate.GovernanceUpdateFunction[updatekey]
 			if !ok {
-				return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrValidateGovState, finalizedProposal.Tags(), errors.New("Invalid Update Object"))
+				return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrFinalizeConfigUpdateFailed, finalizedProposal.Tags(), err)
 			}
-			for configUpdatePath, updateValue := range updates {
-				updatefunc, ok := ctx.GovUpdate.GovernanceUpdateFunction[configUpdatePath]
-				if !ok {
-					return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrFinalizeConfigUpdateFailed, finalizedProposal.Tags(), err)
-				}
-				ok, err = updatefunc(updateValue, ctx, action.ValidateAndUpdate)
+			ok, err = updatefunc(updateValue, ctx, action.ValidateAndUpdate)
+			if err != nil {
+				ctx.Logger.Debug("Governance auto update failed ", err)
+				err = setToFinalizeFailed(ctx, proposal)
 				if err != nil {
-					ctx.Logger.Debug("Governance auto update failed ", err)
-					err = setToFinalizeFailed(ctx, proposal)
-					if err != nil {
-						return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrStatusUnableToSetFinalizeFailed, finalizedProposal.Tags(), err)
-					}
-
-					return helpers.LogAndReturnTrue(ctx.Logger, finalizedProposal.Tags(), fmt.Sprintf("ConfigUpdate_Validation_Failed | %s", proposal.ProposalID))
+					return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrStatusUnableToSetFinalizeFailed, finalizedProposal.Tags(), err)
 				}
+
+				return helpers.LogAndReturnTrue(ctx.Logger, finalizedProposal.Tags(), fmt.Sprintf("ConfigUpdate_Validation_Failed | %s", proposal.ProposalID))
 			}
+
 		}
 		proposalDistribution := options.PassedFundDistribution
 		distributeErr := distributeFunds(ctx, proposal, &proposalDistribution)

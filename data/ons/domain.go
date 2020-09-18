@@ -44,6 +44,7 @@ func NewDomain(ownerAddress, accountAddress keys.Address,
 	height int64,
 	uri string,
 	expiry int64,
+	active bool,
 ) (*Domain, error) {
 
 	if accountAddress == nil ||
@@ -64,7 +65,7 @@ func NewDomain(ownerAddress, accountAddress keys.Address,
 		CreationHeight:   height, // height of current txn
 		LastUpdateHeight: height, // height of current txn
 		ExpireHeight:     expiry, // height of expiry
-		ActiveFlag:       true,   // Active by default
+		ActiveFlag:       active, // Active Flag
 
 		SalePrice:  nil,
 		OnSaleFlag: false,

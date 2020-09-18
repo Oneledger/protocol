@@ -9,7 +9,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/action"
-	gov "github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/ons"
 )
 
@@ -76,11 +75,7 @@ func (d deleteSubTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bo
 		return false, err
 	}
 
-	feeOpt, err := ctx.GovernanceStore.GetFeeOption()
-	if err != nil {
-		return false, gov.ErrGetFeeOptions
-	}
-	err = action.ValidateFee(feeOpt, signedTx.Fee)
+	err = action.ValidateFee(ctx.FeePool.GetOpt(), signedTx.Fee)
 	if err != nil {
 		return false, err
 	}
@@ -136,6 +131,10 @@ func runDeleteSub(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		return false, action.Response{Log: "Parent domain doesn't exist, cannot delete sub domain!"}
 	}
 
+	if !parent.IsChangeable(ctx.Header.Height) {
+		return false, action.Response{Log: "domain is not changeable"}
+	}
+
 	if !bytes.Equal(parent.Owner, del.Owner) {
 		return false, action.Response{Log: "parent domain not owned"}
 	}
@@ -154,6 +153,8 @@ func runDeleteSub(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 			return false, action.Response{Log: err.Error()}
 		}
 	}
+
+	parent.SetLastUpdatedHeight(ctx.Header.Height)
 
 	return true, action.Response{Events: action.GetEvent(del.Tags(), "delete_subDomain")}
 }

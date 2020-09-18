@@ -86,11 +86,8 @@ func (r RenewDomainTx) Validate(ctx *action.Context, signedTx action.SignedTx) (
 	}
 
 	//Verify fee currency is valid and the amount exceeds the minimum.
-	feeOpt, err := ctx.GovernanceStore.GetFeeOption()
-	if err != nil {
-		return false, gov.ErrGetFeeOptions
-	}
-	err = action.ValidateFee(feeOpt, signedTx.Fee)
+
+	err = action.ValidateFee(ctx.FeePool.GetOpt(), signedTx.Fee)
 	if err != nil {
 		return false, errors.Wrap(err, err.Error())
 	}
@@ -112,14 +109,6 @@ func (r RenewDomainTx) Validate(ctx *action.Context, signedTx action.SignedTx) (
 	}
 	if c.Name != renewDomain.BuyingPrice.Currency {
 		return false, errors.Wrap(action.ErrInvalidAmount, renewDomain.BuyingPrice.String())
-	}
-	opt, err := ctx.GovernanceStore.GetONSOptions()
-	if err != nil {
-		return false, gov.ErrGetONSOptions
-	}
-	coin := renewDomain.BuyingPrice.ToCoin(ctx.Currencies)
-	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromAmount(opt.PerBlockFees)) {
-		return false, action.ErrNotEnoughFund
 	}
 
 	return true, nil
@@ -145,6 +134,15 @@ func runRenew(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return false, action.Response{Log: err.Error()}
 	}
 
+	opt, err := ctx.GovernanceStore.GetONSOptions()
+	if err != nil {
+		return helpers.LogAndReturnFalse(ctx.Logger, gov.ErrGetONSOptions, renewDomain.Tags(), err)
+	}
+	coin := renewDomain.BuyingPrice.ToCoin(ctx.Currencies)
+	if coin.LessThanEqualCoin(coin.Currency.NewCoinFromAmount(opt.PerBlockFees)) {
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrNotEnoughFund, renewDomain.Tags(), errors.New("Less than per block fees"))
+	}
+
 	// domain should not be a sub domain
 	if renewDomain.Name.IsSub() {
 		return false, action.Response{Log: "renew sub domain is not possible"}
@@ -154,6 +152,10 @@ func runRenew(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	domain, err := ctx.Domains.Get(renewDomain.Name)
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
+	}
+
+	if !domain.IsChangeable(ctx.Header.Height) {
+		return false, action.Response{Log: "domain is not changeable"}
 	}
 
 	// if domain is expired it can't be renewed
@@ -179,10 +181,7 @@ func runRenew(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	}
 
 	// calculate the blocks
-	opt, err := ctx.GovernanceStore.GetONSOptions()
-	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, gov.ErrGetONSOptions, renewDomain.Tags(), err)
-	}
+
 	extend, err := calculateRenewal(&renewDomain.BuyingPrice.Value, &opt.PerBlockFees)
 	if err != nil {
 		return false, action.Response{
@@ -192,6 +191,7 @@ func runRenew(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
 	// increase the expiry height & save domain
 	domain.AddToExpire(extend)
+	domain.SetLastUpdatedHeight(ctx.Header.Height)
 
 	err = ctx.Domains.Set(domain)
 	if err != nil {
@@ -202,12 +202,13 @@ func runRenew(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	ctx.Domains.IterateSubDomain(domain.Name, func(subname ons.Name, subdomain *ons.Domain) bool {
 
 		subdomain.ExpireHeight = domain.ExpireHeight
-
 		err := ctx.Domains.Set(subdomain)
 		if err != nil {
 			ctx.Logger.Error("failed to update sub domain expiry ", subdomain.Name, err)
 			return false
 		}
+
+		domain.SetLastUpdatedHeight(ctx.Header.Height)
 		return false
 	})
 

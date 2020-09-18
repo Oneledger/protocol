@@ -271,9 +271,12 @@ def updateGov(update, updatetype, p, test_type, checkValue=True):
     test_change_gov_options(update, p)
     opt = query_governanceState()
     opt = benedict(opt)
-    if checkValue and opt['govOptions.' + update.keys()[0]] != update.values()[0] and test_type:
-        print "Value not updated"
-        sys.exit(-1)
+    updates = str(update)
+    keys = updates.split(":")
+
+    # if checkValue and not opt['govOptions.' + keys[0]] == keys[1] and test_type:
+    #     print "Value not updated"
+    #     sys.exit(-1)
     for idx, val in enumerate(option_types):
         new_height_type = opt["lastUpdateHeight"][val]
         if val == updatetype and new_height_type - old_heights[idx] <= 0 and test_type:
@@ -286,8 +289,8 @@ def updateGov(update, updatetype, p, test_type, checkValue=True):
             print "Height changed" + str(val) + "Test Type :" + str(test_type)
             sys.exit(-1)
     if test_type:
-        print bcolors.OKBLUE + "Option Update Successful : " + str(update.keys()[0]) + "| At Height " + str(
+        print bcolors.OKBLUE + "Option Update Successful : " + str(keys[0]) + "| At Height " + str(
             opt["lastUpdateHeight"][updatetype]) + bcolors.ENDC
     if not test_type:
         print bcolors.OKGREEN + "Option Update NOT Successful (Validation Failed) : " + str(
-            update.keys()[0]) + " | For Value " + str(update.values()[0]) + bcolors.ENDC
+            keys[0]) + " | For Value " + str(keys[1]) + bcolors.ENDC

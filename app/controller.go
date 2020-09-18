@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/Oneledger/protocol/external_apps/common"
 	"math"
 	"math/big"
 	"runtime/debug"
@@ -120,8 +121,14 @@ func (app *App) blockBeginner() blockBeginner {
 		defer app.handlePanic()
 		gc := getGasCalculator(app.genesisDoc.ConsensusParams)
 		app.Context.deliver = storage.NewState(app.Context.chainstate).WithGas(gc)
+
+		feeOpt, err := app.Context.govern.GetFeeOption()
+		if err != nil {
+			app.logger.Error("failed to get feeOption", err)
+		}
+		app.Context.feePool.SetupOpt(feeOpt)
 		// update the validator set
-		err := app.Context.validators.Setup(req, app.Context.node.ValidatorAddress())
+		err = app.Context.validators.Setup(req, app.Context.node.ValidatorAddress())
 		if err != nil {
 			app.logger.Error("validator set with error", err)
 		}
@@ -138,14 +145,20 @@ func (app *App) blockBeginner() blockBeginner {
 		//Adds proposals that meet the requirements to either Expired or Finalizing Keys from transaction store
 		//Transaction store is not part of chainstate ,it just maintains a list of proposals from BlockBeginner to BlockEnder .Gets cleared at each Block Ender
 		AddInternalTX(app.Context.proposalMaster, app.Context.node.ValidatorAddress(), app.header.Height, app.Context.transaction, app.logger)
-
-		functionList, err := app.Context.controllerFunctions.Iterate(BlockBeginner)
+		functionList, err := app.Context.extFunctions.Iterate(common.BlockBeginner)
+		functionParam := common.ExtParam{
+			InternalTxStore: app.Context.transaction,
+			Logger:          app.logger,
+			ActionCtx:       *app.Context.Action(&app.header, app.Context.deliver),
+			Validator:       app.Context.node.ValidatorAddress(),
+			Header:          app.header,
+			Deliver:         app.Context.deliver,
+		}
 		if err == nil {
 			for _, function := range functionList {
-				function(app)
+				function(functionParam)
 			}
 		}
-
 		app.logger.Detail("Begin Block:", result, "height:", req.Header.Height, "AppHash:", hex.EncodeToString(req.Header.AppHash))
 		return result
 	}
@@ -187,7 +200,6 @@ func (app *App) txChecker() txChecker {
 			}
 		}
 		ok, response := handler.ProcessCheck(txCtx, tx.RawTx)
-
 		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, storage.Gas(len(msg.Tx)))
 
 		logString := marshalLog(ok, response, feeResponse)
@@ -290,11 +302,18 @@ func (app *App) blockEnder() blockEnder {
 		// These functions iterate the transactions store
 		ExpireProposals(&app.header, &app.Context, app.logger)
 		FinalizeProposals(&app.header, &app.Context, app.logger)
-
-		functionList, err := app.Context.controllerFunctions.Iterate(BlockEnder)
+		functionList, err := app.Context.extFunctions.Iterate(common.BlockEnder)
+		functionParam := common.ExtParam{
+			InternalTxStore: app.Context.transaction,
+			Logger:          app.logger,
+			ActionCtx:       *app.Context.Action(&app.header, app.Context.deliver),
+			Validator:       app.Context.node.ValidatorAddress(),
+			Header:          app.header,
+			Deliver:         app.Context.deliver,
+		}
 		if err == nil {
 			for _, function := range functionList {
-				function(app)
+				function(functionParam)
 			}
 		}
 		result := ResponseEndBlock{
@@ -410,7 +429,7 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 
 		if t.Type == ethereum.ProcessTypeLock || t.Type == ethereum.ProcessTypeLockERC {
 
-			logger.Debug("Processing Tracker : ", t.Type.String(), " | State :", t.State.String())
+			logger.Debug("Processing Tracker : ", t.Type.String(), " | Tracker Name ", t.TrackerName.String(), " | State :", t.State.String(), " | Finality Votes :", t.FinalityVotes)
 			_, err := event.EthLockEngine.Process(t.NextStep(), ctx, transition.Status(t.State))
 			if err != nil {
 				logger.Error("failed to process eth tracker ProcessTypeLock", err)
@@ -418,7 +437,7 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 			}
 
 		} else if t.Type == ethereum.ProcessTypeRedeem || t.Type == ethereum.ProcessTypeRedeemERC {
-			logger.Debug("Processing Tracker : ", t.Type.String(), " | State :", t.State.String())
+			logger.Debug("Processing Tracker : ", t.Type.String(), " | Tracker Name ", t.TrackerName.String(), " | State :", t.State.String(), " | Finality Votes :", t.FinalityVotes)
 			_, err := event.EthRedeemEngine.Process(t.NextStep(), ctx, transition.Status(t.State))
 			if err != nil {
 				logger.Error("failed to process eth tracker ProcessTypeRedeem", err)

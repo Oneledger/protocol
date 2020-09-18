@@ -18,6 +18,7 @@ require (
 	github.com/go-delve/delve v1.4.1 // indirect
 	github.com/go-kit/kit v0.10.0
 	github.com/go-language-server/uri v0.2.0 // indirect
+	github.com/google/go-cmp v0.4.0
 	github.com/google/uuid v1.1.1
 	github.com/huin/goupnp v1.0.0 // indirect
 	github.com/jackpal/go-nat-pmp v1.0.1 // indirect
@@ -25,7 +26,7 @@ require (
 	github.com/magiconair/properties v1.8.1
 	github.com/mattn/go-isatty v0.0.10 // indirect
 	github.com/mattn/go-runewidth v0.0.5 // indirect
-	github.com/mitchellh/mapstructure v1.3.3
+	github.com/mitchellh/mapstructure v1.3.3 // indirect
 	github.com/olekukonko/tablewriter v0.0.1 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/powerman/rpc-codec v1.1.2

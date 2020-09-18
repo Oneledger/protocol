@@ -28,7 +28,7 @@ if __name__ == "__main__":
     print bcolors.OKBLUE + "#### Initial Active Validator count : " + str(
         getActiveValidators()) + "  Total Validator Count :" + str(getAllValidators()) + bcolors.ENDC
     update_param = 2000000
-    update = {"stakingOptions.minSelfDelegationAmount": update_param}
+    update = "stakingOptions.minSelfDelegationAmount:" + str(update_param)
     updateGov(update, "staking", "id_" + str(randint(10000, 99999)), True, False)
 
     if getActiveValidators() != 6:
@@ -39,9 +39,8 @@ if __name__ == "__main__":
     print bcolors.OKBLUE + "#### Active Validator/Total Validator count : " + str(getActiveValidators()) + " / " + str(
         getAllValidators()) + " | New Validators Added | minSelfDelegationAmount = " + str(update_param) + bcolors.ENDC
 
-
     update_param = 6000000
-    update = {"stakingOptions.minSelfDelegationAmount": update_param}
+    update = "stakingOptions.minSelfDelegationAmount:" + str(update_param)
     updateGov(update, "staking", "id_" + str(randint(10000, 99999)), True, False)
     opt = query_governanceState()
 

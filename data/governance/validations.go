@@ -242,30 +242,32 @@ func (st *Store) ValidateProposal(opt *ProposalOptionSet) (bool, error) {
 	if !verifyRangeInt64(int64(general.PassPercentage), minPassPercentage, maxPassPercentage) {
 		return false, errors.New("pass percentage for general update is not within range")
 	}
-	ok, err = verifyDistribution(config.PassedFundDistribution)
-	if err != nil || !ok {
-		return false, err
+
+	ok = reflect.DeepEqual(config.PassedFundDistribution, oldOptions.ConfigUpdate.PassedFundDistribution)
+	if !ok {
+		return ok, errors.New("Proposal Distribution Cannot be changed ")
 	}
-	ok, err = verifyDistribution(config.FailedFundDistribution)
-	if err != nil || !ok {
-		return false, err
+	ok = reflect.DeepEqual(config.FailedFundDistribution, oldOptions.ConfigUpdate.FailedFundDistribution)
+	if !ok {
+		return ok, errors.New("Proposal Distribution Cannot be changed ")
 	}
-	ok, err = verifyDistribution(code.PassedFundDistribution)
-	if err != nil || !ok {
-		return false, err
+	ok = reflect.DeepEqual(code.PassedFundDistribution, oldOptions.CodeChange.PassedFundDistribution)
+	if !ok {
+		return ok, errors.New("Proposal Distribution Cannot be changed ")
 	}
-	ok, err = verifyDistribution(code.FailedFundDistribution)
-	if err != nil || !ok {
-		return false, err
+	ok = reflect.DeepEqual(code.FailedFundDistribution, oldOptions.CodeChange.FailedFundDistribution)
+	if !ok {
+		return ok, errors.New("Proposal Distribution Cannot be changed ")
 	}
-	ok, err = verifyDistribution(general.PassedFundDistribution)
-	if err != nil || !ok {
-		return false, err
+	ok = reflect.DeepEqual(general.PassedFundDistribution, oldOptions.General.PassedFundDistribution)
+	if !ok {
+		return ok, errors.New("Proposal Distribution Cannot be changed ")
 	}
-	ok, err = verifyDistribution(general.FailedFundDistribution)
-	if err != nil || !ok {
-		return false, err
+	ok = reflect.DeepEqual(general.FailedFundDistribution, oldOptions.General.FailedFundDistribution)
+	if !ok {
+		return ok, errors.New("Proposal Distribution Cannot be changed ")
 	}
+
 	if code.ProposalExecutionCost != oldOptions.CodeChange.ProposalExecutionCost {
 		return false, errors.New("OneLedger Address cannot be changed | Code change proposal execution cost address")
 	}
@@ -312,8 +314,18 @@ func (st *Store) ValidateEvidence(opt *evidence.Options) (bool, error) {
 	if !ok {
 		return false, errors.New("Validator Vote Percentage not in range")
 	}
-	if (opt.PenaltyBountyPercentage/(opt.PenaltyBountyDecimals/100))+(opt.PenaltyBurnPercentage/(opt.PenaltyBurnDecimals/100)) != 100 {
-		return false, errors.New("Bounty percentage + Burn Percentage should equal 100 %")
+
+	if opt.PenaltyBountyPercentage != oldOptions.PenaltyBountyPercentage {
+		return false, errors.New("Bounty percentage cannot be changed")
+	}
+	if opt.PenaltyBountyDecimals != oldOptions.PenaltyBountyDecimals {
+		return false, errors.New("Bounty percentage cannot be changed")
+	}
+	if opt.PenaltyBurnPercentage != oldOptions.PenaltyBurnPercentage {
+		return false, errors.New("Burn percentage cannot be changed")
+	}
+	if opt.PenaltyBurnDecimals != oldOptions.PenaltyBurnDecimals {
+		return false, errors.New("Burn percentage cannot be changed")
 	}
 	if opt.ValidatorReleaseTime != oldOptions.ValidatorReleaseTime {
 		return false, errors.New("Validator release time cannot be changed")

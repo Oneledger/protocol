@@ -192,7 +192,7 @@ func (app *App) setupState(stateBytes []byte) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to handle delegators staking")
 		}
-		err = app.Context.validators.WithState(app.Context.deliver).HandleStake(identity.Stake(stake), false)
+		err = app.Context.validators.WithState(app.Context.deliver).HandleStake(identity.Stake(stake), false, 0)
 		if err != nil {
 			return errors.Wrap(err, "failed to handle initial staking")
 		}
@@ -212,11 +212,10 @@ func (app *App) setupState(stateBytes []byte) error {
 
 	for _, domain := range initial.Domains {
 		if ons.GetNameFromString(domain.Name).IsValid() && app.Context.domains.GetOptions().IsNameAllowed(ons.Name(domain.Name)) {
-			d, err := ons.NewDomain(domain.Owner, domain.Beneficiary, domain.Name, 0, domain.URI, domain.ExpireHeight)
+			d, err := ons.NewDomain(domain.Owner, domain.Beneficiary, domain.Name, 0, domain.URI, domain.ExpireHeight, domain.ActiveFlag)
 			if err != nil {
 				return errors.Wrap(err, "failed to create initial domain")
 			}
-			d.ActiveFlag = false
 			err = app.Context.domains.WithState(app.Context.deliver).Set(d)
 			if err != nil {
 				return errors.Wrap(err, "failed to setup initial domain")

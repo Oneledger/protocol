@@ -3,49 +3,65 @@ package data
 import (
 	"testing"
 
-	"github.com/magiconair/properties/assert"
-	db2 "github.com/tendermint/tm-db"
-
-	"github.com/Oneledger/protocol/data/balance"
-	"github.com/Oneledger/protocol/data/chain"
-	"github.com/Oneledger/protocol/data/fees"
-	"github.com/Oneledger/protocol/data/governance"
-	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/storage"
+	"github.com/magiconair/properties/assert"
+	"github.com/tendermint/tm-db"
 )
 
 const (
-	balanceType = "b"
-	governType  = "g"
-	feeType     = "f"
+	testType = "t"
 )
 
 var (
 	chainstate      *storage.ChainState
-	balanceStore    *balance.Store
-	governanceStore *governance.Store
-	feeStore        *fees.Store
-
+	test *testStore
 	stores Router
 )
 
+var _ ExtStore = &testStore{}
+
+type testStore struct {
+	state *storage.State
+	prefix []byte //Current Store Prefix
+}
+
+func newTestStore(state *storage.State, prefix []byte) *testStore {
+	return &testStore{state: state, prefix: prefix}
+}
+
+
+func (ts *testStore) Set(testKey string, testData string) error {
+	prefixed := append(ts.prefix, testKey...)
+	data := testData
+
+	err := ts.state.Set(prefixed, []byte(data))
+
+	return err
+}
+
+func (ts *testStore) WithState(state *storage.State) ExtStore {
+	ts.state = state
+	return ts
+}
+
+func (ts *testStore) Get(testKey string) (string, error) {
+	var testData string
+	prefixed := append(ts.prefix, testKey...)
+	data, err := ts.state.Get(prefixed)
+	if err != nil {
+		return "", err
+	}
+	testData = string(data)
+	return testData, nil
+}
+
 func init() {
-	//Create a few stores
-	db := db2.NewDB("testDB", db2.MemDBBackend, "")
+
+	//Create a store
+	db := db.NewDB("testDB", db.MemDBBackend, "")
 	chainstate = storage.NewChainState("chainstate", db)
 
-	balanceStore = balance.NewStore(balanceType, storage.NewState(chainstate))
-	governanceStore = governance.NewStore(governType, storage.NewState(chainstate))
-	feeStore = fees.NewStore(feeType, storage.NewState(chainstate))
-
-	feeOpt := fees.FeeOption{
-		FeeCurrency: balance.Currency{
-			Name: "olt", Chain: chain.Type(0), Decimal: 18, Unit: "ones",
-		},
-		MinFeeDecimal: 1,
-	}
-
-	feeStore.SetupOpt(&feeOpt)
+	test = newTestStore(storage.NewState(chainstate), []byte("test"))
 
 	//Create data router
 	stores = NewStorageRouter()
@@ -54,51 +70,21 @@ func init() {
 
 func TestStorageRouter_Add(t *testing.T) {
 
-	//Add stores to the data router
-	_ = stores.Add(balanceType, balanceStore)
-	_ = stores.Add(governType, governanceStore)
-	_ = stores.Add(feeType, feeStore)
+	//Add store to the data router
+	_ = stores.Add(testType, test)
 
-	db, _ := stores.Get(balanceType)
-	balanceDB := db.(*balance.Store)
+	db, _ := stores.Get(testType)
+	testDb := db.(*testStore)
 
-	_ = balanceDB.State.Set(storage.StoreKey("bob"), []byte("1000"))
+	testDb.Set("testKey", "testData")
 
-	db, _ = stores.Get(governType)
-	governanceDB := db.(*governance.Store)
-
-	_ = governanceDB.WithHeight(0).SetEpoch(1024)
-	governanceDB.WithHeight(0).SetAllLUH()
-	db, _ = stores.Get(feeType)
-	feeDB := db.(*fees.Store)
-
-	coin := balance.Coin{
-		Currency: balance.Currency{
-			Name: "olt", Chain: chain.Type(0), Decimal: 18, Unit: "ones",
-		},
-		Amount: balance.NewAmount(17),
-	}
-
-	_ = feeDB.Set(keys.Address("Address1"), coin)
 }
 
 func TestStorageRouter_Get(t *testing.T) {
-	db, _ := stores.Get(balanceType)
-	balanceDB := db.(*balance.Store)
+	db, _ := stores.Get(testType)
+	testDb := db.(*testStore)
 
-	val, _ := balanceDB.State.Get(storage.StoreKey("bob"))
-	assert.Equal(t, val, []byte("1000"))
+	data, _ := testDb.Get("testKey")
+	assert.Equal(t, data, "testData")
 
-	db, _ = stores.Get(governType)
-	governanceDB := db.(*governance.Store)
-
-	epoch, _ := governanceDB.GetEpoch()
-	assert.Equal(t, epoch, int64(1024))
-
-	db, _ = stores.Get(feeType)
-	feeDB := db.(*fees.Store)
-
-	coin, _ := feeDB.Get(keys.Address("Address1"))
-	assert.Equal(t, coin.Amount, balance.NewAmount(17))
-	assert.Equal(t, coin.Currency.Name, "olt")
 }

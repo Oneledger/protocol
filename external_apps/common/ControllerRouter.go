@@ -1,4 +1,4 @@
-package app
+package common
 
 import (
 	"github.com/pkg/errors"
@@ -15,17 +15,17 @@ const (
 	BlockEnder    txblock = 2
 )
 
-// Router interface supplies functionality to add a function to the blockender and blockbeginner
-type Router interface {
+// ControllerRouter interface supplies functionality to add a function to the blockender and blockbeginner
+type ControllerRouter interface {
 	Add(txblock, func(interface{})) error
 	Iterate(txblock) ([]func(interface{}), error)
 }
 
-type ControllerRouter struct {
+type FunctionRouter struct {
 	functionlist map[txblock][]func(interface{})
 }
 
-func (r ControllerRouter) Add(t txblock, i func(interface{})) error {
+func (r FunctionRouter) Add(t txblock, i func(interface{})) error {
 	if t != BlockBeginner && t != BlockEnder || i == nil {
 		return errInvalidInput
 	}
@@ -33,17 +33,17 @@ func (r ControllerRouter) Add(t txblock, i func(interface{})) error {
 	return nil
 }
 
-func (r ControllerRouter) Iterate(t txblock) ([]func(interface{}), error) {
+func (r FunctionRouter) Iterate(t txblock) ([]func(interface{}), error) {
 	if t != BlockBeginner && t != BlockEnder {
 		return nil, errInvalidInput
 	}
 	return r.functionlist[t], nil
 }
 
-func NewRouter() ControllerRouter {
-	return ControllerRouter{
+func NewFunctionRouter() FunctionRouter {
+	return FunctionRouter{
 		functionlist: make(map[txblock][]func(interface{})),
 	}
 }
 
-var _ Router = &ControllerRouter{}
+var _ ControllerRouter = &FunctionRouter{}
