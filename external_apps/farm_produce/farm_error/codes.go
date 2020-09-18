@@ -8,9 +8,9 @@ const (
 	ErrDeletingRecord             = 990105
 	ErrInvalidBatchID             = 990106
 	ErrInvalidFarmID              = 990107
-	ErrGettingProductStore        = 990108
+	ErrGettingProduceStore        = 990108
 	ErrBatchIDAlreadyExists       = 990109
 	ErrInsertingProduct           = 990110
-	ErrGettingProductBatchInQuery = 990111
+	ErrGettingProduceBatchInQuery = 990111
 	ErrFailedToUnmarshal          = 990112
 )

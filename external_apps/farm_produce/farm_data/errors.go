@@ -13,7 +13,7 @@ var (
 	ErrDeletingRecord          = codes.ProtocolError{farm_error.ErrDeletingRecord, "failed to delete record"}
 	ErrInvalidBatchID          = codes.ProtocolError{farm_error.ErrInvalidBatchID, "invalid batch ID"}
 	ErrInvalidFarmID           = codes.ProtocolError{farm_error.ErrInvalidFarmID, "invalid farm ID"}
-	ErrGettingProductStore     = codes.ProtocolError{farm_error.ErrGettingProductStore, "failed to get product store"}
+	ErrGettingProduceStore     = codes.ProtocolError{farm_error.ErrGettingProduceStore, "failed to get produce store"}
 	ErrBatchIDAlreadyExists    = codes.ProtocolError{farm_error.ErrBatchIDAlreadyExists, "this batch ID already exists in store"}
 	ErrInsertingProduct        = codes.ProtocolError{farm_error.ErrInsertingProduct, "failed to insert product batch into the store"}
 )

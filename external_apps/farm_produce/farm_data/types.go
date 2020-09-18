@@ -5,7 +5,6 @@ import "errors"
 type (
 	BatchID string
 	FarmID string
-	ItemType string
 )
 
 func (id BatchID) Err() error {

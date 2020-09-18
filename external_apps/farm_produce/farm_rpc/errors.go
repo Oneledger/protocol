@@ -6,5 +6,5 @@ import (
 )
 
 var (
-	ErrGettingProductBatchInQuery       = codes.ProtocolError{farm_error.ErrGettingProductBatchInQuery, "failed to get product batch in query"}
+	ErrGettingProduceBatchInQuery = codes.ProtocolError{farm_error.ErrGettingProduceBatchInQuery, "failed to get produce batch in query"}
 )

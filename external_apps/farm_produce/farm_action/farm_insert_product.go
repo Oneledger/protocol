@@ -10,35 +10,35 @@ import (
 	"github.com/tendermint/tendermint/libs/kv"
 )
 
-type InsertProduct struct {
-	BatchId         farm_data.BatchID  `json:"batchId"`
-	ItemType        farm_data.ItemType `json:"itemType"`
-	FarmID          farm_data.FarmID   `json:"farmId"`
-	FarmName        string             `json:"farmName"`
-	HarvestLocation string             `json:"harvestLocation"`
-	HarvestDate     int64              `json:"harvestDate"`
-	Classification  string             `json:"classification"`
-	Quantity        int                `json:"quantity"`
-	Description     string             `json:"description"`
-	Operator        keys.Address       `json:"operator"`
+type InsertProduce struct {
+	BatchId         farm_data.BatchID `json:"batchId"`
+	ItemType        string            `json:"itemType"`
+	FarmID          farm_data.FarmID  `json:"farmId"`
+	FarmName        string            `json:"farmName"`
+	HarvestLocation string            `json:"harvestLocation"`
+	HarvestDate     int64             `json:"harvestDate"`
+	Classification  string            `json:"classification"`
+	Quantity        int               `json:"quantity"`
+	Description     string            `json:"description"`
+	Operator        keys.Address      `json:"operator"`
 }
 
-type InsertProductTx struct {
+type InsertProduceTx struct {
 }
 
-var _ action.Msg = &InsertProduct{}
+var _ action.Msg = &InsertProduce{}
 
-var _ action.Tx = &InsertProductTx{}
+var _ action.Tx = &InsertProduceTx{}
 
-func (i InsertProduct) Signers() []action.Address {
+func (i InsertProduce) Signers() []action.Address {
 	return []action.Address{i.Operator}
 }
 
-func (i InsertProduct) Type() action.Type {
+func (i InsertProduce) Type() action.Type {
 	return FARM_INSERT_PRODUCT
 }
 
-func (i InsertProduct) Tags() kv.Pairs {
+func (i InsertProduce) Tags() kv.Pairs {
 	tags := make([]kv.Pair, 0)
 
 	tag := kv.Pair{
@@ -54,16 +54,16 @@ func (i InsertProduct) Tags() kv.Pairs {
 	return tags
 }
 
-func (i InsertProduct) Marshal() ([]byte, error) {
+func (i InsertProduce) Marshal() ([]byte, error) {
 	return json.Marshal(i)
 }
 
-func (i *InsertProduct) Unmarshal(bytes []byte) error {
+func (i *InsertProduce) Unmarshal(bytes []byte) error {
 	return json.Unmarshal(bytes, i)
 }
 
-func (i InsertProductTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
-	insertProduct := InsertProduct{}
+func (i InsertProduceTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
+	insertProduct := InsertProduce{}
 	err := insertProduct.Unmarshal(signedTx.Data)
 	if err != nil {
 		return false, errors.Wrap(ErrFailedToUnmarshal, err.Error())
@@ -99,31 +99,31 @@ func (i InsertProductTx) Validate(ctx *action.Context, signedTx action.SignedTx)
 	return true, nil
 }
 
-func (i InsertProductTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (i InsertProduceTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
 
-func (i InsertProductTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+func (i InsertProduceTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	ctx.Logger.Debug("ProcessCheck CancelProposalTx transaction for CheckTx", tx)
 	return runInsertProduct(ctx, tx)
 }
 
-func (i InsertProductTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+func (i InsertProduceTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	ctx.Logger.Debug("ProcessDeliver CancelProposalTx transaction for DeliverTx", tx)
 	return runInsertProduct(ctx, tx)
 }
 
 func runInsertProduct(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	insertProduct := InsertProduct{}
+	insertProduct := InsertProduce{}
 	err := insertProduct.Unmarshal(tx.Data)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, ErrFailedToUnmarshal, insertProduct.Tags(), err)
 	}
 
 	//1. get product store
-	productStore, err := GetProductStore(ctx)
+	productStore, err := GetProduceStore(ctx)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, farm_data.ErrGettingProductStore, insertProduct.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, farm_data.ErrGettingProduceStore, insertProduct.Tags(), err)
 	}
 
 	//2. check if there is product batch with same batch ID
@@ -132,7 +132,7 @@ func runInsertProduct(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 	}
 
 	//3. construct new product batch
-	productBatch := farm_data.NewProduct(
+	productBatch := farm_data.NewProduce(
 		insertProduct.BatchId,
 		insertProduct.ItemType,
 		insertProduct.FarmID,

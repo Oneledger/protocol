@@ -7,6 +7,6 @@ type GetBatchByIDRequest struct {
 }
 
 type GetBatchByIDReply struct {
-	ProductBatch farm_data.Product `json:"productBatch"`
+	ProduceBatch farm_data.Produce `json:"produceBatch"`
 	Height       int64             `json:"height"`
 }

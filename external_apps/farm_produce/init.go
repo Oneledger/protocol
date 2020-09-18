@@ -18,18 +18,17 @@ func LoadAppData(appData *common.ExtAppData) {
 	logger := log.NewLoggerWithPrefix(logWriter, "extApp").WithLevel(log.Level(4))
 	//load txs
 	insertProduct := common.ExtTx{
-		Tx:  farm_action.InsertProductTx{},
-		Msg: &farm_action.InsertProduct{},
+		Tx:  farm_action.InsertProduceTx{},
+		Msg: &farm_action.InsertProduce{},
 	}
 	appData.ExtTxs = append(appData.ExtTxs, insertProduct)
 
-
 	//load stores
-	if dupName, ok := appData.ExtStores["extProductStore"]; ok {
+	if dupName, ok := appData.ExtStores["extProduceStore"]; ok {
 		logger.Errorf("Trying to register external store %s failed, same name already exists", dupName)
 		return
 	} else {
-		appData.ExtStores["extProductStore"] = farm_data.NewProductStore(storage.NewState(appData.ChainState), "extFarmPrefix")
+		appData.ExtStores["extProduceStore"] = farm_data.NewProduceStore(storage.NewState(appData.ChainState), "extFarmPrefix")
 	}
 
 	//load services
@@ -42,5 +41,5 @@ func LoadAppData(appData *common.ExtAppData) {
 		logger.Errorf("failed to register currency %s", olt.Name, err)
 		return
 	}
-	appData.ExtServiceMap[farm_rpc.Name()] = farm_rpc.NewService(balances, currencies, domains, logger, farm_data.NewProductStore(storage.NewState(appData.ChainState), "extFarmPrefix"))
+	appData.ExtServiceMap[farm_rpc.Name()] = farm_rpc.NewService(balances, currencies, domains, logger, farm_data.NewProduceStore(storage.NewState(appData.ChainState), "extFarmPrefix"))
 }

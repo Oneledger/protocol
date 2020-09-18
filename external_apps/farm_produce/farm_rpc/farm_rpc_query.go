@@ -12,7 +12,7 @@ type Service struct {
 	currencies   *balance.CurrencySet
 	ons          *ons.DomainStore
 	logger       *log.Logger
-	productStore *farm_data.ProductStore
+	produceStore *farm_data.ProduceStore
 }
 
 func Name() string {
@@ -20,25 +20,25 @@ func Name() string {
 }
 
 func NewService(balances *balance.Store, currencies *balance.CurrencySet,
-	domains *ons.DomainStore, logger *log.Logger, productStore *farm_data.ProductStore) *Service {
+	domains *ons.DomainStore, logger *log.Logger, productStore *farm_data.ProduceStore) *Service {
 	return &Service{
 		currencies:   currencies,
 		balances:     balances,
 		ons:          domains,
 		logger:       logger,
-		productStore: productStore,
+		produceStore: productStore,
 	}
 }
 
 func (svc *Service) GetBatchByID(req GetBatchByIDRequest, reply *GetBatchByIDReply) error {
-	batch, err := svc.productStore.Get(req.BatchID)
+	batch, err := svc.produceStore.Get(req.BatchID)
 	if err != nil {
-		return ErrGettingProductBatchInQuery.Wrap(err)
+		return ErrGettingProduceBatchInQuery.Wrap(err)
 	}
 
 	*reply = GetBatchByIDReply{
-		ProductBatch: *batch,
-		Height:       svc.productStore.GetState().Version(),
+		ProduceBatch: *batch,
+		Height:       svc.produceStore.GetState().Version(),
 	}
 	return nil
 }

@@ -5,12 +5,12 @@ import (
 	"github.com/Oneledger/protocol/external_apps/farm_produce/farm_data"
 )
 
-func GetProductStore(ctx *action.Context) (*farm_data.ProductStore, error) {
-	store, err := ctx.ExtStores.Get("extProductStore")
+func GetProduceStore(ctx *action.Context) (*farm_data.ProduceStore, error) {
+	store, err := ctx.ExtStores.Get("extProduceStore")
 	if err != nil {
 		return nil, err
 	}
-	productStore, ok := store.(*farm_data.ProductStore)
+	productStore, ok := store.(*farm_data.ProduceStore)
 	if ok == false {
 		return nil, err
 	}

@@ -6,37 +6,37 @@ import (
 	"github.com/Oneledger/protocol/storage"
 )
 
-var _ data.ExtStore = &ProductStore{}
+var _ data.ExtStore = &ProduceStore{}
 
-type ProductStore struct {
-	state *storage.State
-	szlr  serialize.Serializer
+type ProduceStore struct {
+	state  *storage.State
+	szlr   serialize.Serializer
 	prefix []byte
 }
 
-func NewProductStore(state *storage.State, prefix string) *ProductStore {
-	return &ProductStore{
-		state: state,
-		szlr: serialize.GetSerializer(serialize.PERSISTENT),
+func NewProduceStore(state *storage.State, prefix string) *ProduceStore {
+	return &ProduceStore{
+		state:  state,
+		szlr:   serialize.GetSerializer(serialize.PERSISTENT),
 		prefix: []byte(prefix),
 	}
 }
 
-func (ps *ProductStore) GetState() *storage.State {
+func (ps *ProduceStore) GetState() *storage.State {
 	return ps.state
 }
 
-func (ps *ProductStore) WithState(state *storage.State) data.ExtStore {
+func (ps *ProduceStore) WithState(state *storage.State) data.ExtStore {
 	ps.state = state
 	return ps
 }
 
-func (ps *ProductStore) Exists(key BatchID) bool {
+func (ps *ProduceStore) Exists(key BatchID) bool {
 	prefix := append(ps.prefix, key...)
 	return ps.state.Exists(prefix)
 }
 
-func (ps *ProductStore) Set(product *Product) error {
+func (ps *ProduceStore) Set(product *Produce) error {
 	prefixed := append(ps.prefix, product.BatchID...)
 	data, err := ps.szlr.Serialize(product)
 	if err != nil {
@@ -51,8 +51,8 @@ func (ps *ProductStore) Set(product *Product) error {
 	return nil
 }
 
-func (ps *ProductStore) Get(batchId BatchID) (*Product, error) {
-	product := &Product{}
+func (ps *ProduceStore) Get(batchId BatchID) (*Produce, error) {
+	product := &Produce{}
 	prefixed := append(ps.prefix, []byte(batchId)...)
 	data, err := ps.state.Get(prefixed)
 	if err != nil {
@@ -66,7 +66,7 @@ func (ps *ProductStore) Get(batchId BatchID) (*Product, error) {
 	return product, nil
 }
 
-func (ps *ProductStore) Delete(batchId BatchID) (bool, error) {
+func (ps *ProduceStore) Delete(batchId BatchID) (bool, error) {
 	prefixed := append(ps.prefix, batchId...)
 	res, err := ps.state.Delete(prefixed)
 	if err != nil {
