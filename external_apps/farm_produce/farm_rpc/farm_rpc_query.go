@@ -19,12 +19,10 @@ func Name() string {
 	return "farm_query"
 }
 
-func NewService(balances *balance.Store, currencies *balance.CurrencySet,
-	domains *ons.DomainStore, logger *log.Logger, produceStore *farm_data.ProduceStore) *Service {
+func NewService(balances *balance.Store, currencies *balance.CurrencySet, logger *log.Logger, produceStore *farm_data.ProduceStore) *Service {
 	return &Service{
 		currencies:   currencies,
 		balances:     balances,
-		ons:          domains,
 		logger:       logger,
 		produceStore: produceStore,
 	}
