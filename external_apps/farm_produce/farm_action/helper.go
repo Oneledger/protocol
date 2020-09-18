@@ -10,10 +10,10 @@ func GetProduceStore(ctx *action.Context) (*farm_data.ProduceStore, error) {
 	if err != nil {
 		return nil, err
 	}
-	productStore, ok := store.(*farm_data.ProduceStore)
+	produceStore, ok := store.(*farm_data.ProduceStore)
 	if ok == false {
 		return nil, err
 	}
 
-	return productStore, nil
+	return produceStore, nil
 }

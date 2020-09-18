@@ -35,7 +35,7 @@ func (i InsertProduce) Signers() []action.Address {
 }
 
 func (i InsertProduce) Type() action.Type {
-	return FARM_INSERT_PRODUCT
+	return FARM_INSERT_PRODUCE
 }
 
 func (i InsertProduce) Tags() kv.Pairs {
@@ -63,14 +63,14 @@ func (i *InsertProduce) Unmarshal(bytes []byte) error {
 }
 
 func (i InsertProduceTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
-	insertProduct := InsertProduce{}
-	err := insertProduct.Unmarshal(signedTx.Data)
+	insertProduce := InsertProduce{}
+	err := insertProduce.Unmarshal(signedTx.Data)
 	if err != nil {
 		return false, errors.Wrap(ErrFailedToUnmarshal, err.Error())
 	}
 
 	//validate basic signature
-	err = action.ValidateBasic(signedTx.RawBytes(), insertProduct.Signers(), signedTx.Signatures)
+	err = action.ValidateBasic(signedTx.RawBytes(), insertProduce.Signers(), signedTx.Signatures)
 	if err != nil {
 		return false, err
 	}
@@ -80,19 +80,19 @@ func (i InsertProduceTx) Validate(ctx *action.Context, signedTx action.SignedTx)
 	}
 
 	//Check if batch ID is valid
-	err = insertProduct.BatchId.Err()
+	err = insertProduce.BatchId.Err()
 	if err != nil {
 		return false, farm_data.ErrInvalidBatchID.Wrap(err)
 	}
 
 	//Check if farm ID is valid
-	err = insertProduct.FarmID.Err()
+	err = insertProduce.FarmID.Err()
 	if err != nil {
 		return false, farm_data.ErrInvalidFarmID.Wrap(err)
 	}
 
 	//Check if operator address is valid oneLedger address
-	err = insertProduct.Operator.Err()
+	err = insertProduce.Operator.Err()
 	if err != nil {
 		return false, errors.Wrap(action.ErrInvalidAddress, err.Error())
 	}
@@ -105,50 +105,50 @@ func (i InsertProduceTx) ProcessFee(ctx *action.Context, signedTx action.SignedT
 
 func (i InsertProduceTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	ctx.Logger.Debug("ProcessCheck CancelProposalTx transaction for CheckTx", tx)
-	return runInsertProduct(ctx, tx)
+	return runInsertProduce(ctx, tx)
 }
 
 func (i InsertProduceTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	ctx.Logger.Debug("ProcessDeliver CancelProposalTx transaction for DeliverTx", tx)
-	return runInsertProduct(ctx, tx)
+	return runInsertProduce(ctx, tx)
 }
 
-func runInsertProduct(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	insertProduct := InsertProduce{}
-	err := insertProduct.Unmarshal(tx.Data)
+func runInsertProduce(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	insertProduce := InsertProduce{}
+	err := insertProduce.Unmarshal(tx.Data)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, ErrFailedToUnmarshal, insertProduct.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, ErrFailedToUnmarshal, insertProduce.Tags(), err)
 	}
 
-	//1. get product store
-	productStore, err := GetProduceStore(ctx)
+	//1. get produce store
+	produceStore, err := GetProduceStore(ctx)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, farm_data.ErrGettingProduceStore, insertProduct.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, farm_data.ErrGettingProduceStore, insertProduce.Tags(), err)
 	}
 
-	//2. check if there is product batch with same batch ID
-	if productStore.Exists(insertProduct.BatchId) {
-		return helpers.LogAndReturnFalse(ctx.Logger, farm_data.ErrBatchIDAlreadyExists, insertProduct.Tags(), err)
+	//2. check if there is produce batch with same batch ID
+	if produceStore.Exists(insertProduce.BatchId) {
+		return helpers.LogAndReturnFalse(ctx.Logger, farm_data.ErrBatchIDAlreadyExists, insertProduce.Tags(), err)
 	}
 
-	//3. construct new product batch
-	productBatch := farm_data.NewProduce(
-		insertProduct.BatchId,
-		insertProduct.ItemType,
-		insertProduct.FarmID,
-		insertProduct.FarmName,
-		insertProduct.HarvestLocation,
-		insertProduct.HarvestDate,
-		insertProduct.Classification,
-		insertProduct.Quantity,
-		insertProduct.Description,
+	//3. construct new produce batch
+	produceBatch := farm_data.NewProduce(
+		insertProduce.BatchId,
+		insertProduce.ItemType,
+		insertProduce.FarmID,
+		insertProduce.FarmName,
+		insertProduce.HarvestLocation,
+		insertProduce.HarvestDate,
+		insertProduce.Classification,
+		insertProduce.Quantity,
+		insertProduce.Description,
 	)
 
-	//4. insert the product batch
-	err = productStore.Set(productBatch)
+	//4. insert the produce batch
+	err = produceStore.Set(produceBatch)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, farm_data.ErrInsertingProduct, insertProduct.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, farm_data.ErrInsertingProduce, insertProduce.Tags(), err)
 	}
 
-	return helpers.LogAndReturnTrue(ctx.Logger, insertProduct.Tags(), "insert_product_success")
+	return helpers.LogAndReturnTrue(ctx.Logger, insertProduce.Tags(), "insert_produce_success")
 }

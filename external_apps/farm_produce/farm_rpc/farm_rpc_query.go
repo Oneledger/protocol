@@ -20,13 +20,13 @@ func Name() string {
 }
 
 func NewService(balances *balance.Store, currencies *balance.CurrencySet,
-	domains *ons.DomainStore, logger *log.Logger, productStore *farm_data.ProduceStore) *Service {
+	domains *ons.DomainStore, logger *log.Logger, produceStore *farm_data.ProduceStore) *Service {
 	return &Service{
 		currencies:   currencies,
 		balances:     balances,
 		ons:          domains,
 		logger:       logger,
-		produceStore: productStore,
+		produceStore: produceStore,
 	}
 }
 

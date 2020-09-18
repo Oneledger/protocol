@@ -36,9 +36,9 @@ func (ps *ProduceStore) Exists(key BatchID) bool {
 	return ps.state.Exists(prefix)
 }
 
-func (ps *ProduceStore) Set(product *Produce) error {
-	prefixed := append(ps.prefix, product.BatchID...)
-	data, err := ps.szlr.Serialize(product)
+func (ps *ProduceStore) Set(produce *Produce) error {
+	prefixed := append(ps.prefix, produce.BatchID...)
+	data, err := ps.szlr.Serialize(produce)
 	if err != nil {
 		return ErrFailedInSerialization.Wrap(err)
 	}
@@ -52,18 +52,18 @@ func (ps *ProduceStore) Set(product *Produce) error {
 }
 
 func (ps *ProduceStore) Get(batchId BatchID) (*Produce, error) {
-	product := &Produce{}
+	produce := &Produce{}
 	prefixed := append(ps.prefix, []byte(batchId)...)
 	data, err := ps.state.Get(prefixed)
 	if err != nil {
 		return nil, ErrGettingRecord.Wrap(err)
 	}
-	err = ps.szlr.Deserialize(data, product)
+	err = ps.szlr.Deserialize(data, produce)
 	if err != nil {
 		return nil, ErrFailedInDeserialization.Wrap(err)
 	}
 
-	return product, nil
+	return produce, nil
 }
 
 func (ps *ProduceStore) Delete(batchId BatchID) (bool, error) {

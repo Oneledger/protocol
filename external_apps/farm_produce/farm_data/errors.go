@@ -15,5 +15,5 @@ var (
 	ErrInvalidFarmID           = codes.ProtocolError{farm_error.ErrInvalidFarmID, "invalid farm ID"}
 	ErrGettingProduceStore     = codes.ProtocolError{farm_error.ErrGettingProduceStore, "failed to get produce store"}
 	ErrBatchIDAlreadyExists    = codes.ProtocolError{farm_error.ErrBatchIDAlreadyExists, "this batch ID already exists in store"}
-	ErrInsertingProduct        = codes.ProtocolError{farm_error.ErrInsertingProduct, "failed to insert product batch into the store"}
+	ErrInsertingProduce        = codes.ProtocolError{farm_error.ErrInsertingProduce, "failed to insert produce batch into the store"}
 )

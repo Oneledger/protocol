@@ -17,11 +17,11 @@ func LoadAppData(appData *common.ExtAppData) {
 	logWriter := os.Stdout
 	logger := log.NewLoggerWithPrefix(logWriter, "extApp").WithLevel(log.Level(4))
 	//load txs
-	insertProduct := common.ExtTx{
+	insertProduce := common.ExtTx{
 		Tx:  farm_action.InsertProduceTx{},
 		Msg: &farm_action.InsertProduce{},
 	}
-	appData.ExtTxs = append(appData.ExtTxs, insertProduct)
+	appData.ExtTxs = append(appData.ExtTxs, insertProduce)
 
 	//load stores
 	if dupName, ok := appData.ExtStores["extProduceStore"]; ok {

@@ -26,7 +26,7 @@ func init() {
 
 	for i := 0; i < numBatches; i++ {
 
-		produces = append(produces, NewProduce(BatchID("10000000"+strconv.Itoa(i)), "apples", "F12345", "countryHome", "field A", time.Now().UTC().Unix(), "AAA", 100, "very good product"))
+		produces = append(produces, NewProduce(BatchID("10000000"+strconv.Itoa(i)), "apples", "F12345", "countryHome", "field A", time.Now().UTC().Unix(), "AAA", 100, "very good produce"))
 	}
 
 	//Create Test DB
@@ -37,7 +37,7 @@ func init() {
 }
 
 func TestProduceStore_Set(t *testing.T) {
-	fmt.Println("products: ", produces)
+	fmt.Println("produces: ", produces)
 	fmt.Println("produceStore: ", produceStore)
 	err := produceStore.Set(produces[0])
 	assert.Equal(t, nil, err)

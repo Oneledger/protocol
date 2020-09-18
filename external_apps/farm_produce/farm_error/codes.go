@@ -10,7 +10,7 @@ const (
 	ErrInvalidFarmID              = 990107
 	ErrGettingProduceStore        = 990108
 	ErrBatchIDAlreadyExists       = 990109
-	ErrInsertingProduct           = 990110
+	ErrInsertingProduce           = 990110
 	ErrGettingProduceBatchInQuery = 990111
 	ErrFailedToUnmarshal          = 990112
 )
