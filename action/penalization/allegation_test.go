@@ -132,7 +132,7 @@ func assemblyCtxData(currencyName string, setCoin int64) *action.Context {
 	ctx.EvidenceStore = evidence.NewEvidenceStore("tes", cs)
 	ctx.GovernanceStore.SetFeeOption(*ctx.FeeOpt)
 	ctx.GovernanceStore.SetEvidenceOptions(evidenceOption)
-	ctx.GovernanceStore.WithHeight(0).SetLUH()
+	ctx.GovernanceStore.WithHeight(0).SetAllLUH()
 	validator := identity.NewValidator(
 		from.Bytes(),
 		from.Bytes(),

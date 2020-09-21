@@ -7,6 +7,8 @@ import (
 	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/action/helpers"
+	"github.com/Oneledger/protocol/data/evidence"
 	gov "github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
 )
@@ -64,15 +66,6 @@ func (rtx releaseTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, er
 		return false, err
 	}
 
-	feeOpt, err := ctx.GovernanceStore.GetFeeOption()
-	if err != nil {
-		return false, gov.ErrGetFeeOptions
-	}
-	err = action.ValidateFee(feeOpt, tx.Fee)
-	if err != nil {
-		return false, err
-	}
-
 	if err := r.ValidatorAddress.Err(); err != nil {
 		return false, err
 	}
@@ -102,7 +95,16 @@ func runReleaseTransaction(ctx *action.Context, tx action.RawTx) (bool, action.R
 	r := &Release{}
 	err := r.Unmarshal(tx.Data)
 	if err != nil {
-		return false, action.Response{Log: err.Error()}
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrWrongTxType, r.Tags(), err)
+	}
+
+	feeOpt, err := ctx.GovernanceStore.GetFeeOption()
+	if err != nil {
+		return helpers.LogAndReturnFalse(ctx.Logger, gov.ErrGetFeeOptions, r.Tags(), err)
+	}
+	err = action.ValidateFee(feeOpt, tx.Fee)
+	if err != nil {
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrWrongTxType, r.Tags(), err)
 	}
 
 	blockHeight := ctx.Header.GetHeight()
@@ -110,13 +112,13 @@ func runReleaseTransaction(ctx *action.Context, tx action.RawTx) (bool, action.R
 
 	options, err := ctx.GovernanceStore.GetEvidenceOptions()
 	if err != nil {
-		return false, action.Response{Log: err.Error()}
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrWrongTxType, r.Tags(), err)
 	}
 
 	err = ctx.EvidenceStore.HandleRelease(options, r.ValidatorAddress, blockHeight, blockCreatedAt)
 	if err != nil {
-		return false, action.Response{Log: err.Error()}
+		return helpers.LogAndReturnFalse(ctx.Logger, evidence.ErrHandleReleaseFailed, r.Tags(), err)
 	}
 
-	return true, action.Response{Events: action.GetEvent(r.Tags(), "release")}
+	return helpers.LogAndReturnTrue(ctx.Logger, r.Tags(), "release")
 }

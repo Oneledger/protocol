@@ -8,6 +8,8 @@ import (
 	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/action/helpers"
+	"github.com/Oneledger/protocol/data/evidence"
 	gov "github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
 )
@@ -83,34 +85,12 @@ func (atx allegationTx) Validate(ctx *action.Context, tx action.SignedTx) (bool,
 		return false, err
 	}
 
-	feeOpt, err := ctx.GovernanceStore.GetFeeOption()
-	if err != nil {
-		return false, gov.ErrGetFeeOptions
-	}
-	err = action.ValidateFee(feeOpt, tx.Fee)
-	if err != nil {
-		return false, err
-	}
-
 	if err := r.ValidatorAddress.Err(); err != nil {
 		return false, err
 	}
 
 	if err := r.MaliciousAddress.Err(); err != nil {
 		return false, err
-	}
-
-	// TODO: Move to runAllegationTransaction
-	if ctx.EvidenceStore.IsFrozenValidator(r.MaliciousAddress) {
-		return false, action.ErrFrozenValidator
-	}
-
-	if !ctx.EvidenceStore.IsActiveValidator(r.ValidatorAddress) {
-		return false, action.ErrNonActiveValidator
-	}
-
-	if r.ValidatorAddress.Equal(r.MaliciousAddress) {
-		return false, action.ErrInvalidAddress
 	}
 	return true, nil
 }
@@ -135,17 +115,38 @@ func (atx allegationTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx
 }
 
 func runAllegationTransaction(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	// TODO: Check if validator staking address is matched with the requested
 	al := &Allegation{}
 	err := al.Unmarshal(tx.Data)
 	if err != nil {
-		return false, action.Response{Log: err.Error()}
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrWrongTxType, al.Tags(), err)
+	}
+
+	feeOpt, err := ctx.GovernanceStore.GetFeeOption()
+	if err != nil {
+		return helpers.LogAndReturnFalse(ctx.Logger, gov.ErrGetFeeOptions, al.Tags(), err)
+	}
+
+	err = action.ValidateFee(feeOpt, tx.Fee)
+	if err != nil {
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrWrongTxType, al.Tags(), err)
+	}
+
+	if ctx.EvidenceStore.IsFrozenValidator(al.MaliciousAddress) {
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrFrozenValidator, al.Tags(), err)
+	}
+
+	if !ctx.EvidenceStore.IsActiveValidator(al.ValidatorAddress) {
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrNonActiveValidator, al.Tags(), err)
+	}
+
+	if al.ValidatorAddress.Equal(al.MaliciousAddress) {
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrInvalidAddress, al.Tags(), err)
 	}
 
 	err = ctx.EvidenceStore.PerformAllegation(al.ValidatorAddress, al.MaliciousAddress, al.BlockHeight, al.ProofMsg)
 	if err != nil {
-		return false, action.Response{Log: err.Error()}
+		return helpers.LogAndReturnFalse(ctx.Logger, evidence.ErrCreateAllegationFailed, al.Tags(), err)
 	}
 
-	return true, action.Response{Events: action.GetEvent(al.Tags(), "allegation")}
+	return helpers.LogAndReturnTrue(ctx.Logger, al.Tags(), "allegation")
 }

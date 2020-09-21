@@ -8,6 +8,7 @@ import (
 	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/action/helpers"
 	gov "github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
 )
@@ -66,16 +67,8 @@ func (atx allegationVoteTx) Validate(ctx *action.Context, tx action.SignedTx) (b
 	if err != nil {
 		return false, errors.Wrap(action.ErrWrongTxType, err.Error())
 	}
-	err = action.ValidateBasic(tx.RawBytes(), r.Signers(), tx.Signatures)
-	if err != nil {
-		return false, err
-	}
 
-	feeOpt, err := ctx.GovernanceStore.GetFeeOption()
-	if err != nil {
-		return false, gov.ErrGetFeeOptions
-	}
-	err = action.ValidateFee(feeOpt, tx.Fee)
+	err = action.ValidateBasic(tx.RawBytes(), r.Signers(), tx.Signatures)
 	if err != nil {
 		return false, err
 	}
@@ -84,13 +77,6 @@ func (atx allegationVoteTx) Validate(ctx *action.Context, tx action.SignedTx) (b
 		return false, err
 	}
 
-	if ctx.EvidenceStore.IsFrozenValidator(r.Address) {
-		return false, action.ErrFrozenValidator
-	}
-
-	if !ctx.EvidenceStore.IsActiveValidator(r.Address) {
-		return false, action.ErrNonActiveValidator
-	}
 	return true, nil
 }
 
@@ -117,13 +103,31 @@ func runAllegationVoteTransaction(ctx *action.Context, tx action.RawTx) (bool, a
 	al := &AllegationVote{}
 	err := al.Unmarshal(tx.Data)
 	if err != nil {
-		return false, action.Response{Log: err.Error()}
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrWrongTxType, al.Tags(), err)
+	}
+
+	feeOpt, err := ctx.GovernanceStore.GetFeeOption()
+	if err != nil {
+		return helpers.LogAndReturnFalse(ctx.Logger, gov.ErrGetFeeOptions, al.Tags(), err)
+	}
+
+	err = action.ValidateFee(feeOpt, tx.Fee)
+	if err != nil {
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrWrongTxType, al.Tags(), err)
+	}
+
+	if ctx.EvidenceStore.IsFrozenValidator(al.Address) {
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrFrozenValidator, al.Tags(), err)
+	}
+
+	if !ctx.EvidenceStore.IsActiveValidator(al.Address) {
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrNonActiveValidator, al.Tags(), err)
 	}
 
 	err = ctx.EvidenceStore.Vote(al.RequestID, al.Address, al.Choice)
 	if err != nil {
-		return false, action.Response{Log: err.Error()}
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrWrongTxType, al.Tags(), err)
 	}
 
-	return true, action.Response{Events: action.GetEvent(al.Tags(), "allegation_vote")}
+	return helpers.LogAndReturnTrue(ctx.Logger, al.Tags(), "allegation_vote")
 }

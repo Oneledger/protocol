@@ -38,7 +38,7 @@ const (
 	InternalErrorTrackerInsufficientBalance = 100609
 	InternalErrorListWitnesses              = 100610
 	InternalErrorGettingProposal            = 100611
-	InternalErrorGettingBidConv				= 100612
+	InternalErrorGettingBidConv             = 100612
 
 	ONSError                        = 1007
 	ONSErrDomainMissing             = 100701
@@ -173,6 +173,7 @@ const (
 	TxErrValidateGovState                 = 700156
 	TxErrGetStakingOptions                = 700158
 	TxErrInvalidOptions                   = 700159
+	TxErrEvidenceError                    = 700160
 
 	//Rewards Error
 	RewardsUnableToGetMaturedAmount = 800001

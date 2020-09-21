@@ -302,7 +302,7 @@ func (vs *ValidatorStore) fetchPostponedUnstakes() error {
 		if err != nil {
 			return false
 		}
-		err = vs.HandleUnstake(*unstake)
+		err = vs.HandleUnstake(*unstake, vs.lastHeight)
 		if err != nil {
 			logger.Errorf("Handle unstake for validator: %s failed, %s\n", validator.Address, err)
 			return false
