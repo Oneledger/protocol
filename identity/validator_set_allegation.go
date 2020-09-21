@@ -144,7 +144,7 @@ func (vs *ValidatorStore) ExecuteAllegationTracker(ctx *ValidatorContext, active
 		percentage := float64(options.AllegationPercentage) / float64(options.AllegationDecimals)
 		arToUpdate := false
 
-		logger.Infof("Request ID: %d, yes votes count: %d, no votes count: %d, total count: %d \n", requestID, yesCount, noCount, requiredVotesCount)
+		logger.Infof("Request ID: %s, yes votes count: %d, no votes count: %d, total count: %d \n", requestID, yesCount, noCount, requiredVotesCount)
 		if yesP > percentage {
 			ar.Status = evidence.GUILTY
 			sv, err := ctx.EvidenceStore.CreateSuspiciousValidator(

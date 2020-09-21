@@ -68,14 +68,14 @@ def test_no_votes():
         request_id,
         voter_2,
     )
-    print("Vote for address %s on request %d with %s done!" % (voter_2, request_id, vote))
+    print("Vote for address %s on request %s with %s done!" % (voter_2, request_id, vote))
 
     has_voted = ByzantineFault_Vote(node_3, request_id, voter_3, vote, '1234')
     assert has_voted is True, 'Failed to perform vote on request: %s of address: %s' % (
         request_id,
         voter_3,
     )
-    print("Vote for address %s on request %d with %s done!" % (voter_3, request_id, vote))
+    print("Vote for address %s on request %s with %s done!" % (voter_3, request_id, vote))
 
     # freezeing height and waiting 1 blocks
     height = GetBlockHeight()

@@ -101,7 +101,12 @@ func (atx allegationVoteTx) ProcessDeliver(ctx *action.Context, tx action.RawTx)
 
 func (atx allegationVoteTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
 	ctx.Logger.Debug("Processing 'allegation_vote' Transaction for ProcessFee", signedTx)
-	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
+	r := &AllegationVote{}
+	err := r.Unmarshal(signedTx.Data)
+	if err != nil {
+		return false, action.Response{Log: errors.Wrap(err, "failed to unmarshal").Error()}
+	}
+	return action.StakingPayerFeeHandling(ctx, r.Address, signedTx, start, size, 1)
 }
 
 func runAllegationVoteTransaction(ctx *action.Context, tx action.RawTx) (bool, action.Response) {

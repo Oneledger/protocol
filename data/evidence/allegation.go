@@ -112,7 +112,7 @@ func (es *EvidenceStore) GetAllegationRequest(ID string) (*AllegationRequest, er
 		return nil, err
 	}
 	if len(dat) == 0 {
-		return nil, fmt.Errorf("Request %d not found", ID)
+		return nil, fmt.Errorf("Request %s not found", ID)
 	}
 	ar := &AllegationRequest{}
 	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(dat, ar)

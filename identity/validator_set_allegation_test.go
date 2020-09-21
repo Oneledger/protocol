@@ -97,7 +97,7 @@ func setUpCtx() *ValidatorContext {
 	}
 	govern.SetFeeOption(*feeOpt)
 	govern.SetEvidenceOptions(evidenceOption)
-	govern.WithHeight(0).SetLUH()
+	govern.WithHeight(0).SetAllLUH()
 	govern.SetProposalOptions(pOpt)
 
 	validator := NewValidator(
@@ -295,22 +295,22 @@ func TestValidatorStore_ExecuteAllegationTracker(t *testing.T) {
 		ctx := setUpCtx()
 		defer tearDownCtx()
 
+		requestID := "test"
+
 		at, err := ctx.EvidenceStore.GetAllegationTracker()
 		assert.NoError(t, err)
 		assert.Equal(t, 0, len(at.Requests))
 
-		err = ctx.EvidenceStore.PerformAllegation(from.Bytes(), fromMal.Bytes(), 4, "test")
+		err = ctx.EvidenceStore.PerformAllegation(from.Bytes(), fromMal.Bytes(), requestID, 4, "test")
 		assert.NoError(t, err)
-		ari, err := ctx.EvidenceStore.GetRequestID()
-		assert.NoError(t, err)
-		err = ctx.EvidenceStore.Vote(ari.ID, from.Bytes(), evidence.NO)
+		err = ctx.EvidenceStore.Vote(requestID, from.Bytes(), evidence.NO)
 		assert.NoError(t, err)
 
 		at, err = ctx.EvidenceStore.GetAllegationTracker()
 		assert.NoError(t, err)
 		assert.Equal(t, 1, len(at.Requests))
 
-		ar, err := ctx.EvidenceStore.GetAllegationRequest(ari.ID)
+		ar, err := ctx.EvidenceStore.GetAllegationRequest(requestID)
 		assert.NoError(t, err)
 		assert.Equal(t, evidence.VOTING, ar.Status)
 
@@ -322,7 +322,7 @@ func TestValidatorStore_ExecuteAllegationTracker(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, 1, len(at.Requests))
 
-		ar, err = ctx.EvidenceStore.GetAllegationRequest(ari.ID)
+		ar, err = ctx.EvidenceStore.GetAllegationRequest(requestID)
 		assert.NoError(t, err)
 		assert.Equal(t, evidence.VOTING, ar.Status)
 	})
@@ -331,22 +331,22 @@ func TestValidatorStore_ExecuteAllegationTracker(t *testing.T) {
 		ctx := setUpCtx()
 		defer tearDownCtx()
 
+		requestID := "test"
+
 		at, err := ctx.EvidenceStore.GetAllegationTracker()
 		assert.NoError(t, err)
 		assert.Equal(t, 0, len(at.Requests))
 
-		err = ctx.EvidenceStore.PerformAllegation(from.Bytes(), fromMal.Bytes(), 4, "test")
+		err = ctx.EvidenceStore.PerformAllegation(from.Bytes(), fromMal.Bytes(), requestID, 4, "test")
 		assert.NoError(t, err)
-		ari, err := ctx.EvidenceStore.GetRequestID()
-		assert.NoError(t, err)
-		err = ctx.EvidenceStore.Vote(ari.ID, from.Bytes(), evidence.YES)
+		err = ctx.EvidenceStore.Vote(requestID, from.Bytes(), evidence.YES)
 		assert.NoError(t, err)
 
 		at, err = ctx.EvidenceStore.GetAllegationTracker()
 		assert.NoError(t, err)
 		assert.Equal(t, 1, len(at.Requests))
 
-		ar, err := ctx.EvidenceStore.GetAllegationRequest(ari.ID)
+		ar, err := ctx.EvidenceStore.GetAllegationRequest(requestID)
 		assert.NoError(t, err)
 		assert.Equal(t, evidence.VOTING, ar.Status)
 
@@ -358,7 +358,7 @@ func TestValidatorStore_ExecuteAllegationTracker(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, 1, len(at.Requests))
 
-		ar, err = ctx.EvidenceStore.GetAllegationRequest(ari.ID)
+		ar, err = ctx.EvidenceStore.GetAllegationRequest(requestID)
 		assert.NoError(t, err)
 		assert.Equal(t, evidence.VOTING, ar.Status)
 	})
@@ -371,18 +371,18 @@ func TestValidatorStore_ExecuteAllegationTracker(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, 0, len(at.Requests))
 
-		err = ctx.EvidenceStore.PerformAllegation(from.Bytes(), fromMal.Bytes(), 4, "test")
+		requestID := "test"
+
+		err = ctx.EvidenceStore.PerformAllegation(from.Bytes(), fromMal.Bytes(), requestID, 4, "test")
 		assert.NoError(t, err)
-		ari, err := ctx.EvidenceStore.GetRequestID()
-		assert.NoError(t, err)
-		err = ctx.EvidenceStore.Vote(ari.ID, from.Bytes(), evidence.NO)
+		err = ctx.EvidenceStore.Vote(requestID, from.Bytes(), evidence.NO)
 		assert.NoError(t, err)
 
 		at, err = ctx.EvidenceStore.GetAllegationTracker()
 		assert.NoError(t, err)
 		assert.Equal(t, 1, len(at.Requests))
 
-		ar, err := ctx.EvidenceStore.GetAllegationRequest(ari.ID)
+		ar, err := ctx.EvidenceStore.GetAllegationRequest(requestID)
 		assert.NoError(t, err)
 		assert.Equal(t, evidence.VOTING, ar.Status)
 
@@ -395,7 +395,7 @@ func TestValidatorStore_ExecuteAllegationTracker(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, 0, len(at.Requests))
 
-		ar, err = ctx.EvidenceStore.GetAllegationRequest(ari.ID)
+		ar, err = ctx.EvidenceStore.GetAllegationRequest(requestID)
 		assert.NoError(t, err)
 		assert.Equal(t, evidence.INNOCENT, ar.Status)
 	})
@@ -403,6 +403,8 @@ func TestValidatorStore_ExecuteAllegationTracker(t *testing.T) {
 	t.Run("execulte allegation tracker with 1 yes request and have changes as it passes percentage criteria", func(t *testing.T) {
 		ctx := setUpCtx()
 		defer tearDownCtx()
+
+		requestID := "test"
 
 		currency := balance.Currency{
 			Id:      0,
@@ -417,18 +419,16 @@ func TestValidatorStore_ExecuteAllegationTracker(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, 0, len(at.Requests))
 
-		err = ctx.EvidenceStore.PerformAllegation(from.Bytes(), fromMal.Bytes(), 4, "test")
+		err = ctx.EvidenceStore.PerformAllegation(from.Bytes(), fromMal.Bytes(), requestID, 4, "test")
 		assert.NoError(t, err)
-		ari, err := ctx.EvidenceStore.GetRequestID()
-		assert.NoError(t, err)
-		err = ctx.EvidenceStore.Vote(ari.ID, from.Bytes(), evidence.YES)
+		err = ctx.EvidenceStore.Vote(requestID, from.Bytes(), evidence.YES)
 		assert.NoError(t, err)
 
 		at, err = ctx.EvidenceStore.GetAllegationTracker()
 		assert.NoError(t, err)
 		assert.Equal(t, 1, len(at.Requests))
 
-		ar, err := ctx.EvidenceStore.GetAllegationRequest(ari.ID)
+		ar, err := ctx.EvidenceStore.GetAllegationRequest(requestID)
 		assert.NoError(t, err)
 		assert.Equal(t, evidence.VOTING, ar.Status)
 
@@ -455,7 +455,7 @@ func TestValidatorStore_ExecuteAllegationTracker(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, 0, len(at.Requests))
 
-		ar, err = ctx.EvidenceStore.GetAllegationRequest(ari.ID)
+		ar, err = ctx.EvidenceStore.GetAllegationRequest(requestID)
 		assert.NoError(t, err)
 		assert.Equal(t, evidence.GUILTY, ar.Status)
 

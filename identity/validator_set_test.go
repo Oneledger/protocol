@@ -184,7 +184,7 @@ func TestValidatorStore_Set(t *testing.T) {
 		err := vs.HandleStake(stake, false, 0)
 		assert.Nil(t, err)
 		vs.store.Commit()
-		err = vs.Setup(req2, keys.Address{}, nil)
+		err = vs.Setup(req2, keys.Address{})
 		assert.Nil(t, err)
 	})
 }

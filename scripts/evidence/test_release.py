@@ -56,7 +56,6 @@ def test_release():
 
     # checking if validator is frozen
     fMap = GetFrozenMap()
-    assert len(fMap) == 1, 'Frozen validator not found'
     assert valDict['1']['address'] in fMap, 'Validator %s not frozen' % malicious
 
     print("Test for release successfully passed!")

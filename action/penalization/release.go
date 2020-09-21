@@ -88,7 +88,12 @@ func (rtx releaseTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (ok bo
 
 func (rtx releaseTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
 	ctx.Logger.Debug("Processing 'release' Transaction for ProcessFee", signedTx)
-	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
+	r := &Release{}
+	err := r.Unmarshal(signedTx.Data)
+	if err != nil {
+		return false, action.Response{Log: errors.Wrap(err, "failed to unmarshal").Error()}
+	}
+	return action.StakingPayerFeeHandling(ctx, r.ValidatorAddress, signedTx, start, size, 1)
 }
 
 func runReleaseTransaction(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
