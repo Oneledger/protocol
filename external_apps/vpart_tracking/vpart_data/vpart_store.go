@@ -12,10 +12,10 @@ type VPartStore struct {
 	prefix []byte
 }
 
-func NewVPartStore(state *storage.State, szlr serialize.Serializer, prefix string) *VPartStore {
+func NewVPartStore(state *storage.State, prefix string) *VPartStore {
 	return &VPartStore{
 		state:  state,
-		szlr:   szlr,
+		szlr:   serialize.GetSerializer(serialize.PERSISTENT),
 		prefix: []byte(prefix),
 	}
 }
