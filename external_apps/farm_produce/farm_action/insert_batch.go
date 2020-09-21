@@ -104,13 +104,12 @@ func (i InsertProduceTx) ProcessFee(ctx *action.Context, signedTx action.SignedT
 }
 
 func (i InsertProduceTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	ctx.Logger.Debug("ProcessCheck CancelProposalTx transaction for CheckTx", tx)
+	ctx.Logger.Debug("ProcessCheck InsertProduceTx transaction for CheckTx", tx)
 	return runInsertProduce(ctx, tx)
 }
 
 func (i InsertProduceTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	ctx.Logger.Debug("ProcessDeliver CancelProposalTx transaction for DeliverTx", tx)
-	return runInsertProduce(ctx, tx)
+	ctx.Logger.Debug("ProcessDeliver InsertProduceTx transaction for DeliverTx", tx)
 }
 
 func runInsertProduce(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
