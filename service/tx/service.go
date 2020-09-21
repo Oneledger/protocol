@@ -263,6 +263,8 @@ func (svc *Service) Allegation(args client.AllegationRequest, reply *client.Alle
 		return codes.ErrFrozenValidator
 	}
 
+	// TODO: Add uuid4 gen
+
 	allegation := penalization.Allegation{
 		ValidatorAddress: validator.Address,
 		MaliciousAddress: mv.Address,

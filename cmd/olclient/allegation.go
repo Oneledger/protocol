@@ -52,6 +52,8 @@ var allegationCmd = &cobra.Command{
 	RunE:  allegationExec,
 }
 
+// TODO: Move validator signature to staking address and compare if the validator staking address is the same as signed
+
 var allegationArgs = &AllegationArguments{}
 
 func init() {

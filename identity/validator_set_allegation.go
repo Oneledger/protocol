@@ -10,7 +10,6 @@ import (
 	govern "github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
-	"github.com/Oneledger/protocol/storage"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
 )
@@ -297,13 +296,13 @@ func (vs *ValidatorStore) GetDelayUnstake(addr keys.Address) (*Unstake, error) {
 	return apply, nil
 }
 
-func (vs *ValidatorStore) fetchPostponedUnstakes(writeState *storage.State) error {
+func (vs *ValidatorStore) fetchPostponedUnstakes() error {
 	vs.Iterate(func(addr keys.Address, validator *Validator) bool {
 		unstake, err := vs.GetDelayUnstake(validator.Address)
 		if err != nil {
 			return false
 		}
-		err = vs.HandleUnstake(*unstake, writeState)
+		err = vs.HandleUnstake(*unstake)
 		if err != nil {
 			logger.Errorf("Handle unstake for validator: %s failed, %s\n", validator.Address, err)
 			return false

@@ -1,6 +1,7 @@
 package penalization
 
 import (
+	"encoding/binary"
 	"encoding/json"
 
 	"github.com/pkg/errors"
@@ -47,8 +48,23 @@ func (r Allegation) Tags() kv.Pairs {
 		Key:   []byte("tx.validator"),
 		Value: r.ValidatorAddress.Bytes(),
 	}
+	tag3 := kv.Pair{
+		Key:   []byte("tx.malicious"),
+		Value: r.MaliciousAddress.Bytes(),
+	}
 
-	tags = append(tags, tag, tag2)
+	b := make([]byte, 8)
+	binary.LittleEndian.PutUint64(b, uint64(r.BlockHeight))
+	tag4 := kv.Pair{
+		Key:   []byte("tx.height"),
+		Value: b,
+	}
+	tag5 := kv.Pair{
+		Key:   []byte("tx.proof"),
+		Value: []byte(r.ProofMsg),
+	}
+
+	tags = append(tags, tag, tag2, tag3, tag4, tag5)
 	return tags
 }
 
@@ -84,6 +100,7 @@ func (atx allegationTx) Validate(ctx *action.Context, tx action.SignedTx) (bool,
 		return false, err
 	}
 
+	// TODO: Move to runAllegationTransaction
 	if ctx.EvidenceStore.IsFrozenValidator(r.MaliciousAddress) {
 		return false, action.ErrFrozenValidator
 	}
@@ -118,6 +135,7 @@ func (atx allegationTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx
 }
 
 func runAllegationTransaction(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	// TODO: Check if validator staking address is matched with the requested
 	al := &Allegation{}
 	err := al.Unmarshal(tx.Data)
 	if err != nil {

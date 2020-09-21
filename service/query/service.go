@@ -181,6 +181,7 @@ func (svc *Service) CurrencyBalance(req client.CurrencyBalanceRequest, resp *cli
 func (svc *Service) VoteRequests(req client.VoteRequestRequest, resp *client.VoteRequestReply) error {
 	requests := make([]evidence.AllegationRequest, 0)
 
+	// TODO: Add filter for address
 	svc.evidenceStore.IterateRequests(func(ar *evidence.AllegationRequest) bool {
 		requests = append(requests, *ar)
 		return false

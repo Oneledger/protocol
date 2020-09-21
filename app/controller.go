@@ -135,7 +135,7 @@ func (app *App) blockBeginner() blockBeginner {
 		}
 
 		// update the validator set
-		err = app.Context.validators.Setup(req, app.Context.node.ValidatorAddress())
+		err = app.Context.validators.WithState(app.Context.deliver).Setup(req, app.Context.node.ValidatorAddress())
 		if err != nil {
 			app.logger.Error("validator set with error", err)
 		}

@@ -94,19 +94,6 @@ func (vs *ValidatorStore) set(validator Validator) error {
 	return nil
 }
 
-func (vs *ValidatorStore) setWithState(validator Validator, state *storage.State) error {
-	value := (validator).Bytes()
-	vkey := append(vs.prefix, validator.Address.Bytes()...)
-	if state == nil {
-		state = vs.store
-	}
-	err := state.Set(vkey, value)
-	if err != nil {
-		return errors.Wrap(err, "failed to set validator for stake")
-	}
-	return nil
-}
-
 func (vs *ValidatorStore) Iterate(fn func(addr keys.Address, validator *Validator) bool) (stopped bool) {
 	return vs.store.IterateRange(
 		vs.prefix,
@@ -154,7 +141,7 @@ func (vs *ValidatorStore) Init(req types.RequestInitChain, currencies *balance.C
 }
 
 // setup the validators according to begin block
-func (vs *ValidatorStore) Setup(req types.RequestBeginBlock, nodeValidatorAddress keys.Address, writeState *storage.State) error {
+func (vs *ValidatorStore) Setup(req types.RequestBeginBlock, nodeValidatorAddress keys.Address) error {
 	vs.lastHeight = req.Header.GetHeight()
 	createdTime := req.Header.GetTime()
 	vs.lastBlockTime = &createdTime
@@ -175,7 +162,7 @@ func (vs *ValidatorStore) Setup(req types.RequestBeginBlock, nodeValidatorAddres
 		logger.Infof("slashed byzantine validator, address = %s", remove.Address)
 	}
 
-	vs.fetchPostponedUnstakes(writeState)
+	vs.fetchPostponedUnstakes()
 	vs.InitValidatorQueue(nodeValidatorAddress)
 	vs.cacheActiveValidators(req.LastCommitInfo)
 
