@@ -8,6 +8,7 @@ import (
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/evidence"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/identity"
 )
@@ -116,7 +117,7 @@ func (s stakeTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error)
 	}
 
 	if ctx.EvidenceStore.IsFrozenValidator(st.ValidatorAddress) {
-		return false, action.ErrFrozenValidator
+		return false, evidence.ErrFrozenValidator
 	}
 	return true, nil
 }

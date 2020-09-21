@@ -183,7 +183,9 @@ func (svc *Service) VoteRequests(req client.VoteRequestRequest, resp *client.Vot
 
 	// TODO: Add filter for address
 	svc.evidenceStore.IterateRequests(func(ar *evidence.AllegationRequest) bool {
-		requests = append(requests, *ar)
+		if len(req.Address) == 0 || ar.MaliciousAddress.Equal(req.Address) {
+			requests = append(requests, *ar)
+		}
 		return false
 	})
 

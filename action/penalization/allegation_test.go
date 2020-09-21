@@ -157,8 +157,9 @@ func assemblyCtxData(currencyName string, setCoin int64) *action.Context {
 	return ctx
 }
 
-func assemblyAllegationData(blockHeight int64, proofMsg string) action.SignedTx {
+func assemblyAllegationData(requestID string, blockHeight int64, proofMsg string) action.SignedTx {
 	av := &Allegation{
+		RequestID:        requestID,
 		ValidatorAddress: from.Bytes(),
 		MaliciousAddress: fromMal.Bytes(),
 		BlockHeight:      blockHeight,
@@ -196,11 +197,12 @@ func TestAllegationTx_ProcessDeliver_OK(t *testing.T) {
 		testDB := setup()
 		defer teardown(testDB)
 
+		ID := "test"
 		ctx = assemblyCtxData("OLT", 1000)
-		tx := assemblyAllegationData(2, "test")
+		tx := assemblyAllegationData(ID, 2, "test")
 
-		ari, _ := ctx.EvidenceStore.GetRequestID()
-		assert.Equal(t, int64(0), ari.ID)
+		ar, err := ctx.EvidenceStore.GetAllegationRequest(ID)
+		assert.Nil(t, ar)
 
 		at, _ := ctx.EvidenceStore.GetAllegationTracker()
 		assert.Equal(t, 0, len(at.Requests))
@@ -212,16 +214,13 @@ func TestAllegationTx_ProcessDeliver_OK(t *testing.T) {
 		ok, resp := atx.ProcessDeliver(ctx, tx.RawTx)
 		assert.True(t, ok, resp)
 
-		ari, err = ctx.EvidenceStore.GetRequestID()
-		assert.Equal(t, int64(1), ari.ID, err)
-
-		ar, err := ctx.EvidenceStore.GetAllegationRequest(ari.ID)
+		ar, err = ctx.EvidenceStore.GetAllegationRequest(ID)
 		assert.NoError(t, err)
 		assert.Equal(t, "test", ar.ProofMsg)
 		assert.Equal(t, int64(2), ar.BlockHeight)
 
 		at, _ = ctx.EvidenceStore.GetAllegationTracker()
 		assert.Equal(t, 1, len(at.Requests))
-		assert.True(t, at.Requests[ari.ID])
+		assert.True(t, at.Requests[ID])
 	})
 }

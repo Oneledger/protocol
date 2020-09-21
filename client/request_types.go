@@ -120,7 +120,7 @@ type ReleaseReply struct {
 
 type VoteRequest struct {
 	Address   keys.Address `json:"address"`
-	RequestID int64        `json:"requestID"`
+	RequestID string       `json:"requestID"`
 	Choice    int8         `json:"choice"`
 }
 

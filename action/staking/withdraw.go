@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/data/evidence"
 	"github.com/Oneledger/protocol/data/keys"
 )
 
@@ -105,7 +106,7 @@ func (withdrawTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error
 	}
 
 	if ctx.EvidenceStore.IsFrozenValidator(draw.ValidatorAddress) {
-		return false, action.ErrFrozenValidator
+		return false, evidence.ErrFrozenValidator
 	}
 	return true, nil
 }

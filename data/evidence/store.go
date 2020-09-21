@@ -187,18 +187,17 @@ func (es *EvidenceStore) HandleRelease(options *Options, validatorAddress keys.A
 	return nil
 }
 
-func (es *EvidenceStore) PerformAllegation(validatorAddress keys.Address, maliciousAddress keys.Address, blockHeight int64, proofMsg string) error {
-	if es.IsFrozenValidator(maliciousAddress) {
-		return fmt.Errorf("Validator \"%s\" already frozen", validatorAddress)
-	}
+func (es *EvidenceStore) PerformAllegation(validatorAddress keys.Address, maliciousAddress keys.Address, ID string, blockHeight int64, proofMsg string) error {
+	es.mux.Lock()
+	defer es.mux.Unlock()
 
-	ID, err := es.GenerateRequestID()
-	if err != nil {
-		return err
+	isBusy := es.IsRequestIDBusy(ID)
+	if isBusy {
+		return fmt.Errorf("request ID %s already handled\n", ID)
 	}
 
 	ar := NewAllegationRequest(ID, validatorAddress, maliciousAddress, blockHeight, proofMsg)
-	err = es.SetAllegationRequest(ar)
+	err := es.SetAllegationRequest(ar)
 	if err != nil {
 		return err
 	}
@@ -217,7 +216,7 @@ func (es *EvidenceStore) PerformAllegation(validatorAddress keys.Address, malici
 	return nil
 }
 
-func (es *EvidenceStore) Vote(requestID int64, voteAddress keys.Address, choice int8) error {
+func (es *EvidenceStore) Vote(requestID string, voteAddress keys.Address, choice int8) error {
 	ar, err := es.GetAllegationRequest(requestID)
 	if err != nil {
 		return err

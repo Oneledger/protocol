@@ -190,7 +190,7 @@ func (svc *Service) CreateRawSendPool(args client.SendPoolTxRequest, reply *clie
 func (svc *Service) Vote(args client.VoteRequest, reply *client.VoteReply) error {
 	if svc.evidenceStore.IsFrozenValidator(args.Address) {
 		svc.logger.Error("got allegation validator", args.Address)
-		return codes.ErrFrozenValidator
+		return evidence.ErrFrozenValidator
 	}
 
 	validator, err := svc.validators.Get(args.Address)
@@ -249,7 +249,7 @@ func (svc *Service) Allegation(args client.AllegationRequest, reply *client.Alle
 
 	if svc.evidenceStore.IsFrozenValidator(mv.Address) {
 		svc.logger.Error("validator already frozen", mv.Address)
-		return codes.ErrFrozenValidator
+		return evidence.ErrFrozenValidator
 	}
 
 	validator, err := svc.validators.Get(args.Address)
@@ -260,12 +260,17 @@ func (svc *Service) Allegation(args client.AllegationRequest, reply *client.Alle
 
 	if svc.evidenceStore.IsFrozenValidator(validator.Address) {
 		svc.logger.Error("validator could no perform allegation while frosted", validator.Address)
-		return codes.ErrFrozenValidator
+		return evidence.ErrFrozenValidator
 	}
 
-	// TODO: Add uuid4 gen
+	requestID, err := svc.evidenceStore.GenerateRequestID()
+	if err != nil {
+		svc.logger.Errorf("failed to generate request ID\n")
+		return codes.ErrSerialization
+	}
 
 	allegation := penalization.Allegation{
+		RequestID:        requestID,
 		ValidatorAddress: validator.Address,
 		MaliciousAddress: mv.Address,
 		BlockHeight:      args.BlockHeight,
@@ -314,7 +319,7 @@ func (svc *Service) Release(args client.ReleaseRequest, reply *client.ReleaseRep
 
 	if !svc.evidenceStore.IsFrozenValidator(validator.Address) {
 		svc.logger.Error("validator is not frozen", validator.Address)
-		return codes.ErrNonFrozenValidator
+		return evidence.ErrNonFrozenValidator
 	}
 
 	release := penalization.Release{

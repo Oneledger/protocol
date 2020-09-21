@@ -5,6 +5,7 @@ import (
 
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
+	"github.com/google/uuid"
 )
 
 const (
@@ -41,7 +42,7 @@ func ChoiceStrToInt8(choice string) int8 {
 }
 
 type AllegationTracker struct {
-	Requests map[int64]bool
+	Requests map[string]bool
 }
 
 func (es *EvidenceStore) getAllegationTrackerKey() []byte {
@@ -55,7 +56,7 @@ func (es *EvidenceStore) GetAllegationTracker() (*AllegationTracker, error) {
 		return nil, err
 	}
 	at := &AllegationTracker{
-		Requests: make(map[int64]bool),
+		Requests: make(map[string]bool),
 	}
 	if len(dat) == 0 {
 		return at, nil
@@ -75,59 +76,25 @@ func (es *EvidenceStore) SetAllegationTracker(at *AllegationTracker) error {
 	return es.Set(es.getAllegationTrackerKey(), dat)
 }
 
-func (es *EvidenceStore) GetRequestID() (*AllegationRequestID, error) {
-	prefix := es.getAllegationRequestIDKey()
-	dat, err := es.Get(prefix)
+func (es *EvidenceStore) IsRequestIDBusy(ID string) bool {
+	_, err := es.GetAllegationRequest(ID)
 	if err != nil {
-		return nil, err
+		return false
 	}
-	ar := &AllegationRequestID{}
-	if len(dat) != 0 {
-		err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(dat, ar)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return ar, nil
+	return true
+
 }
 
-func (es *EvidenceStore) SetRequestID(ar *AllegationRequestID) error {
-	prefix := es.getAllegationRequestIDKey()
-	dat, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(ar)
+func (es *EvidenceStore) GenerateRequestID() (string, error) {
+	uuidNew, err := uuid.NewUUID()
 	if err != nil {
-		return err
+		return "", err
 	}
-	err = es.Set(prefix, dat)
-	if err != nil {
-		return err
-	}
-	return nil
+	return uuidNew.String(), nil
 }
 
-func (es *EvidenceStore) GenerateRequestID() (int64, error) {
-	es.mux.Lock()
-	defer es.mux.Unlock()
-	ar, err := es.GetRequestID()
-	if err != nil {
-		return 0, err
-	}
-
-	ar.ID++
-
-	err = es.SetRequestID(ar)
-	if err != nil {
-		return 0, err
-	}
-	return ar.ID, nil
-}
-
-func (es *EvidenceStore) getAllegationRequestKey(requestID int64) []byte {
-	key := []byte(fmt.Sprintf("_ark_%d", requestID))
-	return key
-}
-
-func (es *EvidenceStore) getAllegationRequestIDKey() []byte {
-	key := []byte(fmt.Sprintf("_arid"))
+func (es *EvidenceStore) getAllegationRequestKey(requestID string) []byte {
+	key := []byte(fmt.Sprintf("_ark_%s", requestID))
 	return key
 }
 
@@ -139,7 +106,7 @@ func (es *EvidenceStore) SetAllegationRequest(ar *AllegationRequest) error {
 	return es.Set(es.getAllegationRequestKey(ar.ID), dat)
 }
 
-func (es *EvidenceStore) GetAllegationRequest(ID int64) (*AllegationRequest, error) {
+func (es *EvidenceStore) GetAllegationRequest(ID string) (*AllegationRequest, error) {
 	dat, err := es.Get(es.getAllegationRequestKey(ID))
 	if err != nil {
 		return nil, err
@@ -155,17 +122,13 @@ func (es *EvidenceStore) GetAllegationRequest(ID int64) (*AllegationRequest, err
 	return ar, nil
 }
 
-type AllegationRequestID struct {
-	ID int64
-}
-
 type AllegationVote struct {
 	Address keys.Address
 	Choice  int8
 }
 
 type AllegationRequest struct {
-	ID               int64
+	ID               string
 	ReporterAddress  keys.Address
 	MaliciousAddress keys.Address
 	BlockHeight      int64
@@ -190,7 +153,7 @@ func (ar *AllegationRequest) FromBytes(msg []byte) (*AllegationRequest, error) {
 	return ar, nil
 }
 
-func NewAllegationRequest(ID int64, reporterAddress keys.Address, maliciousAddress keys.Address, blockHeight int64, proofMsg string) *AllegationRequest {
+func NewAllegationRequest(ID string, reporterAddress keys.Address, maliciousAddress keys.Address, blockHeight int64, proofMsg string) *AllegationRequest {
 	return &AllegationRequest{
 		ID:               ID,
 		ReporterAddress:  reporterAddress,

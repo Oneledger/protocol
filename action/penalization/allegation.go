@@ -17,6 +17,7 @@ import (
 var _ action.Msg = &Allegation{}
 
 type Allegation struct {
+	RequestID        string
 	ValidatorAddress keys.Address
 	MaliciousAddress keys.Address
 	BlockHeight      int64
@@ -65,8 +66,12 @@ func (r Allegation) Tags() kv.Pairs {
 		Key:   []byte("tx.proof"),
 		Value: []byte(r.ProofMsg),
 	}
+	tag6 := kv.Pair{
+		Key:   []byte("tx.requestID"),
+		Value: []byte(r.RequestID),
+	}
 
-	tags = append(tags, tag, tag2, tag3, tag4, tag5)
+	tags = append(tags, tag, tag2, tag3, tag4, tag5, tag6)
 	return tags
 }
 
@@ -132,18 +137,18 @@ func runAllegationTransaction(ctx *action.Context, tx action.RawTx) (bool, actio
 	}
 
 	if ctx.EvidenceStore.IsFrozenValidator(al.MaliciousAddress) {
-		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrFrozenValidator, al.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, evidence.ErrFrozenValidator, al.Tags(), err)
 	}
 
 	if !ctx.EvidenceStore.IsActiveValidator(al.ValidatorAddress) {
-		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrNonActiveValidator, al.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, evidence.ErrNonActiveValidator, al.Tags(), err)
 	}
 
 	if al.ValidatorAddress.Equal(al.MaliciousAddress) {
 		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrInvalidAddress, al.Tags(), err)
 	}
 
-	err = ctx.EvidenceStore.PerformAllegation(al.ValidatorAddress, al.MaliciousAddress, al.BlockHeight, al.ProofMsg)
+	err = ctx.EvidenceStore.PerformAllegation(al.ValidatorAddress, al.MaliciousAddress, al.RequestID, al.BlockHeight, al.ProofMsg)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, evidence.ErrCreateAllegationFailed, al.Tags(), err)
 	}

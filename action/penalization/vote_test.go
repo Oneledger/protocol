@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func assemblyVoteData(requestID int64, choice int8) action.SignedTx {
+func assemblyVoteData(requestID string, choice int8) action.SignedTx {
 	av := &AllegationVote{
 		RequestID: requestID,
 		Address:   from.Bytes(),
@@ -48,15 +48,13 @@ func TestVoteTx_ProcessDeliver_OK(t *testing.T) {
 		testDB := setup()
 		defer teardown(testDB)
 
+		ID := "test"
 		ctx = assemblyCtxData("OLT", 1000)
-		tx := assemblyVoteData(1, evidence.YES)
+		tx := assemblyVoteData(ID, evidence.YES)
 
 		// setup base request
-		ari := &evidence.AllegationRequestID{ID: 1}
-		err := ctx.EvidenceStore.SetRequestID(ari)
-		assert.NoError(t, err)
 		ar := &evidence.AllegationRequest{
-			ID:               ari.ID,
+			ID:               ID,
 			ReporterAddress:  from.Bytes(),
 			MaliciousAddress: fromMal.Bytes(),
 			BlockHeight:      2,
@@ -64,12 +62,12 @@ func TestVoteTx_ProcessDeliver_OK(t *testing.T) {
 			Status:           evidence.VOTING,
 			Votes:            make([]*evidence.AllegationVote, 0),
 		}
-		err = ctx.EvidenceStore.SetAllegationRequest(ar)
+		err := ctx.EvidenceStore.SetAllegationRequest(ar)
 		assert.NoError(t, err)
 		at := &evidence.AllegationTracker{
-			Requests: make(map[int64]bool),
+			Requests: make(map[string]bool),
 		}
-		at.Requests[ari.ID] = true
+		at.Requests[ID] = true
 		err = ctx.EvidenceStore.SetAllegationTracker(at)
 		assert.NoError(t, err)
 
@@ -80,7 +78,7 @@ func TestVoteTx_ProcessDeliver_OK(t *testing.T) {
 		ok, resp := avtx.ProcessDeliver(ctx, tx.RawTx)
 		assert.True(t, ok, resp)
 
-		ar, err = ctx.EvidenceStore.GetAllegationRequest(ari.ID)
+		ar, err = ctx.EvidenceStore.GetAllegationRequest(ID)
 		assert.NoError(t, err)
 		assert.Equal(t, 1, len(ar.Votes))
 
@@ -89,7 +87,7 @@ func TestVoteTx_ProcessDeliver_OK(t *testing.T) {
 		assert.Equal(t, evidence.YES, vote.Choice)
 
 		// could not vote twice
-		tx = assemblyVoteData(1, evidence.NO)
+		tx = assemblyVoteData(ID, evidence.NO)
 
 		ok, resp = avtx.ProcessDeliver(ctx, tx.RawTx)
 		assert.False(t, ok, resp)

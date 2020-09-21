@@ -35,6 +35,7 @@ var rArgs *RequestsArguments = &RequestsArguments{}
 
 func init() {
 	EvidencesCmd.AddCommand(requestsCmd)
+	requestsCmd.Flags().BytesHexVar(&rArgs.address, "address", []byte{}, "address for validator malicious requests check")
 }
 
 func GetVoteRequests(cmd *cobra.Command, args []string) {
@@ -42,7 +43,9 @@ func GetVoteRequests(cmd *cobra.Command, args []string) {
 
 	fullnode := ctx.clCtx.FullNodeClient()
 
-	request := client.VoteRequestRequest{}
+	request := client.VoteRequestRequest{
+		Address: rArgs.address,
+	}
 	vs, err := fullnode.VoteRequests(request)
 	if err != nil {
 		logger.Fatal("error in getting validator status", err)

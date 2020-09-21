@@ -9,6 +9,7 @@ import (
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/helpers"
+	"github.com/Oneledger/protocol/data/evidence"
 	gov "github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
 )
@@ -16,7 +17,7 @@ import (
 var _ action.Msg = &AllegationVote{}
 
 type AllegationVote struct {
-	RequestID int64
+	RequestID string
 	Address   keys.Address
 	Choice    int8
 }
@@ -52,8 +53,12 @@ func (av AllegationVote) Tags() kv.Pairs {
 		Key:   []byte("tx.choice"),
 		Value: []byte(strconv.Itoa(int(av.Choice))),
 	}
+	tag4 := kv.Pair{
+		Key:   []byte("tx.requestID"),
+		Value: []byte(av.RequestID),
+	}
 
-	tags = append(tags, tag, tag2, tag3)
+	tags = append(tags, tag, tag2, tag3, tag4)
 	return tags
 }
 
@@ -117,11 +122,11 @@ func runAllegationVoteTransaction(ctx *action.Context, tx action.RawTx) (bool, a
 	}
 
 	if ctx.EvidenceStore.IsFrozenValidator(al.Address) {
-		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrFrozenValidator, al.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, evidence.ErrFrozenValidator, al.Tags(), err)
 	}
 
 	if !ctx.EvidenceStore.IsActiveValidator(al.Address) {
-		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrNonActiveValidator, al.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, evidence.ErrNonActiveValidator, al.Tags(), err)
 	}
 
 	err = ctx.EvidenceStore.Vote(al.RequestID, al.Address, al.Choice)

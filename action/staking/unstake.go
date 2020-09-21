@@ -7,6 +7,7 @@ import (
 	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/data/evidence"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/identity"
 )
@@ -102,7 +103,7 @@ func (us unstakeTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, err
 	}
 
 	if ctx.EvidenceStore.IsFrozenValidator(ust.ValidatorAddress) {
-		return false, action.ErrFrozenValidator
+		return false, evidence.ErrFrozenValidator
 	}
 	return true, nil
 }

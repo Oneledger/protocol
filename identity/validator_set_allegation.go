@@ -119,7 +119,7 @@ func (vs *ValidatorStore) ExecuteAllegationTracker(ctx *ValidatorContext, active
 
 	bountyAddress := keys.Address(popt.BountyProgramAddr)
 
-	addrToDelete := make([]int64, 0)
+	addrToDelete := make([]string, 0)
 	for requestID := range at.Requests {
 		ar, err := ctx.EvidenceStore.GetAllegationRequest(requestID)
 		if err != nil {
@@ -185,11 +185,7 @@ func (vs *ValidatorStore) ExecuteAllegationTracker(ctx *ValidatorContext, active
 				penalizationAmt,
 				big.NewFloat(float64(options.PenaltyBaseDecimals)),
 			)
-			delta := 0.5
-			if penalizationAmt.Sign() < 0 {
-				delta = -0.5
-			}
-			penalizationAmt.Add(penalizationAmt, new(big.Float).SetFloat64(delta))
+			penalizationAmt.Add(penalizationAmt, new(big.Float).SetFloat64(0.5))
 			pAmt, _ := penalizationAmt.Int(nil)
 
 			// calculate bounty percent

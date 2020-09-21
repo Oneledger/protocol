@@ -33,7 +33,7 @@ import (
 type AllegationVoteArguments struct {
 	Address   []byte `json:"address"`
 	Password  string `json:"password"`
-	RequestID int64  `json:"requestID"`
+	RequestID string `json:"requestID"`
 	Choice    string `json:"choice"`
 }
 
@@ -57,7 +57,7 @@ func init() {
 	EvidencesCmd.AddCommand(allegationVoteCmd)
 	allegationVoteCmd.Flags().BytesHexVar(&allegationVoteArgs.Address, "address", []byte{}, "address for validator")
 	allegationVoteCmd.Flags().StringVar(&allegationVoteArgs.Password, "password", "", "password to access secure wallet")
-	allegationVoteCmd.Flags().Int64Var(&allegationVoteArgs.RequestID, "requestID", int64(0), "requestID for vote")
+	allegationVoteCmd.Flags().StringVar(&allegationVoteArgs.RequestID, "requestID", "", "requestID for vote")
 	allegationVoteCmd.Flags().StringVar(&allegationVoteArgs.Choice, "choice", "", "choice for vote")
 }
 
