@@ -14,8 +14,8 @@ type InsertPart struct {
 	VIN           vpart_data.Vin         `json:"vin"`
 	PartType      string                 `json:"partType"`
 	DealerName    string                 `json:"dealerName"`
-	StockNum      vpart_data.StockNumber `json:"stockNum"`
 	DealerAddress string                 `json:"dealerAddress"`
+	StockNum      vpart_data.StockNumber `json:"stockNum"`
 	Year          int                    `json:"year"`
 	Operator      keys.Address           `json:"operator"`
 }
