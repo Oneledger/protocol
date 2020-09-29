@@ -9,7 +9,6 @@ import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/Oneledger/protocol/data/evidence"
-	gov "github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
 )
 
@@ -66,6 +65,11 @@ func (rtx releaseTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, er
 		return false, err
 	}
 
+	err = action.ValidateFee(ctx.FeePool.GetOpt(), tx.Fee)
+	if err != nil {
+		return false, err
+	}
+
 	if err := r.ValidatorAddress.Err(); err != nil {
 		return false, err
 	}
@@ -99,15 +103,6 @@ func (rtx releaseTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, s
 func runReleaseTransaction(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	r := &Release{}
 	err := r.Unmarshal(tx.Data)
-	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrWrongTxType, r.Tags(), err)
-	}
-
-	feeOpt, err := ctx.GovernanceStore.GetFeeOption()
-	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, gov.ErrGetFeeOptions, r.Tags(), err)
-	}
-	err = action.ValidateFee(feeOpt, tx.Fee)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrWrongTxType, r.Tags(), err)
 	}

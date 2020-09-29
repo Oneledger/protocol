@@ -10,7 +10,6 @@ import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/Oneledger/protocol/data/evidence"
-	gov "github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
 )
 
@@ -85,7 +84,13 @@ func (atx allegationTx) Validate(ctx *action.Context, tx action.SignedTx) (bool,
 	if err != nil {
 		return false, errors.Wrap(action.ErrWrongTxType, err.Error())
 	}
+
 	err = action.ValidateBasic(tx.RawBytes(), r.Signers(), tx.Signatures)
+	if err != nil {
+		return false, err
+	}
+
+	err = action.ValidateFee(ctx.FeePool.GetOpt(), tx.Fee)
 	if err != nil {
 		return false, err
 	}
@@ -127,16 +132,6 @@ func (atx allegationTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx
 func runAllegationTransaction(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	al := &Allegation{}
 	err := al.Unmarshal(tx.Data)
-	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrWrongTxType, al.Tags(), err)
-	}
-
-	feeOpt, err := ctx.GovernanceStore.GetFeeOption()
-	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, gov.ErrGetFeeOptions, al.Tags(), err)
-	}
-
-	err = action.ValidateFee(feeOpt, tx.Fee)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrWrongTxType, al.Tags(), err)
 	}
