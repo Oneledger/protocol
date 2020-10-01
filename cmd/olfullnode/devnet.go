@@ -574,7 +574,7 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 		PenaltyBurnPercentage: 50,
 		PenaltyBurnDecimals:   100,
 
-		ValidatorReleaseTime:    5,
+		ValidatorReleaseTime:    0,
 		ValidatorVotePercentage: 50,
 		ValidatorVoteDecimals:   100,
 

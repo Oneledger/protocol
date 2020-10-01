@@ -472,7 +472,7 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 
 			// append to update list
 			if updateTendermint {
-				logger.Infof("Validator for update ready: %s - with power: %d\n", addrHuman, validator.Power)
+				logger.Detailf("Validator for update ready: %s - with power: %d\n", addrHuman, validator.Power)
 				validatorUpdates = append(validatorUpdates, types.ValidatorUpdate{
 					PubKey: validator.PubKey.GetABCIPubKey(),
 					Power:  validator.Power,
@@ -538,7 +538,7 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 		// vote requests check
 		vs.ExecuteAllegationTracker(ctx, activeCount)
 	}
-	logger.Infof("GetEndBlockUpdate end at block: %d\n", height)
+	logger.Detailf("GetEndBlockUpdate end at block: %d\n", height)
 
 	// TODO : get the final updates from vs.cached
 

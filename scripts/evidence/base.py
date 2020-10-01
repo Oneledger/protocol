@@ -1,34 +1,20 @@
 from __future__ import print_function
 
-import subprocess
-import os
-import json
-import time
-
 from sdk.actions import (
     ListValidators,
-    ByzantineFault_Requests,
     NodeID,
-    GetBlockHeight,
-    GetFrozenMap,
 )
-
-from sdk.rpc_call import (
-    node_0,
-    node_1,
-    node_2,
-    node_3,
-)
-
 from sdk.cmd_call import (
     GetNodeCreds,
     Account_Add,
-    ByzantineFault_Allegation,
     Send,
     GetNodeKey,
-    ByzantineFault_Vote,
 )
-
+from sdk.rpc_call import (
+    node_0,
+    node_2,
+    node_3,
+)
 
 validators = ListValidators()
 

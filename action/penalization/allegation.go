@@ -3,7 +3,6 @@ package penalization
 import (
 	"encoding/binary"
 	"encoding/json"
-
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
 
@@ -101,21 +100,21 @@ func (atx allegationTx) Validate(ctx *action.Context, tx action.SignedTx) (bool,
 }
 
 func (atx allegationTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (ok bool, result action.Response) {
-	ctx.Logger.Debug("Processing 'allegation' transaction for ProcessCheck", tx)
+	ctx.Logger.Detailf("Processing 'allegation' transaction for ProcessCheck", tx)
 	ok, result = runAllegationTransaction(ctx, tx)
-	ctx.Logger.Debug("Result 'allegation' transaction for ProcessCheck", ok, result)
+	ctx.Logger.Detailf("Result 'allegation' transaction for ProcessCheck", ok, result)
 	return
 }
 
 func (atx allegationTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (ok bool, result action.Response) {
-	ctx.Logger.Debug("Processing 'allegation' transaction for ProcessDeliver", tx)
+	ctx.Logger.Detailf("Processing 'allegation' transaction for ProcessDeliver", tx)
 	ok, result = runAllegationTransaction(ctx, tx)
-	ctx.Logger.Debug("Result 'allegation' transaction for ProcessDeliver", ok, result)
+	ctx.Logger.Detailf("Result 'allegation' transaction for ProcessDeliver", ok, result)
 	return
 }
 
 func (atx allegationTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
-	ctx.Logger.Debug("Processing 'allegation' Transaction for ProcessFee", signedTx)
+	ctx.Logger.Detailf("Processing 'allegation' Transaction for ProcessFee", signedTx)
 	r := &Allegation{}
 	err := r.Unmarshal(signedTx.Data)
 	if err != nil {
@@ -152,7 +151,7 @@ func runAllegationTransaction(ctx *action.Context, tx action.RawTx) (bool, actio
 	if al.ValidatorAddress.Equal(al.MaliciousAddress) {
 		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrInvalidAddress, al.Tags(), err)
 	}
-
+	ctx.Logger.Detail("Performing allegation : ", al.ValidatorAddress, " | on :", al.MaliciousAddress)
 	err = ctx.EvidenceStore.PerformAllegation(al.ValidatorAddress, al.MaliciousAddress, al.RequestID, al.BlockHeight, al.ProofMsg)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, evidence.ErrCreateAllegationFailed, al.Tags(), err)

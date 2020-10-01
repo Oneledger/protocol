@@ -55,8 +55,10 @@ func (vs *ValidatorStore) CheckMaliciousValidators(es *evidence.EvidenceStore, g
 			continue
 		}
 		if votes < evidenceOptions.MinVotesRequired {
+
 			key := append(vs.prefix, baddr...)
 			data := vs.store.GetVersioned(vs.lastHeight-1, key)
+			fmt.Println("Found Malicious validator", addr, " : ", votes)
 			if len(data) == 0 {
 				logger.Errorf("Previous state data not found for address: %s", baddr)
 				continue
@@ -144,7 +146,7 @@ func (vs *ValidatorStore) ExecuteAllegationTracker(ctx *ValidatorContext, active
 		percentage := float64(options.AllegationPercentage) / float64(options.AllegationDecimals)
 		arToUpdate := false
 
-		logger.Infof("Request ID: %s, yes votes count: %d, no votes count: %d, total count: %d \n", requestID, yesCount, noCount, requiredVotesCount)
+		logger.Detailf("Request ID: %s, yes votes count: %d, no votes count: %d, total count: %d \n", requestID, yesCount, noCount, requiredVotesCount)
 		if yesP > percentage {
 			ar.Status = evidence.GUILTY
 			sv, err := ctx.EvidenceStore.CreateSuspiciousValidator(

@@ -1,12 +1,10 @@
 import json
 import os
-import signal
 import subprocess
 
 import psutil
 
-from .rpc_call import devnet, node_0
-
+from .rpc_call import devnet
 
 devnull = open(os.devnull, 'wb')
 
@@ -79,12 +77,14 @@ def ByzantineFault_Allegation(node, address, malicious_address, block_height, pr
         '--proofMsg', proof_msg,
         '--password', password,
     ]
-    process = subprocess.Popen(args, cwd=node, stdout=subprocess.PIPE, stderr=devnull)
-    process.wait()
-    output = process.stdout.read()
-    if u'Returned Successfully' in output:
-        return True
-    return False
+    DETACHED_PROCESS = 0x00000008
+    process = subprocess.Popen(args, cwd=node, stdin=None, stdout=None, stderr=None, close_fds=True)
+    return True
+    # process.wait()
+    # output = process.stdout.read()
+    # if u'Returned Successfully' in output:
+    #     return True
+    # return False
 
 
 def ByzantineFault_Vote(node, request_id, address, choice, password):

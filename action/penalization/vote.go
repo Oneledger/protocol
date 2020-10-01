@@ -86,21 +86,21 @@ func (atx allegationVoteTx) Validate(ctx *action.Context, tx action.SignedTx) (b
 }
 
 func (atx allegationVoteTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (ok bool, result action.Response) {
-	ctx.Logger.Debug("Processing 'allegation_vote' transaction for ProcessCheck", tx)
+	ctx.Logger.Detailf("Processing 'allegation_vote' transaction for ProcessCheck", tx)
 	ok, result = runAllegationVoteTransaction(ctx, tx)
-	ctx.Logger.Debug("Result 'allegation_vote' transaction for ProcessCheck", ok, result)
+	ctx.Logger.Detailf("Result 'allegation_vote' transaction for ProcessCheck", ok, result)
 	return
 }
 
 func (atx allegationVoteTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (ok bool, result action.Response) {
-	ctx.Logger.Debug("Processing 'allegation_vote' transaction for ProcessDeliver", tx)
+	ctx.Logger.Detailf("Processing 'allegation_vote' transaction for ProcessDeliver", tx)
 	ok, result = runAllegationVoteTransaction(ctx, tx)
-	ctx.Logger.Debug("Result 'allegation_vote' transaction for ProcessDeliver", ok, result)
+	ctx.Logger.Detailf("Result 'allegation_vote' transaction for ProcessDeliver", ok, result)
 	return
 }
 
 func (atx allegationVoteTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
-	ctx.Logger.Debug("Processing 'allegation_vote' Transaction for ProcessFee", signedTx)
+	ctx.Logger.Detailf("Processing 'allegation_vote' Transaction for ProcessFee", signedTx)
 	r := &AllegationVote{}
 	err := r.Unmarshal(signedTx.Data)
 	if err != nil {
@@ -133,7 +133,7 @@ func runAllegationVoteTransaction(ctx *action.Context, tx action.RawTx) (bool, a
 	if !ctx.EvidenceStore.IsActiveValidator(al.Address) {
 		return helpers.LogAndReturnFalse(ctx.Logger, evidence.ErrNonActiveValidator, al.Tags(), err)
 	}
-
+	ctx.Logger.Detail("Vote for :", al.Choice, al.Address)
 	err = ctx.EvidenceStore.Vote(al.RequestID, al.Address, al.Choice)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrWrongTxType, al.Tags(), err)
