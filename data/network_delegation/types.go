@@ -1,3 +1,3 @@
-package networkDelegation
+package network_delegation
 
 type DelegationPrefixType int
