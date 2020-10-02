@@ -59,7 +59,7 @@ const (
 	WITHDRAW_REWARD Type = 0x41
 
 	//Delegate
-	DELEGATION_UNDELEGATE Type = 0x51
+	NETWORK_DELEGATION_UNDELEGATE Type = 0x51
 
 	//EOF here Only used as a marker to mark the end of Type list
 	//So that the query for Types can return all Types dynamically

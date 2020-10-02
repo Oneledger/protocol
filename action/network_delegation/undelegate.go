@@ -1,4 +1,4 @@
-package delegation
+package network_delegation
 
 import (
 	"encoding/json"
@@ -21,7 +21,7 @@ func (ud Undelegate) Signers() []action.Address {
 }
 
 func (ud Undelegate) Type() action.Type {
-	return action.DELEGATION_UNDELEGATE
+	return action.NETWORK_DELEGATION_UNDELEGATE
 }
 
 func (ud Undelegate) Tags() kv.Pairs {

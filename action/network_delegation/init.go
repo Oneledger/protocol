@@ -1,4 +1,4 @@
-package delegation
+package network_delegation
 
 func init() {
 

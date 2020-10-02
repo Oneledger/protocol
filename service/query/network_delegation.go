@@ -6,8 +6,8 @@ import (
 )
 
 func (svc *Service) GetUndelegatedAmount(req client.GetUndelegatedRequest, reply *client.GetUndelegatedReply) error {
-	// iterate every pending amount entry
 	pendingAmount := make([]client.SinglePendingAmount, 0)
+	// iterate every pending amount entry
 
 	// get total amount for all the pending amount
 	totalAmount := &balance.Amount{}
