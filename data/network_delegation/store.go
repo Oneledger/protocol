@@ -45,7 +45,7 @@ func (st *Store) WithState(state *storage.State) *Store {
 }
 
 func (st *Store) Exists(addr *keys.Address) bool {
-	key := append(st.currentPrefix, storage.DB_PREFIX+addr.String()...)
+	key := append(st.currentPrefix, addr.String()...)
 	return st.state.Exists(key)
 }
 
@@ -72,14 +72,14 @@ func (st *Store) get(key []byte) (coin *balance.Coin, err error) {
 
 //Set coin to specific address
 func (st *Store) Set(address keys.Address, coin *balance.Coin) (err error) {
-	prefixKey := append(st.currentPrefix, storage.DB_PREFIX+address.String()...)
+	prefixKey := append(st.currentPrefix, address.String()...)
 	err = st.set(storage.StoreKey(prefixKey), coin)
 	return
 }
 
 //Get coin from address
 func (st *Store) Get(address keys.Address) (coin *balance.Coin, err error) {
-	prefixKey := append(st.currentPrefix, storage.DB_PREFIX+address.String()...)
+	prefixKey := append(st.currentPrefix, address.String()...)
 	coin, err = st.get(storage.StoreKey(prefixKey))
 	return
 }
@@ -96,10 +96,10 @@ func (st *Store) WithPrefix(prefix DelegationPrefixType) *Store {
 	return st
 }
 
-func (st *Store) iterate(key storage.StoreKey, fn func(key []byte, coin *balance.Coin) bool) bool {
+func (st *Store) iterate(prefix storage.StoreKey, fn func(key []byte, coin *balance.Coin) bool) bool {
 	return st.state.IterateRange(
-		key,
-		storage.Rangefix(string(key)),
+		prefix,
+		storage.Rangefix(string(prefix)),
 		true,
 		func(key, value []byte) bool {
 			coin := &balance.Coin{}
@@ -112,10 +112,11 @@ func (st *Store) iterate(key storage.StoreKey, fn func(key []byte, coin *balance
 	)
 }
 
-func (st *Store) iterateAddresses(key storage.StoreKey, fn func(addr *keys.Address, coin *balance.Coin) bool) bool {
-	return st.iterate(key, func(key []byte, coin *balance.Coin) bool {
+func (st *Store) iterateAddresses(prefix storage.StoreKey, fn func(addr *keys.Address, coin *balance.Coin) bool) bool {
+	return st.iterate(prefix, func(key []byte, coin *balance.Coin) bool {
+		arr := strings.Split(string(key), storage.DB_PREFIX)
 		addr := &keys.Address{}
-		err := addr.UnmarshalText(key)
+		err := addr.UnmarshalText([]byte(arr[len(arr)-1]))
 		if err != nil {
 			return true
 		}
@@ -131,6 +132,7 @@ func (st *Store) buildActiveKey() storage.StoreKey {
 
 func (st *Store) IterateActiveAmounts(fn func(addr *keys.Address, coin *balance.Coin) bool) bool {
 	prefix := st.buildActiveKey()
+	//fmt.Println("Active prefix: ", prefix)
 	return st.iterateAddresses(prefix, func(addr *keys.Address, coin *balance.Coin) bool {
 		return fn(addr, coin)
 	})
@@ -146,12 +148,12 @@ func (st *Store) buildPendingKey() storage.StoreKey {
 func (st *Store) SetPendingAmount(addr keys.Address, height int64, coin *balance.Coin) error {
 	prefix := st.buildPendingKey()
 	pendingKey := strconv.FormatInt(height, 10) + storage.DB_PREFIX + addr.String()
-	return st.set(append(prefix, storage.DB_PREFIX+pendingKey...), coin)
+	return st.set(append(prefix, pendingKey...), coin)
 }
 
 //iterate addresses for height
 func (st *Store) IteratePendingAmounts(height int64, fn func(addr *keys.Address, coin *balance.Coin) bool) bool {
-	prefix := append(st.buildPendingKey(), storage.DB_PREFIX+strconv.FormatInt(height, 10)...)
+	prefix := append(st.buildPendingKey(), strconv.FormatInt(height, 10)...)
 	return st.iterateAddresses(prefix, func(addr *keys.Address, coin *balance.Coin) bool {
 		return fn(addr, coin)
 	})
@@ -163,11 +165,11 @@ func (st *Store) IterateAllPendingAmounts(fn func(height int64, addr *keys.Addre
 	return st.iterate(prefix, func(key []byte, coin *balance.Coin) bool {
 		arr := strings.Split(string(key), storage.DB_PREFIX)
 		addr := &keys.Address{}
-		err := addr.UnmarshalText([]byte(arr[1]))
+		err := addr.UnmarshalText([]byte(arr[len(arr)-1]))
 		if err != nil {
 			return true
 		}
-		height, err := strconv.Atoi(arr[0])
+		height, err := strconv.Atoi(arr[len(arr)-2])
 		if err != nil {
 			return true
 		}
