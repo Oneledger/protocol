@@ -133,7 +133,6 @@ func (svc *Service) SignWithAddress(req client.SignRawTxRequest, reply *client.S
 func (svc *Service) SignWithSecureAddress(req client.SecureSignRawTxRequest, reply *client.SignRawTxResponse) error {
 	wallet, err := accounts.NewWalletKeyStore(req.KeyPath)
 	if err != nil {
-		fmt.Println("Failed to create wallet", err)
 		return codes.ErrSigningError
 	}
 

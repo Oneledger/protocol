@@ -15,10 +15,11 @@ class bcolors:
 
 
 class NetWorkDelegate:
-    def __init__(self, useraddress, delegationaddress, amount):
+    def __init__(self, useraddress, delegationaddress, amount, keypath):
         self.useraddress = useraddress
         self.delegationaddress = delegationaddress
         self.amount = amount
+        self.keypath = keypath
 
     def _network_Delegate(self):
         req = {
@@ -44,7 +45,7 @@ class NetWorkDelegate:
         raw_txn = self._network_Delegate()
 
         # sign Tx
-        signed = sign(raw_txn, self.useraddress)
+        signed = sign(raw_txn, self.useraddress, self.keypath)
 
         # broadcast Tx
         result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
@@ -52,12 +53,15 @@ class NetWorkDelegate:
             if not result["ok"]:
                 sys.exit(-1)
             else:
-                print "################### delegation added: " + self.pid
+                print "################### delegation added"
                 return result["txHash"]
 
 
-def sign(raw_tx, address):
-    resp = rpc_call('owner.SignWithAddress', {"rawTx": raw_tx, "address": address})
+def sign(raw_tx, address, keypath):
+    print keypath
+    resp = rpc_call('owner.SignWithSecureAddress',
+                    {"rawTx": raw_tx, "address": address, "password": "1234", "keypath": keypath})
+    print resp
     return resp["result"]
 
 

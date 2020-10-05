@@ -155,7 +155,7 @@ func runNetworkDelegate(ctx *action.Context, tx action.RawTx) (bool, action.Resp
 		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrInvalidCurrency, delegate.Tags(), errors.Wrap(err, "Pool is not Funded by OLT"))
 	}
 	updatedBalance := oldBalance.GetCoin(currencyOlt).Plus(coin)
-	ctx.Logger.Infof("Delegation Pool has been updated , New Network Delegation amount: ", updatedBalance)
+	ctx.Logger.Infof("Delegation Pool has been updated , New Network Delegation amount: %s ", updatedBalance.String())
 
 	return helpers.LogAndReturnTrue(ctx.Logger, delegate.Tags(), "Success")
 }
