@@ -48,6 +48,7 @@ utest:
 		github.com/Oneledger/protocol/data/keys \
 		github.com/Oneledger/protocol/data/governance \
 		github.com/Oneledger/protocol/data/rewards \
+		github.com/Oneledger/protocol/data/network_delegation \
 		github.com/Oneledger/protocol/action/transfer \
 		github.com/Oneledger/protocol/serialize \
 		github.com/Oneledger/protocol/utils \
