@@ -49,6 +49,22 @@ class Undelegate:
                 self.txHash = "0x" + result["txHash"]
                 print "################### undelegate success"
 
+    def query_undelegate(self):
+        req = {
+            "delegator": self.delegator
+        }
+
+        resp = rpc_call('query.GetUndelegatedAmount', req)
+        # print resp
+        result = resp["result"]
+        # print json.dumps(resp, indent=4)
+        return result["undelegate amount"]
+
+
+def addresses():
+    resp = rpc_call('owner.ListAccountAddresses', {})
+    return resp["result"]["addresses"]
+
 
 def sign(raw_tx, address):
     resp = rpc_call('owner.SignWithAddress', {"rawTx": raw_tx, "address": address})
@@ -75,70 +91,4 @@ def broadcast_sync(raw_tx, signature, pub_key):
         "signature": signature,
         "publicKey": pub_key,
     })
-    return resp["result"]
-
-
-def query_undelegate():
-    req = {
-        "state": prefix,
-        "proposer": proposer,
-        "proposalType": proposalType,
-    }
-
-    resp = rpc_call('query.GetUndelegatedAmount', req)
-    # print resp
-    result = resp["result"]
-    # print json.dumps(resp, indent=4)
-    return result["proposalStats"]
-
-
-def query_proposal(proposal_id):
-    req = {
-        "proposalId": proposal_id,
-    }
-    resp = rpc_call('query.ListProposal', req)
-    stat = resp["result"]["proposalStats"][0]
-    # print json.dumps(resp, indent=4)
-    return stat["proposal"], stat["funds"]
-
-
-def query_governanceState():
-    req = {}
-    resp = rpc_call('query.GetGovernanceOptionsForHeight', req)
-    result = resp["result"]
-
-    # print json.dumps(resp, indent=4)
-    return result
-
-
-def query_balance(address):
-    req = {"address": address}
-    resp = rpc_call('query.Balance', req)
-    print json.dumps(resp, indent=4)
-    return resp["result"]
-
-
-def query_proposal_options():
-    req = {}
-    resp = rpc_call('query.GetProposalOptions', req)
-
-    if "result" not in resp:
-        sys.exit(-1)
-    if "proposalOptions" not in resp["result"]:
-        sys.exit(-1)
-    if "height" not in resp["result"]:
-        sys.exit(-1)
-    # print json.dumps(resp, indent=4)
-    return resp["result"]
-
-
-def get_funds_for_proposal_by_funder(proposalId, funder):
-    req = {
-        "proposalId": proposalId,
-        "funderAddress": funder
-    }
-    resp = rpc_call('query.GetFundsForProposalByFunder', req)
-    if "result" not in resp:
-        sys.exit(-1)
-
     return resp["result"]
