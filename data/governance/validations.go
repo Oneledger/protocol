@@ -13,6 +13,7 @@ import (
 	"github.com/Oneledger/protocol/data/delegation"
 	"github.com/Oneledger/protocol/data/evidence"
 	"github.com/Oneledger/protocol/data/fees"
+	"github.com/Oneledger/protocol/data/network_delegation"
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/data/rewards"
 )
@@ -164,6 +165,14 @@ func (st *Store) ValidateStaking(opt *delegation.Options) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func (st *Store) ValidateNetwkDeleg(opt *network_delegation.Options) (bool, error) {
+	oldOptions, err := st.GetNetworkDelegOptions()
+	if err != nil {
+		return false, err
+	}
+	return reflect.DeepEqual(oldOptions, opt), nil
 }
 
 func (st *Store) ValidateETH(opt *ethchain.ChainDriverOption) (bool, error) {
