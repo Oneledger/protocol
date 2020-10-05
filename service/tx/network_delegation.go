@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (s *Service) NetUndelegate(args client.NetUndelegateRequest, reply *client.CreateTxReply) error {
+func (s *Service) NetwkUndelegate(args client.NetUndelegateRequest, reply *client.CreateTxReply) error {
 
 	undelegate := network_delegation.Undelegate{
 		Delegator: args.Delegator,

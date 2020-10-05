@@ -296,6 +296,7 @@ func (ctx *context) Services() (service.Map, error) {
 		Trackers:       btcTrackers,
 		Govern:         governance.NewStore("g", storage.NewState(ctx.chainstate)),
 		GovUpdate:      ctx.govupdate,
+		NetwkDelegators: ctx.netwkDelegators,
 	}
 
 	return service.NewMap(svcCtx)

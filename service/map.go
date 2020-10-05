@@ -1,6 +1,7 @@
 package service
 
 import (
+	net_delg "github.com/Oneledger/protocol/data/network_delegation"
 	"github.com/Oneledger/protocol/external_apps/common"
 	"github.com/pkg/errors"
 
@@ -58,6 +59,7 @@ type Context struct {
 	Logger   *log.Logger
 
 	TxTypes *[]action.TxTypeDescribe
+	NetwkDelegators *net_delg.MasterStore
 }
 
 // Map of services, keyed by the name/prefix of the service
@@ -72,7 +74,7 @@ func NewMap(ctx *Context) (Map, error) {
 		query.Name(): query.NewService(ctx.Services, ctx.Balances, ctx.Currencies, ctx.ValidatorSet, ctx.WitnessSet, ctx.Domains, ctx.Delegators, ctx.Govern,
 			ctx.FeePool, ctx.ProposalMaster, ctx.RewardMaster, ctx.Logger, ctx.TxTypes),
 
-		tx.Name():       tx.NewService(ctx.Balances, ctx.Router, ctx.Accounts, ctx.ValidatorSet, ctx.Govern, ctx.Delegators, ctx.FeePool.GetOpt(), ctx.NodeContext, ctx.Logger),
+		tx.Name():       tx.NewService(ctx.Balances, ctx.Router, ctx.Accounts, ctx.ValidatorSet, ctx.Govern, ctx.Delegators, ctx.FeePool.GetOpt(), ctx.NodeContext, ctx.Logger, ctx.NetwkDelegators),
 		btc.Name():      btc.NewService(ctx.Balances, ctx.Accounts, ctx.NodeContext, ctx.ValidatorSet, ctx.Trackers, ctx.Logger),
 		ethereum.Name(): ethereum.NewService(ctx.Cfg.EthChainDriver, ctx.Router, ctx.Accounts, ctx.NodeContext, ctx.ValidatorSet, ctx.EthTrackers, ctx.Logger),
 	}

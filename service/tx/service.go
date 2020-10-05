@@ -1,6 +1,7 @@
 package tx
 
 import (
+	net_delg "github.com/Oneledger/protocol/data/network_delegation"
 	"github.com/google/uuid"
 
 	"github.com/Oneledger/protocol/action"
@@ -25,15 +26,16 @@ func Name() string {
 }
 
 type Service struct {
-	balances    *balance.Store
-	router      action.Router
-	accounts    accounts.Wallet
-	validators  *identity.ValidatorStore
-	govern      *governance.Store
-	delegators  *delegation.DelegationStore
-	feeOpt      *fees.FeeOption
-	logger      *log.Logger
-	nodeContext node.Context
+	balances        *balance.Store
+	router          action.Router
+	accounts        accounts.Wallet
+	validators      *identity.ValidatorStore
+	govern          *governance.Store
+	delegators      *delegation.DelegationStore
+	feeOpt          *fees.FeeOption
+	logger          *log.Logger
+	nodeContext     node.Context
+	netwkDelegators *net_delg.MasterStore
 }
 
 func NewService(
@@ -46,17 +48,19 @@ func NewService(
 	feeOpt *fees.FeeOption,
 	nodeCtx node.Context,
 	logger *log.Logger,
+	netwkDelegators *net_delg.MasterStore,
 ) *Service {
 	return &Service{
-		balances:    balances,
-		router:      router,
-		nodeContext: nodeCtx,
-		accounts:    accounts,
-		validators:  validators,
-		govern:      govern,
-		delegators:  delegators,
-		feeOpt:      feeOpt,
-		logger:      logger,
+		balances:        balances,
+		router:          router,
+		nodeContext:     nodeCtx,
+		accounts:        accounts,
+		validators:      validators,
+		govern:          govern,
+		delegators:      delegators,
+		feeOpt:          feeOpt,
+		logger:          logger,
+		netwkDelegators: netwkDelegators,
 	}
 }
 
