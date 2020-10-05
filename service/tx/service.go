@@ -1,7 +1,6 @@
 package tx
 
 import (
-	net_delg "github.com/Oneledger/protocol/data/network_delegation"
 	"github.com/google/uuid"
 
 	"github.com/Oneledger/protocol/action"
@@ -35,7 +34,6 @@ type Service struct {
 	feeOpt          *fees.FeeOption
 	logger          *log.Logger
 	nodeContext     node.Context
-	netwkDelegators *net_delg.MasterStore
 }
 
 func NewService(
@@ -48,7 +46,6 @@ func NewService(
 	feeOpt *fees.FeeOption,
 	nodeCtx node.Context,
 	logger *log.Logger,
-	netwkDelegators *net_delg.MasterStore,
 ) *Service {
 	return &Service{
 		balances:        balances,
@@ -60,7 +57,6 @@ func NewService(
 		delegators:      delegators,
 		feeOpt:          feeOpt,
 		logger:          logger,
-		netwkDelegators: netwkDelegators,
 	}
 }
 

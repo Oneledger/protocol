@@ -18,10 +18,10 @@ type SinglePendingAmount struct {
 }
 
 type GetUndelegatedReply struct {
-	PendingAmount      []SinglePendingAmount `json:"pendingAmount"`
-	TotalPendingAmount balance.Amount        `json:"totalPendingAmount"`
-	MaturedAmount      balance.Amount        `json:"maturedAmount"`
-	Height             int64                 `json:"height"`
+	PendingAmounts []SinglePendingAmount `json:"pendingAmount"`
+	MaturedAmount  balance.Amount        `json:"maturedAmount"`
+	TotalAmount    balance.Amount        `json:"totalAmount"`
+	Height         int64                 `json:"height"`
 }
 
 //-------------TX

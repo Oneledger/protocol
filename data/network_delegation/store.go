@@ -17,7 +17,7 @@ const (
 )
 
 type Store struct {
-	state         *storage.State
+	State         *storage.State
 	szlr          serialize.Serializer
 	prefix        []byte
 	currentPrefix []byte
@@ -26,7 +26,7 @@ type Store struct {
 
 func NewStore(prefix string, state *storage.State) *Store {
 	return &Store{
-		state:         state,
+		State:         state,
 		prefix:        storage.StoreKey(prefix),
 		currentPrefix: storage.StoreKey(prefix + storage.DB_PREFIX + ActiveKey),
 		szlr:          serialize.GetSerializer(serialize.PERSISTENT),
@@ -34,13 +34,17 @@ func NewStore(prefix string, state *storage.State) *Store {
 }
 
 func (st *Store) WithState(state *storage.State) *Store {
-	st.state = state
+	st.State = state
 	return st
+}
+
+func (st *Store) GetState() *storage.State {
+	return st.State
 }
 
 func (st *Store) Exists(addr *keys.Address) bool {
 	key := append(st.currentPrefix, addr.String()...)
-	return st.state.Exists(key)
+	return st.State.Exists(key)
 }
 
 //Set coin to specific key
@@ -49,14 +53,14 @@ func (st *Store) set(key []byte, coin *balance.Coin) (err error) {
 	if err != nil {
 		return
 	}
-	err = st.state.Set(storage.StoreKey(key), dat)
+	err = st.State.Set(storage.StoreKey(key), dat)
 	return
 }
 
 //get coin from specific key
 func (st *Store) get(key []byte) (coin *balance.Coin, err error) {
 	coin = &balance.Coin{}
-	dat, err := st.state.Get(storage.StoreKey(key))
+	dat, err := st.State.Get(storage.StoreKey(key))
 	if err != nil {
 		return
 	}
@@ -91,7 +95,7 @@ func (st *Store) WithPrefix(prefix DelegationPrefixType) *Store {
 }
 
 func (st *Store) iterate(prefix storage.StoreKey, fn func(key []byte, coin *balance.Coin) bool) bool {
-	return st.state.IterateRange(
+	return st.State.IterateRange(
 		prefix,
 		storage.Rangefix(string(prefix)),
 		true,
@@ -142,7 +146,7 @@ func (st *Store) buildPendingKey() storage.StoreKey {
 func (st *Store) PendingExists(addr keys.Address, height int64) bool {
 	prefix := st.buildPendingKey()
 	pendingKey := strconv.FormatInt(height, 10) + storage.DB_PREFIX + addr.String()
-	return st.state.Exists(append(prefix, pendingKey...))
+	return st.State.Exists(append(prefix, pendingKey...))
 }
 
 //check existence of pending amount on specific height
