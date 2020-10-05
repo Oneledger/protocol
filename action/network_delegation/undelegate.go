@@ -5,7 +5,7 @@ import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/Oneledger/protocol/data/keys"
-	net_dele "github.com/Oneledger/protocol/data/network_delegation"
+	net_delg "github.com/Oneledger/protocol/data/network_delegation"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
 )
@@ -78,7 +78,7 @@ func (u UndelegateTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, e
 
 	// validate params
 	if err = ud.Delegator.Err(); err != nil {
-		return false, ErrInvalidAddress
+		return false, action.ErrInvalidAddress
 	}
 
 	return true, nil
@@ -107,9 +107,9 @@ func runUndelegate(ctx *action.Context, tx action.RawTx) (bool, action.Response)
 
 	// get coin for active delegation amount and the amount to undelegate
 	ds := ctx.NetwkDelegators
-	delegationCoin, err := ds.Deleg.WithPrefix(net_dele.ActiveType).Get(ud.Delegator)
+	delegationCoin, err := ds.Deleg.WithPrefix(net_delg.ActiveType).Get(ud.Delegator)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, ErrGettingActiveDelegationAmount, ud.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, net_delg.ErrGettingActiveDelgAmount, ud.Tags(), err)
 	}
 
 	undelegateCoin := ud.Amount.ToCoin(ctx.Currencies)
@@ -117,39 +117,41 @@ func runUndelegate(ctx *action.Context, tx action.RawTx) (bool, action.Response)
 	// cut the amount from active store
 	remainCoin, err := delegationCoin.Minus(undelegateCoin)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, ErrDeductingDelegationAmount, ud.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, net_delg.ErrDeductingActiveDelgAmount, ud.Tags(), err)
 	}
 
-	err = ds.Deleg.WithPrefix(net_dele.ActiveType).Set(ud.Delegator, &remainCoin)
+	err = ds.Deleg.WithPrefix(net_delg.ActiveType).Set(ud.Delegator, &remainCoin)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, ErrSettingActiveDelegationAmount, ud.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, net_delg.ErrSettingActiveDelgAmount, ud.Tags(), err)
 	}
 
 	// get mature height
 	delegationOptions, err := ctx.GovernanceStore.GetNetworkDelegOptions()
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, ErrGettingDelegationOption, ud.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, net_delg.ErrGettingDelgOption, ud.Tags(), err)
 	}
 	matureHeight := ctx.Header.GetHeight() + delegationOptions.RewardsMaturityTime
 
-	// form the pending amount key and check if there is already an entry in pending store,
+	// check if there is already an entry in pending store with same address and height,
 	// this means same delegator at least undelegated once in this block
-	// if not, add an entry to pending store
-	if ds.Deleg.WithPrefix(net_dele.PendingType).PendingExists(&ud.Delegator, matureHeight) {
-		// if so, change the amount
-		existingPendingAmount, err := ds.WithPrefixType(pendingPrefix).Get(ud.Delegator, matureHeight)
+	if !ds.Deleg.PendingExists(ud.Delegator, matureHeight) {
+		// if not, add an entry to pending store
+		err := ds.Deleg.SetPendingAmount(ud.Delegator, matureHeight, &undelegateCoin)
 		if err != nil {
-			return helpers.LogAndReturnFalse(ctx.Logger, ErrGettingActiveDelegationAmount, ud.Tags(), err)
+			return helpers.LogAndReturnFalse(ctx.Logger, net_delg.ErrSettingPendingDelgAmount, ud.Tags(), err)
 		}
-		newAmount := existingPendingAmount + delegationAmount
-		ds.WithPrefixType(pendingPrefix).Set(newAmount)
-
-		return true, action.Response{Events: action.GetEvent(ud.Tags(), "un_delegate_success")}
+		return true, action.Response{Events: action.GetEvent(ud.Tags(), "undelegate_success")}
 	}
 
-	// if not, add an entry to pending store
-	ds.WithPrefixType(pendingPrefix).Set(delegationAmount)
-
-
-	return true, action.Response{Events: action.GetEvent(ud.Tags(), "un_delegate_success")}
+	// if so, change the amount
+	existingPendingCoin, err := ds.Deleg.GetPendingAmount(ud.Delegator, matureHeight)
+	if err != nil {
+		return helpers.LogAndReturnFalse(ctx.Logger, net_delg.ErrGettingPendingDelgAmount, ud.Tags(), err)
+	}
+	newPendingCoin := existingPendingCoin.Plus(undelegateCoin)
+	err = ds.Deleg.SetPendingAmount(ud.Delegator, matureHeight, &newPendingCoin)
+	if err != nil {
+		return helpers.LogAndReturnFalse(ctx.Logger, net_delg.ErrSettingPendingDelgAmount, ud.Tags(), err)
+	}
+	return true, action.Response{Events: action.GetEvent(ud.Tags(), "undelegate_success")}
 }

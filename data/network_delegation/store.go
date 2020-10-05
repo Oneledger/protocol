@@ -145,6 +145,14 @@ func (st *Store) PendingExists(addr keys.Address, height int64) bool {
 	return st.state.Exists(append(prefix, pendingKey...))
 }
 
+//check existence of pending amount on specific height
+func (st *Store) GetPendingAmount(addr keys.Address, height int64) (coin *balance.Coin, err error) {
+	prefix := st.buildPendingKey()
+	pendingKey := strconv.FormatInt(height, 10) + storage.DB_PREFIX + addr.String()
+	coin, err = st.get(append(prefix, pendingKey...))
+	return
+}
+
 //Set pending amount with height and address
 func (st *Store) SetPendingAmount(addr keys.Address, height int64, coin *balance.Coin) error {
 	prefix := st.buildPendingKey()
