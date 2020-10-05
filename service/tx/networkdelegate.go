@@ -2,7 +2,7 @@ package tx
 
 import (
 	"github.com/Oneledger/protocol/action"
-	nwd "github.com/Oneledger/protocol/action/networkDelegation"
+	nwd "github.com/Oneledger/protocol/action/network_delegation"
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/serialize"
 	codes "github.com/Oneledger/protocol/status_codes"

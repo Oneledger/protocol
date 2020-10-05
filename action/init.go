@@ -22,7 +22,7 @@ const (
 	UNSTAKE  Type = 0x12
 	WITHDRAW Type = 0x13
 
-	//network networkDelegation
+	//network network_delegation
 	NETWORKDELEGATE Type = 0x04
 
 	//ons related transaction

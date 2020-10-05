@@ -1,4 +1,4 @@
-package networkDelegation
+package network_delegation
 
 import (
 	"github.com/Oneledger/protocol/action"
