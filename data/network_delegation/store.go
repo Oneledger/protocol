@@ -16,12 +16,6 @@ const (
 	ActiveKey  = "a"
 )
 
-var (
-	matureType  DelegationPrefixType = 0x103
-	pendingType DelegationPrefixType = 0x102
-	activeType  DelegationPrefixType = 0x101
-)
-
 type Store struct {
 	state         *storage.State
 	szlr          serialize.Serializer
@@ -86,11 +80,11 @@ func (st *Store) Get(address keys.Address) (coin *balance.Coin, err error) {
 
 func (st *Store) WithPrefix(prefix DelegationPrefixType) *Store {
 	switch prefix {
-	case matureType:
+	case MatureType:
 		st.currentPrefix = st.buildMatureKey()
-	case pendingType:
+	case PendingType:
 		st.currentPrefix = st.buildPendingKey()
-	case activeType:
+	case ActiveType:
 		st.currentPrefix = st.buildActiveKey()
 	}
 	return st
@@ -142,6 +136,13 @@ func (st *Store) IterateActiveAmounts(fn func(addr *keys.Address, coin *balance.
 //build pending key
 func (st *Store) buildPendingKey() storage.StoreKey {
 	return storage.Prefix(string(st.prefix) + storage.DB_PREFIX + PendingKey)
+}
+
+//check existence of pending amount on specific height
+func (st *Store) PendingExists(addr keys.Address, height int64) bool {
+	prefix := st.buildPendingKey()
+	pendingKey := strconv.FormatInt(height, 10) + storage.DB_PREFIX + addr.String()
+	return st.state.Exists(append(prefix, pendingKey...))
 }
 
 //Set pending amount with height and address

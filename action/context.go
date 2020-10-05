@@ -2,6 +2,7 @@ package action
 
 import (
 	"github.com/Oneledger/protocol/data"
+	"github.com/Oneledger/protocol/data/network_delegation"
 	"github.com/Oneledger/protocol/data/rewards"
 
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -43,6 +44,7 @@ type Context struct {
 	GovernanceStore     *governance.Store
 	ExtStores           data.Router
 	GovUpdate           *GovernaceUpdateAndValidate
+	NetwkDelegators     *network_delegation.MasterStore
 }
 
 func NewContext(r Router, header *abci.Header, state *storage.State,

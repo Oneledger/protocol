@@ -5,6 +5,7 @@ import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/Oneledger/protocol/data/keys"
+	net_dele "github.com/Oneledger/protocol/data/network_delegation"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
 )
@@ -104,38 +105,37 @@ func runUndelegate(ctx *action.Context, tx action.RawTx) (bool, action.Response)
 		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrWrongTxType, ud.Tags(), err)
 	}
 
-	// check if there is enough amount to undelegate
-	ds := ctx.DelegationStore
-	delegationAmount, err := ds.WithPrefixType(activePrefix).Get(ud.Delegator)
+	// get coin for active delegation amount and the amount to undelegate
+	ds := ctx.NetwkDelegators
+	delegationCoin, err := ds.Deleg.WithPrefix(net_dele.ActiveType).Get(ud.Delegator)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, ErrGettingActiveDelegationAmount, ud.Tags(), err)
 	}
 
-	delegationAmountMock := action.Amount{}
-	delegationValue := delegationAmountMock.Value
-	undelegateValue := ud.Amount.Value
+	undelegateCoin := ud.Amount.ToCoin(ctx.Currencies)
 
 	// cut the amount from active store
-	remainValue, err := delegationValue.Minus(undelegateValue)
+	remainCoin, err := delegationCoin.Minus(undelegateCoin)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, ErrDeductingDelegationAmount, ud.Tags(), err)
 	}
 
-	err := ds.WithPrefixType(activePrefix).Set(ud.Delegator, remainValue)
+	err = ds.Deleg.WithPrefix(net_dele.ActiveType).Set(ud.Delegator, &remainCoin)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, ErrSettingActiveDelegationAmount, ud.Tags(), err)
 	}
 
 	// get mature height
-	delegationOptions, err := ctx.GovernanceStore.GetDelegationOption()
+	delegationOptions, err := ctx.GovernanceStore.GetNetworkDelegOptions()
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, ErrGettingDelegationOption, ud.Tags(), err)
 	}
-	matureHeight := ctx.Header.GetHeight() + delegationOptions.MaturityPeriod
+	matureHeight := ctx.Header.GetHeight() + delegationOptions.RewardsMaturityTime
 
 	// form the pending amount key and check if there is already an entry in pending store,
 	// this means same delegator at least undelegated once in this block
-	if ds.WithPrefixType(pendingPrefix).Exist(ud.Delegator, matureHeight) {
+	// if not, add an entry to pending store
+	if ds.Deleg.WithPrefix(net_dele.PendingType).PendingExists(&ud.Delegator, matureHeight) {
 		// if so, change the amount
 		existingPendingAmount, err := ds.WithPrefixType(pendingPrefix).Get(ud.Delegator, matureHeight)
 		if err != nil {

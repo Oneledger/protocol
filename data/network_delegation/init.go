@@ -9,6 +9,12 @@ import (
 
 var logger *log.Logger
 
+const (
+	MatureType  DelegationPrefixType = 0x103
+	PendingType DelegationPrefixType = 0x102
+	ActiveType  DelegationPrefixType = 0x101
+)
+
 func init() {
 	logger = log.NewDefaultLogger(os.Stdout).WithPrefix("network_delegation")
 }
