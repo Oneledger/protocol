@@ -44,21 +44,24 @@ const (
 
 	ADMIN_EVIDENCE_OPTION string = "evidenceopt"
 
+	ADMIN_NETWK_DELEG_OPTION string = "networkdelegopt"
+
 	TOTAL_FUNDS_PREFIX string = "t"
 
 	INDIVIDUAL_FUNDS_PREFIX string = "i"
 
-	LAST_UPDATE_HEIGHT          string = "defaultOptions"
-	LAST_UPDATE_HEIGHT_CURRENCY string = "currencyOptions"
-	LAST_UPDATE_HEIGHT_FEE      string = "feeOptions"
-	LAST_UPDATE_HEIGHT_ETH      string = "ethOptions"
-	LAST_UPDATE_HEIGHT_BTC      string = "btcOptions"
-	LAST_UPDATE_HEIGHT_REWARDS  string = "rewardsOptions"
-	LAST_UPDATE_HEIGHT_STAKING  string = "stakingOptions"
-	LAST_UPDATE_HEIGHT_ONS      string = "onsOptions"
-	LAST_UPDATE_HEIGHT_PROPOSAL string = "proposalOptions"
-	LAST_UPDATE_HEIGHT_EVIDENCE string = "evidenceOptions"
-	HEIGHT_INDEPENDENT_VALUE    string = "heightindependent"
+	LAST_UPDATE_HEIGHT             string = "defaultOptions"
+	LAST_UPDATE_HEIGHT_CURRENCY    string = "currencyOptions"
+	LAST_UPDATE_HEIGHT_FEE         string = "feeOptions"
+	LAST_UPDATE_HEIGHT_ETH         string = "ethOptions"
+	LAST_UPDATE_HEIGHT_BTC         string = "btcOptions"
+	LAST_UPDATE_HEIGHT_REWARDS     string = "rewardsOptions"
+	LAST_UPDATE_HEIGHT_STAKING     string = "stakingOptions"
+	LAST_UPDATE_HEIGHT_NETWK_DELEG string = "delegOptions"
+	LAST_UPDATE_HEIGHT_ONS         string = "onsOptions"
+	LAST_UPDATE_HEIGHT_PROPOSAL    string = "proposalOptions"
+	LAST_UPDATE_HEIGHT_EVIDENCE    string = "evidenceOptions"
+	HEIGHT_INDEPENDENT_VALUE       string = "heightindependent"
 )
 
 type Store struct {
@@ -503,6 +506,32 @@ func (st *Store) GetRewardOptions() (*rewards.Options, error) {
 		return nil, errors.Wrap(err, "failed to deserialize reward options")
 	}
 	return rewardOptions, nil
+}
+
+func (st *Store) SetNetworkDelegOptions(delegOptions network_delegation.Options) error {
+	bytes, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(delegOptions)
+	if err != nil {
+		return errors.Wrap(err, "failed to serialize network delegation options")
+	}
+	err = st.Set(ADMIN_NETWK_DELEG_OPTION, bytes)
+	if err != nil {
+		return errors.Wrap(err, "failed to set network delegation options")
+	}
+	return nil
+}
+
+func (st *Store) GetNetworkDelegOptions() (*network_delegation.Options, error) {
+	bytes, err := st.Get(ADMIN_NETWK_DELEG_OPTION, LAST_UPDATE_HEIGHT_NETWK_DELEG)
+	if err != nil {
+		return nil, err
+	}
+
+	delegOptions := &network_delegation.Options{}
+	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(bytes, delegOptions)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to deserialize network delegation options")
+	}
+	return delegOptions, nil
 }
 
 func (st *Store) GetPoolList() (map[string]keys.Address, error) {

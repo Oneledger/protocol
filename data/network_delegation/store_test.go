@@ -1,12 +1,13 @@
 package network_delegation
 
 import (
+	"testing"
+
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/magiconair/properties/assert"
 	db "github.com/tendermint/tm-db"
-	"testing"
 )
 
 const (
@@ -96,7 +97,7 @@ func TestStore_Set_Get(t *testing.T) {
 
 func TestStore_Exists(t *testing.T) {
 	store.WithPrefix(matureType)
-	for key, _ := range matureAddrList {
+	for key := range matureAddrList {
 		addr := &keys.Address{}
 		_ = addr.UnmarshalText([]byte(key))
 		res := store.Exists(addr)
