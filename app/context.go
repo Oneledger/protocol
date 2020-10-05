@@ -1,16 +1,18 @@
 package app
 
 import (
-	"github.com/Oneledger/protocol/external_apps"
-	"github.com/Oneledger/protocol/external_apps/common"
 	"io"
 	"os"
 	"path/filepath"
 	"time"
 
+	"github.com/Oneledger/protocol/external_apps"
+	"github.com/Oneledger/protocol/external_apps/common"
+
 	tmdb "github.com/tendermint/tm-db"
 
 	"github.com/Oneledger/protocol/data"
+	"github.com/Oneledger/protocol/data/network_delegation"
 	"github.com/Oneledger/protocol/data/rewards"
 	"github.com/Oneledger/protocol/data/transactions"
 
@@ -77,6 +79,7 @@ type context struct {
 	jobBus          *event.JobBus
 	proposalMaster  *governance.ProposalMasterStore
 	delegators      *delegation.DelegationStore
+	netwkDelegators *network_delegation.MasterStore
 	rewardMaster    *rewards.RewardMasterStore
 	transaction     *transactions.TransactionStore
 	logWriter       io.Writer
@@ -118,6 +121,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.govern = governance.NewStore("g", storage.NewState(ctx.chainstate))
 	ctx.proposalMaster = NewProposalMasterStore(ctx.chainstate)
 	ctx.delegators = delegation.NewDelegationStore("st", storage.NewState(ctx.chainstate))
+	ctx.netwkDelegators = network_delegation.NewMasterStore("deleg", "delegRwz", storage.NewState(ctx.chainstate))
 	ctx.rewardMaster = NewRewardMasterStore(ctx.chainstate)
 	ctx.btcTrackers = bitcoin.NewTrackerStore("btct", storage.NewState(ctx.chainstate))
 	//Separate DB and chainstate
