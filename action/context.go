@@ -54,7 +54,7 @@ func NewContext(r Router, header *abci.Header, state *storage.State,
 	domains *ons.DomainStore, delegators *delegation.DelegationStore, btcTrackers *bitcoin.TrackerStore,
 	ethTrackers *ethereum.TrackerStore, jobStore *jobs.JobStore,
 	lockScriptStore *bitcoin.LockScriptStore, logger *log.Logger, proposalmaster *governance.ProposalMasterStore, rewardmaster *rewards.RewardMasterStore, govern *governance.Store,
-	extStores data.Router, govUpdate *GovernaceUpdateAndValidate) *Context {
+	extStores data.Router, govUpdate *GovernaceUpdateAndValidate, networkDelegators *network_delegation.MasterStore) *Context {
 
 	return &Context{
 		Router:              r,
@@ -78,5 +78,6 @@ func NewContext(r Router, header *abci.Header, state *storage.State,
 		GovernanceStore:     govern,
 		ExtStores:           extStores,
 		GovUpdate:           govUpdate,
+		NetwkDelegators:     networkDelegators,
 	}
 }
