@@ -1,4 +1,4 @@
-package netwk_delegation
+package network_delegation
 
 import (
 	"fmt"
@@ -31,10 +31,15 @@ func (drs *DelegRewardStore) WithState(state *storage.State) *DelegRewardStore {
 }
 
 // Add rewards balance
-func (drs *DelegRewardStore) AddRewardsBalance(delegator keys.Address) (amt *balance.Amount, err error) {
+func (drs *DelegRewardStore) AddRewardsBalance(delegator keys.Address, amount *balance.Amount) error {
 	key := drs.getRewardsBalanceKey(delegator)
-	amt, err = drs.get(key)
-	return
+	amt, err := drs.get(key)
+	if err != nil {
+		return err
+	}
+
+	err = drs.set(key, amt.Plus(*amount))
+	return err
 }
 
 // Get rewards balance
@@ -45,12 +50,12 @@ func (drs *DelegRewardStore) GetRewardsBalance(delegator keys.Address) (amt *bal
 }
 
 // Initiate a withdrawal of an 'amount' of rewards
-func (drs *DelegRewardStore) Withdraw(delegator keys.Address, amount *balance.Amount, height int64) error {
+func (drs *DelegRewardStore) Withdraw(delegator keys.Address, amount *balance.Amount, matureHeight int64) error {
 	err := drs.minusRewardsBalance(delegator, amount)
 	if err != nil {
 		return errors.Wrap(err, "Minus from rewards balance")
 	}
-	err = drs.addPendingRewards(delegator, amount, height)
+	err = drs.addPendingRewards(delegator, amount, matureHeight)
 	if err != nil {
 		return errors.Wrap(err, "Add to pending rewards")
 	}
@@ -59,16 +64,38 @@ func (drs *DelegRewardStore) Withdraw(delegator keys.Address, amount *balance.Am
 }
 
 // Get pending withdrawn rewards
-func (drs *DelegRewardStore) GetPendingRewards(delegator keys.Address, height int64) (amt *balance.Amount, err error) {
-	key := drs.getPendingRewardsKey(height, delegator)
-	amt, err = drs.get(key)
+func (drs *DelegRewardStore) GetPendingRewards(delegator keys.Address, height, blocks int64) (pdRewards *DelegPendingRewards, err error) {
+	pdRewards = &DelegPendingRewards{Address: delegator}
+	for h := height; h < height+blocks; h++ {
+		key := drs.getPendingRewardsKey(h, delegator)
+		var amt *balance.Amount
+		amt, err = drs.get(key)
+		if err != nil {
+			return
+		}
+		if !amt.Equals(balance.AmtZero) {
+			pdRewards.Rewards = append(pdRewards.Rewards, &PendingRewards{
+				Height: h,
+				Amount: *amt,
+			})
+		}
+	}
 	return
 }
 
 // Mature, if any, all delegators' pending rewards at a specific height
 func (drs *DelegRewardStore) MaturePendingRewards(height int64) {
 	drs.iteratePD(height, func(delegator keys.Address, amt *balance.Amount) bool {
-		err := drs.addMaturedRewards(delegator, amt)
+		// clear pending amount
+		key := drs.getPendingRewardsKey(height, delegator)
+		err := drs.set(key, balance.AmtZero)
+		if err != nil {
+			return true
+		}
+		// increase matured amount
+		if !amt.Equals(balance.AmtZero) {
+			err = drs.addMaturedRewards(delegator, amt)
+		}
 		return err != nil
 	})
 }
@@ -80,7 +107,7 @@ func (drs *DelegRewardStore) GetMaturedRewards(delegator keys.Address) (amt *bal
 	return
 }
 
-// Finalize an 'amount' of rewards
+// Finalize(deduct) an 'amount' of matured rewards
 func (drs *DelegRewardStore) Finalize(delegator keys.Address, amount *balance.Amount) error {
 	key := drs.getMaturedRewardsKey(delegator)
 	amt, err := drs.get(key)
@@ -151,7 +178,7 @@ func (drs *DelegRewardStore) iterate(subkey string, fn func(delegator keys.Addre
 
 // iterate pending rewards by height
 func (drs *DelegRewardStore) iteratePD(height int64, fn func(delegator keys.Address, amt *balance.Amount) bool) (stopped bool) {
-	pfxStr := fmt.Sprintf("%spending_%d", string(drs.prefix), height)
+	pfxStr := fmt.Sprintf("%spending_%d_", string(drs.prefix), height)
 	prefix := storage.StoreKey(pfxStr)
 	return drs.state.IterateRange(
 		prefix,
@@ -169,7 +196,7 @@ func (drs *DelegRewardStore) iteratePD(height int64, fn func(delegator keys.Addr
 			err = addr.UnmarshalText(bytesText)
 			if err != nil {
 				logger.Error("failed to deserialize delegator address")
-				return false
+				return true
 			}
 			return fn(addr, amt)
 		},

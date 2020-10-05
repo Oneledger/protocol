@@ -24,6 +24,7 @@ import (
 
 var pSzlr serialize.Serializer
 var logger *log.Logger
+var AmtZero Amount
 
 func init() {
 	logger = log.NewDefaultLogger(os.Stdout).WithPrefix("balance")
@@ -32,4 +33,5 @@ func init() {
 	//serialize.RegisterConcrete(new(BalanceData), TagBalanceData)
 
 	pSzlr = serialize.GetSerializer(serialize.PERSISTENT)
+	AmtZero = *NewAmount(0)
 }

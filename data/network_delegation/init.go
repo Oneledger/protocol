@@ -1,4 +1,4 @@
-package netwk_delegation
+package network_delegation
 
 import (
 	"os"
@@ -10,4 +10,8 @@ var logger *log.Logger
 
 func init() {
 	logger = log.NewDefaultLogger(os.Stdout).WithPrefix("netwk_delegation")
+}
+
+type Options struct {
+	RewardsMaturityTime int64 `json:"rewardsMaturityTime"`
 }
