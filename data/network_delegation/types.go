@@ -5,6 +5,8 @@ import (
 	"github.com/Oneledger/protocol/data/keys"
 )
 
+type DelegationPrefixType int
+
 type PendingRewards struct {
 	Height int64          `json:"height"`
 	Amount balance.Amount `json:"amount"`
