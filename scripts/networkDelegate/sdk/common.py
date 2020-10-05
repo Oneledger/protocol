@@ -35,3 +35,12 @@ def addNewAccount(node):
     process.wait()
     output = process.stdout.readlines()
     return output[1].split(":")[1].strip()[3:]
+
+
+def sendFunds(party, counterparty, amount, password, node):
+    args = ['olclient', 'send', "--password", password, "--party", party, "--counterparty", counterparty, "--amount",
+            amount, "--fee", "0.001"]
+    process = subprocess.Popen(args, cwd=node, stdout=subprocess.PIPE)
+    process.wait()
+    output = process.stdout.readlines()
+    return output

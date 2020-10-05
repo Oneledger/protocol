@@ -17,14 +17,17 @@ class bcolors:
 class NetWorkDelegate:
     def __init__(self, useraddress, delegationaddress, amount):
         self.useraddress = useraddress
-        self.stakingaddress = delegationaddress
+        self.delegationaddress = delegationaddress
         self.amount = amount
 
     def _network_Delegate(self):
         req = {
             "userAddress": self.useraddress,
             "delegationAddress": self.delegationaddress,
-            "amount": self.amount,
+            "amount": {
+                "currency": "OLT",
+                "value": convertBigInt(self.amount),
+            },
             "gasPrice": {
                 "currency": "OLT",
                 "value": "1000000000",
@@ -33,6 +36,7 @@ class NetWorkDelegate:
         }
 
         resp = rpc_call('tx.NetworkDelegate', req)
+        print resp
         return resp["result"]["rawTx"]
 
     def send_network_Delegate(self):
@@ -44,7 +48,6 @@ class NetWorkDelegate:
 
         # broadcast Tx
         result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
-
         if "ok" in result:
             if not result["ok"]:
                 sys.exit(-1)

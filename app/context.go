@@ -222,6 +222,7 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.govern.WithState(state),
 		ctx.extStores.WithState(state),
 		ctx.govupdate,
+		ctx.netwkDelegators,
 	)
 
 	return actionCtx
@@ -271,7 +272,6 @@ func (ctx *context) Services() (service.Map, error) {
 
 	rewardMaster := NewRewardMasterStore(ctx.chainstate)
 	rewardMaster.SetOptions(ctx.rewardMaster.GetOptions())
-
 	svcCtx := &service.Context{
 		Balances:       balance.NewStore("b", storage.NewState(ctx.chainstate)),
 		Accounts:       ctx.accounts,
