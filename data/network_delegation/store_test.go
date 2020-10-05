@@ -1,12 +1,13 @@
 package network_delegation
 
 import (
+	"testing"
+
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/magiconair/properties/assert"
 	db "github.com/tendermint/tm-db"
-	"testing"
 )
 
 const (
