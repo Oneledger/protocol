@@ -38,7 +38,7 @@ const (
 	InternalErrorTrackerInsufficientBalance = 100609
 	InternalErrorListWitnesses              = 100610
 	InternalErrorGettingProposal            = 100611
-	InternalErrorGettingBidConv				= 100612
+	InternalErrorGettingBidConv             = 100612
 
 	ONSError                        = 1007
 	ONSErrDomainMissing             = 100701
@@ -110,6 +110,10 @@ const (
 	DelgErr                     = 6003
 	DelgErrStakeAddressInUse    = 600301
 	DelgErrStakeAddressMismatch = 600302
+
+	NetDelgErr                              = 6005
+	NetDelgErrFinalizingDelgRewards         = 600501
+	NetDelgErrAddingWithdrawAmountToBalance = 600502
 
 	GovErr                                = 7001
 	GovErrGetProposalOptions              = 700101

@@ -1,17 +1,18 @@
-package delegation
+package network_delegation
 
 import (
-"encoding/json"
-"github.com/Oneledger/protocol/action"
-"github.com/Oneledger/protocol/action/helpers"
-"github.com/Oneledger/protocol/data/keys"
-"github.com/pkg/errors"
-"github.com/tendermint/tendermint/libs/kv"
+	"encoding/json"
+	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/action/helpers"
+	"github.com/Oneledger/protocol/data/keys"
+	net_delg "github.com/Oneledger/protocol/data/network_delegation"
+	"github.com/pkg/errors"
+	"github.com/tendermint/tendermint/libs/kv"
 )
 
 type DeleWithdrawRewards struct {
-	Delegator keys.Address `json:"delegator"`
-	Amount action.Amount `json:"amount"`
+	Delegator keys.Address  `json:"delegator"`
+	Amount    action.Amount `json:"amount"`
 }
 
 var _ action.Msg = &DeleWithdrawRewards{}
@@ -21,7 +22,7 @@ func (wr DeleWithdrawRewards) Signers() []action.Address {
 }
 
 func (wr DeleWithdrawRewards) Type() action.Type {
-	return action.DELEGATION_REWARDS_WITHDRAW
+	return action.NETWORK_DELEGATION_REWARDS_WITHDRAW
 }
 
 func (wr DeleWithdrawRewards) Tags() kv.Pairs {
@@ -52,7 +53,7 @@ func (wr *DeleWithdrawRewards) Unmarshal(data []byte) error {
 	return json.Unmarshal(data, wr)
 }
 
-type DeleWithdrawRewardsTx struct {}
+type DeleWithdrawRewardsTx struct{}
 
 var _ action.Tx = &DeleWithdrawRewardsTx{}
 
@@ -77,7 +78,7 @@ func (wt DeleWithdrawRewardsTx) Validate(ctx *action.Context, tx action.SignedTx
 
 	// validate params
 	if err = w.Delegator.Err(); err != nil {
-		return false, ErrInvalidAddress
+		return false, action.ErrInvalidAddress
 	}
 
 	return true, nil
@@ -104,32 +105,18 @@ func runWithdraw(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrWrongTxType, w.Tags(), err)
 	}
 
-	// check if there is enough reward to withdraw
-	ds := ctx.DelegationRewardStore
-	maturedAmount, err := ds.WithPrefixType(maturedPrefix).Get(w.Delegator)
+	// cut the amount from matured rewards if there is enough to withdraw
+	ds := ctx.NetwkDelegators.Rewards
+	err = ds.Finalize(w.Delegator, &w.Amount.Value)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, ErrGettingMaturedDelegationRewards, w.Tags(), err)
-	}
-
-	maturedAmountMock := action.Amount{}
-	maturedValue := maturedAmountMock.Value
-	withdrawValue := w.Amount.Value
-
-	// cut the amount from matured reward store
-	remainValue, err := maturedValue.Minus(withdrawValue)
-	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, ErrDeductingMaturedAmount, w.Tags(), err)
-	}
-	err = ds.WithPrefixType(maturedPrefix).Set(w.Delegator, remainValue)
-	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, ErrSettingMaturedDelegationAmount, w.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, net_delg.ErrFinalizingDelgRewards, w.Tags(), err)
 	}
 
 	// add the amount to delegator address
 	withdrawCoin := w.Amount.ToCoin(ctx.Currencies)
 	err = ctx.Balances.AddToAddress(w.Delegator.Bytes(), withdrawCoin)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, ErrAddingWithdrawAmountToBalance, w.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, net_delg.ErrAddingWithdrawAmountToBalance, w.Tags(), err)
 	}
 	return true, action.Response{Events: action.GetEvent(w.Tags(), "delegation_rewards_withdraw_success")}
 }
