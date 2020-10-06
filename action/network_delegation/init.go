@@ -6,9 +6,9 @@ import (
 )
 
 func EnableNetworkDelegation(r action.Router) error {
-	err := r.AddHandler(action.NETWORKDELEGATE, networkDelegateTx{})
+	err := r.AddHandler(action.ADD_NETWORK_DELEGATE, addNetworkDelegationTx{})
 	if err != nil {
-		return errors.Wrap(err, "NetworkDelegate")
+		return errors.Wrap(err, "AddNetworkDelegation")
 	}
 
 	return nil

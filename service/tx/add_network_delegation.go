@@ -9,9 +9,9 @@ import (
 	"github.com/google/uuid"
 )
 
-func (s *Service) NetworkDelegate(args client.NetworkDelegateRequest, reply *client.CreateTxReply) error {
+func (s *Service) AddNetworkDelegation(args client.NetworkDelegateRequest, reply *client.CreateTxReply) error {
 
-	networkDelegation := nwd.NetworkDelegate{
+	networkDelegation := nwd.AddNetworkDelegation{
 		DelegationAddress: args.DelegationAddress,
 		Amount:            args.Amount,
 	}
@@ -28,7 +28,7 @@ func (s *Service) NetworkDelegate(args client.NetworkDelegateRequest, reply *cli
 	}
 
 	tx := &action.RawTx{
-		Type: action.NETWORKDELEGATE,
+		Type: action.ADD_NETWORK_DELEGATE,
 		Data: data,
 		Fee:  fee,
 		Memo: uuidNew.String(),

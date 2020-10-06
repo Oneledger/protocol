@@ -11,22 +11,22 @@ import (
 	"github.com/tendermint/tendermint/libs/kv"
 )
 
-var _ action.Msg = &NetworkDelegate{}
+var _ action.Msg = &AddNetworkDelegation{}
 
-type NetworkDelegate struct {
+type AddNetworkDelegation struct {
 	DelegationAddress keys.Address
 	Amount            action.Amount
 }
 
-func (n NetworkDelegate) Signers() []action.Address {
+func (n AddNetworkDelegation) Signers() []action.Address {
 	return []action.Address{n.DelegationAddress}
 }
 
-func (n NetworkDelegate) Type() action.Type {
-	return action.NETWORKDELEGATE
+func (n AddNetworkDelegation) Type() action.Type {
+	return action.ADD_NETWORK_DELEGATE
 }
 
-func (n NetworkDelegate) Tags() kv.Pairs {
+func (n AddNetworkDelegation) Tags() kv.Pairs {
 	tags := make([]kv.Pair, 0)
 
 	tag := kv.Pair{
@@ -42,20 +42,20 @@ func (n NetworkDelegate) Tags() kv.Pairs {
 	return tags
 }
 
-func (n NetworkDelegate) Marshal() ([]byte, error) {
+func (n AddNetworkDelegation) Marshal() ([]byte, error) {
 	return json.Marshal(n)
 }
 
-func (n *NetworkDelegate) Unmarshal(bytes []byte) error {
+func (n *AddNetworkDelegation) Unmarshal(bytes []byte) error {
 	return json.Unmarshal(bytes, n)
 }
 
-var _ action.Tx = networkDelegateTx{}
+var _ action.Tx = addNetworkDelegationTx{}
 
-type networkDelegateTx struct{}
+type addNetworkDelegationTx struct{}
 
-func (n networkDelegateTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error) {
-	delegate := &NetworkDelegate{}
+func (n addNetworkDelegationTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error) {
+	delegate := &AddNetworkDelegation{}
 	err := delegate.Unmarshal(tx.Data)
 	if err != nil {
 		return false, errors.Wrap(action.ErrWrongTxType, err.Error())
@@ -77,21 +77,21 @@ func (n networkDelegateTx) Validate(ctx *action.Context, tx action.SignedTx) (bo
 	return true, nil
 }
 
-func (n networkDelegateTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+func (n addNetworkDelegationTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	return runNetworkDelegate(ctx, tx)
 }
 
-func (n networkDelegateTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+func (n addNetworkDelegationTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	return runNetworkDelegate(ctx, tx)
 }
 
-func (n networkDelegateTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (n addNetworkDelegationTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
 	ctx.Logger.Detail("Processing Delegate Transaction for ProcessFee", signedTx)
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
 
 func runNetworkDelegate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	delegate := NetworkDelegate{}
+	delegate := AddNetworkDelegation{}
 	err := delegate.Unmarshal(tx.Data)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrUnserializable, delegate.Tags(), err)
