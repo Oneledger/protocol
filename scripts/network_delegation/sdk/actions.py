@@ -15,14 +15,13 @@ class bcolors:
 
 
 class Undelegate:
-    def __init__(self, delegator, amount):
+    def __init__(self, delegator):
         self.delegator = delegator
-        self.amount = amount
 
-    def _create_undelegate(self):
+    def _create_undelegate(self, amount):
         req = {
             "delegator": self.delegator,
-            "amount": self.amount,
+            "amount": amount,
             "gasPrice": {
                 "currency": "OLT",
                 "value": "1000000000",
@@ -33,9 +32,9 @@ class Undelegate:
         resp = rpc_call('tx.NetUndelegate', req)
         return resp["result"]["rawTx"]
 
-    def send_tx(self):
+    def send_tx(self, amount):
         # createTx
-        raw_txn = self._create_undelegate()
+        raw_txn = self._create_undelegate(amount)
 
         # sign Tx
         signed = sign(raw_txn, self.delegator)
@@ -58,7 +57,7 @@ class Undelegate:
         # print resp
         result = resp["result"]
         # print json.dumps(resp, indent=4)
-        return result["undelegate amount"]
+        return result
 
 
 def addresses():
@@ -82,7 +81,6 @@ def broadcast_commit(raw_tx, signature, pub_key):
         return resp["result"]
     else:
         return resp
-
 
 
 def broadcast_sync(raw_tx, signature, pub_key):
