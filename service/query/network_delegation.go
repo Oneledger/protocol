@@ -65,22 +65,30 @@ func (svc *Service) GetTotalNetwkDelg(reply *client.GetTotalNetwkDelgReply) erro
 	if ok != true {
 		return errors.New("failed to get OLT from currency set")
 	}
-	amountInCoin := activeBalance.GetCoin(currencyOLT)
+	activeCoin := activeBalance.GetCoin(currencyOLT)
 
 	// get pending delegation amount
+	pendingCoin := balance.Coin{Currency: currencyOLT, Amount: balance.NewAmountFromBigInt(big.NewInt(0))}
 	svc.netwkDelegators.Deleg.IterateAllPendingAmounts(func(height int64, addr *keys.Address, coin *balance.Coin) bool {
-		amountInCoin = amountInCoin.Plus(*coin)
+		pendingCoin = pendingCoin.Plus(*coin)
 		return false
 	})
 
 	// get matured delegation amount
+	maturedCoin := balance.Coin{Currency: currencyOLT, Amount: balance.NewAmountFromBigInt(big.NewInt(0))}
 	svc.netwkDelegators.Deleg.IterateMatureAmounts(func(addr *keys.Address, coin *balance.Coin) bool {
-		amountInCoin = amountInCoin.Plus(*coin)
+		maturedCoin = maturedCoin.Plus(*coin)
 		return false
 	})
 
+	// get total delegation amount
+	totalCoin := activeCoin.Plus(pendingCoin).Plus(maturedCoin)
+
 	*reply = client.GetTotalNetwkDelgReply{
-		Amount: *amountInCoin.Amount,
+		ActiveAmount: *activeCoin.Amount,
+		PendingAmount: *pendingCoin.Amount,
+		MaturedAmount: *maturedCoin.Amount,
+		TotalAmount: *totalCoin.Amount,
 	}
 	return nil
 }

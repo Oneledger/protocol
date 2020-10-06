@@ -25,7 +25,10 @@ type GetUndelegatedReply struct {
 }
 
 type GetTotalNetwkDelgReply struct {
-	Amount balance.Amount `json:"amount"`
+	ActiveAmount balance.Amount `json:"activeAmount"`
+	PendingAmount balance.Amount `json:"pendingAmount"`
+	MaturedAmount balance.Amount `json:"maturedAmount"`
+	TotalAmount balance.Amount `json:"totalAmount"`
 }
 
 //-------------TX
