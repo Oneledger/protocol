@@ -105,7 +105,7 @@ func runNetworkDelegate(ctx *action.Context, tx action.RawTx) (bool, action.Resp
 	if coin.Currency.Name != "OLT" {
 		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrInvalidCurrency, delegate.Tags(), errors.New("currency is not OLT"))
 	}
-	currencyOlt, ok := ctx.Currencies.GetCurrencyByName("OLT")
+	_, ok := ctx.Currencies.GetCurrencyByName("OLT")
 	if !ok {
 		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrInvalidCurrency, delegate.Tags(), errors.New("currency OLT does not exist in system"))
 	}
@@ -141,13 +141,6 @@ func runNetworkDelegate(ctx *action.Context, tx action.RawTx) (bool, action.Resp
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, balance.ErrBalanceErrorAddFailed, delegate.Tags(), err)
 	}
-
-	oldBalance, err := ctx.Balances.GetBalance(delagationPool, ctx.Currencies)
-	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrInvalidCurrency, delegate.Tags(), errors.Wrap(err, "Pool is not Funded by OLT"))
-	}
-	updatedBalance := oldBalance.GetCoin(currencyOlt).Plus(coin)
-	ctx.Logger.Infof("Delegation Pool has been updated , New Network Delegation amount: %s ", updatedBalance.String())
 
 	return helpers.LogAndReturnTrue(ctx.Logger, delegate.Tags(), "Success")
 }
