@@ -23,8 +23,8 @@ const (
 	WITHDRAW Type = 0x13
 
 	//network network_delegation
-	NETWORKDELEGATE Type = 0x04
-
+	NETWORKDELEGATE             Type = 0x04
+	WITHDRAW_NETWORK_DELEGATION Type = 0x05
 	//ons related transaction
 	DOMAIN_CREATE     Type = 0x21
 	DOMAIN_UPDATE     Type = 0x22

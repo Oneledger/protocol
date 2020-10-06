@@ -10,6 +10,10 @@ func EnableNetworkDelegation(r action.Router) error {
 	if err != nil {
 		return errors.Wrap(err, "NetworkDelegate")
 	}
+	err = r.AddHandler(action.WITHDRAW_NETWORK_DELEGATION, withdrawNetworkDelegationTx{})
+	if err != nil {
+		return errors.Wrap(err, "WithdrawNetworkDelegation")
+	}
 
 	return nil
 }

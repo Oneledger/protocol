@@ -1,6 +1,7 @@
 package network_delegation
 
 import (
+	"bytes"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
@@ -17,9 +18,9 @@ const (
 )
 
 var (
-	matureType  DelegationPrefixType = 0x103
-	pendingType DelegationPrefixType = 0x102
-	activeType  DelegationPrefixType = 0x101
+	MatureType  DelegationPrefixType = 0x103
+	PendingType DelegationPrefixType = 0x102
+	ActiveType  DelegationPrefixType = 0x101
 )
 
 type Store struct {
@@ -86,11 +87,11 @@ func (st *Store) Get(address keys.Address) (coin *balance.Coin, err error) {
 
 func (st *Store) WithPrefix(prefix DelegationPrefixType) *Store {
 	switch prefix {
-	case matureType:
+	case MatureType:
 		st.currentPrefix = st.buildMatureKey()
-	case pendingType:
+	case PendingType:
 		st.currentPrefix = st.buildPendingKey()
-	case activeType:
+	case ActiveType:
 		st.currentPrefix = st.buildActiveKey()
 	}
 	return st
@@ -190,4 +191,18 @@ func (st *Store) IterateMatureAmounts(fn func(addr *keys.Address, coin *balance.
 	return st.iterateAddresses(prefix, func(addr *keys.Address, coin *balance.Coin) bool {
 		return fn(addr, coin)
 	})
+}
+
+//get Matured amount for address
+
+func (st *Store) GetMaturedAmount(a *keys.Address) balance.Coin {
+	balanceCoin := balance.Coin{}
+	st.IterateMatureAmounts(func(addr *keys.Address, coin *balance.Coin) bool {
+		if bytes.Equal(*a, *addr) {
+			balanceCoin = *coin
+			return true
+		}
+		return false
+	})
+	return balanceCoin
 }
