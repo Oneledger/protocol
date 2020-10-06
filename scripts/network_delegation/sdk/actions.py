@@ -34,7 +34,7 @@ class NetWorkDelegate:
             "gas": 40000,
         }
 
-        resp = rpc_call('tx.NetworkDelegate', req)
+        resp = rpc_call('tx.AddNetworkDelegation', req)
         print resp
         return resp["result"]["rawTx"]
 
