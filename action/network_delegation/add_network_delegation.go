@@ -7,6 +7,7 @@ import (
 	"github.com/Oneledger/protocol/data/balance"
 	gov "github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/data/network_delegation"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
 )
@@ -120,6 +121,7 @@ func runNetworkDelegate(ctx *action.Context, tx action.RawTx) (bool, action.Resp
 		return helpers.LogAndReturnFalse(ctx.Logger, balance.ErrBalanceErrorMinusFailed, delegate.Tags(), err)
 	}
 
+	//Add Delegation
 	//Get Delegation Pool
 	poolList, err := ctx.GovernanceStore.GetPoolList()
 	if err != nil {
@@ -136,8 +138,8 @@ func runNetworkDelegate(ctx *action.Context, tx action.RawTx) (bool, action.Resp
 		return helpers.LogAndReturnFalse(ctx.Logger, balance.ErrBalanceErrorAddFailed, delegate.Tags(), err)
 	}
 
-	//Store the entries in network_delegation_store
-	err = ctx.NetwkDelegators.Deleg.Set(delegate.DelegationAddress, &coin)
+	//Add balance to delegation
+	err = ctx.NetwkDelegators.Deleg.WithPrefix(network_delegation.ActiveType).Set(delegate.DelegationAddress, &coin)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, balance.ErrBalanceErrorAddFailed, delegate.Tags(), err)
 	}
