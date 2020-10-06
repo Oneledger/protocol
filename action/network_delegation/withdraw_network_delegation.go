@@ -55,12 +55,12 @@ var _ action.Tx = withdrawNetworkDelegationTx{}
 type withdrawNetworkDelegationTx struct{}
 
 func (n withdrawNetworkDelegationTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error) {
-	delegate := &NetworkDelegate{}
-	err := delegate.Unmarshal(tx.Data)
+	withdraw := &WithdrawNetworkDelegation{}
+	err := withdraw.Unmarshal(tx.Data)
 	if err != nil {
 		return false, errors.Wrap(action.ErrWrongTxType, err.Error())
 	}
-	err = action.ValidateBasic(tx.RawBytes(), delegate.Signers(), tx.Signatures)
+	err = action.ValidateBasic(tx.RawBytes(), withdraw.Signers(), tx.Signatures)
 	if err != nil {
 		return false, err
 	}
@@ -70,7 +70,7 @@ func (n withdrawNetworkDelegationTx) Validate(ctx *action.Context, tx action.Sig
 		return false, err
 	}
 
-	if err := delegate.DelegationAddress.Err(); err != nil {
+	if err := withdraw.DelegationAddress.Err(); err != nil {
 		return false, err
 	}
 
@@ -91,7 +91,7 @@ func (n withdrawNetworkDelegationTx) ProcessFee(ctx *action.Context, signedTx ac
 }
 
 func runWithdrawNetworkDelegation(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	withdraw := NetworkDelegate{}
+	withdraw := WithdrawNetworkDelegation{}
 	err := withdraw.Unmarshal(tx.Data)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrUnserializable, withdraw.Tags(), err)
