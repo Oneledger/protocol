@@ -9,4 +9,4 @@ if __name__ == "__main__":
     # todo delegate
 
     # undelegate
-
+    _undelegate.send_tx()

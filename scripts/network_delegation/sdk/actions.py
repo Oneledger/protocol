@@ -33,7 +33,7 @@ class Undelegate:
         resp = rpc_call('tx.NetUndelegate', req)
         return resp["result"]["rawTx"]
 
-    def send_create(self):
+    def send_tx(self):
         # createTx
         raw_txn = self._create_undelegate()
 
