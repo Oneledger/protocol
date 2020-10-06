@@ -38,7 +38,7 @@ const (
 	InternalErrorTrackerInsufficientBalance = 100609
 	InternalErrorListWitnesses              = 100610
 	InternalErrorGettingProposal            = 100611
-	InternalErrorGettingBidConv				= 100612
+	InternalErrorGettingBidConv             = 100612
 
 	ONSError                        = 1007
 	ONSErrDomainMissing             = 100701
@@ -107,9 +107,15 @@ const (
 	ETHTrackerExists          = 600103
 	ETHTrackerUnabletoSet     = 600104
 
+	// Staking
 	DelgErr                     = 6003
 	DelgErrStakeAddressInUse    = 600301
 	DelgErrStakeAddressMismatch = 600302
+
+	// Network Delegation
+	NetwkDelgErr           = 6004
+	NetwkDelgErrGetOptions = 600401
+	NetwkDelgErrWithdraw   = 600402
 
 	GovErr                                = 7001
 	GovErrGetProposalOptions              = 700101

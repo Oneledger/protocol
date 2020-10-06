@@ -21,6 +21,7 @@ import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/eth"
 	action_gov "github.com/Oneledger/protocol/action/governance"
+	action_netwkdeleg "github.com/Oneledger/protocol/action/network_delegation"
 	action_ons "github.com/Oneledger/protocol/action/ons"
 	action_rewards "github.com/Oneledger/protocol/action/rewards"
 	"github.com/Oneledger/protocol/action/staking"
@@ -172,6 +173,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	_ = eth.EnableInternalETH(ctx.internalRouter)
 
 	_ = action_rewards.EnableRewards(ctx.actionRouter)
+	_ = action_netwkdeleg.EnableNetworkDelegation(ctx.actionRouter)
 
 	_ = action_gov.EnableGovernance(ctx.actionRouter)
 	_ = action_gov.EnableInternalGovernance(ctx.internalRouter)
@@ -211,6 +213,7 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.witnesses.WithState(state),
 		ctx.domains.WithState(state),
 		ctx.delegators.WithState(state),
+		ctx.netwkDelegators.WithState(state),
 		ctx.btcTrackers.WithState(state),
 		ctx.ethTrackers.WithState(state),
 		ctx.jobStore,

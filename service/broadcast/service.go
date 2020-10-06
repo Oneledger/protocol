@@ -6,6 +6,7 @@ import (
 	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/data/delegation"
 	"github.com/Oneledger/protocol/data/governance"
+	netwkDeleg "github.com/Oneledger/protocol/data/network_delegation"
 	"github.com/Oneledger/protocol/data/rewards"
 	"github.com/Oneledger/protocol/identity"
 
@@ -21,41 +22,43 @@ import (
 )
 
 type Service struct {
-	logger         *log.Logger
-	router         action.Router
-	currencies     *balance.CurrencySet
-	trackers       *bitcoin.TrackerStore
-	feePool        *fees.Store
-	domains        *ons.DomainStore
-	delegators     *delegation.DelegationStore
-	validators     *identity.ValidatorStore
-	proposalMaster *governance.ProposalMasterStore
-	rewardMaster   *rewards.RewardMasterStore
-	govern         *governance.Store
-	extStores      data.Router
-	ext            client.ExtServiceContext
-	govUpdate      *action.GovernaceUpdateAndValidate
+	logger          *log.Logger
+	router          action.Router
+	currencies      *balance.CurrencySet
+	trackers        *bitcoin.TrackerStore
+	feePool         *fees.Store
+	domains         *ons.DomainStore
+	delegators      *delegation.DelegationStore
+	netwkDelegators *netwkDeleg.MasterStore
+	validators      *identity.ValidatorStore
+	proposalMaster  *governance.ProposalMasterStore
+	rewardMaster    *rewards.RewardMasterStore
+	govern          *governance.Store
+	extStores       data.Router
+	ext             client.ExtServiceContext
+	govUpdate       *action.GovernaceUpdateAndValidate
 }
 
 func NewService(ctx client.ExtServiceContext, router action.Router, currencies *balance.CurrencySet,
-	feePool *fees.Store, domains *ons.DomainStore, govern *governance.Store, delegators *delegation.DelegationStore, validators *identity.ValidatorStore,
+	feePool *fees.Store, domains *ons.DomainStore, govern *governance.Store, delegators *delegation.DelegationStore, netwkDelegators *netwkDeleg.MasterStore, validators *identity.ValidatorStore,
 	logger *log.Logger, trackers *bitcoin.TrackerStore, proposalMaster *governance.ProposalMasterStore, rewardMaster *rewards.RewardMasterStore, extStores data.Router, govUpdate *action.GovernaceUpdateAndValidate,
 ) *Service {
 	return &Service{
-		ext:            ctx,
-		router:         router,
-		currencies:     currencies,
-		trackers:       trackers,
-		feePool:        feePool,
-		domains:        domains,
-		delegators:     delegators,
-		validators:     validators,
-		proposalMaster: proposalMaster,
-		rewardMaster:   rewardMaster,
-		govern:         govern,
-		extStores:      extStores,
-		logger:         logger,
-		govUpdate:      govUpdate,
+		ext:             ctx,
+		router:          router,
+		currencies:      currencies,
+		trackers:        trackers,
+		feePool:         feePool,
+		domains:         domains,
+		delegators:      delegators,
+		netwkDelegators: netwkDelegators,
+		validators:      validators,
+		proposalMaster:  proposalMaster,
+		rewardMaster:    rewardMaster,
+		govern:          govern,
+		extStores:       extStores,
+		logger:          logger,
+		govUpdate:       govUpdate,
 	}
 }
 
@@ -80,7 +83,7 @@ func (svc *Service) validateAndSignTx(req client.BroadcastRequest) ([]byte, erro
 
 	handler := svc.router.Handler(tx.Type)
 	ctx := action.NewContext(svc.router, nil, nil, nil, nil, svc.currencies,
-		svc.feePool, svc.validators, nil, svc.domains, svc.delegators, svc.trackers, nil, nil, nil, svc.logger,
+		svc.feePool, svc.validators, nil, svc.domains, svc.delegators, svc.netwkDelegators, svc.trackers, nil, nil, nil, svc.logger,
 		svc.proposalMaster, svc.rewardMaster, svc.govern, svc.extStores, svc.govUpdate)
 
 	_, err = handler.Validate(ctx, signedTx)
@@ -113,7 +116,7 @@ func (svc *Service) validateAndMtSignTx(req client.BroadcastMtSigRequest) ([]byt
 
 	handler := svc.router.Handler(tx.Type)
 	ctx := action.NewContext(svc.router, nil, nil, nil, nil, svc.currencies,
-		svc.feePool, svc.validators, nil, svc.domains, svc.delegators, svc.trackers, nil, nil, nil, svc.logger,
+		svc.feePool, svc.validators, nil, svc.domains, svc.delegators, svc.netwkDelegators, svc.trackers, nil, nil, nil, svc.logger,
 		svc.proposalMaster, svc.rewardMaster, svc.govern, svc.extStores, svc.govUpdate)
 
 	_, err = handler.Validate(ctx, signedTx)

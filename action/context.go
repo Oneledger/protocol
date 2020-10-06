@@ -14,6 +14,7 @@ import (
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/jobs"
+	netwkDeleg "github.com/Oneledger/protocol/data/network_delegation"
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
@@ -28,6 +29,7 @@ type Context struct {
 	Balances            *balance.Store
 	Domains             *ons.DomainStore
 	Delegators          *delegation.DelegationStore
+	NetwkDelegators     *netwkDeleg.MasterStore
 	FeePool             *fees.Store
 	Currencies          *balance.CurrencySet
 	FeeOpt              *fees.FeeOption
@@ -49,8 +51,8 @@ func NewContext(r Router, header *abci.Header, state *storage.State,
 	wallet accounts.Wallet, balances *balance.Store,
 	currencies *balance.CurrencySet, feePool *fees.Store,
 	validators *identity.ValidatorStore, witnesses *identity.WitnessStore,
-	domains *ons.DomainStore, delegators *delegation.DelegationStore, btcTrackers *bitcoin.TrackerStore,
-	ethTrackers *ethereum.TrackerStore, jobStore *jobs.JobStore,
+	domains *ons.DomainStore, delegators *delegation.DelegationStore, netwkDelegators *netwkDeleg.MasterStore,
+	btcTrackers *bitcoin.TrackerStore, ethTrackers *ethereum.TrackerStore, jobStore *jobs.JobStore,
 	lockScriptStore *bitcoin.LockScriptStore, logger *log.Logger, proposalmaster *governance.ProposalMasterStore, rewardmaster *rewards.RewardMasterStore, govern *governance.Store,
 	extStores data.Router, govUpdate *GovernaceUpdateAndValidate) *Context {
 
@@ -62,6 +64,7 @@ func NewContext(r Router, header *abci.Header, state *storage.State,
 		Balances:            balances,
 		Domains:             domains,
 		Delegators:          delegators,
+		NetwkDelegators:     netwkDelegators,
 		FeePool:             feePool,
 		Currencies:          currencies,
 		Validators:          validators,
