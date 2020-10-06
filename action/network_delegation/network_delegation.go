@@ -33,16 +33,12 @@ func (n NetworkDelegate) Tags() kv.Pairs {
 		Key:   []byte("tx.type"),
 		Value: []byte(n.Type().String()),
 	}
-	tag2 := kv.Pair{
-		Key:   []byte("tx.useraddress"),
-		Value: n.DelegationAddress.Bytes(),
-	}
 	tag3 := kv.Pair{
 		Key:   []byte("tx.delegationAddress"),
 		Value: n.DelegationAddress.Bytes(),
 	}
 
-	tags = append(tags, tag, tag2, tag3)
+	tags = append(tags, tag, tag3)
 	return tags
 }
 
