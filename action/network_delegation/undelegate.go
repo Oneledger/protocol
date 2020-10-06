@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/helpers"
+	"github.com/Oneledger/protocol/data/balance"
+	gov "github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
 	net_delg "github.com/Oneledger/protocol/data/network_delegation"
 	"github.com/pkg/errors"
@@ -153,5 +155,22 @@ func runUndelegate(ctx *action.Context, tx action.RawTx) (bool, action.Response)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, net_delg.ErrSettingPendingDelgAmount, ud.Tags(), err)
 	}
+
+	//Get Delegation Pool
+	poolList, err := ctx.GovernanceStore.GetPoolList()
+	if err != nil {
+		return helpers.LogAndReturnFalse(ctx.Logger, gov.ErrPoolList, ud.Tags(), err)
+	}
+	if _, ok := poolList["DelegationPool"]; !ok {
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrPoolDoesNotExist, ud.Tags(), err)
+	}
+	delagationPool := poolList["DelegationPool"]
+
+	//cut balance from pool
+	err = ctx.Balances.MinusFromAddress(delagationPool, undelegateCoin)
+	if err != nil {
+		return helpers.LogAndReturnFalse(ctx.Logger, balance.ErrBalanceErrorAddFailed, ud.Tags(), err)
+	}
+
 	return true, action.Response{Events: action.GetEvent(ud.Tags(), "undelegate_success")}
 }
