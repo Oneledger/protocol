@@ -21,7 +21,7 @@ func (w Withdraw) Signers() []action.Address {
 }
 
 func (w Withdraw) Type() action.Type {
-	return action.WITHDRAW_DELEG_REWARD
+	return action.WITHDRAW_NETWORK_DELEGATE
 }
 
 func (w Withdraw) Tags() kv.Pairs {

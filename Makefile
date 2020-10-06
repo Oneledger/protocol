@@ -118,6 +118,11 @@ rewardtest: reset
 	python scripts/reward/listRewards.py
 	@./scripts/stopNodes
 
+delegationtest: reset
+	@./scripts/testsend
+	python scripts/network_delegation/addNetworkDelegation.py
+	@./scripts/stopNodes
+
 alltest: reset
 	@./scripts/testsend
 	@./scripts/getValidators

@@ -174,7 +174,6 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 
 	_ = action_rewards.EnableRewards(ctx.actionRouter)
 	_ = action_netwkdeleg.EnableNetworkDelegation(ctx.actionRouter)
-
 	_ = action_gov.EnableGovernance(ctx.actionRouter)
 	_ = action_gov.EnableInternalGovernance(ctx.internalRouter)
 	_ = staking.EnableStaking(ctx.actionRouter)

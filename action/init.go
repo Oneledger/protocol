@@ -22,6 +22,10 @@ const (
 	UNSTAKE  Type = 0x12
 	WITHDRAW Type = 0x13
 
+	//network network_delegation
+	ADD_NETWORK_DELEGATE      Type = 0x51
+	WITHDRAW_NETWORK_DELEGATE Type = 0x52
+
 	//ons related transaction
 	DOMAIN_CREATE     Type = 0x21
 	DOMAIN_UPDATE     Type = 0x22
@@ -57,9 +61,6 @@ const (
 
 	//Rewards
 	WITHDRAW_REWARD Type = 0x41
-
-	// Network delegation
-	WITHDRAW_DELEG_REWARD Type = 0x51
 
 	//EOF here Only used as a marker to mark the end of Type list
 	//So that the query for Types can return all Types dynamically

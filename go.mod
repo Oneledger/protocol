@@ -45,13 +45,13 @@ require (
 	github.com/tendermint/tendermint v0.33.3
 	github.com/tendermint/tm-db v0.5.1
 	github.com/tyler-smith/go-bip39 v1.0.2 // indirect
-	github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8 // indirect
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
 	github.com/wsddn/go-ecdh v0.0.0-20161211032359-48726bab9208 // indirect
 	golang.org/x/crypto v0.0.0-20191206172530-e9b2fee46413
 	golang.org/x/net v0.0.0-20190912160710-24e19bdeb0f2
 	google.golang.org/appengine v1.6.0 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
+	gopkg.in/olebedev/go-duktape.v3 v3.0.0-20200619000410-60c24ae608a6 // indirect
 	gopkg.in/sourcemap.v1 v1.0.5 // indirect
 )
 
