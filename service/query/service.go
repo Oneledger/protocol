@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"strings"
 
+	netwkDeleg "github.com/Oneledger/protocol/data/network_delegation"
 	"github.com/Oneledger/protocol/data/rewards"
 
 	"github.com/Oneledger/protocol/action"
@@ -20,21 +21,22 @@ import (
 )
 
 type Service struct {
-	name           string
-	ext            client.ExtServiceContext
-	balances       *balance.Store
-	currencies     *balance.CurrencySet
-	validators     *identity.ValidatorStore
-	witnesses      *identity.WitnessStore
-	delegators     *delegation.DelegationStore
-	govern         *governance.Store
-	ons            *ons.DomainStore
-	feePool        *fees.Store
-	proposalMaster *governance.ProposalMasterStore
-	rewardMaster   *rewards.RewardMasterStore
-	governance     *governance.Store
-	logger         *log.Logger
-	txTypes        *[]action.TxTypeDescribe
+	name            string
+	ext             client.ExtServiceContext
+	balances        *balance.Store
+	currencies      *balance.CurrencySet
+	validators      *identity.ValidatorStore
+	witnesses       *identity.WitnessStore
+	delegators      *delegation.DelegationStore
+	netwkDelegators *netwkDeleg.MasterStore
+	govern          *governance.Store
+	ons             *ons.DomainStore
+	feePool         *fees.Store
+	proposalMaster  *governance.ProposalMasterStore
+	rewardMaster    *rewards.RewardMasterStore
+	governance      *governance.Store
+	logger          *log.Logger
+	txTypes         *[]action.TxTypeDescribe
 }
 
 func Name() string {
@@ -42,7 +44,7 @@ func Name() string {
 }
 
 func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencies *balance.CurrencySet, validators *identity.ValidatorStore, witnesses *identity.WitnessStore,
-	domains *ons.DomainStore, delegators *delegation.DelegationStore, govern *governance.Store, feePool *fees.Store, proposalMaster *governance.ProposalMasterStore, rewardMaster *rewards.RewardMasterStore, logger *log.Logger, txTypes *[]action.TxTypeDescribe) *Service {
+	domains *ons.DomainStore, delegators *delegation.DelegationStore, netwkDelegators *netwkDeleg.MasterStore, govern *governance.Store, feePool *fees.Store, proposalMaster *governance.ProposalMasterStore, rewardMaster *rewards.RewardMasterStore, logger *log.Logger, txTypes *[]action.TxTypeDescribe) *Service {
 	return &Service{
 		name:           "query",
 		ext:            ctx,

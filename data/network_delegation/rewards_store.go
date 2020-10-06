@@ -30,6 +30,10 @@ func (drs *DelegRewardStore) WithState(state *storage.State) *DelegRewardStore {
 	return drs
 }
 
+func (drs *DelegRewardStore) GetState() *storage.State {
+	return drs.state
+}
+
 // Add rewards balance
 func (drs *DelegRewardStore) AddRewardsBalance(delegator keys.Address, amount *balance.Amount) error {
 	key := drs.getRewardsBalanceKey(delegator)
