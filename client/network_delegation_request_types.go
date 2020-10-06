@@ -6,7 +6,6 @@ import (
 )
 
 type NetworkDelegateRequest struct {
-	UserAddress       keys.Address  `json:"userAddress"`
 	DelegationAddress keys.Address  `json:"delegationAddress"`
 	Amount            action.Amount `json:"amount"`
 	GasPrice          action.Amount `json:"gasPrice"`

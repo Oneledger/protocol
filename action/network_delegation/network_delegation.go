@@ -14,13 +14,12 @@ import (
 var _ action.Msg = &NetworkDelegate{}
 
 type NetworkDelegate struct {
-	UserAddress       keys.Address
 	DelegationAddress keys.Address
 	Amount            action.Amount
 }
 
 func (n NetworkDelegate) Signers() []action.Address {
-	return []action.Address{n.UserAddress}
+	return []action.Address{n.DelegationAddress}
 }
 
 func (n NetworkDelegate) Type() action.Type {
@@ -75,9 +74,6 @@ func (n networkDelegateTx) Validate(ctx *action.Context, tx action.SignedTx) (bo
 		return false, err
 	}
 
-	if err := delegate.UserAddress.Err(); err != nil {
-		return false, err
-	}
 	if err := delegate.DelegationAddress.Err(); err != nil {
 		return false, err
 	}

@@ -12,7 +12,6 @@ import (
 func (s *Service) NetworkDelegate(args client.NetworkDelegateRequest, reply *client.CreateTxReply) error {
 
 	networkDelegation := nwd.NetworkDelegate{
-		UserAddress:       args.UserAddress,
 		DelegationAddress: args.DelegationAddress,
 		Amount:            args.Amount,
 	}

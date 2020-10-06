@@ -15,15 +15,13 @@ class bcolors:
 
 
 class NetWorkDelegate:
-    def __init__(self, useraddress, delegationaddress, amount, keypath):
-        self.useraddress = useraddress
+    def __init__(self, delegationaddress, amount, keypath):
         self.delegationaddress = delegationaddress
         self.amount = amount
         self.keypath = keypath
 
     def _network_Delegate(self):
         req = {
-            "userAddress": self.useraddress,
             "delegationAddress": self.delegationaddress,
             "amount": {
                 "currency": "OLT",
@@ -45,7 +43,7 @@ class NetWorkDelegate:
         raw_txn = self._network_Delegate()
 
         # sign Tx
-        signed = sign(raw_txn, self.useraddress, self.keypath)
+        signed = sign(raw_txn, self.delegationaddress, self.keypath)
 
         # broadcast Tx
         result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
@@ -58,7 +56,6 @@ class NetWorkDelegate:
 
 
 def sign(raw_tx, address, keypath):
-    print keypath
     resp = rpc_call('owner.SignWithSecureAddress',
                     {"rawTx": raw_tx, "address": address, "password": "1234", "keypath": keypath})
     print resp
