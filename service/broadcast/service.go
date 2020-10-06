@@ -2,6 +2,7 @@ package broadcast
 
 import (
 	"errors"
+	"github.com/Oneledger/protocol/data/network_delegation"
 
 	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/data/delegation"
@@ -35,11 +36,13 @@ type Service struct {
 	extStores      data.Router
 	ext            client.ExtServiceContext
 	govUpdate      *action.GovernaceUpdateAndValidate
+	netwkDelegators *network_delegation.MasterStore
 }
 
 func NewService(ctx client.ExtServiceContext, router action.Router, currencies *balance.CurrencySet,
 	feePool *fees.Store, domains *ons.DomainStore, govern *governance.Store, delegators *delegation.DelegationStore, validators *identity.ValidatorStore,
-	logger *log.Logger, trackers *bitcoin.TrackerStore, proposalMaster *governance.ProposalMasterStore, rewardMaster *rewards.RewardMasterStore, extStores data.Router, govUpdate *action.GovernaceUpdateAndValidate,
+	logger *log.Logger, trackers *bitcoin.TrackerStore, proposalMaster *governance.ProposalMasterStore, rewardMaster *rewards.RewardMasterStore,
+	extStores data.Router, govUpdate *action.GovernaceUpdateAndValidate, netwkDelegators *network_delegation.MasterStore,
 ) *Service {
 	return &Service{
 		ext:            ctx,
@@ -56,6 +59,7 @@ func NewService(ctx client.ExtServiceContext, router action.Router, currencies *
 		extStores:      extStores,
 		logger:         logger,
 		govUpdate:      govUpdate,
+		netwkDelegators: netwkDelegators,
 	}
 }
 
@@ -81,7 +85,7 @@ func (svc *Service) validateAndSignTx(req client.BroadcastRequest) ([]byte, erro
 	handler := svc.router.Handler(tx.Type)
 	ctx := action.NewContext(svc.router, nil, nil, nil, nil, svc.currencies,
 		svc.feePool, svc.validators, nil, svc.domains, svc.delegators, svc.trackers, nil, nil, nil, svc.logger,
-		svc.proposalMaster, svc.rewardMaster, svc.govern, svc.extStores, svc.govUpdate)
+		svc.proposalMaster, svc.rewardMaster, svc.govern, svc.extStores, svc.govUpdate, svc.netwkDelegators)
 
 	_, err = handler.Validate(ctx, signedTx)
 	if err != nil {
@@ -114,7 +118,7 @@ func (svc *Service) validateAndMtSignTx(req client.BroadcastMtSigRequest) ([]byt
 	handler := svc.router.Handler(tx.Type)
 	ctx := action.NewContext(svc.router, nil, nil, nil, nil, svc.currencies,
 		svc.feePool, svc.validators, nil, svc.domains, svc.delegators, svc.trackers, nil, nil, nil, svc.logger,
-		svc.proposalMaster, svc.rewardMaster, svc.govern, svc.extStores, svc.govUpdate)
+		svc.proposalMaster, svc.rewardMaster, svc.govern, svc.extStores, svc.govUpdate, svc.netwkDelegators)
 
 	_, err = handler.Validate(ctx, signedTx)
 	if err != nil {
