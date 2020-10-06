@@ -6,11 +6,6 @@ import (
 	"github.com/Oneledger/protocol/data/keys"
 )
 
-//-------------------Query
-type GetTotalNetwkDelgReply struct {
-	Amount balance.Amount `json:"amount"`
-}
-
 //-------------------Tx-----------------
 type FinalizeRewardsRequest struct {
 	Delegator keys.Address  `json:"delegator"`
