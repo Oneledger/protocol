@@ -24,6 +24,10 @@ type GetUndelegatedReply struct {
 	Height         int64                 `json:"height"`
 }
 
+type GetTotalNetwkDelgReply struct {
+	Amount balance.Amount `json:"amount"`
+}
+
 //-------------TX
 type NetUndelegateRequest struct {
 	Delegator keys.Address  `json:"delegator"`
