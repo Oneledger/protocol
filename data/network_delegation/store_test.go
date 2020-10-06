@@ -69,7 +69,7 @@ func init() {
 
 func TestStore_Set_Get(t *testing.T) {
 	//Test Active Store
-	store.WithPrefix(activeType)
+	store.WithPrefix(ActiveType)
 	for i, v := range activeAddrList {
 		addr := keys.Address{}
 		_ = addr.UnmarshalText([]byte(i))
@@ -81,7 +81,7 @@ func TestStore_Set_Get(t *testing.T) {
 	}
 
 	//Test Mature Store
-	store.WithPrefix(matureType)
+	store.WithPrefix(MatureType)
 	for i, v := range matureAddrList {
 		addr := keys.Address{}
 		_ = addr.UnmarshalText([]byte(i))
@@ -92,11 +92,11 @@ func TestStore_Set_Get(t *testing.T) {
 		assert.Equal(t, coin, v)
 	}
 
-	store.state.Commit()
+	store.State.Commit()
 }
 
 func TestStore_Exists(t *testing.T) {
-	store.WithPrefix(matureType)
+	store.WithPrefix(MatureType)
 	for key, _ := range matureAddrList {
 		addr := &keys.Address{}
 		_ = addr.UnmarshalText([]byte(key))
@@ -123,7 +123,7 @@ func TestStore_IterateMatureAmounts(t *testing.T) {
 
 func TestStore_SetPendingAmount(t *testing.T) {
 	//Test Set Pending Amount at different heights - pending address list is at 500, active address list is at 600
-	store.WithPrefix(pendingType)
+	store.WithPrefix(PendingType)
 	for i, v := range pendingAddrList {
 		addr := keys.Address{}
 		_ = addr.UnmarshalText([]byte(i))
@@ -137,7 +137,7 @@ func TestStore_SetPendingAmount(t *testing.T) {
 		err := store.SetPendingAmount(addr, 600, v)
 		assert.Equal(t, err, nil)
 	}
-	store.state.Commit()
+	store.State.Commit()
 
 	//Test iterate Pending Amounts at different heights
 	//Iterate pending amounts at height 500

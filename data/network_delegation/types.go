@@ -18,21 +18,22 @@ type DelegPendingRewards struct {
 }
 
 type Delegator struct {
-	Address keys.Address
-	Amount  balance.Coin
+	Address *keys.Address `json:"address"`
+	Amount  *balance.Coin `json:"amount"`
 }
 
 type PendingDelegator struct {
-	Address keys.Address
-	Amount  balance.Coin
-	Height  int64
+	Address *keys.Address `json:"address"`
+	Amount  *balance.Coin `json:"amount"`
+	Height  int64         `json:"height"`
 }
 
 type State struct {
-	ActiveList  []Delegator
-	MatureList  []Delegator
-	PendingList []PendingDelegator
+	ActiveList  []Delegator        `json:"active_list"`
+	MatureList  []Delegator        `json:"mature_list"`
+	PendingList []PendingDelegator `json:"pending_list"`
 }
 
-func dumpDelegators() {
+func (prefix DelegationPrefixType) GetJSONPrefix() string {
+	return prefixMap[prefix]
 }
