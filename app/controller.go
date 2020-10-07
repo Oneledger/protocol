@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/external_apps/common"
 	"math"
 	"math/big"
@@ -134,7 +135,7 @@ func (app *App) blockBeginner() blockBeginner {
 		}
 
 		blockRewardEvent := handleBlockRewards(app.Context.validators, app.Context.balances,
-			app.Context.rewardMaster.WithState(app.Context.deliver), app.Context.currencies, req)
+			app.Context.rewardMaster.WithState(app.Context.deliver), app.Context.govern, app.Context.currencies, req)
 
 		result := ResponseBeginBlock{
 			Events: []abciTypes.Event{blockRewardEvent},
@@ -464,12 +465,30 @@ func getRewardForValidator(totalPower int64, validatorPower int64, totalRewards 
 	return reward
 }
 
+func handleDelegationRewards(totalRewards *balance.Amount, delegationPower int64, totalPower int64) (
+	NewTotalRewards *balance.Amount, totalConsumed *balance.Amount) {
+
+	//Get Total Rewards "T" for Delegator Pool
+	numerator := big.NewInt(0).Mul(totalRewards.BigInt(), big.NewInt(delegationPower))
+	_ = balance.NewAmountFromBigInt(big.NewInt(0).Div(numerator, big.NewInt(totalPower)))
+
+	//Cut X% from Total Delegation Rewards "T" as Commission "C"
+	//Distribute Y% of Commission "C" to block proposer
+	//Add remaining amount of Commission "C" to Total Rewards
+	return
+}
+
 func handleBlockRewards(validators *identity.ValidatorStore, balances *balance.Store, rewardMaster *rewards.RewardMasterStore,
-	currency *balance.CurrencySet, block RequestBeginBlock) abciTypes.Event {
+	govern *governance.Store, currency *balance.CurrencySet, block RequestBeginBlock) abciTypes.Event {
 
 	votes := block.LastCommitInfo.Votes
 	lastHeight := block.GetHeader().Height
 	options := rewardMaster.Reward.GetOptions()
+
+	curr, ok := currency.GetCurrencyById(0)
+	if !ok {
+		return abciTypes.Event{}
+	}
 
 	heightKey := "height"
 
@@ -497,21 +516,32 @@ func handleBlockRewards(validators *identity.ValidatorStore, balances *balance.S
 		totalPower += vote.Validator.Power
 	}
 
-	//get total rewards for the block
-	rewardPoolBalance, err := balances.GetBalance(keys.Address(options.RewardPoolAddress), currency)
-	curr, ok := currency.GetCurrencyById(0)
-	if err != nil || !ok {
+	//Add Delegator Pool Balance to the Total Power
+	poolList, err := govern.GetPoolList()
+	if err != nil {
 		return abciTypes.Event{}
 	}
-	currency.GetCurrencyById(0)
-	coin := rewardPoolBalance.GetCoin(curr)
-	totalRewards, err := rewardMaster.RewardCm.PullRewards(lastHeight, coin.Amount)
+	delegationPoolCoin, err := balances.GetBalanceForCurr(poolList["DelegationPool"], &curr)
+	if err != nil {
+		return abciTypes.Event{}
+	}
+	delegationPower := delegationPoolCoin.Amount.BigInt().Int64()
+	totalPower += delegationPower
+
+	//get total rewards for the block
+	rewardPoolCoin, err := balances.GetBalanceForCurr(poolList["RewardsPool"], &curr)
+	if err != nil {
+		return abciTypes.Event{}
+	}
+	totalRewards, err := rewardMaster.RewardCm.PullRewards(lastHeight, rewardPoolCoin.Amount)
 	if err != nil {
 		return abciTypes.Event{}
 	}
 
-	//Loop through all validators that participated in signing the last block
 	totalConsumed := balance.NewAmount(0)
+	totalRewards, totalConsumed = handleDelegationRewards(totalRewards, delegationPower, totalPower)
+
+	//Loop through all validators that participated in signing the last block
 	for _, vote := range votes {
 		//Verify Validator Address
 		valAddress := keys.Address(vote.Validator.Address)
