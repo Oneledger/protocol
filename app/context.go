@@ -21,6 +21,7 @@ import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/eth"
 	action_gov "github.com/Oneledger/protocol/action/governance"
+	action_networkDelegation "github.com/Oneledger/protocol/action/network_delegation"
 	action_ons "github.com/Oneledger/protocol/action/ons"
 	action_rewards "github.com/Oneledger/protocol/action/rewards"
 	"github.com/Oneledger/protocol/action/staking"
@@ -172,7 +173,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	_ = eth.EnableInternalETH(ctx.internalRouter)
 
 	_ = action_rewards.EnableRewards(ctx.actionRouter)
-
+	_ = action_networkDelegation.EnableNetworkDelegation(ctx.actionRouter)
 	_ = action_gov.EnableGovernance(ctx.actionRouter)
 	_ = action_gov.EnableInternalGovernance(ctx.internalRouter)
 	_ = staking.EnableStaking(ctx.actionRouter)
@@ -221,6 +222,7 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.govern.WithState(state),
 		ctx.extStores.WithState(state),
 		ctx.govupdate,
+		ctx.netwkDelegators,
 	)
 
 	return actionCtx
@@ -270,7 +272,6 @@ func (ctx *context) Services() (service.Map, error) {
 
 	rewardMaster := NewRewardMasterStore(ctx.chainstate)
 	rewardMaster.SetOptions(ctx.rewardMaster.GetOptions())
-
 	svcCtx := &service.Context{
 		Balances:       balance.NewStore("b", storage.NewState(ctx.chainstate)),
 		Accounts:       ctx.accounts,

@@ -7,6 +7,8 @@ import (
 	"github.com/Oneledger/protocol/storage"
 )
 
+const DELEGATION_POOL_KEY = "00000000000000000001"
+
 var logger *log.Logger
 var prefixMap map[DelegationPrefixType]string
 
