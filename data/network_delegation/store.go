@@ -2,6 +2,7 @@ package network_delegation
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
@@ -81,6 +82,7 @@ func (st *Store) Set(address keys.Address, coin *balance.Coin) (err error) {
 //Get coin from address
 func (st *Store) Get(address keys.Address) (coin *balance.Coin, err error) {
 	prefixKey := append(st.currentPrefix, address.String()...)
+	fmt.Println(prefixKey)
 	coin, err = st.get(storage.StoreKey(prefixKey))
 	return
 }
