@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/Oneledger/protocol/data/network_delegation"
 	"github.com/Oneledger/protocol/external_apps/common"
 	"github.com/pkg/errors"
 
@@ -43,15 +44,16 @@ type Context struct {
 	Trackers     *bitcoin.TrackerStore
 	EthTrackers  *ethTracker.TrackerStore
 	// configurations
-	Cfg            config.Server
-	Currencies     *balance.CurrencySet
-	ProposalMaster *governance.ProposalMasterStore
-	RewardMaster   *rewards.RewardMasterStore
-	Govern         *governance.Store
-	ExtStores      data.Router
-	ExtServiceMap  common.ExtServiceMap
-	GovUpdate      *action.GovernaceUpdateAndValidate
-	NodeContext    node.Context
+	Cfg                   config.Server
+	Currencies            *balance.CurrencySet
+	ProposalMaster        *governance.ProposalMasterStore
+	RewardMaster          *rewards.RewardMasterStore
+	Govern                *governance.Store
+	ExtStores             data.Router
+	ExtServiceMap         common.ExtServiceMap
+	GovUpdate             *action.GovernaceUpdateAndValidate
+	NetwkDelegatorsMaster *network_delegation.MasterStore
+	NodeContext           node.Context
 
 	Router   action.Router
 	Services client.ExtServiceContext
@@ -66,7 +68,7 @@ type Map map[string]interface{}
 func NewMap(ctx *Context) (Map, error) {
 
 	defaultMap := Map{
-		broadcast.Name(): broadcast.NewService(ctx.Services, ctx.Router, ctx.Currencies, ctx.FeePool, ctx.Domains, ctx.Govern, ctx.Delegators, ctx.ValidatorSet, ctx.Logger, ctx.Trackers, ctx.ProposalMaster, ctx.RewardMaster, ctx.ExtStores, ctx.GovUpdate),
+		broadcast.Name(): broadcast.NewService(ctx.Services, ctx.Router, ctx.Currencies, ctx.FeePool, ctx.Domains, ctx.Govern, ctx.Delegators, ctx.ValidatorSet, ctx.Logger, ctx.Trackers, ctx.ProposalMaster, ctx.RewardMaster, ctx.ExtStores, ctx.GovUpdate, ctx.NetwkDelegatorsMaster),
 		nodesvc.Name():   nodesvc.NewService(ctx.NodeContext, &ctx.Cfg, ctx.Logger),
 		owner.Name():     owner.NewService(ctx.Accounts, ctx.Logger),
 		query.Name(): query.NewService(ctx.Services, ctx.Balances, ctx.Currencies, ctx.ValidatorSet, ctx.WitnessSet, ctx.Domains, ctx.Delegators, ctx.Govern,
@@ -92,7 +94,6 @@ func NewMap(ctx *Context) (Map, error) {
 			serviceMap[name] = service
 		}
 	}
-
 
 	return serviceMap, nil
 }

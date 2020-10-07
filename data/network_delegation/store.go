@@ -17,9 +17,9 @@ const (
 )
 
 var (
-	matureType  DelegationPrefixType = 0x103
-	pendingType DelegationPrefixType = 0x102
-	activeType  DelegationPrefixType = 0x101
+	MatureType  DelegationPrefixType = 0x103
+	PendingType DelegationPrefixType = 0x102
+	ActiveType  DelegationPrefixType = 0x101
 )
 
 type Store struct {
@@ -86,11 +86,11 @@ func (st *Store) Get(address keys.Address) (coin *balance.Coin, err error) {
 
 func (st *Store) WithPrefix(prefix DelegationPrefixType) *Store {
 	switch prefix {
-	case matureType:
+	case MatureType:
 		st.currentPrefix = st.buildMatureKey()
-	case pendingType:
+	case PendingType:
 		st.currentPrefix = st.buildPendingKey()
-	case activeType:
+	case ActiveType:
 		st.currentPrefix = st.buildActiveKey()
 	}
 	return st

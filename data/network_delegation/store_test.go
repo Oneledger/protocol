@@ -69,7 +69,7 @@ func init() {
 
 func TestStore_Set_Get(t *testing.T) {
 	//Test Active Store
-	store.WithPrefix(activeType)
+	store.WithPrefix(ActiveType)
 	for i, v := range activeAddrList {
 		addr := keys.Address{}
 		_ = addr.UnmarshalText([]byte(i))
@@ -81,7 +81,7 @@ func TestStore_Set_Get(t *testing.T) {
 	}
 
 	//Test Mature Store
-	store.WithPrefix(matureType)
+	store.WithPrefix(MatureType)
 	for i, v := range matureAddrList {
 		addr := keys.Address{}
 		_ = addr.UnmarshalText([]byte(i))
@@ -96,8 +96,8 @@ func TestStore_Set_Get(t *testing.T) {
 }
 
 func TestStore_Exists(t *testing.T) {
-	store.WithPrefix(matureType)
-	for key, _ := range matureAddrList {
+	store.WithPrefix(MatureType)
+	for key := range matureAddrList {
 		addr := &keys.Address{}
 		_ = addr.UnmarshalText([]byte(key))
 		res := store.Exists(addr)
@@ -123,7 +123,7 @@ func TestStore_IterateMatureAmounts(t *testing.T) {
 
 func TestStore_SetPendingAmount(t *testing.T) {
 	//Test Set Pending Amount at different heights - pending address list is at 500, active address list is at 600
-	store.WithPrefix(pendingType)
+	store.WithPrefix(PendingType)
 	for i, v := range pendingAddrList {
 		addr := keys.Address{}
 		_ = addr.UnmarshalText([]byte(i))

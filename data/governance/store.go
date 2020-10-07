@@ -3,13 +3,13 @@ package governance
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/Oneledger/protocol/data/network_delegation"
 	"os"
 	"sync"
 
 	"github.com/Oneledger/protocol/data/delegation"
 	"github.com/Oneledger/protocol/data/evidence"
 	"github.com/Oneledger/protocol/data/keys"
-	"github.com/Oneledger/protocol/data/network_delegation"
 	"github.com/Oneledger/protocol/data/rewards"
 	"github.com/Oneledger/protocol/log"
 
@@ -547,5 +547,6 @@ func (st *Store) GetPoolList() (map[string]keys.Address, error) {
 	poolList["BountyPool"] = keys.Address(propOpt.BountyProgramAddr)
 	poolList["FeePool"] = keys.Address(fees.POOL_KEY)
 	poolList["RewardsPool"] = keys.Address(rewardOpt.RewardPoolAddress)
+	poolList["DelegationPool"] = keys.Address(network_delegation.DELEGATION_POOL_KEY)
 	return poolList, nil
 }
