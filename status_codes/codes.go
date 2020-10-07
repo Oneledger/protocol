@@ -117,7 +117,7 @@ const (
 	NetDelgErrSettingActiveDelgAmount   = 600503
 	NetDelgErrGettingDelgOption         = 600504
 	NetDelgErrSettingPendingDelgAmount  = 600505
-	NetDelgErrGettingPendingDelgAmount = 600506
+	NetDelgErrGettingPendingDelgAmount  = 600506
 
 	GovErr                                = 7001
 	GovErrGetProposalOptions              = 700101

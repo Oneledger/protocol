@@ -13,8 +13,8 @@ import (
 )
 
 type Undelegate struct {
-	Delegator keys.Address `json:"delegator"`
-	Amount action.Amount `json:"amount"`
+	Delegator keys.Address  `json:"delegator"`
+	Amount    action.Amount `json:"amount"`
 }
 
 var _ action.Msg = &Undelegate{}
@@ -55,7 +55,7 @@ func (ud *Undelegate) Unmarshal(data []byte) error {
 	return json.Unmarshal(data, ud)
 }
 
-type UndelegateTx struct {}
+type UndelegateTx struct{}
 
 var _ action.Tx = &UndelegateTx{}
 
