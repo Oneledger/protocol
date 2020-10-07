@@ -34,12 +34,12 @@ func (n AddNetworkDelegation) Tags() kv.Pairs {
 		Key:   []byte("tx.type"),
 		Value: []byte(n.Type().String()),
 	}
-	tag3 := kv.Pair{
+	tag2 := kv.Pair{
 		Key:   []byte("tx.delegationAddress"),
 		Value: n.DelegationAddress.Bytes(),
 	}
 
-	tags = append(tags, tag, tag3)
+	tags = append(tags, tag, tag2)
 	return tags
 }
 

@@ -113,6 +113,8 @@ func init() {
 	RegisterTxType(PROPOSAL_WITHDRAW_FUNDS, "PROPOSAL_WITHDRAW_FUNDS")
 
 	RegisterTxType(WITHDRAW_REWARD, "WITHDRAW_REWARD")
+
+	RegisterTxType(ADD_NETWORK_DELEGATE, "ADD_NETWORK_DELEGATION")
 }
 
 func RegisterTxType(value Type, name string) {
