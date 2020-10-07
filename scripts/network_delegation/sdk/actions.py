@@ -38,6 +38,20 @@ class NetWorkDelegate:
         print resp
         return resp["result"]["rawTx"]
 
+    def _network_undelegate(self, amount):
+        req = {
+            "delegator": self.delegationaddress,
+            "amount": amount,
+            "gasPrice": {
+                "currency": "OLT",
+                "value": "1000000000",
+            },
+            "gas": 40000,
+        }
+
+        resp = rpc_call('tx.NetworkUndelegate', req)
+        return resp["result"]["rawTx"]
+
     def send_network_Delegate(self):
         # create Tx
         raw_txn = self._network_Delegate()
@@ -53,6 +67,34 @@ class NetWorkDelegate:
             else:
                 print "################### delegation added"
                 return result["txHash"]
+
+    def send_network_undelegate(self, amount):
+        # createTx
+        raw_txn = self._network_undelegate(amount)
+
+        # sign Tx
+        signed = sign(raw_txn, self.delegationaddress)
+
+        # broadcast Tx
+        result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
+        if "ok" in result:
+            if not result["ok"]:
+                print "Send undelegate Failed : ", result
+            else:
+                self.txHash = "0x" + result["txHash"]
+                print "################### undelegate success"
+
+    def query_undelegate(self):
+        req = {
+            "delegator": self.delegationaddress
+        }
+
+        resp = rpc_call('query.GetUndelegatedAmount', req)
+        # print resp
+        result = resp["result"]
+        # print json.dumps(resp, indent=4)
+        return result
+
 
 
 def sign(raw_tx, address, keypath):
@@ -82,3 +124,28 @@ def broadcast_sync(raw_tx, signature, pub_key):
         "publicKey": pub_key,
     })
     return resp["result"]
+
+
+def query_total():
+    req = {}
+    resp = rpc_call('query.GetTotalNetwkDelegation', req)
+    # print resp
+    result = resp["result"]
+    # print json.dumps(resp, indent=4)
+    return result
+
+
+def check_query_undelegated(result, pending_count_expected, matured_expected):
+    if not result['height']:
+        sys.exit(-1)
+    if len(result['pendingAmount']) != pending_count_expected:
+        sys.exit(-1)
+    if result['maturedAmount'] != matured_expected:
+        sys.exit(-1)
+
+
+def check_query_total(result, total_expected):
+    if not result['height']:
+        sys.exit(-1)
+    if result['totalAmount'] != total_expected:
+        sys.exit(-1)

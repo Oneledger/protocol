@@ -46,7 +46,7 @@ func (svc *Service) GetUndelegatedAmount(req client.GetUndelegatedRequest, reply
 	return nil
 }
 
-func (svc *Service) GetTotalNetwkDelg(reply *client.GetTotalNetwkDelgReply) error {
+func (svc *Service) GetTotalNetwkDelegation(reply *client.GetTotalNetwkDelgReply) error {
 	// get active delegation amount
 	poolList, err := svc.governance.GetPoolList()
 	if err != nil {
