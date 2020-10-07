@@ -23,7 +23,7 @@ var (
 )
 
 type Store struct {
-	state         *storage.State
+	State         *storage.State
 	szlr          serialize.Serializer
 	prefix        []byte
 	currentPrefix []byte
@@ -32,7 +32,7 @@ type Store struct {
 
 func NewStore(prefix string, state *storage.State) *Store {
 	return &Store{
-		state:         state,
+		State:         state,
 		prefix:        storage.StoreKey(prefix),
 		currentPrefix: storage.StoreKey(prefix + storage.DB_PREFIX + ActiveKey),
 		szlr:          serialize.GetSerializer(serialize.PERSISTENT),
@@ -40,13 +40,13 @@ func NewStore(prefix string, state *storage.State) *Store {
 }
 
 func (st *Store) WithState(state *storage.State) *Store {
-	st.state = state
+	st.State = state
 	return st
 }
 
 func (st *Store) Exists(addr *keys.Address) bool {
 	key := append(st.currentPrefix, addr.String()...)
-	return st.state.Exists(key)
+	return st.State.Exists(key)
 }
 
 //Set coin to specific key
@@ -55,14 +55,14 @@ func (st *Store) set(key []byte, coin *balance.Coin) (err error) {
 	if err != nil {
 		return
 	}
-	err = st.state.Set(storage.StoreKey(key), dat)
+	err = st.State.Set(storage.StoreKey(key), dat)
 	return
 }
 
 //get coin from specific key
 func (st *Store) get(key []byte) (coin *balance.Coin, err error) {
 	coin = &balance.Coin{}
-	dat, err := st.state.Get(storage.StoreKey(key))
+	dat, err := st.State.Get(storage.StoreKey(key))
 	if err != nil {
 		return
 	}
@@ -97,7 +97,7 @@ func (st *Store) WithPrefix(prefix DelegationPrefixType) *Store {
 }
 
 func (st *Store) iterate(prefix storage.StoreKey, fn func(key []byte, coin *balance.Coin) bool) bool {
-	return st.state.IterateRange(
+	return st.State.IterateRange(
 		prefix,
 		storage.Rangefix(string(prefix)),
 		true,
@@ -132,7 +132,6 @@ func (st *Store) buildActiveKey() storage.StoreKey {
 
 func (st *Store) IterateActiveAmounts(fn func(addr *keys.Address, coin *balance.Coin) bool) bool {
 	prefix := st.buildActiveKey()
-	//fmt.Println("Active prefix: ", prefix)
 	return st.iterateAddresses(prefix, func(addr *keys.Address, coin *balance.Coin) bool {
 		return fn(addr, coin)
 	})
@@ -191,3 +190,68 @@ func (st *Store) IterateMatureAmounts(fn func(addr *keys.Address, coin *balance.
 		return fn(addr, coin)
 	})
 }
+
+//__________________________________ Load State ____________________________________
+
+func (st *Store) LoadDelegators(state State) error {
+	//Load Active Delegators
+	for _, delegator := range state.ActiveList {
+		err := st.WithPrefix(ActiveType).Set(*delegator.Address, delegator.Amount)
+		if err != nil {
+			return err
+		}
+	}
+	//Load Mature Delegators
+	for _, delegator := range state.MatureList {
+		err := st.WithPrefix(MatureType).Set(*delegator.Address, delegator.Amount)
+		if err != nil {
+			return err
+		}
+	}
+	//Load Pending Delegators
+	for _, delegator := range state.PendingList {
+		err := st.SetPendingAmount(*delegator.Address, delegator.Height, delegator.Amount)
+		if err != nil {
+			return err
+		}
+	}
+
+	//st.LoadTestData()
+
+	return nil
+}
+
+//func (st *Store)LoadTestData() {
+//	var coinList []*balance.Coin
+//
+//	for i := 100; i < 115; i++ {
+//		coin := &balance.Coin{
+//			Currency: balance.Currency{
+//				Id:      0,
+//				Name:    "cur",
+//				Chain:   0,
+//				Decimal: 10,
+//				Unit:    "u",
+//			},
+//			Amount: balance.NewAmount(int64(i)),
+//		}
+//		coinList = append(coinList, coin)
+//	}
+//
+//	var addrList []keys.Address
+//	//Create Validator Keys
+//	for i := 0; i < 10; i++ {
+//		pub, _, _ := keys.NewKeyPairFromTendermint()
+//		h, _ := pub.GetHandler()
+//		addrList = append(addrList, h.Address())
+//	}
+//
+//	_ = st.WithPrefix(ActiveType).Set(addrList[0], coinList[0])
+//	_ = st.WithPrefix(ActiveType).Set(addrList[1], coinList[1])
+//
+//	_ = st.WithPrefix(MatureType).Set(addrList[2], coinList[2])
+//	_ = st.WithPrefix(MatureType).Set(addrList[3], coinList[3])
+//
+//	_ = st.SetPendingAmount(addrList[4], 100, coinList[4])
+//	_ = st.SetPendingAmount(addrList[5], 100, coinList[5])
+//}

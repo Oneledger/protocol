@@ -268,6 +268,12 @@ func (app *App) setupState(stateBytes []byte) error {
 		return errors.Wrap(err, "error setup proposal data")
 	}
 
+	//Setup Delegators
+	err = app.Context.netwkDelegators.Deleg.WithState(app.Context.deliver).LoadDelegators(initial.NetDelegators)
+	if err != nil {
+		return errors.Wrap(err, "error setup network delegation data")
+	}
+
 	app.Context.deliver.Write()
 	return nil
 }
