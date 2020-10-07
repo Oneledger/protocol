@@ -45,6 +45,7 @@ def rpc_call(method, params, url=url_0):
     resp = json.loads(response.text)
     return resp
 
+
 def tx_by_hash(hash):
     params = {"hash": hash}
 
@@ -55,6 +56,7 @@ def tx_by_hash(hash):
 
     resp = json.loads(response.text)
     return resp
+
 
 def convertBigInt(value):
     return str(value)

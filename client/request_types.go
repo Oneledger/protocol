@@ -100,6 +100,12 @@ type SendPoolTxRequest struct {
 type CreateTxReply struct {
 	RawTx []byte `json:"rawTx"`
 }
+type SecureSignRawTxRequest struct {
+	RawTx    []byte         `json:"rawTx"`
+	Address  action.Address `json:"address"`
+	Password string         `json:"password"`
+	KeyPath  string         `json:"keyPath"`
+}
 
 type StakeRequest struct {
 	Address      keys.Address   `json:"address"`

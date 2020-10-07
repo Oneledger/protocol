@@ -22,43 +22,42 @@ import (
 )
 
 type Service struct {
-	logger         *log.Logger
-	router         action.Router
-	currencies     *balance.CurrencySet
-	trackers       *bitcoin.TrackerStore
-	feePool        *fees.Store
-	domains        *ons.DomainStore
-	delegators     *delegation.DelegationStore
-	validators     *identity.ValidatorStore
-	proposalMaster *governance.ProposalMasterStore
-	rewardMaster   *rewards.RewardMasterStore
-	govern         *governance.Store
-	extStores      data.Router
-	ext            client.ExtServiceContext
-	govUpdate      *action.GovernaceUpdateAndValidate
+	logger          *log.Logger
+	router          action.Router
+	currencies      *balance.CurrencySet
+	trackers        *bitcoin.TrackerStore
+	feePool         *fees.Store
+	domains         *ons.DomainStore
+	delegators      *delegation.DelegationStore
+	validators      *identity.ValidatorStore
+	proposalMaster  *governance.ProposalMasterStore
+	rewardMaster    *rewards.RewardMasterStore
 	netwkDelegators *network_delegation.MasterStore
+	govern          *governance.Store
+	extStores       data.Router
+	ext             client.ExtServiceContext
+	govUpdate       *action.GovernaceUpdateAndValidate
 }
 
 func NewService(ctx client.ExtServiceContext, router action.Router, currencies *balance.CurrencySet,
 	feePool *fees.Store, domains *ons.DomainStore, govern *governance.Store, delegators *delegation.DelegationStore, validators *identity.ValidatorStore,
-	logger *log.Logger, trackers *bitcoin.TrackerStore, proposalMaster *governance.ProposalMasterStore, rewardMaster *rewards.RewardMasterStore,
-	extStores data.Router, govUpdate *action.GovernaceUpdateAndValidate, netwkDelegators *network_delegation.MasterStore,
+	logger *log.Logger, trackers *bitcoin.TrackerStore, proposalMaster *governance.ProposalMasterStore, rewardMaster *rewards.RewardMasterStore, extStores data.Router, govUpdate *action.GovernaceUpdateAndValidate, netwkDelegators *network_delegation.MasterStore,
 ) *Service {
 	return &Service{
-		ext:            ctx,
-		router:         router,
-		currencies:     currencies,
-		trackers:       trackers,
-		feePool:        feePool,
-		domains:        domains,
-		delegators:     delegators,
-		validators:     validators,
-		proposalMaster: proposalMaster,
-		rewardMaster:   rewardMaster,
-		govern:         govern,
-		extStores:      extStores,
-		logger:         logger,
-		govUpdate:      govUpdate,
+		ext:             ctx,
+		router:          router,
+		currencies:      currencies,
+		trackers:        trackers,
+		feePool:         feePool,
+		domains:         domains,
+		delegators:      delegators,
+		validators:      validators,
+		proposalMaster:  proposalMaster,
+		rewardMaster:    rewardMaster,
+		govern:          govern,
+		extStores:       extStores,
+		logger:          logger,
+		govUpdate:       govUpdate,
 		netwkDelegators: netwkDelegators,
 	}
 }

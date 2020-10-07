@@ -13,6 +13,8 @@ const (
 	MatureType  DelegationPrefixType = 0x103
 	PendingType DelegationPrefixType = 0x102
 	ActiveType  DelegationPrefixType = 0x101
+
+	DELEGATION_POOL_KEY = "00000000000000000001"
 )
 
 func init() {

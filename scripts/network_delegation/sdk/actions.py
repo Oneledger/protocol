@@ -1,7 +1,7 @@
-import hashlib
 import sys
 
 from rpc_call import *
+
 
 class bcolors:
     HEADER = '\033[95m'
@@ -14,14 +14,19 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 
-class Undelegate:
-    def __init__(self, delegator):
-        self.delegator = delegator
+class NetWorkDelegate:
+    def __init__(self, delegationaddress, amount, keypath):
+        self.delegationaddress = delegationaddress
+        self.amount = amount
+        self.keypath = keypath
 
-    def _create_undelegate(self, amount):
+    def _network_Delegate(self):
         req = {
-            "delegator": self.delegator,
-            "amount": amount,
+            "delegationAddress": self.delegationaddress,
+            "amount": {
+                "currency": "OLT",
+                "value": convertBigInt(self.amount),
+            },
             "gasPrice": {
                 "currency": "OLT",
                 "value": "1000000000",
@@ -29,44 +34,31 @@ class Undelegate:
             "gas": 40000,
         }
 
-        resp = rpc_call('tx.NetUndelegate', req)
+        resp = rpc_call('tx.AddNetworkDelegation', req)
+        print resp
         return resp["result"]["rawTx"]
 
-    def send_tx(self, amount):
-        # createTx
-        raw_txn = self._create_undelegate(amount)
+    def send_network_Delegate(self):
+        # create Tx
+        raw_txn = self._network_Delegate()
 
         # sign Tx
-        signed = sign(raw_txn, self.delegator)
+        signed = sign(raw_txn, self.delegationaddress, self.keypath)
 
         # broadcast Tx
         result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
         if "ok" in result:
             if not result["ok"]:
-                print "Send undelegate Failed : ", result
+                sys.exit(-1)
             else:
-                self.txHash = "0x" + result["txHash"]
-                print "################### undelegate success"
-
-    def query_undelegate(self):
-        req = {
-            "delegator": self.delegator
-        }
-
-        resp = rpc_call('query.GetUndelegatedAmount', req)
-        # print resp
-        result = resp["result"]
-        # print json.dumps(resp, indent=4)
-        return result
+                print "################### delegation added"
+                return result["txHash"]
 
 
-def addresses():
-    resp = rpc_call('owner.ListAccountAddresses', {})
-    return resp["result"]["addresses"]
-
-
-def sign(raw_tx, address):
-    resp = rpc_call('owner.SignWithAddress', {"rawTx": raw_tx, "address": address})
+def sign(raw_tx, address, keypath):
+    resp = rpc_call('owner.SignWithSecureAddress',
+                    {"rawTx": raw_tx, "address": address, "password": "1234", "keypath": keypath})
+    print resp
     return resp["result"]
 
 

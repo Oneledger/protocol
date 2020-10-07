@@ -21,7 +21,7 @@ import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/eth"
 	action_gov "github.com/Oneledger/protocol/action/governance"
-	action_netwk_delg "github.com/Oneledger/protocol/action/network_delegation"
+	action_networkDelegation "github.com/Oneledger/protocol/action/network_delegation"
 	action_ons "github.com/Oneledger/protocol/action/ons"
 	action_rewards "github.com/Oneledger/protocol/action/rewards"
 	"github.com/Oneledger/protocol/action/staking"
@@ -173,11 +173,10 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	_ = eth.EnableInternalETH(ctx.internalRouter)
 
 	_ = action_rewards.EnableRewards(ctx.actionRouter)
-
+	_ = action_networkDelegation.EnableNetworkDelegation(ctx.actionRouter)
 	_ = action_gov.EnableGovernance(ctx.actionRouter)
 	_ = action_gov.EnableInternalGovernance(ctx.internalRouter)
 	_ = staking.EnableStaking(ctx.actionRouter)
-	_ = action_netwk_delg.EnableNetwkDelegation(ctx.actionRouter)
 
 	return ctx, nil
 }
@@ -273,30 +272,29 @@ func (ctx *context) Services() (service.Map, error) {
 
 	rewardMaster := NewRewardMasterStore(ctx.chainstate)
 	rewardMaster.SetOptions(ctx.rewardMaster.GetOptions())
-
 	svcCtx := &service.Context{
-		Balances:       balance.NewStore("b", storage.NewState(ctx.chainstate)),
-		Accounts:       ctx.accounts,
-		Currencies:     ctx.currencies,
-		FeePool:        feePool,
-		Cfg:            ctx.cfg,
-		NodeContext:    ctx.node,
-		ValidatorSet:   identity.NewValidatorStore("v", "purged", storage.NewState(ctx.chainstate)),
-		WitnessSet:     identity.NewWitnessStore("w", storage.NewState(ctx.chainstate)),
-		Domains:        onsStore,
-		Delegators:     delegation.NewDelegationStore("st", storage.NewState(ctx.chainstate)),
-		ProposalMaster: proposalMaster,
-		RewardMaster:   rewardMaster,
-		ExtStores:      ctx.extStores,
-		ExtServiceMap:  ctx.extServiceMap,
-		Router:         ctx.actionRouter,
-		Logger:         log.NewLoggerWithPrefix(ctx.logWriter, "rpc").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
-		Services:       extSvcs,
-		EthTrackers:    ethTracker,
-		Trackers:       btcTrackers,
-		Govern:         governance.NewStore("g", storage.NewState(ctx.chainstate)),
-		GovUpdate:      ctx.govupdate,
-		NetwkDelegators: ctx.netwkDelegators,
+		Balances:              balance.NewStore("b", storage.NewState(ctx.chainstate)),
+		Accounts:              ctx.accounts,
+		Currencies:            ctx.currencies,
+		FeePool:               feePool,
+		Cfg:                   ctx.cfg,
+		NodeContext:           ctx.node,
+		ValidatorSet:          identity.NewValidatorStore("v", "purged", storage.NewState(ctx.chainstate)),
+		WitnessSet:            identity.NewWitnessStore("w", storage.NewState(ctx.chainstate)),
+		Domains:               onsStore,
+		Delegators:            delegation.NewDelegationStore("st", storage.NewState(ctx.chainstate)),
+		ProposalMaster:        proposalMaster,
+		RewardMaster:          rewardMaster,
+		ExtStores:             ctx.extStores,
+		ExtServiceMap:         ctx.extServiceMap,
+		Router:                ctx.actionRouter,
+		Logger:                log.NewLoggerWithPrefix(ctx.logWriter, "rpc").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
+		Services:              extSvcs,
+		EthTrackers:           ethTracker,
+		Trackers:              btcTrackers,
+		Govern:                governance.NewStore("g", storage.NewState(ctx.chainstate)),
+		GovUpdate:             ctx.govupdate,
+		NetwkDelegatorsMaster: ctx.netwkDelegators,
 	}
 
 	return service.NewMap(svcCtx)

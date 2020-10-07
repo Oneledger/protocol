@@ -97,7 +97,7 @@ func TestStore_Set_Get(t *testing.T) {
 
 func TestStore_Exists(t *testing.T) {
 	store.WithPrefix(MatureType)
-	for key, _ := range matureAddrList {
+	for key := range matureAddrList {
 		addr := &keys.Address{}
 		_ = addr.UnmarshalText([]byte(key))
 		res := store.Exists(addr)

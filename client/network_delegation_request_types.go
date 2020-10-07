@@ -25,10 +25,10 @@ type GetUndelegatedReply struct {
 }
 
 type GetTotalNetwkDelgReply struct {
-	ActiveAmount balance.Amount `json:"activeAmount"`
+	ActiveAmount  balance.Amount `json:"activeAmount"`
 	PendingAmount balance.Amount `json:"pendingAmount"`
 	MaturedAmount balance.Amount `json:"maturedAmount"`
-	TotalAmount balance.Amount `json:"totalAmount"`
+	TotalAmount   balance.Amount `json:"totalAmount"`
 }
 
 //-------------TX
@@ -37,4 +37,11 @@ type NetUndelegateRequest struct {
 	Amount    action.Amount `json:"amount"`
 	GasPrice  action.Amount `json:"gasPrice"`
 	Gas       int64         `json:"gas"`
+}
+
+type NetworkDelegateRequest struct {
+	DelegationAddress keys.Address  `json:"delegationAddress"`
+	Amount            action.Amount `json:"amount"`
+	GasPrice          action.Amount `json:"gasPrice"`
+	Gas               int64         `json:"gas"`
 }
