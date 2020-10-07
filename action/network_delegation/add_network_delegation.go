@@ -6,7 +6,6 @@ import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/Oneledger/protocol/data/balance"
-	"github.com/Oneledger/protocol/data/chain"
 	gov "github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/data/network_delegation"
@@ -144,14 +143,10 @@ func runNetworkDelegate(ctx *action.Context, tx action.RawTx) (bool, action.Resp
 
 	//Add balance to delegation
 	currentDelegation, err := ctx.NetwkDelegators.Deleg.WithPrefix(network_delegation.ActiveType).Get(delegate.DelegationAddress)
+
+	newCoin := currentDelegation.Plus(coin)
 	fmt.Println("Current Delegation : ", currentDelegation)
 	fmt.Println("Adding Delegation : ", coin)
-	//newCoin := currentDelegation.Plus(coin)
-	newAmt := currentDelegation.Amount.Plus(*coin.Amount)
-	newCoin := balance.Coin{
-		Currency: balance.Currency{Id: 0, Name: "OLT", Chain: chain.ONELEDGER, Decimal: 18, Unit: "nue"},
-		Amount:   newAmt,
-	}
 	fmt.Println("New Delegation : ", newCoin)
 	err = ctx.NetwkDelegators.Deleg.WithPrefix(network_delegation.ActiveType).Set(delegate.DelegationAddress, &newCoin)
 	if err != nil {
