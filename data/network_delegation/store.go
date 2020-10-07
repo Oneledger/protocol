@@ -2,6 +2,7 @@ package network_delegation
 
 import (
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
@@ -59,9 +60,12 @@ func (st *Store) set(key []byte, coin *balance.Coin) (err error) {
 
 //get coin from specific key
 func (st *Store) get(key []byte) (coin *balance.Coin, err error) {
-	coin = &balance.Coin{}
+	coin = &balance.Coin{
+		Currency: balance.Currency{Id: 0, Name: "OLT", Chain: chain.ONELEDGER, Decimal: 18, Unit: "nue"},
+		Amount:   balance.NewAmount(0),
+	}
 	dat, err := st.State.Get(storage.StoreKey(key))
-	if err != nil {
+	if dat == nil || err != nil {
 		return
 	}
 	err = st.szlr.Deserialize(dat, coin)

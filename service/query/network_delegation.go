@@ -1,10 +1,10 @@
 package query
 
 import (
-	"fmt"
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
+	net_delg "github.com/Oneledger/protocol/data/network_delegation"
 	"github.com/pkg/errors"
 	"math/big"
 )
@@ -13,6 +13,7 @@ func (svc *Service) GetUndelegatedAmount(req client.GetUndelegatedRequest, reply
 	pendingAmounts := make([]client.SinglePendingAmount, 0)
 	// get all pending amount
 	nd := svc.netwkDelegators.Deleg
+	nd.WithPrefix(net_delg.PendingType)
 	nd.IterateAllPendingAmounts(func(height int64, addr *keys.Address, coin *balance.Coin) bool {
 		if addr.Equal(req.Delegator) {
 			pending := client.SinglePendingAmount{
@@ -23,15 +24,14 @@ func (svc *Service) GetUndelegatedAmount(req client.GetUndelegatedRequest, reply
 		}
 		return false
 	})
-	fmt.Println("pendingAmounts", pendingAmounts)
 
 	// get matured amount
-	//maturedCoin, err := nd.WithPrefix(net_delg.MatureType).Get(req.Delegator)
-	//if err != nil {
-	//	return errors.New("failed to get matured undelegation amount")
-	//}
-	//maturedAmount := maturedCoin.Amount
-	maturedAmount := balance.NewAmountFromBigInt(big.NewInt(0))
+	nd.WithPrefix(net_delg.MatureType)
+	maturedCoin, err := nd.Get(req.Delegator)
+	if err != nil {
+		return err
+	}
+	maturedAmount := maturedCoin.Amount
 	// get total amount
 	totalAmount := balance.NewAmountFromBigInt(big.NewInt(0))
 	for _, amount := range pendingAmounts {
@@ -48,7 +48,7 @@ func (svc *Service) GetUndelegatedAmount(req client.GetUndelegatedRequest, reply
 	return nil
 }
 
-func (svc *Service) GetTotalNetwkDelegation(reply *client.GetTotalNetwkDelgReply) error {
+func (svc *Service) GetTotalNetwkDelegation(_ client.GetTotalNetwkDelegation, reply *client.GetTotalNetwkDelgReply) error {
 	// get active delegation amount
 	poolList, err := svc.governance.GetPoolList()
 	if err != nil {
@@ -71,14 +71,17 @@ func (svc *Service) GetTotalNetwkDelegation(reply *client.GetTotalNetwkDelgReply
 
 	// get pending delegation amount
 	pendingCoin := balance.Coin{Currency: currencyOLT, Amount: balance.NewAmountFromBigInt(big.NewInt(0))}
-	svc.netwkDelegators.Deleg.IterateAllPendingAmounts(func(height int64, addr *keys.Address, coin *balance.Coin) bool {
+	nd := svc.netwkDelegators.Deleg
+	nd.WithPrefix(net_delg.PendingType)
+	nd.IterateAllPendingAmounts(func(height int64, addr *keys.Address, coin *balance.Coin) bool {
 		pendingCoin = pendingCoin.Plus(*coin)
 		return false
 	})
 
 	// get matured delegation amount
+	nd.WithPrefix(net_delg.MatureType)
 	maturedCoin := balance.Coin{Currency: currencyOLT, Amount: balance.NewAmountFromBigInt(big.NewInt(0))}
-	svc.netwkDelegators.Deleg.IterateMatureAmounts(func(addr *keys.Address, coin *balance.Coin) bool {
+	nd.IterateMatureAmounts(func(addr *keys.Address, coin *balance.Coin) bool {
 		maturedCoin = maturedCoin.Plus(*coin)
 		return false
 	})
@@ -87,10 +90,11 @@ func (svc *Service) GetTotalNetwkDelegation(reply *client.GetTotalNetwkDelgReply
 	totalCoin := activeCoin.Plus(pendingCoin).Plus(maturedCoin)
 
 	*reply = client.GetTotalNetwkDelgReply{
-		ActiveAmount: *activeCoin.Amount,
+		ActiveAmount:  *activeCoin.Amount,
 		PendingAmount: *pendingCoin.Amount,
 		MaturedAmount: *maturedCoin.Amount,
-		TotalAmount: *totalCoin.Amount,
+		TotalAmount:   *totalCoin.Amount,
+		Height:        nd.GetState().Version(),
 	}
 	return nil
 }

@@ -222,7 +222,7 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.govern.WithState(state),
 		ctx.extStores.WithState(state),
 		ctx.govupdate,
-		ctx.netwkDelegators,
+		ctx.netwkDelegators.WithState(state),
 	)
 
 	return actionCtx
@@ -271,6 +271,7 @@ func (ctx *context) Services() (service.Map, error) {
 	proposalMaster.Proposal.SetOptions(ctx.proposalMaster.Proposal.GetOptions())
 
 	rewardMaster := NewRewardMasterStore(ctx.chainstate)
+	netwkDelegators := network_delegation.NewMasterStore("deleg", "delegRwz", storage.NewState(ctx.chainstate))
 	rewardMaster.SetOptions(ctx.rewardMaster.GetOptions())
 	svcCtx := &service.Context{
 		Balances:              balance.NewStore("b", storage.NewState(ctx.chainstate)),
@@ -294,7 +295,7 @@ func (ctx *context) Services() (service.Map, error) {
 		Trackers:              btcTrackers,
 		Govern:                governance.NewStore("g", storage.NewState(ctx.chainstate)),
 		GovUpdate:             ctx.govupdate,
-		NetwkDelegatorsMaster: ctx.netwkDelegators,
+		NetwkDelegatorsMaster: netwkDelegators,
 	}
 
 	return service.NewMap(svcCtx)

@@ -43,7 +43,7 @@ class NetWorkDelegate:
             "delegator": self.delegationaddress,
             "amount": {
                 "currency": "OLT",
-                "value": convertBigInt(self.amount),
+                "value": convertBigInt(amount),
             },
             "gasPrice": {
                 "currency": "OLT",
@@ -53,6 +53,7 @@ class NetWorkDelegate:
         }
 
         resp = rpc_call('tx.NetworkUndelegate', req)
+        print resp
         return resp["result"]["rawTx"]
 
     def send_network_Delegate(self):
@@ -83,21 +84,35 @@ class NetWorkDelegate:
         if "ok" in result:
             if not result["ok"]:
                 print "Send undelegate Failed : ", result
+                sys.exit(-1)
             else:
                 self.txHash = "0x" + result["txHash"]
-                print "################### undelegate success"
+                print "################### undelegate"
+
+    def send_network_undelegate_shoud_fail(self, amount):
+        # createTx
+        raw_txn = self._network_undelegate(amount)
+
+        # sign Tx
+        signed = sign(raw_txn, self.delegationaddress, self.keypath)
+
+        # broadcast Tx
+        result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
+        if "ok" in result:
+            if result["ok"]:
+                print "Send undelegate should fail, but it doesn't : ", result
+                sys.exit(-1)
+        print "################### malicious undelegate failed as expected"
 
     def query_undelegate(self):
         req = {
-            "delegator": self.delegationaddress
+            "delegator": '0lt' + self.delegationaddress
         }
 
         resp = rpc_call('query.GetUndelegatedAmount', req)
-        # print resp
-        result = resp["result"]
         print json.dumps(resp, indent=4)
+        result = resp["result"]
         return result
-
 
 
 def sign(raw_tx, address, keypath):
@@ -132,9 +147,8 @@ def broadcast_sync(raw_tx, signature, pub_key):
 def query_total():
     req = {}
     resp = rpc_call('query.GetTotalNetwkDelegation', req)
-    # print resp
-    result = resp["result"]
     print json.dumps(resp, indent=4)
+    result = resp["result"]
     return result
 
 

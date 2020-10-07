@@ -108,21 +108,20 @@ func runUndelegate(ctx *action.Context, tx action.RawTx) (bool, action.Response)
 	}
 
 	// get coin for active delegation amount and the amount to undelegate
-	ds := ctx.NetwkDelegators
-	delegationCoin, err := ds.Deleg.WithPrefix(net_delg.ActiveType).Get(ud.Delegator)
+	ds := ctx.NetwkDelegators.Deleg
+	ds.WithPrefix(net_delg.ActiveType)
+	delegationCoin, err := ds.Get(ud.Delegator)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, net_delg.ErrGettingActiveDelgAmount, ud.Tags(), err)
 	}
 
-	undelegateCoin := ud.Amount.ToCoin(ctx.Currencies)
-
+	undelegateCoin := ud.Amount.ToCoinWithBase(ctx.Currencies)
 	// cut the amount from active store
 	remainCoin, err := delegationCoin.Minus(undelegateCoin)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, net_delg.ErrDeductingActiveDelgAmount, ud.Tags(), err)
 	}
-
-	err = ds.Deleg.WithPrefix(net_delg.ActiveType).Set(ud.Delegator, &remainCoin)
+	err = ds.Set(ud.Delegator, &remainCoin)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, net_delg.ErrSettingActiveDelgAmount, ud.Tags(), err)
 	}
@@ -136,24 +135,24 @@ func runUndelegate(ctx *action.Context, tx action.RawTx) (bool, action.Response)
 
 	// check if there is already an entry in pending store with same address and height,
 	// this means same delegator at least undelegated once in this block
-	if !ds.Deleg.PendingExists(ud.Delegator, matureHeight) {
+	ds.WithPrefix(net_delg.PendingType)
+	if !ds.PendingExists(ud.Delegator, matureHeight) {
 		// if not, add an entry to pending store
-		err := ds.Deleg.SetPendingAmount(ud.Delegator, matureHeight, &undelegateCoin)
+		err := ds.SetPendingAmount(ud.Delegator, matureHeight, &undelegateCoin)
 		if err != nil {
 			return helpers.LogAndReturnFalse(ctx.Logger, net_delg.ErrSettingPendingDelgAmount, ud.Tags(), err)
 		}
-		return true, action.Response{Events: action.GetEvent(ud.Tags(), "undelegate_success")}
-	}
-
-	// if so, change the amount
-	existingPendingCoin, err := ds.Deleg.GetPendingAmount(ud.Delegator, matureHeight)
-	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, net_delg.ErrGettingPendingDelgAmount, ud.Tags(), err)
-	}
-	newPendingCoin := existingPendingCoin.Plus(undelegateCoin)
-	err = ds.Deleg.SetPendingAmount(ud.Delegator, matureHeight, &newPendingCoin)
-	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, net_delg.ErrSettingPendingDelgAmount, ud.Tags(), err)
+	} else {
+		// if so, change the amount
+		existingPendingCoin, err := ds.GetPendingAmount(ud.Delegator, matureHeight)
+		if err != nil {
+			return helpers.LogAndReturnFalse(ctx.Logger, net_delg.ErrGettingPendingDelgAmount, ud.Tags(), err)
+		}
+		newPendingCoin := existingPendingCoin.Plus(undelegateCoin)
+		err = ds.SetPendingAmount(ud.Delegator, matureHeight, &newPendingCoin)
+		if err != nil {
+			return helpers.LogAndReturnFalse(ctx.Logger, net_delg.ErrSettingPendingDelgAmount, ud.Tags(), err)
+		}
 	}
 
 	//Get Delegation Pool

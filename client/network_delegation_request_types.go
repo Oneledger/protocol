@@ -12,6 +12,8 @@ type GetUndelegatedRequest struct {
 	Delegator keys.Address `json:"delegator"`
 }
 
+type GetTotalNetwkDelegation struct{}
+
 type SinglePendingAmount struct {
 	Amount       balance.Amount `json:"amount"`
 	MatureHeight int64          `json:"matureHeight"`
@@ -29,6 +31,7 @@ type GetTotalNetwkDelgReply struct {
 	PendingAmount balance.Amount `json:"pendingAmount"`
 	MaturedAmount balance.Amount `json:"maturedAmount"`
 	TotalAmount   balance.Amount `json:"totalAmount"`
+	Height        int64          `json:"height"`
 }
 
 //-------------TX
