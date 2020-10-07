@@ -28,42 +28,7 @@ func (s *Service) AddNetworkDelegation(args client.NetworkDelegateRequest, reply
 	}
 
 	tx := &action.RawTx{
-		Type: action.ADD_NETWORK_DELEGATE,
-		Data: data,
-		Fee:  fee,
-		Memo: uuidNew.String(),
-	}
-
-	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
-	if err != nil {
-		return codes.ErrSerialization
-	}
-
-	*reply = client.CreateTxReply{RawTx: packet}
-
-	return nil
-}
-
-func (s *Service) WithDrawNetworkDelegation(args client.NetworkDelegateRequest, reply *client.CreateTxReply) error {
-
-	withdrawNetworkDelegation := nwd.WithdrawNetworkDelegation{
-		DelegationAddress: args.DelegationAddress,
-		Amount:            args.Amount,
-	}
-
-	data, err := withdrawNetworkDelegation.Marshal()
-	if err != nil {
-		return err
-	}
-
-	uuidNew, _ := uuid.NewUUID()
-	fee := action.Fee{
-		Price: args.GasPrice,
-		Gas:   args.Gas,
-	}
-
-	tx := &action.RawTx{
-		Type: action.WITHDRAW_NETWORK_DELEGATION,
+		Type: action.ADD_NETWORK_DELEGATION,
 		Data: data,
 		Fee:  fee,
 		Memo: uuidNew.String(),

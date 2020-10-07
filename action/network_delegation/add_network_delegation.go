@@ -2,9 +2,11 @@ package network_delegation
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/chain"
 	gov "github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/data/network_delegation"
@@ -24,7 +26,7 @@ func (n AddNetworkDelegation) Signers() []action.Address {
 }
 
 func (n AddNetworkDelegation) Type() action.Type {
-	return action.ADD_NETWORK_DELEGATE
+	return action.ADD_NETWORK_DELEGATION
 }
 
 func (n AddNetworkDelegation) Tags() kv.Pairs {
@@ -79,10 +81,12 @@ func (n addNetworkDelegationTx) Validate(ctx *action.Context, tx action.SignedTx
 }
 
 func (n addNetworkDelegationTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	fmt.Println("Running CheckTx")
 	return runNetworkDelegate(ctx, tx)
 }
 
 func (n addNetworkDelegationTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	fmt.Println("Running DeliverTx")
 	return runNetworkDelegate(ctx, tx)
 }
 
@@ -139,7 +143,17 @@ func runNetworkDelegate(ctx *action.Context, tx action.RawTx) (bool, action.Resp
 	}
 
 	//Add balance to delegation
-	err = ctx.NetwkDelegators.Deleg.WithPrefix(network_delegation.ActiveType).Set(delegate.DelegationAddress, &coin)
+	currentDelegation, err := ctx.NetwkDelegators.Deleg.WithPrefix(network_delegation.ActiveType).Get(delegate.DelegationAddress)
+	fmt.Println("Current Delegation : ", currentDelegation)
+	fmt.Println("Adding Delegation : ", coin)
+	//newCoin := currentDelegation.Plus(coin)
+	newAmt := currentDelegation.Amount.Plus(*coin.Amount)
+	newCoin := balance.Coin{
+		Currency: balance.Currency{Id: 0, Name: "OLT", Chain: chain.ONELEDGER, Decimal: 18, Unit: "nue"},
+		Amount:   newAmt,
+	}
+	fmt.Println("New Delegation : ", newCoin)
+	err = ctx.NetwkDelegators.Deleg.WithPrefix(network_delegation.ActiveType).Set(delegate.DelegationAddress, &newCoin)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, balance.ErrBalanceErrorAddFailed, delegate.Tags(), err)
 	}
