@@ -41,7 +41,10 @@ class NetWorkDelegate:
     def _network_undelegate(self, amount):
         req = {
             "delegator": self.delegationaddress,
-            "amount": amount,
+            "amount": {
+                "currency": "OLT",
+                "value": convertBigInt(self.amount),
+            },
             "gasPrice": {
                 "currency": "OLT",
                 "value": "1000000000",
@@ -73,7 +76,7 @@ class NetWorkDelegate:
         raw_txn = self._network_undelegate(amount)
 
         # sign Tx
-        signed = sign(raw_txn, self.delegationaddress)
+        signed = sign(raw_txn, self.delegationaddress, self.keypath)
 
         # broadcast Tx
         result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
@@ -92,7 +95,7 @@ class NetWorkDelegate:
         resp = rpc_call('query.GetUndelegatedAmount', req)
         # print resp
         result = resp["result"]
-        # print json.dumps(resp, indent=4)
+        print json.dumps(resp, indent=4)
         return result
 
 
@@ -131,7 +134,7 @@ def query_total():
     resp = rpc_call('query.GetTotalNetwkDelegation', req)
     # print resp
     result = resp["result"]
-    # print json.dumps(resp, indent=4)
+    print json.dumps(resp, indent=4)
     return result
 
 

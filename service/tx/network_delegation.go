@@ -62,7 +62,7 @@ func (s *Service) NetworkUndelegate(args client.NetUndelegateRequest, reply *cli
 	}
 	uuidNew, _ := uuid.NewUUID()
 	tx := &action.RawTx{
-		Type: action.NETWORK_DELEGATION_UNDELEGATE,
+		Type: action.NETWORK_UNDELEGATE,
 		Data: data,
 		Fee:  fee,
 		Memo: uuidNew.String(),

@@ -10,7 +10,7 @@ func EnableNetworkDelegation(r action.Router) error {
 	if err != nil {
 		return errors.Wrap(err, "AddNetworkDelegation")
 	}
-	err = r.AddHandler(action.NETWORK_DELEGATION_UNDELEGATE, UndelegateTx{})
+	err = r.AddHandler(action.NETWORK_UNDELEGATE, UndelegateTx{})
 	if err != nil {
 		return errors.Wrap(err, "UndelegateTx")
 	}

@@ -169,6 +169,11 @@ func (app *App) setupState(stateBytes []byte) error {
 	}
 	app.Context.feePool.SetupOpt(&initial.Governance.FeeOption)
 
+	err = app.Context.govern.WithHeight(app.header.Height).SetNetworkDelegOptions(initial.Governance.DelegOptions)
+	if err != nil {
+		return errors.Wrap(err, "Setup NetworkDelegation Options")
+	}
+
 	err = app.Context.govern.WithHeight(app.header.Height).SetAllLUH()
 	if err != nil {
 		return errors.Wrap(err, "Unable to set last Update height ")

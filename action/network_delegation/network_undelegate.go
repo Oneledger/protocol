@@ -24,7 +24,7 @@ func (ud Undelegate) Signers() []action.Address {
 }
 
 func (ud Undelegate) Type() action.Type {
-	return action.NETWORK_DELEGATION_UNDELEGATE
+	return action.NETWORK_UNDELEGATE
 }
 
 func (ud Undelegate) Tags() kv.Pairs {

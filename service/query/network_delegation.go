@@ -1,10 +1,10 @@
 package query
 
 import (
+	"fmt"
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
-	net_delg "github.com/Oneledger/protocol/data/network_delegation"
 	"github.com/pkg/errors"
 	"math/big"
 )
@@ -23,13 +23,15 @@ func (svc *Service) GetUndelegatedAmount(req client.GetUndelegatedRequest, reply
 		}
 		return false
 	})
+	fmt.Println("pendingAmounts", pendingAmounts)
 
 	// get matured amount
-	maturedCoin, err := nd.WithPrefix(net_delg.MatureType).Get(req.Delegator)
-	if err != nil {
-		return errors.New("failed to get matured undelegation amount")
-	}
-	maturedAmount := maturedCoin.Amount
+	//maturedCoin, err := nd.WithPrefix(net_delg.MatureType).Get(req.Delegator)
+	//if err != nil {
+	//	return errors.New("failed to get matured undelegation amount")
+	//}
+	//maturedAmount := maturedCoin.Amount
+	maturedAmount := balance.NewAmountFromBigInt(big.NewInt(0))
 	// get total amount
 	totalAmount := balance.NewAmountFromBigInt(big.NewInt(0))
 	for _, amount := range pendingAmounts {
