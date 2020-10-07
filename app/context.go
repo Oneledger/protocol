@@ -222,7 +222,7 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.govern.WithState(state),
 		ctx.extStores.WithState(state),
 		ctx.govupdate,
-		ctx.netwkDelegators,
+		ctx.netwkDelegators.WithState(state),
 	)
 
 	return actionCtx
