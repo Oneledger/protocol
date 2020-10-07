@@ -134,7 +134,6 @@ func (st *Store) buildActiveKey() storage.StoreKey {
 
 func (st *Store) IterateActiveAmounts(fn func(addr *keys.Address, coin *balance.Coin) bool) bool {
 	prefix := st.buildActiveKey()
-	//fmt.Println("Active prefix: ", prefix)
 	return st.iterateAddresses(prefix, func(addr *keys.Address, coin *balance.Coin) bool {
 		return fn(addr, coin)
 	})
@@ -208,3 +207,68 @@ func (st *Store) IterateMatureAmounts(fn func(addr *keys.Address, coin *balance.
 		return fn(addr, coin)
 	})
 }
+
+//__________________________________ Load State ____________________________________
+
+func (st *Store) LoadDelegators(state State) error {
+	//Load Active Delegators
+	for _, delegator := range state.ActiveList {
+		err := st.WithPrefix(ActiveType).Set(*delegator.Address, delegator.Amount)
+		if err != nil {
+			return err
+		}
+	}
+	//Load Mature Delegators
+	for _, delegator := range state.MatureList {
+		err := st.WithPrefix(MatureType).Set(*delegator.Address, delegator.Amount)
+		if err != nil {
+			return err
+		}
+	}
+	//Load Pending Delegators
+	for _, delegator := range state.PendingList {
+		err := st.SetPendingAmount(*delegator.Address, delegator.Height, delegator.Amount)
+		if err != nil {
+			return err
+		}
+	}
+
+	//st.LoadTestData()
+
+	return nil
+}
+
+//func (st *Store)LoadTestData() {
+//	var coinList []*balance.Coin
+//
+//	for i := 100; i < 115; i++ {
+//		coin := &balance.Coin{
+//			Currency: balance.Currency{
+//				Id:      0,
+//				Name:    "cur",
+//				Chain:   0,
+//				Decimal: 10,
+//				Unit:    "u",
+//			},
+//			Amount: balance.NewAmount(int64(i)),
+//		}
+//		coinList = append(coinList, coin)
+//	}
+//
+//	var addrList []keys.Address
+//	//Create Validator Keys
+//	for i := 0; i < 10; i++ {
+//		pub, _, _ := keys.NewKeyPairFromTendermint()
+//		h, _ := pub.GetHandler()
+//		addrList = append(addrList, h.Address())
+//	}
+//
+//	_ = st.WithPrefix(ActiveType).Set(addrList[0], coinList[0])
+//	_ = st.WithPrefix(ActiveType).Set(addrList[1], coinList[1])
+//
+//	_ = st.WithPrefix(MatureType).Set(addrList[2], coinList[2])
+//	_ = st.WithPrefix(MatureType).Set(addrList[3], coinList[3])
+//
+//	_ = st.SetPendingAmount(addrList[4], 100, coinList[4])
+//	_ = st.SetPendingAmount(addrList[5], 100, coinList[5])
+//}
