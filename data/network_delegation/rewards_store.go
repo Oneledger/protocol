@@ -2,8 +2,11 @@ package network_delegation
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/pkg/errors"
+	abciTypes "github.com/tendermint/tendermint/abci/types"
+	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
@@ -88,7 +91,14 @@ func (drs *DelegRewardStore) GetPendingRewards(delegator keys.Address, height, b
 }
 
 // Mature, if any, all delegators' pending rewards at a specific height
-func (drs *DelegRewardStore) MaturePendingRewards(height int64) {
+func (drs *DelegRewardStore) MaturePendingRewards(height int64) abciTypes.Event {
+	// block events
+	event := abciTypes.Event{Type: "deleg_rewards"}
+	event.Attributes = append(event.Attributes, kv.Pair{
+		Key:   []byte("height"),
+		Value: []byte(strconv.FormatInt(height, 10)),
+	})
+
 	drs.iteratePD(height, func(delegator keys.Address, amt *balance.Amount) bool {
 		// clear pending amount
 		key := drs.getPendingRewardsKey(height, delegator)
@@ -99,9 +109,14 @@ func (drs *DelegRewardStore) MaturePendingRewards(height int64) {
 		// increase matured amount
 		if !amt.Equals(balance.AmtZero) {
 			err = drs.addMaturedRewards(delegator, amt)
+			event.Attributes = append(event.Attributes, kv.Pair{
+				Key:   []byte(delegator.String()),
+				Value: []byte(amt.String()),
+			})
 		}
 		return err != nil
 	})
+	return event
 }
 
 // Get matured(finalizable) rewards

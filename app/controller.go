@@ -137,8 +137,11 @@ func (app *App) blockBeginner() blockBeginner {
 		blockRewardEvent := handleBlockRewards(app.Context.validators, app.Context.balances,
 			app.Context.rewardMaster.WithState(app.Context.deliver), app.Context.currencies, req)
 
+		// matured delegators' rewards
+		delegRewardEvent := app.Context.netwkDelegators.WithState(app.Context.deliver).Rewards.MaturePendingRewards(req.Header.Height)
+
 		result := ResponseBeginBlock{
-			Events: []abciTypes.Event{blockRewardEvent},
+			Events: []abciTypes.Event{blockRewardEvent, delegRewardEvent},
 		}
 
 		//update the header to current block
