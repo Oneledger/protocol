@@ -34,6 +34,19 @@ type State struct {
 	PendingList []PendingDelegator `json:"pending_list"`
 }
 
+type DelegationRewardCtx struct {
+	TotalRewards    *balance.Amount
+	DelegationPower int64
+	TotalPower      int64
+	ProposerAddress keys.Address
+}
+
+type DelegationRewardResponse struct {
+	DelegationRewards *balance.Amount
+	ProposerReward    *balance.Amount
+	Commission        *balance.Amount
+}
+
 func (prefix DelegationPrefixType) GetJSONPrefix() string {
 	return prefixMap[prefix]
 }
