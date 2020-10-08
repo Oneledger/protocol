@@ -2,6 +2,7 @@ package network_delegation
 
 import (
 	"encoding/json"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/Oneledger/protocol/data/balance"

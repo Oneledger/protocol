@@ -6,7 +6,6 @@ import (
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/serialize"
 	codes "github.com/Oneledger/protocol/status_codes"
-
 	"github.com/google/uuid"
 )
 

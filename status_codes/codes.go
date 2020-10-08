@@ -113,9 +113,14 @@ const (
 	DelgErrStakeAddressMismatch = 600302
 
 	// Network Delegation
-	NetwkDelgErr           = 6004
-	NetwkDelgErrGetOptions = 600401
-	NetwkDelgErrWithdraw   = 600402
+	NetDelgErr                          = 6005
+	NetDelgErrGettingActiveDelgAmount   = 600501
+	NetDelgErrDeductingActiveDelgAmount = 600502
+	NetDelgErrSettingActiveDelgAmount   = 600503
+	NetDelgErrGettingDelgOption         = 600504
+	NetDelgErrSettingPendingDelgAmount  = 600505
+	NetDelgErrGettingPendingDelgAmount  = 600506
+	NetDelgErrWithdraw                  = 600507
 
 	GovErr                                = 7001
 	GovErrGetProposalOptions              = 700101

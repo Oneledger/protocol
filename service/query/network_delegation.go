@@ -9,7 +9,7 @@ func (svc *Service) GetDelegRewards(req client.GetDelegRewardsRequest, resp *cli
 	height := svc.netwkDelegators.Rewards.GetState().Version()
 	options, err := svc.govern.GetNetworkDelegOptions()
 	if err != nil {
-		return netwkDeleg.ErrGettingOptions
+		return netwkDeleg.ErrGettingDelgOption
 	}
 
 	balance, err := svc.netwkDelegators.Rewards.GetRewardsBalance(req.Delegator)

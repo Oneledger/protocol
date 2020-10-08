@@ -12,6 +12,7 @@ import (
 	tmdb "github.com/tendermint/tm-db"
 
 	"github.com/Oneledger/protocol/data"
+	"github.com/Oneledger/protocol/data/network_delegation"
 	netwkDeleg "github.com/Oneledger/protocol/data/network_delegation"
 	"github.com/Oneledger/protocol/data/rewards"
 	"github.com/Oneledger/protocol/data/transactions"
@@ -199,7 +200,6 @@ func (ctx context) dbDir() string {
 }
 
 func (ctx *context) Action(header *Header, state *storage.State) *action.Context {
-
 	actionCtx := action.NewContext(
 		ctx.actionRouter,
 		header,
@@ -328,15 +328,16 @@ func (ctx *context) Restful() (service.RestfulRouter, error) {
 }
 
 type StorageCtx struct {
-	Balances       *balance.Store
-	Domains        *ons.DomainStore
-	Validators     *identity.ValidatorStore // Set of validators currently active
-	Delegators     *delegation.DelegationStore
-	RewardMaster   *rewards.RewardMasterStore
-	ProposalMaster *governance.ProposalMasterStore
-	FeePool        *fees.Store
-	Govern         *governance.Store
-	Trackers       *ethereum.TrackerStore //TODO: Create struct to contain all tracker types including Bitcoin.
+	Balances        *balance.Store
+	Domains         *ons.DomainStore
+	Validators      *identity.ValidatorStore // Set of validators currently active
+	Delegators      *delegation.DelegationStore
+	RewardMaster    *rewards.RewardMasterStore
+	ProposalMaster  *governance.ProposalMasterStore
+	NetwkDelegators *network_delegation.MasterStore
+	FeePool         *fees.Store
+	Govern          *governance.Store
+	Trackers        *ethereum.TrackerStore //TODO: Create struct to contain all tracker types including Bitcoin.
 
 	Currencies *balance.CurrencySet
 	FeeOption  *fees.FeeOption
@@ -347,20 +348,21 @@ type StorageCtx struct {
 
 func (ctx *context) Storage() StorageCtx {
 	return StorageCtx{
-		Version:        ctx.chainstate.Version,
-		Hash:           ctx.chainstate.Hash,
-		Chainstate:     ctx.chainstate,
-		Balances:       ctx.balances,
-		Domains:        ctx.domains,
-		Validators:     ctx.validators,
-		Delegators:     ctx.delegators,
-		RewardMaster:   ctx.rewardMaster,
-		ProposalMaster: ctx.proposalMaster,
-		FeePool:        ctx.feePool,
-		Govern:         ctx.govern,
-		Currencies:     ctx.currencies,
-		FeeOption:      ctx.feePool.GetOpt(),
-		Trackers:       ctx.ethTrackers,
+		Version:         ctx.chainstate.Version,
+		Hash:            ctx.chainstate.Hash,
+		Chainstate:      ctx.chainstate,
+		Balances:        ctx.balances,
+		Domains:         ctx.domains,
+		Validators:      ctx.validators,
+		Delegators:      ctx.delegators,
+		RewardMaster:    ctx.rewardMaster,
+		ProposalMaster:  ctx.proposalMaster,
+		NetwkDelegators: ctx.netwkDelegators,
+		FeePool:         ctx.feePool,
+		Govern:          ctx.govern,
+		Currencies:      ctx.currencies,
+		FeeOption:       ctx.feePool.GetOpt(),
+		Trackers:        ctx.ethTrackers,
 	}
 }
 

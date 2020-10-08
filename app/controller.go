@@ -8,7 +8,6 @@ import (
 	"runtime/debug"
 	"strconv"
 
-	"github.com/Oneledger/protocol/action/network_delegation"
 	"github.com/Oneledger/protocol/external_apps/common"
 
 	"github.com/tendermint/tendermint/libs/kv"
@@ -136,9 +135,7 @@ func (app *App) blockBeginner() blockBeginner {
 		}
 
 		blockRewardEvent := handleBlockRewards(app.Context.validators, app.Context.balances,
-			app.Context.rewardMaster.WithState(app.Context.deliver),
-			app.Context.netwkDelegators.WithState(app.Context.deliver),
-			app.Context.currencies, req)
+			app.Context.rewardMaster.WithState(app.Context.deliver), app.Context.currencies, req)
 
 		result := ResponseBeginBlock{
 			Events: []abciTypes.Event{blockRewardEvent},
@@ -469,7 +466,7 @@ func getRewardForValidator(totalPower int64, validatorPower int64, totalRewards 
 }
 
 func handleBlockRewards(validators *identity.ValidatorStore, balances *balance.Store, rewardMaster *rewards.RewardMasterStore,
-	rewardDeleg *network_delegation.MasterStore, currency *balance.CurrencySet, block RequestBeginBlock) abciTypes.Event {
+	currency *balance.CurrencySet, block RequestBeginBlock) abciTypes.Event {
 
 	votes := block.LastCommitInfo.Votes
 	lastHeight := block.GetHeader().Height

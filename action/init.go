@@ -24,7 +24,8 @@ const (
 
 	//network network_delegation
 	ADD_NETWORK_DELEGATE      Type = 0x51
-	WITHDRAW_NETWORK_DELEGATE Type = 0x52
+	NETWORK_UNDELEGATE        Type = 0x52
+	WITHDRAW_NETWORK_DELEGATE Type = 0x53
 
 	//ons related transaction
 	DOMAIN_CREATE     Type = 0x21
@@ -117,6 +118,10 @@ func init() {
 	RegisterTxType(PROPOSAL_WITHDRAW_FUNDS, "PROPOSAL_WITHDRAW_FUNDS")
 
 	RegisterTxType(WITHDRAW_REWARD, "WITHDRAW_REWARD")
+
+	RegisterTxType(NETWORK_UNDELEGATE, "NETWORK_UNDELEGATE")
+	RegisterTxType(ADD_NETWORK_DELEGATE, "ADD_NETWORK_DELEGATION")
+	RegisterTxType(WITHDRAW_NETWORK_DELEGATE, "WITHDRAW_NETWORK_DELEGATE")
 }
 
 func RegisterTxType(value Type, name string) {

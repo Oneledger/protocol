@@ -111,7 +111,7 @@ func runWithdraw(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	height := ctx.Header.GetHeight()
 	options, err := ctx.GovernanceStore.GetNetworkDelegOptions()
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, netwkDeleg.ErrGettingOptions, withdraw.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, netwkDeleg.ErrGettingDelgOption, withdraw.Tags(), err)
 	}
 
 	// initiate a withdrawal which matures at block [height+RewardsMaturityTime]
