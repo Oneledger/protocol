@@ -48,7 +48,7 @@ func (s *Service) AddNetworkDelegation(args client.NetworkDelegateRequest, reply
 func (s *Service) WithdrawDelegRewards(args client.WithdrawDelegRewardsRequest, reply *client.CreateTxReply) error {
 	withdraw := nwd.Withdraw{
 		Delegator: args.Delegator,
-		Amount:    action.Amount{Currency: "OLT", Value: args.Amount},
+		Amount:    args.Amount,
 	}
 
 	data, err := withdraw.Marshal()

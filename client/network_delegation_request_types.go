@@ -27,6 +27,6 @@ type GetDelegRewardsReply struct {
 }
 
 type WithdrawDelegRewardsRequest struct {
-	Delegator keys.Address   `json:"delegator"`
-	Amount    balance.Amount `json:"amount"`
+	Delegator keys.Address  `json:"delegator"`
+	Amount    action.Amount `json:"amount"`
 }
