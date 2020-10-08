@@ -139,6 +139,23 @@ func TestStore_SetPendingAmount(t *testing.T) {
 	}
 	store.State.Commit()
 
+	//Test Get Pending Amount for one address at height 500
+	for i, v := range pendingAddrList {
+		addr := keys.Address{}
+		_ = addr.UnmarshalText([]byte(i))
+		amount, err := store.GetPendingAmount(addr, 500)
+		assert.Equal(t, err, nil)
+		assert.Equal(t, amount, v)
+	}
+
+	//Test Check If Pending Amount Exists
+	for i := range pendingAddrList {
+		addr := keys.Address{}
+		_ = addr.UnmarshalText([]byte(i))
+		exist := store.PendingExists(addr, 500)
+		assert.Equal(t, exist, true)
+	}
+
 	//Test iterate Pending Amounts at different heights
 	//Iterate pending amounts at height 500
 	store.IteratePendingAmounts(500, func(addr *keys.Address, coin *balance.Coin) bool {

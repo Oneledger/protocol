@@ -24,7 +24,7 @@ const (
 
 	//network network_delegation
 	ADD_NETWORK_DELEGATION Type = 0x51
-
+	NETWORK_UNDELEGATE     Type = 0x52
 	//ons related transaction
 	DOMAIN_CREATE     Type = 0x21
 	DOMAIN_UPDATE     Type = 0x22
@@ -113,6 +113,9 @@ func init() {
 	RegisterTxType(PROPOSAL_WITHDRAW_FUNDS, "PROPOSAL_WITHDRAW_FUNDS")
 
 	RegisterTxType(WITHDRAW_REWARD, "WITHDRAW_REWARD")
+
+	RegisterTxType(NETWORK_UNDELEGATE, "NETWORK_UNDELEGATE")
+	RegisterTxType(ADD_NETWORK_DELEGATION, "ADD_NETWORK_DELEGATION")
 }
 
 func RegisterTxType(value Type, name string) {

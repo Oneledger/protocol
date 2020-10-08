@@ -17,12 +17,6 @@ const (
 	ActiveKey  = "a"
 )
 
-var (
-	MatureType  DelegationPrefixType = 0x103
-	PendingType DelegationPrefixType = 0x102
-	ActiveType  DelegationPrefixType = 0x101
-)
-
 type Store struct {
 	State         *storage.State
 	szlr          serialize.Serializer
@@ -43,6 +37,10 @@ func NewStore(prefix string, state *storage.State) *Store {
 func (st *Store) WithState(state *storage.State) *Store {
 	st.State = state
 	return st
+}
+
+func (st *Store) GetState() *storage.State {
+	return st.State
 }
 
 func (st *Store) Exists(addr *keys.Address) bool {
@@ -146,6 +144,21 @@ func (st *Store) IterateActiveAmounts(fn func(addr *keys.Address, coin *balance.
 //build pending key
 func (st *Store) buildPendingKey() storage.StoreKey {
 	return storage.Prefix(string(st.prefix) + storage.DB_PREFIX + PendingKey)
+}
+
+//check existence of pending amount on specific height
+func (st *Store) PendingExists(addr keys.Address, height int64) bool {
+	prefix := st.buildPendingKey()
+	pendingKey := strconv.FormatInt(height, 10) + storage.DB_PREFIX + addr.String()
+	return st.State.Exists(append(prefix, pendingKey...))
+}
+
+//check existence of pending amount on specific height
+func (st *Store) GetPendingAmount(addr keys.Address, height int64) (coin *balance.Coin, err error) {
+	prefix := st.buildPendingKey()
+	pendingKey := strconv.FormatInt(height, 10) + storage.DB_PREFIX + addr.String()
+	coin, err = st.get(append(prefix, pendingKey...))
+	return
 }
 
 //Set pending amount with height and address
