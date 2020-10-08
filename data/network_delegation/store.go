@@ -2,6 +2,7 @@ package network_delegation
 
 import (
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
@@ -14,12 +15,6 @@ const (
 	MatureKey  = "m"
 	PendingKey = "p"
 	ActiveKey  = "a"
-)
-
-var (
-	MatureType  DelegationPrefixType = 0x103
-	PendingType DelegationPrefixType = 0x102
-	ActiveType  DelegationPrefixType = 0x101
 )
 
 type Store struct {
@@ -44,6 +39,10 @@ func (st *Store) WithState(state *storage.State) *Store {
 	return st
 }
 
+func (st *Store) GetState() *storage.State {
+	return st.State
+}
+
 func (st *Store) Exists(addr *keys.Address) bool {
 	key := append(st.currentPrefix, addr.String()...)
 	return st.State.Exists(key)
@@ -61,9 +60,12 @@ func (st *Store) set(key []byte, coin *balance.Coin) (err error) {
 
 //get coin from specific key
 func (st *Store) get(key []byte) (coin *balance.Coin, err error) {
-	coin = &balance.Coin{}
+	coin = &balance.Coin{
+		Currency: balance.Currency{Id: 0, Name: "OLT", Chain: chain.ONELEDGER, Decimal: 18, Unit: "nue"},
+		Amount:   balance.NewAmount(0),
+	}
 	dat, err := st.State.Get(storage.StoreKey(key))
-	if err != nil {
+	if dat == nil || err != nil {
 		return
 	}
 	err = st.szlr.Deserialize(dat, coin)
@@ -141,6 +143,21 @@ func (st *Store) IterateActiveAmounts(fn func(addr *keys.Address, coin *balance.
 //build pending key
 func (st *Store) buildPendingKey() storage.StoreKey {
 	return storage.Prefix(string(st.prefix) + storage.DB_PREFIX + PendingKey)
+}
+
+//check existence of pending amount on specific height
+func (st *Store) PendingExists(addr keys.Address, height int64) bool {
+	prefix := st.buildPendingKey()
+	pendingKey := strconv.FormatInt(height, 10) + storage.DB_PREFIX + addr.String()
+	return st.State.Exists(append(prefix, pendingKey...))
+}
+
+//check existence of pending amount on specific height
+func (st *Store) GetPendingAmount(addr keys.Address, height int64) (coin *balance.Coin, err error) {
+	prefix := st.buildPendingKey()
+	pendingKey := strconv.FormatInt(height, 10) + storage.DB_PREFIX + addr.String()
+	coin, err = st.get(append(prefix, pendingKey...))
+	return
 }
 
 //Set pending amount with height and address

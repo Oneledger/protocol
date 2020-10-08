@@ -7,10 +7,19 @@ import (
 	"github.com/Oneledger/protocol/storage"
 )
 
-const DELEGATION_POOL_KEY = "00000000000000000001"
-
 var logger *log.Logger
 var prefixMap map[DelegationPrefixType]string
+
+const (
+	MatureType  DelegationPrefixType = 0x103
+	PendingType DelegationPrefixType = 0x102
+	ActiveType  DelegationPrefixType = 0x101
+
+	DELEGATION_POOL_KEY = "00000000000000000001"
+
+	//TODO this is hardcoded for now, will be changed in the future
+	RewardsMaturityTime = 3
+)
 
 func init() {
 	logger = log.NewDefaultLogger(os.Stdout).WithPrefix("network_delegation")

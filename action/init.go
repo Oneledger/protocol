@@ -24,6 +24,7 @@ const (
 
 	//network network_delegation
 	ADD_NETWORK_DELEGATE Type = 0x51
+	NETWORK_UNDELEGATE   Type = 0x52
 
 	//ons related transaction
 	DOMAIN_CREATE     Type = 0x21
@@ -60,6 +61,7 @@ const (
 
 	//Rewards
 	WITHDRAW_REWARD Type = 0x41
+
 
 	//EOF here Only used as a marker to mark the end of Type list
 	//So that the query for Types can return all Types dynamically
@@ -114,6 +116,7 @@ func init() {
 
 	RegisterTxType(WITHDRAW_REWARD, "WITHDRAW_REWARD")
 
+	RegisterTxType(NETWORK_UNDELEGATE, "NETWORK_UNDELEGATE")
 	RegisterTxType(ADD_NETWORK_DELEGATE, "ADD_NETWORK_DELEGATION")
 }
 
