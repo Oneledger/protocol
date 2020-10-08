@@ -142,10 +142,7 @@ func runNetworkDelegate(ctx *action.Context, tx action.RawTx) (bool, action.Resp
 	}
 
 	//Add balance to delegation
-	currentDelegation, err := ctx.NetwkDelegators.Deleg.WithPrefix(network_delegation.ActiveType).Get(delegate.DelegationAddress)
-	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrInvalidAddress, delegate.Tags(), err)
-	}
+	currentDelegation, _ := ctx.NetwkDelegators.Deleg.WithPrefix(network_delegation.ActiveType).Get(delegate.DelegationAddress)
 	newCoin := currentDelegation.Plus(coin)
 	err = ctx.NetwkDelegators.Deleg.WithPrefix(network_delegation.ActiveType).Set(delegate.DelegationAddress, &newCoin)
 	if err != nil {

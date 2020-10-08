@@ -4,6 +4,7 @@ import (
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/chain"
+	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/data/network_delegation"
 )
 
@@ -16,11 +17,14 @@ func (svc *Service) ListDelegation(req client.ListDelegationRequest, reply *clie
 	if err != nil {
 		active = &zeroAmount
 	}
-	pending, err := svc.networkDelegation.Deleg.WithPrefix(network_delegation.PendingType).Get(req.DelegationAddress)
-	if err != nil {
-		pending = &zeroAmount
-		//return err
-	}
+	pending := zeroAmount
+	svc.networkDelegation.Deleg.WithPrefix(network_delegation.PendingType)
+	svc.networkDelegation.Deleg.IterateAllPendingAmounts(func(height int64, addr *keys.Address, coin *balance.Coin) bool {
+		if addr.Equal(req.DelegationAddress) {
+			pending = pending.Plus(*coin)
+		}
+		return false
+	})
 	mature, err := svc.networkDelegation.Deleg.WithPrefix(network_delegation.MatureType).Get(req.DelegationAddress)
 	if err != nil {
 		mature = &zeroAmount

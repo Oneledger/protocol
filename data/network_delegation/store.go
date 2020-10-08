@@ -67,7 +67,7 @@ func (st *Store) get(key []byte) (coin *balance.Coin, err error) {
 		Amount:   balance.NewAmount(0),
 	}
 	dat, err := st.State.Get(storage.StoreKey(key))
-	if err != nil {
+	if dat == nil || err != nil {
 		return
 	}
 	err = st.szlr.Deserialize(dat, coin)
