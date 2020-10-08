@@ -464,24 +464,65 @@ func getRewardForValidator(totalPower int64, validatorPower int64, totalRewards 
 	return reward
 }
 
-func handleDelegationRewards(delegCtx *network_delegation.DelegationRewardCtx, appCtx *context, kvMap *map[string]kv.Pair) (
+func handleDelegationRewards(delegCtx *network_delegation.DelegationRewardCtx, appCtx *context, kvMap map[string]kv.Pair) (
 	resp network_delegation.DelegationRewardResponse) {
+	var err error
+	delegationRewardMaster := appCtx.netwkDelegators.WithState(appCtx.deliver)
+	rewardMaster := appCtx.rewardMaster.WithState(appCtx.deliver)
 
 	//Get Total Rewards "T" for Delegator Pool
 	numerator := big.NewInt(0).Mul(delegCtx.TotalRewards.BigInt(), big.NewInt(delegCtx.DelegationPower))
-	_ = balance.NewAmountFromBigInt(big.NewInt(0).Div(numerator, big.NewInt(delegCtx.TotalPower)))
+	delegationRewards := balance.NewAmountFromBigInt(big.NewInt(0).Div(numerator, big.NewInt(delegCtx.TotalPower)))
 
 	//Cut X% from Total Delegation Rewards "T" as Commission "C"
+	numerator = big.NewInt(0).Mul(big.NewInt(10), resp.DelegationRewards.BigInt())
+	commission := balance.NewAmountFromBigInt(big.NewInt(0).Div(numerator, big.NewInt(100)))
+
 	//Distribute Y% of Commission "C" to block proposer
-	//Add remaining amount of Commission "C" to Total Rewards
+	numerator = big.NewInt(0).Mul(big.NewInt(30), resp.Commission.BigInt())
+	resp.ProposerReward = balance.NewAmountFromBigInt(big.NewInt(0).Div(numerator, big.NewInt(100)))
+
+	//Adjust Delegation Rewards with respect to commission
+	resp.DelegationRewards, err = delegationRewards.Minus(*commission)
+	if err != nil {
+		return network_delegation.DelegationRewardResponse{}
+	}
+
+	//Adjust  Commission with respect to Proposer Reward
+	resp.Commission, err = commission.Minus(*resp.ProposerReward)
+	if err != nil {
+		return network_delegation.DelegationRewardResponse{}
+	}
+
+	//Distribute Rewards to Each Delegator
+	delegationRewardMaster.Deleg.IterateActiveAmounts(func(addr *keys.Address, coin *balance.Coin) bool {
+		//Calculate reward portion for each delegator based on delegated amount
+		numerator := big.NewInt(0).Mul(resp.DelegationRewards.BigInt(), coin.Amount.BigInt())
+		delegatorReward := balance.NewAmountFromBigInt(big.NewInt(0).Div(numerator, big.NewInt(delegCtx.DelegationPower)))
+
+		//Add reward to address
+		err := delegationRewardMaster.Rewards.AddRewardsBalance(*addr, delegatorReward)
+		if err != nil {
+			return true
+		}
+		return false
+	})
+	//Distribute reward to Proposer
+	err = rewardMaster.Reward.AddToAddress(delegCtx.ProposerAddress, delegCtx.Height, resp.ProposerReward)
+	if err != nil {
+	}
 
 	//Create Event for Delegation Rewards
-	//poolList, err := appCtx.govern.GetPoolList()
-	//kvMap[poolList["DelegationPool"].String()] = kv.Pair{
-	//	Key:   []byte(poolList["DelegationPool"].String()),
-	//	Value: []byte(.DelegationRewards.String()),
-	//}
-
+	poolList, err := appCtx.govern.GetPoolList()
+	kvMap[poolList["DelegationPool"].String()] = kv.Pair{
+		Key:   []byte(poolList["DelegationPool"].String()),
+		Value: []byte(resp.DelegationRewards.String()),
+	}
+	//Create Event for Block Proposer Reward
+	kvMap[delegCtx.ProposerAddress.String()] = kv.Pair{
+		Key:   []byte(poolList["DelegationPool"].String()),
+		Value: []byte(resp.ProposerReward.String()),
+	}
 	return
 }
 
@@ -549,12 +590,13 @@ func handleBlockRewards(appCtx *context, block RequestBeginBlock) abciTypes.Even
 		TotalRewards:    totalRewards,
 		DelegationPower: delegationPower,
 		TotalPower:      totalPower,
+		Height:          lastHeight,
 		ProposerAddress: keys.Address(block.Header.ProposerAddress),
 	}
-	delegationResp := handleDelegationRewards(delegationCtx, appCtx, &kvMap)
+	delegationResp := handleDelegationRewards(delegationCtx, appCtx, kvMap)
 
 	//Add Delegation rewards to Consumed amount
-	totalConsumed = totalConsumed.Plus(*delegationResp.DelegationRewards)
+	totalConsumed = totalConsumed.Plus(*delegationResp.DelegationRewards).Plus(*delegationResp.ProposerReward)
 
 	//Loop through all validators that participated in signing the last block
 	for _, vote := range votes {

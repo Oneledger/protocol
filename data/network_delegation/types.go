@@ -38,6 +38,7 @@ type DelegationRewardCtx struct {
 	TotalRewards    *balance.Amount
 	DelegationPower int64
 	TotalPower      int64
+	Height          int64
 	ProposerAddress keys.Address
 }
 
