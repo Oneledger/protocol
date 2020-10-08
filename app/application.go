@@ -4,6 +4,8 @@ import (
 	"net/url"
 	"os"
 
+	"github.com/Oneledger/protocol/data/network_delegation"
+
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/service"
@@ -169,7 +171,13 @@ func (app *App) setupState(stateBytes []byte) error {
 	}
 	app.Context.feePool.SetupOpt(&initial.Governance.FeeOption)
 
-	err = app.Context.govern.WithHeight(app.header.Height).SetNetworkDelegOptions(initial.Governance.DelegOptions)
+	//TODO change back to genesis in future, right now network delegation option is hardcoded to avoid genesis deployment
+	hardCodedOption := network_delegation.Options{
+		RewardsMaturityTime: network_delegation.RewardsMaturityTime,
+	}
+	err = app.Context.govern.WithHeight(app.header.Height).SetNetworkDelegOptions(hardCodedOption)
+
+	//err = app.Context.govern.WithHeight(app.header.Height).SetNetworkDelegOptions(initial.Governance.DelegOptions)
 	if err != nil {
 		return errors.Wrap(err, "Setup NetworkDelegation Options")
 	}

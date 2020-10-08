@@ -112,7 +112,6 @@ const (
 	DelgErrStakeAddressInUse    = 600301
 	DelgErrStakeAddressMismatch = 600302
 
-	// Network Delegation
 	NetDelgErr                          = 6005
 	NetDelgErrGettingActiveDelgAmount   = 600501
 	NetDelgErrDeductingActiveDelgAmount = 600502
