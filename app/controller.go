@@ -467,7 +467,7 @@ func getRewardForValidator(totalPower int64, validatorPower int64, totalRewards 
 func handleDelegationRewards(delegCtx *network_delegation.DelegationRewardCtx, appCtx *context, kvMap map[string]kv.Pair) (
 	resp network_delegation.DelegationRewardResponse) {
 	var err error
-	delegationRewardMaster := appCtx.netwkDelegators.WithState(appCtx.deliver)
+	networkDelegators := appCtx.netwkDelegators.WithState(appCtx.deliver)
 	rewardMaster := appCtx.rewardMaster.WithState(appCtx.deliver)
 
 	//Get Total Rewards "T" for Delegator Pool
@@ -482,26 +482,26 @@ func handleDelegationRewards(delegCtx *network_delegation.DelegationRewardCtx, a
 	numerator = big.NewInt(0).Mul(big.NewInt(30), resp.Commission.BigInt())
 	resp.ProposerReward = balance.NewAmountFromBigInt(big.NewInt(0).Div(numerator, big.NewInt(100)))
 
-	//Adjust Delegation Rewards with respect to commission
+	//Deduct Commission from Total delegation Rewards
 	resp.DelegationRewards, err = delegationRewards.Minus(*commission)
 	if err != nil {
 		return network_delegation.DelegationRewardResponse{}
 	}
 
-	//Adjust  Commission with respect to Proposer Reward
+	//Deduct Proposer Reward from Commission Amount
 	resp.Commission, err = commission.Minus(*resp.ProposerReward)
 	if err != nil {
 		return network_delegation.DelegationRewardResponse{}
 	}
 
 	//Distribute Rewards to Each Delegator
-	delegationRewardMaster.Deleg.IterateActiveAmounts(func(addr *keys.Address, coin *balance.Coin) bool {
+	networkDelegators.Deleg.IterateActiveAmounts(func(addr *keys.Address, coin *balance.Coin) bool {
 		//Calculate reward portion for each delegator based on delegated amount
 		numerator := big.NewInt(0).Mul(resp.DelegationRewards.BigInt(), coin.Amount.BigInt())
 		delegatorReward := balance.NewAmountFromBigInt(big.NewInt(0).Div(numerator, big.NewInt(delegCtx.DelegationPower)))
 
 		//Add reward to address
-		err := delegationRewardMaster.Rewards.AddRewardsBalance(*addr, delegatorReward)
+		err := networkDelegators.Rewards.AddRewardsBalance(*addr, delegatorReward)
 		if err != nil {
 			return true
 		}
@@ -510,6 +510,7 @@ func handleDelegationRewards(delegCtx *network_delegation.DelegationRewardCtx, a
 	//Distribute reward to Proposer
 	err = rewardMaster.Reward.AddToAddress(delegCtx.ProposerAddress, delegCtx.Height, resp.ProposerReward)
 	if err != nil {
+		return network_delegation.DelegationRewardResponse{}
 	}
 
 	//Create Event for Delegation Rewards
