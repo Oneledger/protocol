@@ -16,6 +16,9 @@ const (
 	ActiveType  DelegationPrefixType = 0x101
 
 	DELEGATION_POOL_KEY = "00000000000000000001"
+
+	//TODO this is hardcoded for now, will be changed in the future
+	RewardsMaturityTime = 3
 )
 
 func init() {
