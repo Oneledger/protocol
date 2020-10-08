@@ -186,6 +186,10 @@ func (st *Store) SetAllLUH() error {
 	if err != nil {
 		return err
 	}
+	err = st.SetLUH(LAST_UPDATE_HEIGHT_NETWK_DELEG)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

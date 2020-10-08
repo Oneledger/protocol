@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/Oneledger/protocol/data/network_delegation"
 	"net/url"
 	"os"
 
@@ -169,6 +170,17 @@ func (app *App) setupState(stateBytes []byte) error {
 	}
 	app.Context.feePool.SetupOpt(&initial.Governance.FeeOption)
 
+	//TODO change back to genesis in future, right now network delegation option is hardcoded to avoid genesis deployment
+	hardCodedOption := network_delegation.Options{
+		RewardsMaturityTime: network_delegation.RewardsMaturityTime,
+	}
+	err = app.Context.govern.WithHeight(app.header.Height).SetNetworkDelegOptions(hardCodedOption)
+
+	//err = app.Context.govern.WithHeight(app.header.Height).SetNetworkDelegOptions(initial.Governance.DelegOptions)
+	if err != nil {
+		return errors.Wrap(err, "Setup NetworkDelegation Options")
+	}
+
 	err = app.Context.govern.WithHeight(app.header.Height).SetAllLUH()
 	if err != nil {
 		return errors.Wrap(err, "Unable to set last Update height ")
@@ -266,6 +278,12 @@ func (app *App) setupState(stateBytes []byte) error {
 	err = app.Context.proposalMaster.WithState(app.Context.deliver).LoadProposals(initial.Proposals)
 	if err != nil {
 		return errors.Wrap(err, "error setup proposal data")
+	}
+
+	//Setup Delegators
+	err = app.Context.netwkDelegators.Deleg.WithState(app.Context.deliver).LoadDelegators(initial.NetDelegators)
+	if err != nil {
+		return errors.Wrap(err, "error setup network delegation data")
 	}
 
 	app.Context.deliver.Write()
