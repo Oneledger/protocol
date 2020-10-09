@@ -1,4 +1,5 @@
 import sys
+import time
 
 from rpc_call import *
 
@@ -132,7 +133,7 @@ class WithdrawRewards:
         print resp
         return resp["result"]["rawTx"]
 
-    def send(self):
+    def send(self, expect_succeed=True):
         # create Tx
         raw_txn = self._request()
 
@@ -142,11 +143,10 @@ class WithdrawRewards:
         # broadcast Tx
         result = broadcast_sync(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
         if "ok" in result:
-            if not result["ok"]:
+            if not result["ok"] and expect_succeed:
                 sys.exit(-1)
             else:
-                print "################### widrawal successfully initiated: "
-                return result["txHash"]
+                print "################### withdrawal successfully initiated: "
 
 def sign(raw_tx, address, keypath):
     resp = rpc_call('owner.SignWithSecureAddress',
