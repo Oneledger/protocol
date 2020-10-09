@@ -130,8 +130,5 @@ def test_no_votes():
 
 
 if __name__ == "__main__":
-    try:
-        set_up()
-        test_no_votes()
-    except AssertionError as e:
-        raise e
+    set_up()
+    test_no_votes()
