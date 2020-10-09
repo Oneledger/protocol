@@ -72,7 +72,7 @@ func (drs *DelegRewardStore) Withdraw(delegator keys.Address, amount *balance.Am
 
 // Get pending withdrawn rewards
 func (drs *DelegRewardStore) GetPendingRewards(delegator keys.Address, height, blocks int64) (pdRewards *DelegPendingRewards, err error) {
-	pdRewards = &DelegPendingRewards{Address: delegator}
+	pdRewards = &DelegPendingRewards{Address: delegator, Rewards: []*PendingRewards{}}
 	for h := height; h < height+blocks; h++ {
 		key := drs.getPendingRewardsKey(h, delegator)
 		var amt *balance.Amount
@@ -90,10 +90,9 @@ func (drs *DelegRewardStore) GetPendingRewards(delegator keys.Address, height, b
 	return
 }
 
-// Mature, if any, all delegators' pending rewards at a specific height
-func (drs *DelegRewardStore) MaturePendingRewards(height int64) abciTypes.Event {
-	// block events
-	event := abciTypes.Event{Type: "deleg_rewards"}
+// Mature, if any, all delegators' pending withdrawal at a specific height
+func (drs *DelegRewardStore) MaturePendingRewards(height int64) (event abciTypes.Event, any bool) {
+	event.Type = "deleg_rewards"
 	event.Attributes = append(event.Attributes, kv.Pair{
 		Key:   []byte("height"),
 		Value: []byte(strconv.FormatInt(height, 10)),
@@ -116,7 +115,9 @@ func (drs *DelegRewardStore) MaturePendingRewards(height int64) abciTypes.Event 
 		}
 		return err != nil
 	})
-	return event
+
+	any = len(event.Attributes) > 1
+	return
 }
 
 // Get matured(finalizable) rewards

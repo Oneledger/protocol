@@ -55,9 +55,9 @@ if __name__ == "__main__":
     print bcolors.OKGREEN + "#### Successfully withdrawn delegator rewards" + bcolors.ENDC
 
     # query and check again after maturity
-    #wait_for(4)
-    #res = query_rewards(delegator)
-    #check_rewards(res, '0', total, [])
+    wait_for(4)
+    res1 = query_rewards(delegator)
+    check_rewards(res1, '0', total, [])
     print bcolors.OKGREEN + "#### Successfully matured delegator rewards" + bcolors.ENDC
 
     # withdraw all balance
