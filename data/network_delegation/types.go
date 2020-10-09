@@ -3,6 +3,7 @@ package network_delegation
 import (
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
+	"math/big"
 )
 
 type DelegationPrefixType int
@@ -36,8 +37,8 @@ type State struct {
 
 type DelegationRewardCtx struct {
 	TotalRewards    *balance.Amount
-	DelegationPower int64
-	TotalPower      int64
+	DelegationPower *big.Int
+	TotalPower      *big.Int
 	Height          int64
 	ProposerAddress keys.Address
 }
