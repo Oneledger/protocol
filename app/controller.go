@@ -479,11 +479,11 @@ func handleDelegationRewards(delegCtx *network_delegation.DelegationRewardCtx, a
 	delegationRewards := balance.NewAmountFromBigInt(big.NewInt(0).Div(numerator, delegCtx.TotalPower))
 
 	//Cut X% from Total Delegation Rewards "T" as Commission "C"
-	numerator = big.NewInt(0).Mul(big.NewInt(10), delegationRewards.BigInt())
+	numerator = big.NewInt(0).Mul(big.NewInt(network_delegation.COMMISSION_PERCENTAGE), delegationRewards.BigInt())
 	commission := balance.NewAmountFromBigInt(big.NewInt(0).Div(numerator, big.NewInt(100)))
 
 	//Distribute Y% of Commission "C" to block proposer
-	numerator = big.NewInt(0).Mul(big.NewInt(30), commission.BigInt())
+	numerator = big.NewInt(0).Mul(big.NewInt(network_delegation.BLOCK_PROPOSER_COMMISSION), commission.BigInt())
 	resp.ProposerReward = balance.NewAmountFromBigInt(big.NewInt(0).Div(numerator, big.NewInt(100)))
 
 	//Deduct Commission from Total delegation Rewards
