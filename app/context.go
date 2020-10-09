@@ -271,29 +271,31 @@ func (ctx *context) Services() (service.Map, error) {
 	proposalMaster.Proposal.SetOptions(ctx.proposalMaster.Proposal.GetOptions())
 
 	rewardMaster := NewRewardMasterStore(ctx.chainstate)
+	netwkDelegators := network_delegation.NewMasterStore("deleg", "delegRwz", storage.NewState(ctx.chainstate))
 	rewardMaster.SetOptions(ctx.rewardMaster.GetOptions())
 	svcCtx := &service.Context{
-		Balances:       balance.NewStore("b", storage.NewState(ctx.chainstate)),
-		Accounts:       ctx.accounts,
-		Currencies:     ctx.currencies,
-		FeePool:        feePool,
-		Cfg:            ctx.cfg,
-		NodeContext:    ctx.node,
-		ValidatorSet:   identity.NewValidatorStore("v", "purged", storage.NewState(ctx.chainstate)),
-		WitnessSet:     identity.NewWitnessStore("w", storage.NewState(ctx.chainstate)),
-		Domains:        onsStore,
-		Delegators:     delegation.NewDelegationStore("st", storage.NewState(ctx.chainstate)),
-		ProposalMaster: proposalMaster,
-		RewardMaster:   rewardMaster,
-		ExtStores:      ctx.extStores,
-		ExtServiceMap:  ctx.extServiceMap,
-		Router:         ctx.actionRouter,
-		Logger:         log.NewLoggerWithPrefix(ctx.logWriter, "rpc").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
-		Services:       extSvcs,
-		EthTrackers:    ethTracker,
-		Trackers:       btcTrackers,
-		Govern:         governance.NewStore("g", storage.NewState(ctx.chainstate)),
-		GovUpdate:      ctx.govupdate,
+		Balances:              balance.NewStore("b", storage.NewState(ctx.chainstate)),
+		Accounts:              ctx.accounts,
+		Currencies:            ctx.currencies,
+		FeePool:               feePool,
+		Cfg:                   ctx.cfg,
+		NodeContext:           ctx.node,
+		ValidatorSet:          identity.NewValidatorStore("v", "purged", storage.NewState(ctx.chainstate)),
+		WitnessSet:            identity.NewWitnessStore("w", storage.NewState(ctx.chainstate)),
+		Domains:               onsStore,
+		Delegators:            delegation.NewDelegationStore("st", storage.NewState(ctx.chainstate)),
+		ProposalMaster:        proposalMaster,
+		RewardMaster:          rewardMaster,
+		ExtStores:             ctx.extStores,
+		ExtServiceMap:         ctx.extServiceMap,
+		Router:                ctx.actionRouter,
+		Logger:                log.NewLoggerWithPrefix(ctx.logWriter, "rpc").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
+		Services:              extSvcs,
+		EthTrackers:           ethTracker,
+		Trackers:              btcTrackers,
+		Govern:                governance.NewStore("g", storage.NewState(ctx.chainstate)),
+		GovUpdate:             ctx.govupdate,
+		NetwkDelegatorsMaster: netwkDelegators,
 	}
 
 	return service.NewMap(svcCtx)
