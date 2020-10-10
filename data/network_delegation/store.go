@@ -134,6 +134,7 @@ func (st *Store) buildActiveKey() storage.StoreKey {
 
 func (st *Store) IterateActiveAmounts(fn func(addr *keys.Address, coin *balance.Coin) bool) bool {
 	prefix := st.buildActiveKey()
+	//fmt.Println("Active prefix: ", prefix)
 	return st.iterateAddresses(prefix, func(addr *keys.Address, coin *balance.Coin) bool {
 		return fn(addr, coin)
 	})
