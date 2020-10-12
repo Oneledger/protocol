@@ -125,6 +125,7 @@ func (vs *ValidatorStore) ExecuteAllegationTracker(ctx *ValidatorContext, active
 	processedValidators := make(map[string]bool)
 	for requestID := range at.Requests {
 		ar, err := ctx.EvidenceStore.GetAllegationRequest(requestID)
+		decisionMade := false
 		if err != nil {
 			logger.Errorf("Failed to retrieve allegation request: %s\n", err)
 			continue
@@ -154,6 +155,7 @@ func (vs *ValidatorStore) ExecuteAllegationTracker(ctx *ValidatorContext, active
 
 		logger.Detailf("Request ID: %s, yes votes count: %d, no votes count: %d, total count: %d \n", requestID, yesCount, noCount, requiredVotesCount)
 		if yesP > percentage {
+			decisionMade = true
 			ar.Status = evidence.GUILTY
 			sv, err := ctx.EvidenceStore.CreateSuspiciousValidator(
 				ar.MaliciousAddress, evidence.BYZANTINE_FAULT,
@@ -240,6 +242,7 @@ func (vs *ValidatorStore) ExecuteAllegationTracker(ctx *ValidatorContext, active
 				continue
 			}
 		} else if noP > 1-percentage {
+			decisionMade = true
 			processedValidators[ar.MaliciousAddress.Humanize()] = true
 			ar.Status = evidence.INNOCENT
 			addrToDelete = append(addrToDelete, requestID)
@@ -253,6 +256,10 @@ func (vs *ValidatorStore) ExecuteAllegationTracker(ctx *ValidatorContext, active
 				return err
 			}
 		}
+		if decisionMade {
+			logger.Infof("Decision made on Validator, Deleting Allegation Request :%s", ar.String())
+			ctx.EvidenceStore.DeleteAllegationRequest(ar.ID)
+		}
 	}
 	update := false
 	for i := range addrToDelete {
@@ -264,6 +271,7 @@ func (vs *ValidatorStore) ExecuteAllegationTracker(ctx *ValidatorContext, active
 	if update {
 		return ctx.EvidenceStore.SetAllegationTracker(at)
 	}
+
 	return nil
 }
 

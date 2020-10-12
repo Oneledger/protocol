@@ -1,6 +1,7 @@
 package evidence
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -48,6 +49,15 @@ func (es *EvidenceStore) Set(key []byte, value []byte) error {
 	prefixKey := append(es.prefix, key...)
 	err := es.state.Set(storage.StoreKey(prefixKey), value)
 	return err
+}
+
+func (es *EvidenceStore) delete(key storage.StoreKey) (bool, error) {
+	prefixed := append(es.prefix, key...)
+	ok, err := es.state.Delete(prefixed)
+	if !ok || err != nil {
+		return ok, err
+	}
+	return ok, nil
 }
 
 func (es *EvidenceStore) getSuspiciousValidatorKey(validatorAddress keys.Address) []byte {
@@ -126,6 +136,17 @@ func (es *EvidenceStore) IterateRequests(fn func(ar *AllegationRequest) bool) (s
 	)
 }
 
+func (es *EvidenceStore) CheckRequestExists(new *AllegationRequest) bool {
+	requestAlreadyExists := false
+	es.IterateRequests(func(ar *AllegationRequest) bool {
+		if ar.MaliciousAddress.Equal(new.MaliciousAddress) {
+			requestAlreadyExists = true
+		}
+		return false
+	})
+	return requestAlreadyExists
+}
+
 func (es *EvidenceStore) CreateSuspiciousValidator(validatorAddress keys.Address, status int8, height int64, createdAt *time.Time) (*LastValidatorHistory, error) {
 	lvh := NewLastValidatorHistory(validatorAddress, status, height, createdAt)
 	err := es.UpdateSuspiciousValidator(lvh)
@@ -197,6 +218,9 @@ func (es *EvidenceStore) PerformAllegation(validatorAddress keys.Address, malici
 	}
 
 	ar := NewAllegationRequest(ID, validatorAddress, maliciousAddress, blockHeight, proofMsg)
+	if es.CheckRequestExists(ar) {
+		return errors.New(fmt.Sprintf("allegation for this validator already exists : %s", ar.String()))
+	}
 	err := es.SetAllegationRequest(ar)
 	if err != nil {
 		return err

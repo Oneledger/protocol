@@ -2,10 +2,10 @@ package evidence
 
 import (
 	"fmt"
-
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/google/uuid"
+	"strings"
 )
 
 const (
@@ -122,6 +122,14 @@ func (es *EvidenceStore) GetAllegationRequest(ID string) (*AllegationRequest, er
 	return ar, nil
 }
 
+func (es *EvidenceStore) DeleteAllegationRequest(ID string) (bool, error) {
+	ok, err := es.delete(es.getAllegationRequestKey(ID))
+	if !ok || err != nil {
+		return ok, err
+	}
+	return ok, nil
+}
+
 type AllegationVote struct {
 	Address keys.Address
 	Choice  int8
@@ -135,6 +143,14 @@ type AllegationRequest struct {
 	ProofMsg         string
 	Status           int8
 	Votes            []*AllegationVote
+}
+
+func (ar *AllegationRequest) String() string {
+	return strings.TrimSpace(fmt.Sprintf(`ID: %s
+ReporterAddress: %s
+MaliciousAddress: %s
+Votes %s
+`, ar.ID, ar.ReporterAddress, ar.MaliciousAddress, ar.Votes))
 }
 
 func (ar *AllegationRequest) Bytes() ([]byte, error) {

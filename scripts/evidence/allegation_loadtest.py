@@ -52,10 +52,10 @@ def test_voting(index):
 if __name__ == "__main__":
     try:
         set_up()
-        for i in range(1):
+        for i in range(2):
             test_allegation_requests()
         time.sleep(10)
-        for i in range(1):
+        for i in range(2):
             test_voting(i)
     except AssertionError as e:
         import ipdb;
