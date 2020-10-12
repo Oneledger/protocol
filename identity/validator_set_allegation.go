@@ -122,10 +122,16 @@ func (vs *ValidatorStore) ExecuteAllegationTracker(ctx *ValidatorContext, active
 	bountyAddress := keys.Address(popt.BountyProgramAddr)
 
 	addrToDelete := make([]string, 0)
+	processedValidators := make(map[string]bool)
 	for requestID := range at.Requests {
 		ar, err := ctx.EvidenceStore.GetAllegationRequest(requestID)
 		if err != nil {
 			logger.Errorf("Failed to retrieve allegation request: %s\n", err)
+			continue
+		}
+
+		_, ok := processedValidators[ar.MaliciousAddress.Humanize()]
+		if ok {
 			continue
 		}
 		yesCount := 0
@@ -216,6 +222,7 @@ func (vs *ValidatorStore) ExecuteAllegationTracker(ctx *ValidatorContext, active
 			} else {
 				logger.Infof("Nothing to withdraw from addr on bounty program: %s\n", bountyAddress.Humanize())
 			}
+			processedValidators[ar.MaliciousAddress.Humanize()] = true
 			addrToDelete = append(addrToDelete, requestID)
 			arToUpdate = true
 			vs.createAllegationEvent(ar)
@@ -233,6 +240,7 @@ func (vs *ValidatorStore) ExecuteAllegationTracker(ctx *ValidatorContext, active
 				continue
 			}
 		} else if noP > 1-percentage {
+			processedValidators[ar.MaliciousAddress.Humanize()] = true
 			ar.Status = evidence.INNOCENT
 			addrToDelete = append(addrToDelete, requestID)
 			arToUpdate = true

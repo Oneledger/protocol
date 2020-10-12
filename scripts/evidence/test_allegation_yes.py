@@ -132,9 +132,5 @@ def test_yes_votes():
 
 
 if __name__ == "__main__":
-    try:
-        set_up()
-        test_yes_votes()
-    except AssertionError as e:
-        import ipdb; ipdb.set_trace()
-        raise e
+    set_up()
+    test_yes_votes()

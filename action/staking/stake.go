@@ -116,9 +116,6 @@ func (s stakeTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error)
 		return false, action.ErrNotEnoughFund
 	}
 
-	if ctx.EvidenceStore.IsFrozenValidator(st.ValidatorAddress) {
-		return false, evidence.ErrFrozenValidator
-	}
 	return true, nil
 }
 
@@ -181,6 +178,10 @@ func runCheckStake(ctx *action.Context, tx action.RawTx) (bool, action.Response)
 	err := st.Unmarshal(tx.Data)
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
+	}
+
+	if ctx.EvidenceStore.IsFrozenValidator(st.ValidatorAddress) {
+		return false, action.Response{Log: evidence.ErrFrozenValidator.Error()}
 	}
 
 	stake := identity.Stake{

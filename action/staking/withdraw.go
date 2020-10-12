@@ -105,9 +105,6 @@ func (withdrawTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error
 		return false, action.ErrInvalidAmount
 	}
 
-	if ctx.EvidenceStore.IsFrozenValidator(draw.ValidatorAddress) {
-		return false, evidence.ErrFrozenValidator
-	}
 	return true, nil
 }
 
@@ -132,6 +129,10 @@ func runWithdraw(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	err := draw.Unmarshal(tx.Data)
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
+	}
+
+	if ctx.EvidenceStore.IsFrozenValidator(draw.ValidatorAddress) {
+		return false, action.Response{Log: evidence.ErrFrozenValidator.Error()}
 	}
 
 	coin := draw.Stake.ToCoinWithBase(ctx.Currencies)

@@ -102,9 +102,6 @@ func (us unstakeTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, err
 		return false, action.ErrInvalidCurrency
 	}
 
-	if ctx.EvidenceStore.IsFrozenValidator(ust.ValidatorAddress) {
-		return false, evidence.ErrFrozenValidator
-	}
 	return true, nil
 }
 
@@ -128,6 +125,10 @@ func runCheckUnstake(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 	err := ust.Unmarshal(tx.Data)
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
+	}
+
+	if ctx.EvidenceStore.IsFrozenValidator(ust.ValidatorAddress) {
+		return false, action.Response{Log: evidence.ErrFrozenValidator.Error()}
 	}
 
 	unstake := identity.Unstake{
