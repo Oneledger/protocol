@@ -1,8 +1,6 @@
 import subprocess
 import time
-
 from actions import *
-
 
 def addValidatorWalletAccounts(node):
     args = ['olclient', 'show_node_id']

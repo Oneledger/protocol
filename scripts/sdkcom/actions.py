@@ -19,7 +19,6 @@ def sign(raw_tx, address, keypath):
     print resp
     return resp["result"]
 
-
 def broadcast_commit(raw_tx, signature, pub_key):
     resp = rpc_call('broadcast.TxCommit', {
         "rawTx": raw_tx,
