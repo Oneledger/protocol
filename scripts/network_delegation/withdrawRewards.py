@@ -8,8 +8,10 @@ def delegate(node, account, amount):
     newDelegation.send_network_Delegate()
 
 def check_rewards(result, balance, matured, pending):
-    if balance != '' and result['balance'] != balance:
-        sys.exit(-1)
+    if balance != '':
+        balance = str(balance) + '0' * 18
+        if result['balance'] < balance:
+            sys.exit(-1)
     if matured != '' and result['matured'] != matured:
         sys.exit(-1)
     if len(result['pending']) != len(pending):
@@ -27,21 +29,22 @@ if __name__ == "__main__":
 
     # delegates some OLT and wait for rewards distribution
     delegate(node_0, delegator, '2000000')
-    #wait_for(4)
+    wait_for(4)
 
     # query and check balance
-    #res = query_rewards(delegator)
-    #check_rewards(res, '', '0', pending)
+    res = query_rewards(delegator)
+    check_rewards(res, '7', '0', [])
 
     # overdraw MUST fail
-    #withdraw = WithdrawRewards(delegator, 100, node_0 + "/keystore/")
-    #withdraw.send(False)
+    withdraw = WithdrawRewards(delegator, 100, node_0 + "/keystore/")
+    withdraw.send(False)
+    print bcolors.OKGREEN + "#### Overdraw rewards failed as expected" + bcolors.ENDC
 
     # initiate 2 withdrawals
     pending = []
     total = 0
     for i in range(2):
-        amt = i+1
+        amt = i+3
         withdraw = WithdrawRewards(delegator, amt, node_0 + "/keystore/")
         withdraw.send(True)
         pending.append(str(amt) + '0' * 18)

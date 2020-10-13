@@ -97,7 +97,7 @@ func TestStore_Set_Get(t *testing.T) {
 
 func TestStore_Exists(t *testing.T) {
 	store.WithPrefix(MatureType)
-	for key, _ := range matureAddrList {
+	for key := range matureAddrList {
 		addr := &keys.Address{}
 		_ = addr.UnmarshalText([]byte(key))
 		res := store.Exists(addr)
@@ -149,7 +149,7 @@ func TestStore_SetPendingAmount(t *testing.T) {
 	}
 
 	//Test Check If Pending Amount Exists
-	for i, _ := range pendingAddrList {
+	for i := range pendingAddrList {
 		addr := keys.Address{}
 		_ = addr.UnmarshalText([]byte(i))
 		exist := store.PendingExists(addr, 500)

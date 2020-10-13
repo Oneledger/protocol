@@ -13,22 +13,21 @@ const (
 )
 
 var (
-	chainstate      *storage.ChainState
-	test *testStore
-	stores Router
+	chainstate *storage.ChainState
+	test       *testStore
+	stores     Router
 )
 
 var _ ExtStore = &testStore{}
 
 type testStore struct {
-	state *storage.State
+	state  *storage.State
 	prefix []byte //Current Store Prefix
 }
 
 func newTestStore(state *storage.State, prefix []byte) *testStore {
 	return &testStore{state: state, prefix: prefix}
 }
-
 
 func (ts *testStore) Set(testKey string, testData string) error {
 	prefixed := append(ts.prefix, testKey...)
