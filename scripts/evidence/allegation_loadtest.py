@@ -1,7 +1,5 @@
 from __future__ import print_function
 
-import time
-
 from base import *
 from sdk.actions import (
     ByzantineFault_Requests,
@@ -51,15 +49,15 @@ def test_voting(index):
 
 if __name__ == "__main__":
     numOfAllegationsPerform = 2
-    try:
-        set_up()
-        for i in range(numOfAllegationsPerform):
-            test_allegation_requests()
-        time.sleep(10)
-        for i in range(numOfAllegationsPerform):
-            test_voting(i)
-    except AssertionError as e:
-        import ipdb;
-
-        ipdb.set_trace()
-        raise e
+    # try:
+    set_up()
+    for i in range(numOfAllegationsPerform):
+        test_allegation_requests()
+    # time.sleep(10)
+    # for i in range(numOfAllegationsPerform):
+    #     test_voting(i)
+    # except AssertionError as e:
+    #     import ipdb;
+    #
+    #     ipdb.set_trace()
+    #     raise e
