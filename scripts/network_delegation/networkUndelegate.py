@@ -1,5 +1,3 @@
-import time
-
 from sdk import *
 
 if __name__ == "__main__":
@@ -26,7 +24,3 @@ if __name__ == "__main__":
 
     newDelegation.send_network_undelegate_shoud_fail(malicious_undelegate_amount)
     print bcolors.OKGREEN + "#### Undelegation Succeded" + bcolors.ENDC
-
-
-
-

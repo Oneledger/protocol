@@ -28,7 +28,7 @@ func (s *Service) AddNetworkDelegation(args client.NetworkDelegateRequest, reply
 	}
 
 	tx := &action.RawTx{
-		Type: action.ADD_NETWORK_DELEGATE,
+		Type: action.ADD_NETWORK_DELEGATION,
 		Data: data,
 		Fee:  fee,
 		Memo: uuidNew.String(),
