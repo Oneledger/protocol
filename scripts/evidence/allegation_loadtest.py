@@ -19,7 +19,7 @@ def test_allegation_requests():
 
     # perform allegation
     is_allegation_pass = ByzantineFault_Allegation(node_0, reporter, malicious, 1, "test", "1234")
-    # assert is_allegation_pass is True, 'Failed to perform allegation'
+    assert is_allegation_pass is True, 'Failed to perform allegation'
 
     # check requests, so we will have 1 voting
 

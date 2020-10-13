@@ -130,6 +130,7 @@ func (vs *ValidatorStore) ExecuteAllegationTracker(ctx *ValidatorContext, active
 
 		_, ok := processedValidators[ar.MaliciousAddress.Humanize()]
 		if ok {
+			addrToDelete = append(addrToDelete, requestID)
 			continue
 		}
 		yesCount := 0
