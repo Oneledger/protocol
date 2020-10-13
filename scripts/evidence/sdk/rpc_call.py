@@ -37,3 +37,27 @@ def rpc_call(method, params):
 
 def converBigInt(value):
     return str(value)
+
+
+class Byzantine:
+    def __init__(self, reporter, malicious, proofmessage, password, blockheight):
+        self.reporter = reporter
+        self.malicious = malicious
+        self.proofmessage = proofmessage
+        self.password = password
+        self.blockheight = blockheight
+
+    def _create_allegation(self):
+        req = {
+            "address": self.reporter,
+            "maliciousAddress": self.malicious,
+            "blockHeight": self.blockheight,
+            "ProofMsg": self.proofmessage
+            "gasPrice": {
+                "currency": "OLT",
+                "value": "1000000000",
+            },
+            "gas": 400000,
+        }
+        resp = rpc_call('tx.Allegation', req)
+        return resp["result"]["rawTx"]
