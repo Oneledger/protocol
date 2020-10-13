@@ -59,6 +59,13 @@ type VoteRequestRequest struct {
 	Address keys.Address `json:"address"`
 }
 
+type SecureSignRawTxRequest struct {
+	RawTx    []byte         `json:"rawTx"`
+	Address  action.Address `json:"address"`
+	Password string         `json:"password"`
+	KeyPath  string         `json:"keyPath"`
+}
+
 type VoteRequestReply struct {
 	Requests []evidence.AllegationRequest
 }
