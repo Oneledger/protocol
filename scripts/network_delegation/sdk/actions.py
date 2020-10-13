@@ -1,4 +1,5 @@
 import sys
+import time
 
 from rpc_call import *
 
@@ -124,6 +125,38 @@ class NetWorkDelegate:
         result = resp["result"]
         return result
 
+class WithdrawRewards:
+    def __init__(self, delegator, amount, keypath):
+        self.delegator = delegator
+        self.amount = amount
+        self.keypath = keypath
+
+    def _request(self):
+        req = {
+            "delegator": self.delegator,
+            "amount": {
+                "currency": "OLT",
+                "value": convertBigInt(self.amount),
+            },
+        }
+        resp = rpc_call('tx.WithdrawDelegRewards', req)
+        print resp
+        return resp["result"]["rawTx"]
+
+    def send(self, expect_succeed=True):
+        # create Tx
+        raw_txn = self._request()
+
+        # sign Tx
+        signed = sign(raw_txn, self.delegator, self.keypath)
+
+        # broadcast Tx
+        result = broadcast_sync(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
+        if "ok" in result:
+            if not result["ok"] and expect_succeed:
+                sys.exit(-1)
+            else:
+                print "################### withdrawal successfully initiated: "
 
 def sign(raw_tx, address, keypath):
     resp = rpc_call('owner.SignWithSecureAddress',
@@ -178,3 +211,38 @@ def check_query_total(result, total_expected):
         sys.exit(-1)
     if result['totalAmount'] != total_expected:
         sys.exit(-1)
+
+def query_rewards(delegator):
+    req = {
+        "delegator": delegator,
+        "inclPending": True,
+    }
+    resp = rpc_call('query.GetDelegRewards', req)
+
+    if "result" in resp:
+        result = resp["result"]
+    else:
+        result = ""
+    return result
+
+def query_balance(address):
+    req = {
+        "currency": "OLT",
+        "address": address
+    }
+    resp = rpc_call('query.CurrencyBalance', req)
+
+    if "result" in resp:
+        result = resp["result"]["balance"]
+    else:
+        result = ""
+    return int(float(result))
+
+def wait_for(blocks, url=url_0):
+    resp = rpc_call('query.ListValidators', {}, url)
+    hstart = resp["result"]["height"]
+    hcur = hstart
+    while hcur - hstart < blocks:
+        time.sleep(0.5)
+        resp = rpc_call('query.ListValidators', {}, url)
+        hcur = resp["result"]["height"]

@@ -9,4 +9,5 @@ var (
 	ErrGettingDelgOption         = codes.ProtocolError{codes.NetDelgErrGettingDelgOption, "failed to get network delegation option from governance store"}
 	ErrSettingPendingDelgAmount  = codes.ProtocolError{codes.NetDelgErrSettingPendingDelgAmount, "failed to set pending network delegation amount"}
 	ErrGettingPendingDelgAmount  = codes.ProtocolError{codes.NetDelgErrGettingPendingDelgAmount, "failed to get pending network delegation amount"}
+	ErrInitiateWithdrawal        = codes.ProtocolError{codes.NetDelgErrWithdraw, "failed to initiate rewards withdrawal"}
 )

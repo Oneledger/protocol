@@ -107,6 +107,7 @@ const (
 	ETHTrackerExists          = 600103
 	ETHTrackerUnabletoSet     = 600104
 
+	// Staking
 	DelgErr                     = 6003
 	DelgErrStakeAddressInUse    = 600301
 	DelgErrStakeAddressMismatch = 600302
@@ -118,6 +119,7 @@ const (
 	NetDelgErrGettingDelgOption         = 600504
 	NetDelgErrSettingPendingDelgAmount  = 600505
 	NetDelgErrGettingPendingDelgAmount  = 600506
+	NetDelgErrWithdraw                  = 600507
 
 	GovErr                                = 7001
 	GovErrGetProposalOptions              = 700101

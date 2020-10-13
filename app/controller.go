@@ -3,12 +3,14 @@ package app
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/Oneledger/protocol/data/network_delegation"
-	"github.com/Oneledger/protocol/external_apps/common"
+
 	"math"
 	"math/big"
 	"runtime/debug"
 	"strconv"
+
+	"github.com/Oneledger/protocol/data/network_delegation"
+	"github.com/Oneledger/protocol/external_apps/common"
 
 	"github.com/tendermint/tendermint/libs/kv"
 
