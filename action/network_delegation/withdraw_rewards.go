@@ -22,7 +22,7 @@ func (wr DeleWithdrawRewards) Signers() []action.Address {
 }
 
 func (wr DeleWithdrawRewards) Type() action.Type {
-	return action.NETWORK_DELEGATION_REWARDS_WITHDRAW
+	return action.REWARDS_FINALIZE_NETWORK_DELEGATE
 }
 
 func (wr DeleWithdrawRewards) Tags() kv.Pairs {

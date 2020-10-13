@@ -30,6 +30,10 @@ func (drs *DelegRewardStore) WithState(state *storage.State) *DelegRewardStore {
 	return drs
 }
 
+func (drs *DelegRewardStore) GetState() *storage.State {
+	return drs.state
+}
+
 // Add rewards balance
 func (drs *DelegRewardStore) AddRewardsBalance(delegator keys.Address, amount *balance.Amount) error {
 	key := drs.getRewardsBalanceKey(delegator)
@@ -65,7 +69,7 @@ func (drs *DelegRewardStore) Withdraw(delegator keys.Address, amount *balance.Am
 
 // Get pending withdrawn rewards
 func (drs *DelegRewardStore) GetPendingRewards(delegator keys.Address, height, blocks int64) (pdRewards *DelegPendingRewards, err error) {
-	pdRewards = &DelegPendingRewards{Address: delegator}
+	pdRewards = &DelegPendingRewards{Address: delegator, Rewards: []*PendingRewards{}}
 	for h := height; h < height+blocks; h++ {
 		key := drs.getPendingRewardsKey(h, delegator)
 		var amt *balance.Amount

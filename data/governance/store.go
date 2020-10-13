@@ -4,12 +4,14 @@ import (
 	"encoding/binary"
 	"fmt"
 	"os"
+	"strconv"
 	"sync"
+
+	"github.com/Oneledger/protocol/data/network_delegation"
 
 	"github.com/Oneledger/protocol/data/delegation"
 	"github.com/Oneledger/protocol/data/evidence"
 	"github.com/Oneledger/protocol/data/keys"
-	"github.com/Oneledger/protocol/data/network_delegation"
 	"github.com/Oneledger/protocol/data/rewards"
 	"github.com/Oneledger/protocol/log"
 
@@ -99,13 +101,13 @@ func (st *Store) Get(key string, optKey string) ([]byte, error) {
 		panic(errors.Wrap(err, "Unable to get Last Update Height"))
 	}
 	// Get the Options from the last update Height
-	versionedKey := storage.StoreKey(string(luh) + storage.DB_PREFIX + key)
+	versionedKey := storage.StoreKey(strconv.FormatInt(luh, 10) + storage.DB_PREFIX + key)
 	prefixKey := append(st.prefix, versionedKey...)
 	return st.state.Get(prefixKey)
 }
 
 func (st *Store) Set(key string, value []byte) error {
-	versionedKey := storage.StoreKey(string(st.height) + storage.DB_PREFIX + key)
+	versionedKey := storage.StoreKey(strconv.FormatInt(st.height, 10) + storage.DB_PREFIX + key)
 	prefixKey := append(st.prefix, versionedKey...)
 	err := st.state.Set(prefixKey, value)
 	return err
@@ -182,7 +184,15 @@ func (st *Store) SetAllLUH() error {
 	if err != nil {
 		return err
 	}
+	err = st.SetLUH(LAST_UPDATE_HEIGHT_NETWK_DELEG)
+	if err != nil {
+		return err
+	}
 	err = st.SetLUH(LAST_UPDATE_HEIGHT)
+	if err != nil {
+		return err
+	}
+	err = st.SetLUH(LAST_UPDATE_HEIGHT_NETWK_DELEG)
 	if err != nil {
 		return err
 	}
@@ -547,5 +557,6 @@ func (st *Store) GetPoolList() (map[string]keys.Address, error) {
 	poolList["BountyPool"] = keys.Address(propOpt.BountyProgramAddr)
 	poolList["FeePool"] = keys.Address(fees.POOL_KEY)
 	poolList["RewardsPool"] = keys.Address(rewardOpt.RewardPoolAddress)
+	poolList["DelegationPool"] = keys.Address(network_delegation.DELEGATION_POOL_KEY)
 	return poolList, nil
 }

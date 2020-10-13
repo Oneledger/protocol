@@ -9,6 +9,7 @@ olfullnode init devnet --dir $OLDATA/devnet --nonvalidators 4 \
   --loglevel 4 \
   --total_funds 1000000000 \
   --maturity_time 4 \
+  --deleg_rewards_maturity_time 4 \
   --rewards_interval 1 \
   --funding_deadline 10 \
   --voting_deadline 12 \

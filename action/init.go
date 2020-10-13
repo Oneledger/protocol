@@ -22,6 +22,12 @@ const (
 	UNSTAKE  Type = 0x12
 	WITHDRAW Type = 0x13
 
+	//network network_delegation
+	ADD_NETWORK_DELEGATE              Type = 0x51
+	NETWORK_UNDELEGATE                Type = 0x52
+	WITHDRAW_NETWORK_DELEGATE         Type = 0x53
+	REWARDS_FINALIZE_NETWORK_DELEGATE Type = 0x54
+
 	//ons related transaction
 	DOMAIN_CREATE     Type = 0x21
 	DOMAIN_UPDATE     Type = 0x22
@@ -58,9 +64,6 @@ const (
 	//Rewards
 	WITHDRAW_REWARD Type = 0x41
 
-	//Network Delegation
-	NETWORK_DELEGATION_REWARDS_WITHDRAW Type = 51
-
 	//EOF here Only used as a marker to mark the end of Type list
 	//So that the query for Types can return all Types dynamically
 	//, when there is a change made in Type list
@@ -74,7 +77,7 @@ func init() {
 
 	serialize.RegisterInterface(new(Msg))
 	logger = log.NewLoggerWithPrefix(os.Stdout, "action")
-	txTypeMap  = TxTypeMap{}
+	txTypeMap = TxTypeMap{}
 	RegisterTxType(SEND, "SEND")
 	RegisterTxType(SENDPOOL, "SENDPOOL")
 
@@ -114,10 +117,14 @@ func init() {
 
 	RegisterTxType(WITHDRAW_REWARD, "WITHDRAW_REWARD")
 
-	RegisterTxType(NETWORK_DELEGATION_REWARDS_WITHDRAW, "NETWORK_DELEGATION_REWARDS_WITHDRAW")
+	RegisterTxType(REWARDS_FINALIZE_NETWORK_DELEGATE, "REWARDS_FINALIZE_NETWORK_DELEGATE")
+	RegisterTxType(ADD_NETWORK_DELEGATE, "ADD_NETWORK_DELEGATION")
+	RegisterTxType(NETWORK_UNDELEGATE, "NETWORK_UNDELEGATE")
+	RegisterTxType(WITHDRAW_NETWORK_DELEGATE, "WITHDRAW_NETWORK_DELEGATE")
+
 }
 
-func RegisterTxType(value Type, name string, ) {
+func RegisterTxType(value Type, name string) {
 	if dupName, ok := txTypeMap[value]; ok {
 		logger.Errorf("Trying to register tx type %s failed, type value conflicts with existing type: %d: %s", value, dupName)
 		return
