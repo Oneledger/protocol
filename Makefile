@@ -105,6 +105,8 @@ govtest: reset
 # run evidence tests
 #
 evidence: reset
+	python scripts/evidence/allegation_loadtest.py
+	make reset_no_install
 	python scripts/evidence/test_allegation_no.py
 	make reset_no_install
 	python scripts/evidence/test_allegation_yes.py
