@@ -160,7 +160,7 @@ func init() {
 	testnetCmd.Flags().Int64Var(&testnetArgs.rewardsInterval, "rewards_interval", 1, "Block rewards interval")
 	testnetCmd.Flags().StringVar(&testnetArgs.reserved_domains, "reserved_domains", "", "Directory which contains Reserved domains list")
 	testnetCmd.Flags().Int64Var(&testnetArgs.maturityTime, "maturity_time", 109200, "Set Maturity time for staking")
-	testnetCmd.Flags().Int64Var(&testnetArgs.delegRewardsMaturityTime, "deleg_rewards_maturity_time", 6, "Set Maturity time for staking")
+	testnetCmd.Flags().Int64Var(&testnetArgs.delegRewardsMaturityTime, "deleg_rewards_maturity_time", 109200, "Set Maturity time for delegation rewards")
 	testnetCmd.Flags().Int64Var(&testnetArgs.fundingDeadline, "funding_deadline", 75001, "Set Maturity time for staking")
 	testnetCmd.Flags().Int64Var(&testnetArgs.votingDeadline, "voting_deadline", 150000, "Set Maturity time for staking")
 	testnetCmd.Flags().Int64Var(&testnetArgs.timeoutcommit, "timeout_commit", 1000, "Set timecommit for blocks")

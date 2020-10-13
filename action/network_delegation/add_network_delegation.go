@@ -2,7 +2,9 @@ package network_delegation
 
 import (
 	"encoding/json"
+
 	"fmt"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/Oneledger/protocol/data/balance"
@@ -25,7 +27,7 @@ func (n AddNetworkDelegation) Signers() []action.Address {
 }
 
 func (n AddNetworkDelegation) Type() action.Type {
-	return action.ADD_NETWORK_DELEGATION
+	return action.ADD_NETWORK_DELEGATE
 }
 
 func (n AddNetworkDelegation) Tags() kv.Pairs {
@@ -35,12 +37,12 @@ func (n AddNetworkDelegation) Tags() kv.Pairs {
 		Key:   []byte("tx.type"),
 		Value: []byte(n.Type().String()),
 	}
-	tag2 := kv.Pair{
+	tag3 := kv.Pair{
 		Key:   []byte("tx.delegationAddress"),
 		Value: n.DelegationAddress.Bytes(),
 	}
 
-	tags = append(tags, tag, tag2)
+	tags = append(tags, tag, tag3)
 	return tags
 }
 

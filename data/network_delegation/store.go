@@ -1,14 +1,15 @@
 package network_delegation
 
 import (
+	"strconv"
+	"strings"
+	"sync"
+
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
-	"strconv"
-	"strings"
-	"sync"
 )
 
 const (

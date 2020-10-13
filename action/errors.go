@@ -20,7 +20,7 @@ var (
 	ErrInvalidExtTx       = codes.ProtocolError{codes.TxErrInvalidExtTx, "invalid external tx"}
 
 	ErrInvalidAddress          = codes.ErrBadAddress
-	ErrInvalidCurrency         = codes.ProtocolError{codes.TxErrInvalidFeeCurrency, "invalid amount"}
+	ErrInvalidCurrency         = codes.ProtocolError{codes.TxErrInvalidFeeCurrency, "invalid fee currency"}
 	ErrTokenNotSupported       = codes.ProtocolError{codes.ExternalErrTokenNotSuported, "Token not supported"}
 	ErrTransactionNotSupported = codes.ProtocolError{codes.ExternalTransactionNotSupported, "TX not supported"}
 
