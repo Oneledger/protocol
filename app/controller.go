@@ -132,6 +132,11 @@ func (app *App) blockBeginner() blockBeginner {
 		if err != nil {
 			app.logger.Error("validator set with error", err)
 		}
+		//Mature Pending Delegates for withdrawal
+		err = app.Context.netwkDelegators.Deleg.HandlePendingDelegates(req.Header.Height)
+		if err != nil {
+			app.logger.Error("failed to mature pending delegates", err)
+		}
 
 		blockRewardEvent := handleBlockRewards(&app.Context, req)
 
@@ -512,6 +517,13 @@ func handleDelegationRewards(delegCtx *network_delegation.DelegationRewardCtx, a
 		return false
 	})
 
+	//Create Event for Proposer Reward
+	proposerKey := "proposer_" + delegCtx.ProposerAddress.String()
+	kvMap[proposerKey] = kv.Pair{
+		Key:   []byte(proposerKey),
+		Value: []byte(resp.ProposerReward.String()),
+	}
+
 	//Create Event for Delegation Rewards
 	poolList, _ := appCtx.govern.GetPoolList()
 	kvMap[poolList["DelegationPool"].String()] = kv.Pair{
@@ -622,7 +634,6 @@ func handleBlockRewards(appCtx *context, block RequestBeginBlock) abciTypes.Even
 				commissionAmount = getRewardForValidator(totalPower, validatorPowerMap[valAddress.String()], delegationResp.Commission)
 
 				if valAddress.String() == keys.Address(block.Header.ProposerAddress).String() {
-
 					commissionAmount = commissionAmount.Plus(*delegationResp.ProposerReward)
 				}
 			}
