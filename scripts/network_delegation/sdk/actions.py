@@ -154,8 +154,10 @@ def broadcast_sync(raw_tx, signature, pub_key):
     return resp["result"]
 
 
-def query_total():
-    req = {}
+def query_total(only_active):
+    req = {
+        "onlyActive": only_active
+    }
     resp = rpc_call('query.GetTotalNetwkDelegation', req)
     print json.dumps(resp, indent=4)
     result = resp["result"]
