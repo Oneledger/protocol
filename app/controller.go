@@ -142,7 +142,8 @@ func (app *App) blockBeginner() blockBeginner {
 		}
 
 		// matured delegators' pending withdrawal
-		delegRewardEvent, anyMatured := app.Context.netwkDelegators.WithState(app.Context.deliver).Rewards.MaturePendingRewards(req.Header.Height)
+		delegRewardStore := app.Context.netwkDelegators.Rewards.WithState(app.Context.deliver)
+		delegRewardEvent, anyMatured := delegRewardStore.MaturePendingRewards(req.Header.Height)
 		if anyMatured {
 			result.Events = append(result.Events, delegRewardEvent)
 		}
