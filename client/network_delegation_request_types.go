@@ -65,3 +65,18 @@ type WithdrawDelegRewardsRequest struct {
 	Delegator keys.Address  `json:"delegator"`
 	Amount    action.Amount `json:"amount"`
 }
+
+type ListDelegationRequest struct {
+	DelegationAddress keys.Address `json:"delegationAddress"`
+}
+
+type ListDelegationReply struct {
+	DelegationStats DelegationStats `json:"delegationStats"`
+	Height          int64           `json:"height"`
+}
+
+type DelegationStats struct {
+	Active  string `json:"active"`
+	Pending string `json:"pending"`
+	Matured string `json:"matured"`
+}

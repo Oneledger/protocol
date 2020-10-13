@@ -69,7 +69,7 @@ func (drs *DelegRewardStore) Withdraw(delegator keys.Address, amount *balance.Am
 
 // Get pending withdrawn rewards
 func (drs *DelegRewardStore) GetPendingRewards(delegator keys.Address, height, blocks int64) (pdRewards *DelegPendingRewards, err error) {
-	pdRewards = &DelegPendingRewards{Address: delegator}
+	pdRewards = &DelegPendingRewards{Address: delegator, Rewards: []*PendingRewards{}}
 	for h := height; h < height+blocks; h++ {
 		key := drs.getPendingRewardsKey(h, delegator)
 		var amt *balance.Amount

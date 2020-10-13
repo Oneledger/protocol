@@ -25,15 +25,15 @@ func Name() string {
 }
 
 type Service struct {
-	balances        *balance.Store
-	router          action.Router
-	accounts        accounts.Wallet
-	validators      *identity.ValidatorStore
-	govern          *governance.Store
-	delegators      *delegation.DelegationStore
-	feeOpt          *fees.FeeOption
-	logger          *log.Logger
-	nodeContext     node.Context
+	balances    *balance.Store
+	router      action.Router
+	accounts    accounts.Wallet
+	validators  *identity.ValidatorStore
+	govern      *governance.Store
+	delegators  *delegation.DelegationStore
+	feeOpt      *fees.FeeOption
+	logger      *log.Logger
+	nodeContext node.Context
 }
 
 func NewService(
@@ -48,15 +48,15 @@ func NewService(
 	logger *log.Logger,
 ) *Service {
 	return &Service{
-		balances:        balances,
-		router:          router,
-		nodeContext:     nodeCtx,
-		accounts:        accounts,
-		validators:      validators,
-		govern:          govern,
-		delegators:      delegators,
-		feeOpt:          feeOpt,
-		logger:          logger,
+		balances:    balances,
+		router:      router,
+		nodeContext: nodeCtx,
+		accounts:    accounts,
+		validators:  validators,
+		govern:      govern,
+		delegators:  delegators,
+		feeOpt:      feeOpt,
+		logger:      logger,
 	}
 }
 

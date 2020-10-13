@@ -3,6 +3,8 @@ package network_delegation
 import (
 	"encoding/json"
 
+	"fmt"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/Oneledger/protocol/data/balance"
@@ -80,10 +82,12 @@ func (n addNetworkDelegationTx) Validate(ctx *action.Context, tx action.SignedTx
 }
 
 func (n addNetworkDelegationTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	fmt.Println("Running CheckTx")
 	return runNetworkDelegate(ctx, tx)
 }
 
 func (n addNetworkDelegationTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	fmt.Println("Running DeliverTx")
 	return runNetworkDelegate(ctx, tx)
 }
 
@@ -140,7 +144,9 @@ func runNetworkDelegate(ctx *action.Context, tx action.RawTx) (bool, action.Resp
 	}
 
 	//Add balance to delegation
-	err = ctx.NetwkDelegators.Deleg.WithPrefix(network_delegation.ActiveType).Set(delegate.DelegationAddress, &coin)
+	currentDelegation, _ := ctx.NetwkDelegators.Deleg.WithPrefix(network_delegation.ActiveType).Get(delegate.DelegationAddress)
+	newCoin := currentDelegation.Plus(coin)
+	err = ctx.NetwkDelegators.Deleg.WithPrefix(network_delegation.ActiveType).Set(delegate.DelegationAddress, &newCoin)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, balance.ErrBalanceErrorAddFailed, delegate.Tags(), err)
 	}

@@ -39,6 +39,16 @@ class NetWorkDelegate:
         print resp
         return resp["result"]["rawTx"]
 
+    def query_delegation(self):
+        req = {
+            "delegationAddress": self.delegationaddress,
+        }
+        resp = rpc_call('query.ListDelegation', req)
+        print resp
+        result = resp["result"]
+        # print json.dumps(resp, indent=4)
+        return result["delegationStats"]
+
     def _network_undelegate(self, amount):
         req = {
             "delegator": self.delegationaddress,

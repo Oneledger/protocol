@@ -2,6 +2,7 @@ package query
 
 import (
 	"encoding/hex"
+
 	"strings"
 
 	netwkDeleg "github.com/Oneledger/protocol/data/network_delegation"
