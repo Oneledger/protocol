@@ -587,7 +587,7 @@ func handleBlockRewards(appCtx *context, block RequestBeginBlock) abciTypes.Even
 	totalPower.Add(totalPower, delegationPower)
 
 	//get total rewards for the block
-	rewardPoolCoin, err := appCtx.balances.GetBalanceForCurr(poolList["RewardsPool"], &curr)
+	rewardPoolCoin, err := appCtx.balances.WithState(appCtx.deliver).GetBalanceForCurr(poolList["RewardsPool"], &curr)
 	if err != nil {
 		return abciTypes.Event{}
 	}
