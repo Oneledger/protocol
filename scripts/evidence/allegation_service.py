@@ -14,6 +14,11 @@ def vote_allegation(validator, requestId, keypath):
     newVote.send_vote()
 
 
+def release(owneraddress, keypath):
+    newrelease = Release(owneraddress, keypath + "/keystore/")
+    newrelease.send_release()
+
+
 def setup():
     reporterAccount = addOwnerAccount(node_0)
     v2 = addOwnerAccount(node_2)
@@ -33,6 +38,17 @@ def query_requests():
     return requests
 
 
+def wait_1_block():
+    height = GetBlockHeight()
+    check_height = height + 1
+    print("Waiting height %d to proceed (current: %s)" % (
+        check_height, height,
+    ))
+    while check_height >= height:
+        height = GetBlockHeight()
+        time.sleep(1)
+    print("Height %s ready" % check_height)
+
 def main():
     reporterAccount, v2, v3, validators, maliciousAccount = setup()
     height = GetBlockHeight()
@@ -44,25 +60,22 @@ def main():
         height = GetBlockHeight()
         time.sleep(1)
     print("Height %s ready" % check_height)
+
     query_requests()
+
     numOfAllegationsPerform = 1
     for i in range(numOfAllegationsPerform):
         create_allegation(reporterAccount, maliciousAccount)
 
-    height = GetBlockHeight()
-    check_height = height + 1
-    print("Waiting height %d to proceed (current: %s)" % (
-        check_height, height,
-    ))
-    while check_height >= height:
-        height = GetBlockHeight()
-        time.sleep(1)
-    print("Height %s ready" % check_height)
+    wait_1_block()
 
     requests = query_requests()
     request_id = requests[0]['ID']
     for validator, keypath in validators:
         vote_allegation(validator, request_id, keypath)
+
+    wait_1_block()
+    release(maliciousAccount, node_1)
 
 
 if __name__ == '__main__':
