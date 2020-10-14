@@ -1,7 +1,6 @@
 package evidence
 
 import (
-	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -154,6 +153,7 @@ func (es *EvidenceStore) CreateSuspiciousValidator(validatorAddress keys.Address
 }
 
 func (es *EvidenceStore) UpdateSuspiciousValidator(lvh *LastValidatorHistory) error {
+	fmt.Println("Updating validator", lvh)
 	dat, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(lvh)
 	if err != nil {
 		return err
@@ -218,9 +218,9 @@ func (es *EvidenceStore) PerformAllegation(validatorAddress keys.Address, malici
 	}
 
 	ar := NewAllegationRequest(ID, validatorAddress, maliciousAddress, blockHeight, proofMsg)
-	if es.CheckRequestExists(ar) {
-		return errors.New(fmt.Sprintf("allegation for this validator already exists : %s", ar.String()))
-	}
+	//if es.CheckRequestExists(ar) {
+	//	return errors.New(fmt.Sprintf("allegation for this validator already exists : %s", ar.String()))
+	//}
 	err := es.SetAllegationRequest(ar)
 	if err != nil {
 		return err

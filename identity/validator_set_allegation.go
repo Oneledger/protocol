@@ -122,7 +122,7 @@ func (vs *ValidatorStore) ExecuteAllegationTracker(ctx *ValidatorContext, active
 
 	addrToDelete := make([]string, 0)
 	processedValidators := make(map[string]bool)
-	ctx.EvidenceStore.CleanTracker()
+	//ctx.EvidenceStore.CleanTracker()
 	for requestID := range at.Requests {
 		ar, err := ctx.EvidenceStore.GetAllegationRequest(requestID)
 		decisionMade := false
@@ -259,7 +259,7 @@ func (vs *ValidatorStore) ExecuteAllegationTracker(ctx *ValidatorContext, active
 		}
 		if decisionMade {
 			logger.Infof("Decision made on Validator, Deleting Allegation Request :%s", ar.String())
-			ctx.EvidenceStore.DeleteAllegationRequest(ar.ID)
+			//ctx.EvidenceStore.DeleteAllegationRequest(ar.ID)
 		}
 	}
 	update := false

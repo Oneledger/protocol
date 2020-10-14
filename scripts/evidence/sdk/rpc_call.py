@@ -140,6 +140,45 @@ class Vote:
                 return result["txHash"]
 
 
+class Release:
+    def __init__(self, ownerAddress, keypath):
+        self.ownerAddress = ownerAddress
+        self.keypath = keypath
+
+    def create_release(self):
+        req = {
+            "address": self.ownerAddress,
+            "gasPrice": {
+                "currency": "OLT",
+                "value": "1000000000",
+            },
+            "gas": 400000,
+        }
+        resp = rpc_call('tx.Release', req)
+        print resp
+        return resp["result"]["rawTx"]
+
+    def send_release(self):
+        """
+
+        :rtype: object
+        """
+        # create Tx
+        raw_txn = self.create_release()
+
+        # sign Tx
+        signed = sign(raw_txn, self.ownerAddress, self.keypath)
+
+        # broadcast Tx
+        result = broadcast_sync(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
+        if "ok" in result:
+            if not result["ok"]:
+                print result
+            else:
+                print bcolors.OKGREEN + "Release TX sent" + bcolors.ENDC
+                return result["txHash"]
+
+
 def sign(raw_tx, address, keypath):
     resp = rpc_call('owner.SignWithSecureAddress',
                     {"rawTx": raw_tx, "address": address, "password": "1234", "keypath": keypath})
