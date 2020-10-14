@@ -148,8 +148,39 @@ class WithdrawRewards:
             else:
                 print "################### withdrawal successfully initiated: "
 
-def query_total():
-    req = {}
+def sign(raw_tx, address, keypath):
+    resp = rpc_call('owner.SignWithSecureAddress',
+                    {"rawTx": raw_tx, "address": address, "password": "1234", "keypath": keypath})
+    print resp
+    return resp["result"]
+
+
+def broadcast_commit(raw_tx, signature, pub_key):
+    resp = rpc_call('broadcast.TxCommit', {
+        "rawTx": raw_tx,
+        "signature": signature,
+        "publicKey": pub_key,
+    })
+    print resp
+    if "result" in resp:
+        return resp["result"]
+    else:
+        return resp
+
+
+def broadcast_sync(raw_tx, signature, pub_key):
+    resp = rpc_call('broadcast.TxSync', {
+        "rawTx": raw_tx,
+        "signature": signature,
+        "publicKey": pub_key,
+    })
+    return resp["result"]
+
+
+def query_total(only_active):
+    req = {
+        "onlyActive": only_active
+    }
     resp = rpc_call('query.GetTotalNetwkDelegation', req)
     print json.dumps(resp, indent=4)
     result = resp["result"]

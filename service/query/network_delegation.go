@@ -84,7 +84,8 @@ func (svc *Service) GetUndelegatedAmount(req client.GetUndelegatedRequest, reply
 	return nil
 }
 
-func (svc *Service) GetTotalNetwkDelegation(_ client.GetTotalNetwkDelegation, reply *client.GetTotalNetwkDelgReply) error {
+func (svc *Service) GetTotalNetwkDelegation(req client.GetTotalNetwkDelegation, reply *client.GetTotalNetwkDelgReply) error {
+	nd := svc.netwkDelegators.Deleg
 	// get active delegation amount
 	poolList, err := svc.governance.GetPoolList()
 	if err != nil {
@@ -94,6 +95,7 @@ func (svc *Service) GetTotalNetwkDelegation(_ client.GetTotalNetwkDelegation, re
 		return errors.New("failed to get network delegation pool")
 	}
 	delagationPool := poolList["DelegationPool"]
+
 
 	activeBalance, err := svc.balances.GetBalance(delagationPool, svc.currencies)
 	if err != nil {
@@ -105,9 +107,19 @@ func (svc *Service) GetTotalNetwkDelegation(_ client.GetTotalNetwkDelegation, re
 	}
 	activeCoin := activeBalance.GetCoin(currencyOLT)
 
+	if req.OnlyActive == 1 {
+		*reply = client.GetTotalNetwkDelgReply{
+			ActiveAmount:  *activeCoin.Amount,
+			PendingAmount: *balance.NewAmountFromBigInt(big.NewInt(0)),
+			MaturedAmount: *balance.NewAmountFromBigInt(big.NewInt(0)),
+			TotalAmount:   *activeCoin.Amount,
+			Height:        nd.GetState().Version(),
+		}
+		return nil
+	}
+
 	// get pending delegation amount
 	pendingCoin := balance.Coin{Currency: currencyOLT, Amount: balance.NewAmountFromBigInt(big.NewInt(0))}
-	nd := svc.netwkDelegators.Deleg
 	nd.WithPrefix(network_delegation.PendingType)
 	nd.IterateAllPendingAmounts(func(height int64, addr *keys.Address, coin *balance.Coin) bool {
 		pendingCoin = pendingCoin.Plus(*coin)
