@@ -579,7 +579,7 @@ func handleBlockRewards(appCtx *context, block RequestBeginBlock) abciTypes.Even
 	if err != nil {
 		return abciTypes.Event{}
 	}
-	delegationPoolCoin, err := appCtx.balances.GetBalanceForCurr(poolList["DelegationPool"], &curr)
+	delegationPoolCoin, err := appCtx.balances.WithState(appCtx.deliver).GetBalanceForCurr(poolList["DelegationPool"], &curr)
 	if err != nil {
 		return abciTypes.Event{}
 	}
