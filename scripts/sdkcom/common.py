@@ -1,10 +1,8 @@
 import subprocess
 import time
-
 from actions import *
 
-
-def addValidatorWalletAccounts(node, pswd='1234'):
+def addValidatorWalletAccounts(node):
     args = ['olclient', 'show_node_id']
     process = subprocess.Popen(args, cwd=node, stdout=subprocess.PIPE)
     process.wait()
@@ -14,7 +12,7 @@ def addValidatorWalletAccounts(node, pswd='1234'):
     f = open(os.path.join(node, "consensus", "config", "node_key.json"), "r")
     contents = json.loads(f.read())
     privKey = contents['priv_key']['value']
-    args = ['olclient', 'account', 'add', '--privkey', privKey, '--pubkey', pubKey, "--password", pswd]
+    args = ['olclient', 'account', 'add', '--privkey', privKey, '--pubkey', pubKey, "--password", '1234']
     process = subprocess.Popen(args, cwd=node, stdout=subprocess.PIPE)
     process.wait()
     output = process.stdout.readlines()

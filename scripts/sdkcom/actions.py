@@ -1,4 +1,5 @@
 import sys
+import time
 
 from rpc_call import *
 
@@ -17,7 +18,6 @@ def sign(raw_tx, address, keypath):
                     {"rawTx": raw_tx, "address": address, "password": "1234", "keypath": keypath})
     print resp
     return resp["result"]
-
 
 def broadcast_commit(raw_tx, signature, pub_key):
     resp = rpc_call('broadcast.TxCommit', {
@@ -39,3 +39,25 @@ def broadcast_sync(raw_tx, signature, pub_key):
         "publicKey": pub_key,
     })
     return resp["result"]
+
+def query_balance(address):
+    req = {
+        "currency": "OLT",
+        "address": address
+    }
+    resp = rpc_call('query.CurrencyBalance', req)
+
+    if "result" in resp:
+        result = resp["result"]["balance"]
+    else:
+        result = ""
+    return int(float(result))
+
+def wait_for(blocks, url=url_0):
+    resp = rpc_call('query.ListValidators', {}, url)
+    hstart = resp["result"]["height"]
+    hcur = hstart
+    while hcur - hstart < blocks:
+        time.sleep(0.5)
+        resp = rpc_call('query.ListValidators', {}, url)
+        hcur = resp["result"]["height"]
