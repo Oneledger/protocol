@@ -109,7 +109,7 @@ func (s *Service) WithdrawDelegRewards(args client.WithdrawDelegRewardsRequest, 
 	return nil
 }
 
-func (s *Service) NetwkFinalizeRewards(args client.FinalizeRewardsRequest, reply *client.CreateTxReply) error {
+func (s *Service) FinalizeDelegRewards(args client.FinalizeRewardsRequest, reply *client.CreateTxReply) error {
 
 	undelegate := nwd.DeleWithdrawRewards{
 		Delegator: args.Delegator,

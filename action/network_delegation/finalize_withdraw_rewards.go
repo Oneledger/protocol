@@ -2,6 +2,7 @@ package network_delegation
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/Oneledger/protocol/data/keys"
@@ -58,7 +59,7 @@ type DeleWithdrawRewardsTx struct{}
 var _ action.Tx = &DeleWithdrawRewardsTx{}
 
 func (wt DeleWithdrawRewardsTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error) {
-	ctx.Logger.Debug("Validate DeleWithdrawRewardsTx transaction for CheckTx", tx)
+	ctx.Logger.Debug("Validate DeleFinalizeRewardsTx transaction for CheckTx", tx)
 	w := &DeleWithdrawRewards{}
 	err := w.Unmarshal(tx.Data)
 	if err != nil {
@@ -85,8 +86,8 @@ func (wt DeleWithdrawRewardsTx) Validate(ctx *action.Context, tx action.SignedTx
 }
 
 func (wt DeleWithdrawRewardsTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	ctx.Logger.Debug("ProcessCheck DeleWithdrawRewardsTx transaction for CheckTx", tx)
-	return runWithdraw(ctx, tx)
+	ctx.Logger.Debug("ProcessCheck DeleFinalizeRewardsTx transaction for CheckTx", tx)
+	return runFinalizeWithdraw(ctx, tx)
 }
 
 func (wt DeleWithdrawRewardsTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
@@ -94,11 +95,11 @@ func (wt DeleWithdrawRewardsTx) ProcessFee(ctx *action.Context, signedTx action.
 }
 
 func (wt DeleWithdrawRewardsTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	ctx.Logger.Debug("ProcessDeliver DeleWithdrawRewardsTx transaction for DeliverTx", tx)
-	return runWithdraw(ctx, tx)
+	ctx.Logger.Debug("ProcessDeliver DeleFinalizeRewardsTx transaction for DeliverTx", tx)
+	return runFinalizeWithdraw(ctx, tx)
 }
 
-func runWithdraw(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+func runFinalizeWithdraw(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	w := &DeleWithdrawRewards{}
 	err := w.Unmarshal(tx.Data)
 	if err != nil {
@@ -107,10 +108,17 @@ func runWithdraw(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
 	// cut the amount from matured rewards if there is enough to withdraw
 	ds := ctx.NetwkDelegators.Rewards
+	rewards, err := ds.GetMaturedRewards(w.Delegator)
+	fmt.Println("rewards", rewards)
+	fmt.Println("err", err)
 	err = ds.Finalize(w.Delegator, &w.Amount.Value)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, net_delg.ErrFinalizingDelgRewards, w.Tags(), err)
 	}
+
+	rewards, err = ds.GetMaturedRewards(w.Delegator)
+	fmt.Println("rewards after finalize", rewards)
+	fmt.Println("err", err)
 
 	// add the amount to delegator address
 	withdrawCoin := w.Amount.ToCoin(ctx.Currencies)
