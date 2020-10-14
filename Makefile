@@ -141,8 +141,6 @@ reset: install_c
 	@./scripts/stopNodes
 	@./scripts/resetDev
 	@./scripts/startDev
-# 	@./scripts/testapply
-# 	@./scripts/testsend
 
 resetInvalidValues: install_c
 	@./scripts/stopNodes

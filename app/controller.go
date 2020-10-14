@@ -141,6 +141,13 @@ func (app *App) blockBeginner() blockBeginner {
 			Events: []abciTypes.Event{blockRewardEvent},
 		}
 
+		// matured delegators' pending withdrawal
+		delegRewardStore := app.Context.netwkDelegators.Rewards.WithState(app.Context.deliver)
+		delegRewardEvent, anyMatured := delegRewardStore.MaturePendingRewards(req.Header.Height)
+		if anyMatured {
+			result.Events = append(result.Events, delegRewardEvent)
+		}
+
 		//update the header to current block
 		app.header = req.Header
 		//Adds proposals that meet the requirements to either Expired or Finalizing Keys from transaction store
