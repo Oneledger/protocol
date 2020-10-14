@@ -14,11 +14,12 @@ def check_rewards(result, balance, matured, pending):
             sys.exit(-1)
     if matured != '' and result['matured'] != matured:
         sys.exit(-1)
-    if len(result['pending']) != len(pending):
-        sys.exit(-1)
-    for i, amt in enumerate(pending):
-        if amt != result['pending'][i]['amount']:
+    if pending != None:
+        if len(result['pending']) != len(pending):
             sys.exit(-1)
+        for i, amt in enumerate(pending):
+            if amt != result['pending'][i]['amount']:
+                sys.exit(-1)
 
 if __name__ == "__main__":
     # create validator account
@@ -33,7 +34,7 @@ if __name__ == "__main__":
 
     # query and check balance
     res = query_rewards(delegator)
-    check_rewards(res, '7', '0', [])
+    check_rewards(res, '6', '0', [])
 
     # overdraw MUST fail
     withdraw = WithdrawRewards(delegator, 100, node_0 + "/keystore/")
@@ -44,7 +45,7 @@ if __name__ == "__main__":
     pending = []
     total = 0
     for i in range(2):
-        amt = i+3
+        amt = i+2
         withdraw = WithdrawRewards(delegator, amt, node_0 + "/keystore/")
         withdraw.send(True)
         pending.append(str(amt) + '0' * 18)
@@ -58,13 +59,13 @@ if __name__ == "__main__":
     print bcolors.OKGREEN + "#### Successfully withdrawn delegator rewards" + bcolors.ENDC
 
     # query and check again after maturity
-    #wait_for(4)
-    #res = query_rewards(delegator)
-    #check_rewards(res, '0', total, [])
+    wait_for(4)
+    res1 = query_rewards(delegator)
+    check_rewards(res1, '', total, [])
     print bcolors.OKGREEN + "#### Successfully matured delegator rewards" + bcolors.ENDC
 
     # withdraw all balance
-    #balance = int(res['balance']) / 1000000000000000000
-    #withdraw = WithdrawRewards(delegator, int(res['balance']), node_0 + "/keystore/")
-    #withdraw.send(True)
+    balance = int(res['balance']) / 1000000000000000000
+    withdraw = WithdrawRewards(delegator, balance, node_0 + "/keystore/")
+    withdraw.send(True)
     print bcolors.OKGREEN + "#### Successfully withdrawn all rewards" + bcolors.ENDC

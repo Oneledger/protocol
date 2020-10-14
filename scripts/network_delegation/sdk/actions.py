@@ -1,19 +1,9 @@
 import sys
 import time
-
-from rpc_call import *
-
-
-class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
-
+import os.path as path
+sdkcom_path =  path.abspath(path.join(path.dirname(__file__) ,"../.."))
+sys.path.append(sdkcom_path)
+from sdkcom import *
 
 class NetWorkDelegate:
     def __init__(self, delegationaddress, amount, keypath):
@@ -186,8 +176,11 @@ def broadcast_sync(raw_tx, signature, pub_key):
     })
     return resp["result"]
 
-def query_total():
-    req = {}
+
+def query_total(only_active):
+    req = {
+        "onlyActive": only_active
+    }
     resp = rpc_call('query.GetTotalNetwkDelegation', req)
     print json.dumps(resp, indent=4)
     result = resp["result"]
@@ -221,25 +214,3 @@ def query_rewards(delegator):
     else:
         result = ""
     return result
-
-def query_balance(address):
-    req = {
-        "currency": "OLT",
-        "address": address
-    }
-    resp = rpc_call('query.CurrencyBalance', req)
-
-    if "result" in resp:
-        result = resp["result"]["balance"]
-    else:
-        result = ""
-    return int(float(result))
-
-def wait_for(blocks, url=url_0):
-    resp = rpc_call('query.ListValidators', {}, url)
-    hstart = resp["result"]["height"]
-    hcur = hstart
-    while hcur - hstart < blocks:
-        time.sleep(0.5)
-        resp = rpc_call('query.ListValidators', {}, url)
-        hcur = resp["result"]["height"]

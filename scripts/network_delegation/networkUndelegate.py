@@ -19,8 +19,10 @@ if __name__ == "__main__":
     time.sleep(2)
     result = newDelegation.query_undelegate()
     check_query_undelegated(result, 3, "0")
-    total_result = query_total()
+    total_result = query_total(0)
     check_query_total(total_result, "1000000000000000000000000")
+    total_result_only_active = query_total(1)
+    check_query_total(total_result_only_active, "400000000000000000000000")
 
     newDelegation.send_network_undelegate_shoud_fail(malicious_undelegate_amount)
     print bcolors.OKGREEN + "#### Undelegation Succeded" + bcolors.ENDC
