@@ -3,6 +3,18 @@ import os
 
 import requests
 
+
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+
 url = "http://127.0.0.1:26602/jsonrpc"
 
 devnet = os.path.join(os.environ['OLDATA'], "devnet")
@@ -61,7 +73,7 @@ class Byzantine:
             "gas": 400000,
         }
         resp = rpc_call('tx.Allegation', req)
-        # print resp
+        print resp
         return resp["result"]["rawTx"]
 
     def send_allegation(self):
@@ -76,12 +88,12 @@ class Byzantine:
         signed = sign(raw_txn, self.reporter, self.keypath)
 
         # broadcast Tx
-        result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
+        result = broadcast_sync(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
         if "ok" in result:
             if not result["ok"]:
                 print result
             else:
-                print "################### allegation added"
+                print bcolors.OKBLUE + "allegation added" + bcolors.ENDC
                 return result["txHash"]
 
 
@@ -119,12 +131,12 @@ class Vote:
         signed = sign(raw_txn, self.validator, self.keypath)
 
         # broadcast Tx
-        result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
+        result = broadcast_sync(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
         if "ok" in result:
             if not result["ok"]:
                 print result
             else:
-                print "################### vote added"
+                print bcolors.OKGREEN + "Vote added" + bcolors.ENDC
                 return result["txHash"]
 
 

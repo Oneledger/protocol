@@ -1,7 +1,4 @@
-import os
-import json
-
-from rpc_call import rpc_call, devnet
+from rpc_call import rpc_call
 
 
 def ListValidators():
