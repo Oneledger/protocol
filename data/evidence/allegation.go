@@ -5,6 +5,7 @@ import (
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/google/uuid"
+	"sort"
 	"strings"
 )
 
@@ -43,6 +44,32 @@ func ChoiceStrToInt8(choice string) int8 {
 
 type AllegationTracker struct {
 	Requests map[string]bool
+}
+
+func (es *EvidenceStore) CleanTracker() {
+	at, err := es.GetAllegationTracker()
+	if err != nil {
+		return
+	}
+	requestIdList := make([]string, len(at.Requests))
+	for k := range at.Requests {
+		requestIdList = append(requestIdList, k)
+	}
+	sort.Strings(requestIdList)
+	countMap := make(map[string]bool)
+	for _, r := range requestIdList {
+		ar, err := es.GetAllegationRequest(r)
+		if err != nil {
+			delete(at.Requests, r)
+			continue
+		}
+		if countMap[ar.MaliciousAddress.String()] {
+			fmt.Println("Deleting Duplicate Requests")
+			es.DeleteAllegationRequest(r)
+			delete(at.Requests, r)
+		}
+		countMap[ar.MaliciousAddress.String()] = true
+	}
 }
 
 func (es *EvidenceStore) getAllegationTrackerKey() []byte {

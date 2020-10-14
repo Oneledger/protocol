@@ -306,7 +306,6 @@ func (app *App) blockEnder() blockEnder {
 
 		fee, err := app.Context.feePool.WithState(app.Context.deliver).Get([]byte(fees.POOL_KEY))
 		app.logger.Detail("endblock fee", fee, err)
-
 		updates := app.Context.validators.WithState(app.Context.deliver).GetEndBlockUpdate(app.Context.ValidatorCtx(), req)
 		app.logger.Detailf("Sending updates with nodes to tendermint: %+v\n", updates)
 

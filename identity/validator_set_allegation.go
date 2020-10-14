@@ -2,9 +2,6 @@ package identity
 
 import (
 	"fmt"
-	"math"
-	"math/big"
-
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/evidence"
 	govern "github.com/Oneledger/protocol/data/governance"
@@ -12,6 +9,8 @@ import (
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
+	"math"
+	"math/big"
 )
 
 // TODO: Reduce power in allegation tracker for GUILTY
@@ -123,6 +122,7 @@ func (vs *ValidatorStore) ExecuteAllegationTracker(ctx *ValidatorContext, active
 
 	addrToDelete := make([]string, 0)
 	processedValidators := make(map[string]bool)
+	ctx.EvidenceStore.CleanTracker()
 	for requestID := range at.Requests {
 		ar, err := ctx.EvidenceStore.GetAllegationRequest(requestID)
 		decisionMade := false
