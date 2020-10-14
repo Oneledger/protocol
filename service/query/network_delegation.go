@@ -96,7 +96,6 @@ func (svc *Service) GetTotalNetwkDelegation(req client.GetTotalNetwkDelegation, 
 	}
 	delagationPool := poolList["DelegationPool"]
 
-
 	activeBalance, err := svc.balances.GetBalance(delagationPool, svc.currencies)
 	if err != nil {
 		return err

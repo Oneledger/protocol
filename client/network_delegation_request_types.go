@@ -12,7 +12,7 @@ type GetUndelegatedRequest struct {
 	Delegator keys.Address `json:"delegator"`
 }
 
-type GetTotalNetwkDelegation struct{
+type GetTotalNetwkDelegation struct {
 	OnlyActive int `json:"onlyActive"`
 }
 
