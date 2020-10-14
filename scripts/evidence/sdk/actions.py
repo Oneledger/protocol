@@ -1,3 +1,5 @@
+import time
+
 from rpc_call import rpc_call
 
 
@@ -36,3 +38,15 @@ def ValidatorStatus(address):
         'address': address,
     })
     return resp['result']
+
+
+def wait_blocks(n):
+    height = GetBlockHeight()
+    check_height = height + n
+    print("Waiting height %d to proceed (current: %s)" % (
+        check_height, height,
+    ))
+    while check_height >= height:
+        height = GetBlockHeight()
+        time.sleep(1)
+    print("Height %s ready" % check_height)

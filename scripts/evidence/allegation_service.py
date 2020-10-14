@@ -2,8 +2,6 @@ from sdk import *
 
 
 def create_allegation(reporterAccount, maliciousAccount):
-    print reporterAccount
-    print maliciousAccount
     newAllegation = Byzantine(reporterAccount, maliciousAccount, "test", "1234", 1, node_0 + "/keystore/")
     newAllegation.send_allegation()
 
@@ -35,47 +33,36 @@ def setup():
 def query_requests():
     requests = ByzantineFault_Requests()
     print("No of requests in queue : " + str(len(requests)))
+    assert len(requests) <= 1, 'Vote requests must never be more than 1'
     return requests
 
 
-def wait_1_block():
-    height = GetBlockHeight()
-    check_height = height + 1
-    print("Waiting height %d to proceed (current: %s)" % (
-        check_height, height,
-    ))
-    while check_height >= height:
-        height = GetBlockHeight()
-        time.sleep(1)
-    print("Height %s ready" % check_height)
-
-def main():
-    reporterAccount, v2, v3, validators, maliciousAccount = setup()
-    height = GetBlockHeight()
-    check_height = 5
-    print("Waiting height %d to proceed (current: %s)" % (
-        check_height, height,
-    ))
-    while check_height >= height:
-        height = GetBlockHeight()
-        time.sleep(1)
-    print("Height %s ready" % check_height)
-
-    query_requests()
-
-    numOfAllegationsPerform = 1
+def allegations(numOfAllegationsPerform, reporterAccount, maliciousAccount):
     for i in range(numOfAllegationsPerform):
         create_allegation(reporterAccount, maliciousAccount)
 
-    wait_1_block()
 
+def voting(validators):
     requests = query_requests()
     request_id = requests[0]['ID']
     for validator, keypath in validators:
         vote_allegation(validator, request_id, keypath)
 
-    wait_1_block()
-    release(maliciousAccount, node_1)
+
+def main():
+    reporterAccount, v2, v3, validators, maliciousAccount = setup()
+    numOfAllegationsPerform = 1
+    wait_blocks(5)
+    query_requests()
+    for i in range(1):
+        allegations(numOfAllegationsPerform, reporterAccount, maliciousAccount)
+        wait_blocks(1)
+        print ValidatorStatus(maliciousAccount)
+        voting(validators)
+        wait_blocks(1)
+        wait_blocks(1)
+        release(maliciousAccount, node_1)
+        wait_blocks(1)
 
 
 if __name__ == '__main__':
@@ -107,4 +94,4 @@ if __name__ == '__main__':
 #     "withdrawnAmount": "0"
 # }
 # Frozen Validator can withdraw block rewards
-# Reelase tx does nto refun stake
+# Release tx does nto refund stake

@@ -121,8 +121,8 @@ func (vs *ValidatorStore) ExecuteAllegationTracker(ctx *ValidatorContext, active
 	bountyAddress := keys.Address(popt.BountyProgramAddr)
 
 	addrToDelete := make([]string, 0)
-	processedValidators := make(map[string]bool)
-	//ctx.EvidenceStore.CleanTracker()
+	//processedValidators := make(map[string]bool)
+	ctx.EvidenceStore.CleanTracker()
 	for requestID := range at.Requests {
 		ar, err := ctx.EvidenceStore.GetAllegationRequest(requestID)
 		decisionMade := false
@@ -131,11 +131,11 @@ func (vs *ValidatorStore) ExecuteAllegationTracker(ctx *ValidatorContext, active
 			continue
 		}
 
-		_, ok := processedValidators[ar.MaliciousAddress.Humanize()]
-		if ok {
-			addrToDelete = append(addrToDelete, requestID)
-			continue
-		}
+		//_, ok := processedValidators[ar.MaliciousAddress.Humanize()]
+		//if ok {
+		//	addrToDelete = append(addrToDelete, requestID)
+		//	continue
+		//}
 		yesCount := 0
 		noCount := 0
 
@@ -225,7 +225,7 @@ func (vs *ValidatorStore) ExecuteAllegationTracker(ctx *ValidatorContext, active
 			} else {
 				logger.Infof("Nothing to withdraw from addr on bounty program: %s\n", bountyAddress.Humanize())
 			}
-			processedValidators[ar.MaliciousAddress.Humanize()] = true
+			//processedValidators[ar.MaliciousAddress.Humanize()] = true
 			addrToDelete = append(addrToDelete, requestID)
 			arToUpdate = true
 			vs.createAllegationEvent(ar)
@@ -244,7 +244,7 @@ func (vs *ValidatorStore) ExecuteAllegationTracker(ctx *ValidatorContext, active
 			}
 		} else if noP > 1-percentage {
 			decisionMade = true
-			processedValidators[ar.MaliciousAddress.Humanize()] = true
+			//processedValidators[ar.MaliciousAddress.Humanize()] = true
 			ar.Status = evidence.INNOCENT
 			addrToDelete = append(addrToDelete, requestID)
 			arToUpdate = true
@@ -259,7 +259,7 @@ func (vs *ValidatorStore) ExecuteAllegationTracker(ctx *ValidatorContext, active
 		}
 		if decisionMade {
 			logger.Infof("Decision made on Validator, Deleting Allegation Request :%s", ar.String())
-			//ctx.EvidenceStore.DeleteAllegationRequest(ar.ID)
+			ctx.EvidenceStore.DeleteAllegationRequest(ar.ID)
 		}
 	}
 	update := false

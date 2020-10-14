@@ -1,37 +1,19 @@
 from __future__ import print_function
 
-import subprocess
-import os
-import json
 import time
 
+from base import *
 from sdk.actions import (
-    ListValidators,
     ByzantineFault_Requests,
-    NodeID,
     GetBlockHeight,
     GetFrozenMap,
     GetActiveMap,
-    ValidatorStatus,
+    ValidatorStatus, wait_blocks,
 )
-
-from sdk.rpc_call import (
-    node_0,
-    node_1,
-    node_2,
-    node_3,
-)
-
 from sdk.cmd_call import (
-    GetNodeCreds,
-    Account_Add,
     ByzantineFault_Allegation,
-    Send,
-    GetNodeKey,
     ByzantineFault_Vote,
 )
-
-from base import *
 
 
 def test_yes_votes():
@@ -45,6 +27,7 @@ def test_yes_votes():
     assert is_allegation_pass is True, 'Failed to perform allegation'
 
     # check requests, so we will have 1 voting
+    wait_blocks(1)
     requests = ByzantineFault_Requests()
     assert len(requests) == 1, 'Vote requests must not be empty'
     request_id = requests[0]['ID']
@@ -91,12 +74,12 @@ def test_yes_votes():
     # check requests, so we will have 1 guilty
     print("Checking request status...")
     requests = ByzantineFault_Requests()
-    assert len(requests) == 1, 'Vote requests must not be empty'
-    status = requests[0]['Status']
-    assert status == 3, 'Vote must be %s (got %s)' % (
-        get_status_display(2),
-        get_status_display(status)
-    )
+    assert len(requests) == 0, 'Vote requests must be empty /Validator frozen'
+    # status = requests[0]['Status']
+    # assert status == 3, 'Vote must be %s (got %s)' % (
+    #     get_status_display(2),
+    #     get_status_display(status)
+    # )
     print("Checking request done.")
 
     # freezeing height and waiting 4 blocks

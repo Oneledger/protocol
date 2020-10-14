@@ -1,6 +1,7 @@
 package evidence
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -218,9 +219,9 @@ func (es *EvidenceStore) PerformAllegation(validatorAddress keys.Address, malici
 	}
 
 	ar := NewAllegationRequest(ID, validatorAddress, maliciousAddress, blockHeight, proofMsg)
-	//if es.CheckRequestExists(ar) {
-	//	return errors.New(fmt.Sprintf("allegation for this validator already exists : %s", ar.String()))
-	//}
+	if es.CheckRequestExists(ar) {
+		return errors.New(fmt.Sprintf("allegation for this validator already exists : %s", ar.String()))
+	}
 	err := es.SetAllegationRequest(ar)
 	if err != nil {
 		return err
