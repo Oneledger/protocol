@@ -30,10 +30,10 @@ def setup():
     return reporterAccount, v2, v3, validators, maliciousAccount
 
 
-def query_requests():
+def query_requests(req=1):
     requests = ByzantineFault_Requests()
     print("No of requests in queue : " + str(len(requests)))
-    assert len(requests) <= 1, 'Vote requests must never be more than 1'
+    assert len(requests) <= req, 'Vote requests must not be more than ' + str(req)
     return requests
 
 
@@ -54,15 +54,22 @@ def main():
     numOfAllegationsPerform = 1
     wait_blocks(5)
     query_requests()
-    for i in range(1):
+    # Test case 1 : Multiple requests against same validator in different blocks
+    for i in range(3):
         allegations(numOfAllegationsPerform, reporterAccount, maliciousAccount)
         wait_blocks(1)
-        print ValidatorStatus(maliciousAccount)
         voting(validators)
-        wait_blocks(1)
         wait_blocks(1)
         release(maliciousAccount, node_1)
         wait_blocks(1)
+    # Test case 1 : Multiple requests different Validators in same and different blocks
+    for i in range(3):
+        allegations(numOfAllegationsPerform, reporterAccount, maliciousAccount)
+        allegations(numOfAllegationsPerform, reporterAccount, v2)
+        allegations(numOfAllegationsPerform, reporterAccount, v3)
+        wait_blocks(1)
+    wait_blocks(1)
+    query_requests(3)
 
 
 if __name__ == '__main__':
@@ -71,27 +78,3 @@ if __name__ == '__main__':
 # olclient byzantine_fault allegation --address 963d5d0d501e877c3d2e4d96161cc73330524013 --maliciousAddress 6ea01e67198c80fab1a9b4e65dcc581d7d76fa7a --blockHeight 1 --password 1234 --proofMsg test
 # olclient byzantine_fault allegation --address f290359332e2c2f31559c05c871730d277f28c23 --maliciousAddress 6ea01e67198c80fab1a9b4e65dcc581d7d76fa7a --blockHeight 1 --password 1234 --proofMsg test
 # olclient byzantine_fault allegation --address 6ceaac9b49ea6dd2f1075ab4ffc3ab594cb899ec --maliciousAddress 6ea01e67198c80fab1a9b4e65dcc581d7d76fa7a --blockHeight 1 --password 1234 --proofMsg test
-
-
-# Cannot freeze frozen Validator
-# Frozen Validator cannot stake,unstake ,withdraw stake  -> error frozen validator
-# Validator is frozen in block X , Stake and Active = false in block X +1
-# Frozen validator cannot accumulate rewards  , checked rewards diff between frozen and active
-# Frozen
-# {
-#     "address": "0lt05e5e4ea96d1a6fd36acdd7196fe738f38191c06",
-#     "matureBalance": "84383561643835616437",
-#     "pendingAmount": "0",
-#     "totalAmount": "84383561643835616437",
-#     "withdrawnAmount": "0"
-# }
-# Active
-# {
-#     "address": "0lt096a4dee464e74c8f0b667835ba04413998fd958",
-#     "matureBalance": "128493150684931506835",
-#     "pendingAmount": "9589041095890410958",
-#     "totalAmount": "138082191780821917793",
-#     "withdrawnAmount": "0"
-# }
-# Frozen Validator can withdraw block rewards
-# Release tx does nto refund stake
