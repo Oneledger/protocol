@@ -87,11 +87,11 @@ func (delegWithdrawTx) Validate(ctx *action.Context, signedTx action.SignedTx) (
 }
 
 func (delegWithdrawTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	return runWithdraw(ctx, tx)
+	return runDeleWithdraw(ctx, tx)
 }
 
 func (delegWithdrawTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	return runWithdraw(ctx, tx)
+	return runDeleWithdraw(ctx, tx)
 }
 
 func (delegWithdrawTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
@@ -101,7 +101,7 @@ func (delegWithdrawTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx,
 var _ action.Msg = &Withdraw{}
 var _ action.Tx = &delegWithdrawTx{}
 
-func runWithdraw(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+func runDeleWithdraw(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	withdraw := Withdraw{}
 	err := withdraw.Unmarshal(tx.Data)
 	if err != nil {

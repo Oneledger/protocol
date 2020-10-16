@@ -112,14 +112,16 @@ const (
 	DelgErrStakeAddressInUse    = 600301
 	DelgErrStakeAddressMismatch = 600302
 
-	NetDelgErr                          = 6005
-	NetDelgErrGettingActiveDelgAmount   = 600501
-	NetDelgErrDeductingActiveDelgAmount = 600502
-	NetDelgErrSettingActiveDelgAmount   = 600503
-	NetDelgErrGettingDelgOption         = 600504
-	NetDelgErrSettingPendingDelgAmount  = 600505
-	NetDelgErrGettingPendingDelgAmount  = 600506
-	NetDelgErrWithdraw                  = 600507
+	NetDelgErr                              = 6005
+	NetDelgErrGettingActiveDelgAmount       = 600501
+	NetDelgErrDeductingActiveDelgAmount     = 600502
+	NetDelgErrSettingActiveDelgAmount       = 600503
+	NetDelgErrGettingDelgOption             = 600504
+	NetDelgErrSettingPendingDelgAmount      = 600505
+	NetDelgErrGettingPendingDelgAmount      = 600506
+	NetDelgErrWithdraw                      = 600507
+	NetDelgErrFinalizingDelgRewards         = 600508
+	NetDelgErrAddingWithdrawAmountToBalance = 600509
 
 	GovErr                                = 7001
 	GovErrGetProposalOptions              = 700101

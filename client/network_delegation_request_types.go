@@ -12,7 +12,7 @@ type GetUndelegatedRequest struct {
 	Delegator keys.Address `json:"delegator"`
 }
 
-type GetTotalNetwkDelegation struct{
+type GetTotalNetwkDelegation struct {
 	OnlyActive int `json:"onlyActive"`
 }
 
@@ -81,4 +81,11 @@ type DelegationStats struct {
 	Active  string `json:"active"`
 	Pending string `json:"pending"`
 	Matured string `json:"matured"`
+}
+
+type FinalizeRewardsRequest struct {
+	Delegator keys.Address  `json:"delegator"`
+	Amount    action.Amount `json:"amount"`
+	GasPrice  action.Amount `json:"gasPrice"`
+	Gas       int64         `json:"gas"`
 }

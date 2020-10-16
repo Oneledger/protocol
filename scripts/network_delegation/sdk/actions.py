@@ -1,9 +1,10 @@
-import sys
-import time
 import os.path as path
-sdkcom_path =  path.abspath(path.join(path.dirname(__file__) ,"../.."))
+import sys
+
+sdkcom_path = path.abspath(path.join(path.dirname(__file__), "../.."))
 sys.path.append(sdkcom_path)
 from sdkcom import *
+
 
 class NetWorkDelegate:
     def __init__(self, delegationaddress, amount, keypath):
@@ -115,6 +116,7 @@ class NetWorkDelegate:
         result = resp["result"]
         return result
 
+
 class WithdrawRewards:
     def __init__(self, delegator, amount, keypath):
         self.delegator = delegator
@@ -148,6 +150,44 @@ class WithdrawRewards:
             else:
                 print "################### withdrawal successfully initiated: "
 
+
+class FinalizeRewards:
+    def __init__(self, delegator, keypath):
+        self.delegator = delegator
+        self.keypath = keypath
+    def _request_finalize(self, finalize_amount):
+        req = {
+            "delegator": self.delegator,
+            "amount": {
+                "currency": "OLT",
+                "value": convertBigInt(finalize_amount),
+            },
+            "gasPrice": {
+                "currency": "OLT",
+                "value": "1000000000",
+            },
+            "gas": 40000,
+        }
+        resp = rpc_call('tx.FinalizeDelegRewards', req)
+        print resp
+        return resp["result"]["rawTx"]
+
+    def send_finalize(self, finalize_amount, expect_succeed=True):
+        # create Tx
+        raw_txn = self._request_finalize(finalize_amount)
+
+        # sign Tx
+        signed = sign(raw_txn, self.delegator, self.keypath)
+
+        # broadcast Tx
+        result = broadcast_sync(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
+        if "ok" in result:
+            if not result["ok"] and expect_succeed:
+                sys.exit(-1)
+            else:
+                print "################### finalize rewards sent"
+
+
 def sign(raw_tx, address, keypath):
     resp = rpc_call('owner.SignWithSecureAddress',
                     {"rawTx": raw_tx, "address": address, "password": "1234", "keypath": keypath})
@@ -174,6 +214,7 @@ def broadcast_sync(raw_tx, signature, pub_key):
         "signature": signature,
         "publicKey": pub_key,
     })
+    print resp
     return resp["result"]
 
 
@@ -202,13 +243,14 @@ def check_query_total(result, total_expected):
     if result['totalAmount'] != total_expected:
         sys.exit(-1)
 
+
 def query_rewards(delegator):
     req = {
         "delegator": delegator,
         "inclPending": True,
     }
     resp = rpc_call('query.GetDelegRewards', req)
-
+    print json.dumps(resp, indent=4)
     if "result" in resp:
         result = resp["result"]
     else:

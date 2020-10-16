@@ -2,11 +2,9 @@ package query
 
 import (
 	"encoding/hex"
-
-	"strings"
-
 	netwkDeleg "github.com/Oneledger/protocol/data/network_delegation"
 	"github.com/Oneledger/protocol/data/rewards"
+	"strings"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"

@@ -276,6 +276,7 @@ func (ctx *context) Services() (service.Map, error) {
 	netwkDelegators := netwkDeleg.NewMasterStore("deleg", "delegRwz", storage.NewState(ctx.chainstate))
 
 	svcCtx := &service.Context{
+
 		Balances:        balance.NewStore("b", storage.NewState(ctx.chainstate)),
 		Accounts:        ctx.accounts,
 		Currencies:      ctx.currencies,
