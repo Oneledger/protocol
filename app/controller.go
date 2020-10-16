@@ -133,7 +133,7 @@ func (app *App) blockBeginner() blockBeginner {
 			app.logger.Error("validator set with error", err)
 		}
 		//Mature Pending Delegates for withdrawal
-		err = app.Context.netwkDelegators.Deleg.HandlePendingDelegates(req.Header.Height)
+		err = app.Context.netwkDelegators.Deleg.WithState(app.Context.deliver).HandlePendingDelegates(req.Header.Height)
 		if err != nil {
 			app.logger.Error("failed to mature pending delegates", err)
 		}
@@ -564,7 +564,7 @@ func handleBlockRewards(appCtx *context, block RequestBeginBlock) abciTypes.Even
 	})
 
 	//get total power of active validators
-	totalPower := big.NewInt(0)
+	totValPower := big.NewInt(0)
 	validatorPowerMap := make(map[string]*big.Int)
 	for _, vote := range votes {
 		powerStr := utils.PadZero(strconv.FormatInt(vote.Validator.Power, 10))
@@ -573,9 +573,12 @@ func handleBlockRewards(appCtx *context, block RequestBeginBlock) abciTypes.Even
 			return abciTypes.Event{}
 		}
 
-		totalPower.Add(totalPower, validatorPower.BigInt())
+		totValPower.Add(totValPower, validatorPower.BigInt())
 		validatorPowerMap[keys.Address(vote.Validator.Address).String()] = validatorPower.BigInt()
 	}
+
+	//Initialize total Power as total Validator Power
+	totalPower := totValPower
 
 	//Add Delegator Pool Balance to the Total Power
 	poolList, err := appCtx.govern.GetPoolList()
@@ -631,7 +634,7 @@ func handleBlockRewards(appCtx *context, block RequestBeginBlock) abciTypes.Even
 			rewardAmount := getRewardForValidator(totalPower, validatorPowerMap[valAddress.String()], totalRewards)
 			commissionAmount := balance.NewAmount(0)
 			if delegationPower.Cmp(big.NewInt(0)) > 0 {
-				commissionAmount = getRewardForValidator(totalPower, validatorPowerMap[valAddress.String()], delegationResp.Commission)
+				commissionAmount = getRewardForValidator(totValPower, validatorPowerMap[valAddress.String()], delegationResp.Commission)
 
 				if valAddress.String() == keys.Address(block.Header.ProposerAddress).String() {
 					commissionAmount = commissionAmount.Plus(*delegationResp.ProposerReward)

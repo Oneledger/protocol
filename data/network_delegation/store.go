@@ -211,18 +211,26 @@ func (st *Store) IterateMatureAmounts(fn func(addr *keys.Address, coin *balance.
 
 //mature pending delegator
 func (st *Store) maturePendingDelegator(delegator *PendingDelegator) error {
-	delegator.Amount.Amount = balance.NewAmount(0)
-	//clear pending record amount
-	err := st.SetPendingAmount(*delegator.Address, delegator.Height, delegator.Amount)
+	//Get current Matured amount stored for Address
+	currentCoin, err := st.WithPrefix(MatureType).Get(*delegator.Address)
 	if err != nil {
 		return err
 	}
-	//Move Record to Mature Prefix
-	return st.WithPrefix(MatureType).Set(*delegator.Address, delegator.Amount)
+
+	//Add amount to matured prefix
+	newCoin := currentCoin.Plus(*delegator.Amount)
+	err = st.WithPrefix(MatureType).Set(*delegator.Address, &newCoin)
+	if err != nil {
+		return err
+	}
+
+	//clear pending record amount
+	delegator.Amount.Amount = balance.NewAmount(0)
+	return st.SetPendingAmount(*delegator.Address, delegator.Height, delegator.Amount)
 }
 
 func (st *Store) HandlePendingDelegates(height int64) error {
-	pendingList := []*PendingDelegator{}
+	var pendingList []*PendingDelegator
 	st.IteratePendingAmounts(height, func(addr *keys.Address, coin *balance.Coin) bool {
 		pendingDelegator := &PendingDelegator{
 			Address: addr,
