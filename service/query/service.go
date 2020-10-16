@@ -2,10 +2,9 @@ package query
 
 import (
 	"encoding/hex"
-	"github.com/Oneledger/protocol/data/network_delegation"
-	"strings"
-
+	netwkDeleg "github.com/Oneledger/protocol/data/network_delegation"
 	"github.com/Oneledger/protocol/data/rewards"
+	"strings"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
@@ -21,22 +20,22 @@ import (
 )
 
 type Service struct {
-	name              string
-	ext               client.ExtServiceContext
-	balances          *balance.Store
-	currencies        *balance.CurrencySet
-	validators        *identity.ValidatorStore
-	witnesses         *identity.WitnessStore
-	delegators        *delegation.DelegationStore
-	govern            *governance.Store
-	ons               *ons.DomainStore
-	feePool           *fees.Store
-	proposalMaster    *governance.ProposalMasterStore
-	rewardMaster      *rewards.RewardMasterStore
-	governance        *governance.Store
-	logger            *log.Logger
-	txTypes           *[]action.TxTypeDescribe
-	networkDelegation *network_delegation.MasterStore
+	name            string
+	ext             client.ExtServiceContext
+	balances        *balance.Store
+	currencies      *balance.CurrencySet
+	validators      *identity.ValidatorStore
+	witnesses       *identity.WitnessStore
+	delegators      *delegation.DelegationStore
+	netwkDelegators *netwkDeleg.MasterStore
+	govern          *governance.Store
+	ons             *ons.DomainStore
+	feePool         *fees.Store
+	proposalMaster  *governance.ProposalMasterStore
+	rewardMaster    *rewards.RewardMasterStore
+	governance      *governance.Store
+	logger          *log.Logger
+	txTypes         *[]action.TxTypeDescribe
 }
 
 func Name() string {
@@ -44,24 +43,24 @@ func Name() string {
 }
 
 func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencies *balance.CurrencySet, validators *identity.ValidatorStore, witnesses *identity.WitnessStore,
-	domains *ons.DomainStore, delegators *delegation.DelegationStore, govern *governance.Store, feePool *fees.Store, proposalMaster *governance.ProposalMasterStore, rewardMaster *rewards.RewardMasterStore, logger *log.Logger, txTypes *[]action.TxTypeDescribe, ntwmaster *network_delegation.MasterStore) *Service {
+	domains *ons.DomainStore, delegators *delegation.DelegationStore, netwkDelegators *netwkDeleg.MasterStore, govern *governance.Store, feePool *fees.Store, proposalMaster *governance.ProposalMasterStore, rewardMaster *rewards.RewardMasterStore, logger *log.Logger, txTypes *[]action.TxTypeDescribe) *Service {
 	return &Service{
-		name:              "query",
-		ext:               ctx,
-		currencies:        currencies,
-		balances:          balances,
-		validators:        validators,
-		witnesses:         witnesses,
-		delegators:        delegators,
-		govern:            govern,
-		ons:               domains,
-		feePool:           feePool,
-		proposalMaster:    proposalMaster,
-		rewardMaster:      rewardMaster,
-		logger:            logger,
-		txTypes:           txTypes,
-		governance:        govern,
-		networkDelegation: ntwmaster,
+		name:            "query",
+		ext:             ctx,
+		currencies:      currencies,
+		balances:        balances,
+		validators:      validators,
+		witnesses:       witnesses,
+		delegators:      delegators,
+		netwkDelegators: netwkDelegators,
+		govern:          govern,
+		ons:             domains,
+		feePool:         feePool,
+		proposalMaster:  proposalMaster,
+		rewardMaster:    rewardMaster,
+		logger:          logger,
+		txTypes:         txTypes,
+		governance:      govern,
 	}
 }
 

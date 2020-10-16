@@ -6,7 +6,7 @@ import (
 )
 
 func EnableNetworkDelegation(r action.Router) error {
-	err := r.AddHandler(action.ADD_NETWORK_DELEGATION, addNetworkDelegationTx{})
+	err := r.AddHandler(action.ADD_NETWORK_DELEGATE, addNetworkDelegationTx{})
 	if err != nil {
 		return errors.Wrap(err, "AddNetworkDelegation")
 	}
@@ -14,6 +14,13 @@ func EnableNetworkDelegation(r action.Router) error {
 	if err != nil {
 		return errors.Wrap(err, "UndelegateTx")
 	}
-
+	err = r.AddHandler(action.WITHDRAW_NETWORK_DELEGATE, delegWithdrawTx{})
+	if err != nil {
+		return errors.Wrap(err, "delegWithdrawRewardsTx")
+	}
+	err = r.AddHandler(action.REWARDS_FINALIZE_NETWORK_DELEGATE, DeleWithdrawRewardsTx{})
+	if err != nil {
+		return errors.Wrap(err, "WithdrawRewardsTx")
+	}
 	return nil
 }

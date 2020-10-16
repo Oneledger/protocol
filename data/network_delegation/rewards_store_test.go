@@ -77,7 +77,7 @@ func TestNewDelegRewardStore(t *testing.T) {
 	matured, err := storeRwz.GetMaturedRewards(delegators[0])
 	assert.Nil(t, err)
 	assert.Equal(t, zero, balance)
-	assert.EqualValues(t, DelegPendingRewards{Address: delegators[0]}, *pending)
+	assert.EqualValues(t, DelegPendingRewards{Address: delegators[0], Rewards: []*PendingRewards{}}, *pending)
 	assert.Equal(t, zero, matured)
 }
 

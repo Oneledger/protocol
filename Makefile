@@ -119,9 +119,12 @@ rewardtest: reset
 	@./scripts/stopNodes
 
 delegationtest: reset
-	@./scripts/testsend
-	python scripts/network_delegation/addNetworkDelegation.py
 	python scripts/network_delegation/networkUndelegate.py
+	python scripts/network_delegation/addNetworkDelegation.py
+	make reset
+	python scripts/network_delegation/withdrawRewards.py
+	make reset
+	python scripts/network_delegation/finalizeRewards.py
 	@./scripts/stopNodes
 
 alltest: reset
@@ -140,8 +143,6 @@ reset: install_c
 	@./scripts/stopNodes
 	@./scripts/resetDev
 	@./scripts/startDev
-# 	@./scripts/testapply
-# 	@./scripts/testsend
 
 resetInvalidValues: install_c
 	@./scripts/stopNodes

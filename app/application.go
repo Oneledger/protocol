@@ -1,9 +1,10 @@
 package app
 
 import (
-	"github.com/Oneledger/protocol/data/network_delegation"
 	"net/url"
 	"os"
+
+	"github.com/Oneledger/protocol/data/network_delegation"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/abci/types"

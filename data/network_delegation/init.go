@@ -20,7 +20,7 @@ const (
 	BLOCK_PROPOSER_COMMISSION = 30
 
 	//TODO this is hardcoded for now, will be changed in the future
-	RewardsMaturityTime = 3
+	RewardsMaturityTime = 4
 )
 
 func init() {

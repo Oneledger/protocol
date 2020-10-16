@@ -1,13 +1,14 @@
 package query
 
 import (
+	"math/big"
+
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/data/network_delegation"
 	"github.com/pkg/errors"
-	"math/big"
 )
 
 func (svc *Service) ListDelegation(req client.ListDelegationRequest, reply *client.ListDelegationReply) error {
@@ -15,19 +16,19 @@ func (svc *Service) ListDelegation(req client.ListDelegationRequest, reply *clie
 		Currency: balance.Currency{Id: 0, Name: "OLT", Chain: chain.ONELEDGER, Decimal: 18, Unit: "nue"},
 		Amount:   balance.NewAmount(0),
 	}
-	active, err := svc.networkDelegation.Deleg.WithPrefix(network_delegation.ActiveType).Get(req.DelegationAddress)
+	active, err := svc.netwkDelegators.Deleg.WithPrefix(network_delegation.ActiveType).Get(req.DelegationAddress)
 	if err != nil {
 		active = &zeroAmount
 	}
 	pending := zeroAmount
-	svc.networkDelegation.Deleg.WithPrefix(network_delegation.PendingType)
-	svc.networkDelegation.Deleg.IterateAllPendingAmounts(func(height int64, addr *keys.Address, coin *balance.Coin) bool {
+	svc.netwkDelegators.Deleg.WithPrefix(network_delegation.PendingType)
+	svc.netwkDelegators.Deleg.IterateAllPendingAmounts(func(height int64, addr *keys.Address, coin *balance.Coin) bool {
 		if addr.Equal(req.DelegationAddress) {
 			pending = pending.Plus(*coin)
 		}
 		return false
 	})
-	mature, err := svc.networkDelegation.Deleg.WithPrefix(network_delegation.MatureType).Get(req.DelegationAddress)
+	mature, err := svc.netwkDelegators.Deleg.WithPrefix(network_delegation.MatureType).Get(req.DelegationAddress)
 	if err != nil {
 		mature = &zeroAmount
 		//return err
@@ -47,7 +48,7 @@ func (svc *Service) ListDelegation(req client.ListDelegationRequest, reply *clie
 func (svc *Service) GetUndelegatedAmount(req client.GetUndelegatedRequest, reply *client.GetUndelegatedReply) error {
 	pendingAmounts := make([]client.SinglePendingAmount, 0)
 	// get all pending amount
-	nd := svc.networkDelegation.Deleg
+	nd := svc.netwkDelegators.Deleg
 	nd.WithPrefix(network_delegation.PendingType)
 	nd.IterateAllPendingAmounts(func(height int64, addr *keys.Address, coin *balance.Coin) bool {
 		if addr.Equal(req.Delegator) {
@@ -83,7 +84,8 @@ func (svc *Service) GetUndelegatedAmount(req client.GetUndelegatedRequest, reply
 	return nil
 }
 
-func (svc *Service) GetTotalNetwkDelegation(_ client.GetTotalNetwkDelegation, reply *client.GetTotalNetwkDelgReply) error {
+func (svc *Service) GetTotalNetwkDelegation(req client.GetTotalNetwkDelegation, reply *client.GetTotalNetwkDelgReply) error {
+	nd := svc.netwkDelegators.Deleg
 	// get active delegation amount
 	poolList, err := svc.governance.GetPoolList()
 	if err != nil {
@@ -104,9 +106,19 @@ func (svc *Service) GetTotalNetwkDelegation(_ client.GetTotalNetwkDelegation, re
 	}
 	activeCoin := activeBalance.GetCoin(currencyOLT)
 
+	if req.OnlyActive == 1 {
+		*reply = client.GetTotalNetwkDelgReply{
+			ActiveAmount:  *activeCoin.Amount,
+			PendingAmount: *balance.NewAmountFromBigInt(big.NewInt(0)),
+			MaturedAmount: *balance.NewAmountFromBigInt(big.NewInt(0)),
+			TotalAmount:   *activeCoin.Amount,
+			Height:        nd.GetState().Version(),
+		}
+		return nil
+	}
+
 	// get pending delegation amount
 	pendingCoin := balance.Coin{Currency: currencyOLT, Amount: balance.NewAmountFromBigInt(big.NewInt(0))}
-	nd := svc.networkDelegation.Deleg
 	nd.WithPrefix(network_delegation.PendingType)
 	nd.IterateAllPendingAmounts(func(height int64, addr *keys.Address, coin *balance.Coin) bool {
 		pendingCoin = pendingCoin.Plus(*coin)
@@ -130,6 +142,39 @@ func (svc *Service) GetTotalNetwkDelegation(_ client.GetTotalNetwkDelegation, re
 		MaturedAmount: *maturedCoin.Amount,
 		TotalAmount:   *totalCoin.Amount,
 		Height:        nd.GetState().Version(),
+	}
+	return nil
+}
+
+func (svc *Service) GetDelegRewards(req client.GetDelegRewardsRequest, resp *client.GetDelegRewardsReply) error {
+	height := svc.netwkDelegators.Rewards.GetState().Version()
+	options, err := svc.govern.GetNetworkDelegOptions()
+	if err != nil {
+		return network_delegation.ErrGettingDelgOption
+	}
+
+	balance, err := svc.netwkDelegators.Rewards.GetRewardsBalance(req.Delegator)
+	if err != nil {
+		return err
+	}
+	matured, err := svc.netwkDelegators.Rewards.GetMaturedRewards(req.Delegator)
+	if err != nil {
+		return err
+	}
+
+	var pending *network_delegation.DelegPendingRewards
+	if req.InclPending {
+		pending, err = svc.netwkDelegators.Rewards.GetPendingRewards(req.Delegator, height, options.RewardsMaturityTime+1)
+		if err != nil {
+			return err
+		}
+	}
+
+	*resp = client.GetDelegRewardsReply{
+		Balance: *balance,
+		Pending: pending.Rewards,
+		Matured: *matured,
+		Height:  height,
 	}
 	return nil
 }

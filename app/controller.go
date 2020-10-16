@@ -3,12 +3,14 @@ package app
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/Oneledger/protocol/data/network_delegation"
-	"github.com/Oneledger/protocol/external_apps/common"
+
 	"math"
 	"math/big"
 	"runtime/debug"
 	"strconv"
+
+	"github.com/Oneledger/protocol/data/network_delegation"
+	"github.com/Oneledger/protocol/external_apps/common"
 
 	"github.com/tendermint/tendermint/libs/kv"
 
@@ -142,6 +144,13 @@ func (app *App) blockBeginner() blockBeginner {
 
 		result := ResponseBeginBlock{
 			Events: []abciTypes.Event{blockRewardEvent},
+		}
+
+		// matured delegators' pending withdrawal
+		delegRewardStore := app.Context.netwkDelegators.Rewards.WithState(app.Context.deliver)
+		delegRewardEvent, anyMatured := delegRewardStore.MaturePendingRewards(req.Header.Height)
+		if anyMatured {
+			result.Events = append(result.Events, delegRewardEvent)
 		}
 
 		//update the header to current block
@@ -585,7 +594,7 @@ func handleBlockRewards(appCtx *context, block RequestBeginBlock) abciTypes.Even
 	if err != nil {
 		return abciTypes.Event{}
 	}
-	delegationPoolCoin, err := appCtx.balances.GetBalanceForCurr(poolList["DelegationPool"], &curr)
+	delegationPoolCoin, err := appCtx.balances.WithState(appCtx.deliver).GetBalanceForCurr(poolList["DelegationPool"], &curr)
 	if err != nil {
 		return abciTypes.Event{}
 	}
@@ -593,7 +602,7 @@ func handleBlockRewards(appCtx *context, block RequestBeginBlock) abciTypes.Even
 	totalPower.Add(totalPower, delegationPower)
 
 	//get total rewards for the block
-	rewardPoolCoin, err := appCtx.balances.GetBalanceForCurr(poolList["RewardsPool"], &curr)
+	rewardPoolCoin, err := appCtx.balances.WithState(appCtx.deliver).GetBalanceForCurr(poolList["RewardsPool"], &curr)
 	if err != nil {
 		return abciTypes.Event{}
 	}
