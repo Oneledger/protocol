@@ -275,6 +275,8 @@ func writeStoreWithTag(ctx app.StorageCtx, writer io.Writer, tag string) (state 
 		state, succeed = ctx.Delegators.DumpState(options)
 	case "rewards":
 		state, succeed = ctx.RewardMaster.DumpState()
+	case "delegator_rewards":
+		state, succeed = ctx.NetwkDelegators.Rewards.SaveState()
 	}
 	if !succeed {
 		return
@@ -359,6 +361,7 @@ func SaveChainState(application *app.App, filename string, directory string) err
 	writeListWithTag(ctx, writer, "trackers")
 	writeListWithTag(ctx, writer, "proposals")
 	writeCustomStructWithTag(ctx, writer, "net_delegators")
+	writeStoreWithTag(ctx, writer, "delegator_rewards")
 	writeListWithTag(ctx, writer, "fees")
 	endBlock(writer)
 

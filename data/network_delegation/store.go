@@ -187,11 +187,11 @@ func (st *Store) IterateAllPendingAmounts(fn func(height int64, addr *keys.Addre
 		if err != nil {
 			return true
 		}
-		height, err := strconv.Atoi(arr[len(arr)-2])
+		height, err := strconv.ParseInt(arr[len(arr)-2], 10, 64)
 		if err != nil {
 			return true
 		}
-		return fn(int64(height), addr, coin)
+		return fn(height, addr, coin)
 	})
 }
 

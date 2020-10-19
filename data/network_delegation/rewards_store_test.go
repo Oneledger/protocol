@@ -209,3 +209,19 @@ func TestDelegRewardStore_Finalize(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, *matured, balance.AmtZero)
 }
+
+func TestStore_IterateAllPendingAmounts(t *testing.T) {
+	setup()
+	storeRwz.addPendingRewards(delegators[0], balance.NewAmount(30), 500)
+	storeRwz.addPendingRewards(delegators[0], balance.NewAmount(30), 600)
+	storeRwz.addPendingRewards(delegators[0], balance.NewAmount(30), 700)
+	storeRwz.addPendingRewards(delegators[0], balance.NewAmount(30), 800)
+
+	storeRwz.state.Commit()
+	count := 0
+	storeRwz.iterateAllPD(func(height int64, addr keys.Address, amt *balance.Amount) bool {
+		count++
+		return false
+	})
+	assert.Equal(t, 4, count)
+}
