@@ -18,7 +18,7 @@ if __name__ == "__main__":
     newDelegation.send_network_undelegate(undelegate_amount_3)
     time.sleep(2)
     result = newDelegation.query_undelegate()
-    check_query_undelegated(result, 3, "0")
+    check_query_undelegated(result, 3)
     total_result = query_total(0)
     check_query_total(total_result, "1000000000000000000000000")
     total_result_only_active = query_total(1)
