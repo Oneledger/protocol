@@ -19,7 +19,7 @@ if __name__ == "__main__":
     time.sleep(2)
     result = newDelegation.query_undelegate()
     check_query_undelegated(result, 3)
-    total_result = query_total()
+    total_result = query_total(0)
     check_query_total(total_result, "1000000000000000000000000")
     total_result_only_active = query_total(1)
     check_query_total(total_result_only_active, "400000000000000000000000")
