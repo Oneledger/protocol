@@ -374,7 +374,11 @@ func (drs *DelegRewardStore) LoadState(state *RewardState) error {
 		}
 	}
 	for _, v := range state.PendingList {
-		err := drs.addPendingRewards(v.Address, v.Amount, v.Height)
+		height := v.Height - drs.state.Version()
+		if height <= 0 {
+			continue
+		}
+		err := drs.addPendingRewards(v.Address, v.Amount, height)
 		if err != nil {
 			return err
 		}

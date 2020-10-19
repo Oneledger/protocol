@@ -703,7 +703,7 @@ func DumpNetworkDelegatorsToFile(nd *network_delegation.Store, writer io.Writer,
 					Amount:  coin,
 					Height:  height - version, //Store difference in versions
 				}
-				if delegatorState.Height < 0 {
+				if delegatorState.Height <= 0 {
 					return false
 				}
 				fn(writer, delegatorState)
