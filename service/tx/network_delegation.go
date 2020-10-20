@@ -91,7 +91,7 @@ func (s *Service) WithdrawDelegRewards(args client.WithdrawDelegRewardsRequest, 
 	uuidNew, _ := uuid.NewUUID()
 	feeAmount := s.feeOpt.MinFee()
 	tx := &action.RawTx{
-		Type: action.WITHDRAW_NETWORK_DELEGATE,
+		Type: action.REWARDS_WITHDRAW_NETWORK_DELEGATE,
 		Data: data,
 		Fee: action.Fee{
 			Price: action.Amount{Currency: "OLT", Value: *feeAmount.Amount},

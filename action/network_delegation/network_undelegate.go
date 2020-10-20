@@ -55,12 +55,12 @@ func (ud *Undelegate) Unmarshal(data []byte) error {
 	return json.Unmarshal(data, ud)
 }
 
-type UndelegateTx struct{}
+type undelegateTx struct{}
 
-var _ action.Tx = &UndelegateTx{}
+var _ action.Tx = &undelegateTx{}
 
-func (u UndelegateTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error) {
-	ctx.Logger.Debug("Validate UndelegateTx transaction for CheckTx", tx)
+func (u undelegateTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error) {
+	ctx.Logger.Debug("Validate undelegateTx transaction for CheckTx", tx)
 	ud := &Undelegate{}
 	err := ud.Unmarshal(tx.Data)
 	if err != nil {
@@ -86,17 +86,17 @@ func (u UndelegateTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, e
 	return true, nil
 }
 
-func (u UndelegateTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	ctx.Logger.Debug("ProcessCheck UndelegateTx transaction for CheckTx", tx)
+func (u undelegateTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	ctx.Logger.Debug("ProcessCheck undelegateTx transaction for CheckTx", tx)
 	return runUndelegate(ctx, tx)
 }
 
-func (u UndelegateTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (u undelegateTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
 
-func (u UndelegateTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	ctx.Logger.Debug("ProcessDeliver UndelegateTx transaction for DeliverTx", tx)
+func (u undelegateTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+	ctx.Logger.Debug("ProcessDeliver undelegateTx transaction for DeliverTx", tx)
 	return runUndelegate(ctx, tx)
 }
 
