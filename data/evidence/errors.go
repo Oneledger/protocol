@@ -10,4 +10,5 @@ var (
 	ErrFrozenValidator        = codes.ProtocolError{codes.TxErrEvidenceError, "error frozen validator"}
 	ErrNonFrozenValidator     = codes.ProtocolError{codes.TxErrEvidenceError, "error non frozen validator"}
 	ErrNonActiveValidator     = codes.ProtocolError{codes.TxErrEvidenceError, "non active validator"}
+	ErrInvalidHeight          = codes.ProtocolError{codes.TxErrEvidenceError, "error invalid height"}
 )
