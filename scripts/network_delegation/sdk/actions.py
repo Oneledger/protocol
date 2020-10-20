@@ -3,6 +3,7 @@ import sys
 
 sdkcom_path = path.abspath(path.join(path.dirname(__file__), "../.."))
 sys.path.append(sdkcom_path)
+
 from sdkcom import *
 
 

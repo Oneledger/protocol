@@ -4,8 +4,7 @@ import subprocess
 import time
 
 import psutil
-
-from sdk import devnet
+from sdk import *
 
 devnull = open(os.devnull, 'wb')
 

@@ -56,21 +56,21 @@ def main():
     wait_blocks(5)
     query_requests()
     # Test case 1 : Multiple requests against same validator in different blocks
-    for i in range(1):
+    for i in range(3):
         allegations(numOfAllegationsPerform, reporterAccount, maliciousAccount)
-        wait_blocks(80)
+        wait_blocks(1)
         voting(validators)
         wait_blocks(1)
-        # release(maliciousAccount, node_1)
-        # wait_blocks(1)
+        release(maliciousAccount, node_1)
+        wait_blocks(1)
     # Test case 1 : Multiple requests different Validators in same and different blocks
-    # for i in range(3):
-    #     allegations(numOfAllegationsPerform, reporterAccount, maliciousAccount)
-    #     allegations(numOfAllegationsPerform, reporterAccount, v2)
-    #     allegations(numOfAllegationsPerform, reporterAccount, v3)
-    #     wait_blocks(1)
-    # wait_blocks(1)
-    # query_requests(3)
+    for i in range(3):
+        allegations(numOfAllegationsPerform, reporterAccount, maliciousAccount)
+        allegations(numOfAllegationsPerform, reporterAccount, v2)
+        allegations(numOfAllegationsPerform, reporterAccount, v3)
+        wait_blocks(1)
+    wait_blocks(1)
+    query_requests(3)
 
 
 if __name__ == '__main__':

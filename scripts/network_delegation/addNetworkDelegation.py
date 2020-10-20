@@ -1,4 +1,4 @@
-from sdkcom import *
+
 
 if __name__ == "__main__":
     delegationAccount = addValidatorWalletAccounts(node_5)
