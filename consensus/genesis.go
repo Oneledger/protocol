@@ -2,6 +2,7 @@ package consensus
 
 import (
 	"encoding/json"
+	"github.com/Oneledger/protocol/data/network_delegation"
 	"time"
 
 	"github.com/pkg/errors"
@@ -76,17 +77,18 @@ type ChainState struct {
 type Stake identity.Stake
 
 type AppState struct {
-	Currencies balance.Currencies         `json:"currencies"`
-	Governance governance.GovernanceState `json:"governance"`
-	Chain      ChainState                 `json:"state"`
-	Balances   []BalanceState             `json:"balances"`
-	Staking    []Stake                    `json:"staking"`
-	Delegation delegation.DelegationState `json:"delegation"`
-	Rewards    rewards.RewardMasterState  `json:"rewards"`
-	Domains    []DomainState              `json:"domains"`
-	Trackers   []Tracker                  `json:"trackers"`
-	Fees       []BalanceState             `json:"fees"`
-	Proposals  []governance.GovProposal   `json:"proposals"`
+	Currencies    balance.Currencies         `json:"currencies"`
+	Governance    governance.GovernanceState `json:"governance"`
+	Chain         ChainState                 `json:"state"`
+	Balances      []BalanceState             `json:"balances"`
+	Staking       []Stake                    `json:"staking"`
+	Delegation    delegation.DelegationState `json:"delegation"`
+	Rewards       rewards.RewardMasterState  `json:"rewards"`
+	Domains       []DomainState              `json:"domains"`
+	Trackers      []Tracker                  `json:"trackers"`
+	Fees          []BalanceState             `json:"fees"`
+	Proposals     []governance.GovProposal   `json:"proposals"`
+	NetDelegators network_delegation.State   `json:"net_delegators"`
 }
 
 func NewAppState(currencies balance.Currencies,

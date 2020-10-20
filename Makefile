@@ -50,6 +50,7 @@ utest:
 		github.com/Oneledger/protocol/data/keys \
 		github.com/Oneledger/protocol/data/governance \
 		github.com/Oneledger/protocol/data/rewards \
+		github.com/Oneledger/protocol/data/network_delegation \
 		github.com/Oneledger/protocol/data/evidence \
 		github.com/Oneledger/protocol/action/transfer \
 		github.com/Oneledger/protocol/serialize \
@@ -132,6 +133,15 @@ rewardtest: reset
 	make reset
 	python scripts/reward/testWithdraw.py
 	python scripts/reward/listRewards.py
+	@./scripts/stopNodes
+
+delegationtest: reset
+	python scripts/network_delegation/networkUndelegate.py
+	python scripts/network_delegation/addNetworkDelegation.py
+	make reset
+	python scripts/network_delegation/withdrawRewards.py
+	make reset
+	python scripts/network_delegation/finalizeRewards.py
 	@./scripts/stopNodes
 
 alltest: reset

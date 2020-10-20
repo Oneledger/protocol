@@ -116,7 +116,6 @@ type SendPoolTxRequest struct {
 type CreateTxReply struct {
 	RawTx []byte `json:"rawTx"`
 }
-
 type ReleaseRequest struct {
 	Address keys.Address `json:"address"`
 }

@@ -2,9 +2,9 @@ package query
 
 import (
 	"encoding/hex"
-	"strings"
-
+	netwkDeleg "github.com/Oneledger/protocol/data/network_delegation"
 	"github.com/Oneledger/protocol/data/rewards"
+	"strings"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
@@ -21,22 +21,23 @@ import (
 )
 
 type Service struct {
-	name           string
-	ext            client.ExtServiceContext
-	balances       *balance.Store
-	currencies     *balance.CurrencySet
-	validators     *identity.ValidatorStore
-	witnesses      *identity.WitnessStore
-	delegators     *delegation.DelegationStore
-	evidenceStore  *evidence.EvidenceStore
-	govern         *governance.Store
-	ons            *ons.DomainStore
-	feePool        *fees.Store
-	proposalMaster *governance.ProposalMasterStore
-	rewardMaster   *rewards.RewardMasterStore
-	governance     *governance.Store
-	logger         *log.Logger
-	txTypes        *[]action.TxTypeDescribe
+	name            string
+	ext             client.ExtServiceContext
+	balances        *balance.Store
+	currencies      *balance.CurrencySet
+	validators      *identity.ValidatorStore
+	witnesses       *identity.WitnessStore
+	delegators      *delegation.DelegationStore
+	netwkDelegators *netwkDeleg.MasterStore
+	evidenceStore   *evidence.EvidenceStore
+	govern          *governance.Store
+	ons             *ons.DomainStore
+	feePool         *fees.Store
+	proposalMaster  *governance.ProposalMasterStore
+	rewardMaster    *rewards.RewardMasterStore
+	governance      *governance.Store
+	logger          *log.Logger
+	txTypes         *[]action.TxTypeDescribe
 }
 
 func Name() string {
@@ -44,24 +45,25 @@ func Name() string {
 }
 
 func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencies *balance.CurrencySet, validators *identity.ValidatorStore, witnesses *identity.WitnessStore,
-	domains *ons.DomainStore, delegators *delegation.DelegationStore, evidenceStore *evidence.EvidenceStore, govern *governance.Store, feePool *fees.Store, proposalMaster *governance.ProposalMasterStore, rewardMaster *rewards.RewardMasterStore, logger *log.Logger, txTypes *[]action.TxTypeDescribe) *Service {
+	domains *ons.DomainStore, delegators *delegation.DelegationStore, netwkDelegators *netwkDeleg.MasterStore, evidenceStore *evidence.EvidenceStore, govern *governance.Store, feePool *fees.Store, proposalMaster *governance.ProposalMasterStore, rewardMaster *rewards.RewardMasterStore, logger *log.Logger, txTypes *[]action.TxTypeDescribe) *Service {
 	return &Service{
-		name:           "query",
-		ext:            ctx,
-		currencies:     currencies,
-		balances:       balances,
-		validators:     validators,
-		witnesses:      witnesses,
-		delegators:     delegators,
-		evidenceStore:  evidenceStore,
-		govern:         govern,
-		ons:            domains,
-		feePool:        feePool,
-		proposalMaster: proposalMaster,
-		rewardMaster:   rewardMaster,
-		logger:         logger,
-		txTypes:        txTypes,
-		governance:     govern,
+		name:            "query",
+		ext:             ctx,
+		currencies:      currencies,
+		balances:        balances,
+		validators:      validators,
+		witnesses:       witnesses,
+		delegators:      delegators,
+		netwkDelegators: netwkDelegators,
+		evidenceStore:   evidenceStore,
+		govern:          govern,
+		ons:             domains,
+		feePool:         feePool,
+		proposalMaster:  proposalMaster,
+		rewardMaster:    rewardMaster,
+		logger:          logger,
+		txTypes:         txTypes,
+		governance:      govern,
 	}
 }
 

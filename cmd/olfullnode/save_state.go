@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/Oneledger/protocol/data/network_delegation"
 	"io"
 	"os"
 	"path/filepath"
@@ -171,6 +172,26 @@ func endBlock(writer io.Writer) bool {
 	return true
 }
 
+func startList(writer io.Writer, name string) bool {
+	_, err := writer.Write([]byte("\"" + name + "\"" + ":["))
+	if err != nil {
+		return false
+	}
+	return true
+}
+
+func endList(writer io.Writer) bool {
+	_, err := writer.Write([]byte("]"))
+	if err != nil {
+		return false
+	}
+	return true
+}
+
+func writeDelimiter(delimiter string, writer io.Writer) {
+	_, _ = writer.Write([]byte(delimiter))
+}
+
 func writeStruct(writer io.Writer, obj interface{}) bool {
 	str, err := json.MarshalIndent(obj, "", " ")
 	if err != nil {
@@ -196,6 +217,19 @@ func writeStructWithTag(writer io.Writer, obj interface{}, tag string) bool {
 	_, err = writer.Write([]byte("\"" + tag + "\"" + ":"))
 	_, err = writer.Write(str)
 	_, err = writer.Write([]byte(",\n"))
+	return true
+}
+
+func writeCustomStructWithTag(ctx app.StorageCtx, writer io.Writer, tag string) bool {
+	_, err := writer.Write([]byte("\"" + tag + "\"" + ":{"))
+	if err != nil {
+		return false
+	}
+	switch tag {
+	case "net_delegators":
+		DumpNetworkDelegatorsToFile(ctx.NetwkDelegators.Deleg, writer, writeStruct)
+	}
+	_, err = writer.Write([]byte("},\n"))
 	return true
 }
 
@@ -324,6 +358,7 @@ func SaveChainState(application *app.App, filename string, directory string) err
 	writeListWithTag(ctx, writer, "domains")
 	writeListWithTag(ctx, writer, "trackers")
 	writeListWithTag(ctx, writer, "proposals")
+	writeCustomStructWithTag(ctx, writer, "net_delegators")
 	writeListWithTag(ctx, writer, "fees")
 	endBlock(writer)
 
@@ -617,5 +652,65 @@ func DumpGovProposalsToFile(pm *governance.ProposalMasterStore, writer io.Writer
 			iterator++
 			return false
 		})
+	}
+}
+
+func DumpNetworkDelegatorsToFile(nd *network_delegation.Store, writer io.Writer, fn func(writer io.Writer, obj interface{}) bool) {
+	prefixList := []network_delegation.DelegationPrefixType{network_delegation.ActiveType, network_delegation.MatureType, network_delegation.PendingType}
+	delimiter := ","
+	version := nd.State.Version()
+
+	for _, prefix := range prefixList {
+		iterator := 0
+		startList(writer, prefix.GetJSONPrefix())
+		switch prefix {
+		case network_delegation.ActiveType:
+			nd.IterateActiveAmounts(func(addr *keys.Address, coin *balance.Coin) bool {
+				if iterator != 0 {
+					writeDelimiter(delimiter, writer)
+				}
+				delegatorState := network_delegation.Delegator{
+					Address: addr,
+					Amount:  coin,
+				}
+				fn(writer, delegatorState)
+				iterator++
+				return false
+			})
+		case network_delegation.MatureType:
+			nd.IterateMatureAmounts(func(addr *keys.Address, coin *balance.Coin) bool {
+				if iterator != 0 {
+					writeDelimiter(delimiter, writer)
+				}
+				delegatorState := network_delegation.Delegator{
+					Address: addr,
+					Amount:  coin,
+				}
+				fn(writer, delegatorState)
+				iterator++
+				return false
+			})
+		case network_delegation.PendingType:
+			nd.IterateAllPendingAmounts(func(height int64, addr *keys.Address, coin *balance.Coin) bool {
+				if iterator != 0 {
+					writeDelimiter(delimiter, writer)
+				}
+				delegatorState := network_delegation.PendingDelegator{
+					Address: addr,
+					Amount:  coin,
+					Height:  height - version, //Store difference in versions
+				}
+				if delegatorState.Height < 0 {
+					return false
+				}
+				fn(writer, delegatorState)
+				iterator++
+				return false
+			})
+		}
+		endList(writer)
+		if prefix == network_delegation.ActiveType || prefix == network_delegation.MatureType {
+			writeDelimiter(delimiter, writer)
+		}
 	}
 }

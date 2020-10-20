@@ -54,6 +54,6 @@ func (s *StorageRouter) WithState(state *storage.State) *StorageRouter {
 	return s
 }
 
-type ExtStore interface{
+type ExtStore interface {
 	WithState(*storage.State) ExtStore
 }

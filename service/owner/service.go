@@ -129,6 +129,7 @@ func (svc *Service) SignWithAddress(req client.SignRawTxRequest, reply *client.S
 	*reply = client.SignRawTxResponse{Signature: action.Signature{Signed: signed, Signer: pkey}}
 	return nil
 }
+
 func (svc *Service) SignWithSecureAddress(req client.SecureSignRawTxRequest, reply *client.SignRawTxResponse) error {
 	wallet, err := accounts.NewWalletKeyStore(req.KeyPath)
 	if err != nil {

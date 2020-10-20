@@ -1,11 +1,13 @@
 package service
 
 import (
+	"github.com/Oneledger/protocol/data/network_delegation"
 	"github.com/Oneledger/protocol/external_apps/common"
 	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/data/governance"
+	netwkDeleg "github.com/Oneledger/protocol/data/network_delegation"
 	"github.com/Oneledger/protocol/data/rewards"
 
 	"github.com/Oneledger/protocol/action"
@@ -34,26 +36,28 @@ import (
 // Context is the master context for creating new contexts
 type Context struct {
 	//stores
-	Accounts      accounts.Wallet
-	Balances      *balance.Store
-	Domains       *ons.DomainStore
-	Delegators    *delegation.DelegationStore
-	EvidenceStore *evidence.EvidenceStore
-	FeePool       *fees.Store
-	ValidatorSet  *identity.ValidatorStore
-	WitnessSet    *identity.WitnessStore
-	Trackers      *bitcoin.TrackerStore
-	EthTrackers   *ethTracker.TrackerStore
+	Accounts        accounts.Wallet
+	Balances        *balance.Store
+	Domains         *ons.DomainStore
+	Delegators      *delegation.DelegationStore
+	NetwkDelegators *netwkDeleg.MasterStore
+	EvidenceStore   *evidence.EvidenceStore
+	FeePool         *fees.Store
+	ValidatorSet    *identity.ValidatorStore
+	WitnessSet      *identity.WitnessStore
+	Trackers        *bitcoin.TrackerStore
+	EthTrackers     *ethTracker.TrackerStore
 	// configurations
-	Cfg            config.Server
-	Currencies     *balance.CurrencySet
-	ProposalMaster *governance.ProposalMasterStore
-	RewardMaster   *rewards.RewardMasterStore
-	Govern         *governance.Store
-	ExtStores      data.Router
-	ExtServiceMap  common.ExtServiceMap
-	GovUpdate      *action.GovernaceUpdateAndValidate
-	NodeContext    node.Context
+	Cfg                   config.Server
+	Currencies            *balance.CurrencySet
+	ProposalMaster        *governance.ProposalMasterStore
+	RewardMaster          *rewards.RewardMasterStore
+	Govern                *governance.Store
+	ExtStores             data.Router
+	ExtServiceMap         common.ExtServiceMap
+	GovUpdate             *action.GovernaceUpdateAndValidate
+	NetwkDelegatorsMaster *network_delegation.MasterStore
+	NodeContext           node.Context
 
 	Router   action.Router
 	Services client.ExtServiceContext
@@ -68,12 +72,12 @@ type Map map[string]interface{}
 func NewMap(ctx *Context) (Map, error) {
 
 	defaultMap := Map{
-		broadcast.Name(): broadcast.NewService(ctx.Services, ctx.Router, ctx.Currencies, ctx.FeePool, ctx.Domains, ctx.Govern, ctx.Delegators, ctx.EvidenceStore, ctx.ValidatorSet, ctx.Logger, ctx.Trackers, ctx.ProposalMaster, ctx.RewardMaster, ctx.ExtStores, ctx.GovUpdate),
-		nodesvc.Name():   nodesvc.NewService(ctx.NodeContext, &ctx.Cfg, ctx.Logger),
-		owner.Name():     owner.NewService(ctx.Accounts, ctx.Logger),
-		query.Name(): query.NewService(ctx.Services, ctx.Balances, ctx.Currencies, ctx.ValidatorSet, ctx.WitnessSet, ctx.Domains, ctx.Delegators, ctx.EvidenceStore, ctx.Govern,
-			ctx.FeePool, ctx.ProposalMaster, ctx.RewardMaster, ctx.Logger, ctx.TxTypes),
-
+		broadcast.Name(): broadcast.NewService(ctx.Services, ctx.Router, ctx.Currencies, ctx.FeePool, ctx.Domains, ctx.Govern, ctx.Delegators, ctx.EvidenceStore, ctx.NetwkDelegators,
+			ctx.ValidatorSet, ctx.Logger, ctx.Trackers, ctx.ProposalMaster, ctx.RewardMaster, ctx.ExtStores, ctx.GovUpdate),
+		nodesvc.Name(): nodesvc.NewService(ctx.NodeContext, &ctx.Cfg, ctx.Logger),
+		owner.Name():   owner.NewService(ctx.Accounts, ctx.Logger),
+		query.Name(): query.NewService(ctx.Services, ctx.Balances, ctx.Currencies, ctx.ValidatorSet, ctx.WitnessSet, ctx.Domains, ctx.Delegators, ctx.NetwkDelegators, ctx.EvidenceStore,
+			ctx.Govern, ctx.FeePool, ctx.ProposalMaster, ctx.RewardMaster, ctx.Logger, ctx.TxTypes),
 		tx.Name():       tx.NewService(ctx.Balances, ctx.Router, ctx.Accounts, ctx.ValidatorSet, ctx.Govern, ctx.Delegators, ctx.EvidenceStore, ctx.FeePool.GetOpt(), ctx.NodeContext, ctx.Logger),
 		btc.Name():      btc.NewService(ctx.Balances, ctx.Accounts, ctx.NodeContext, ctx.ValidatorSet, ctx.Trackers, ctx.Logger),
 		ethereum.Name(): ethereum.NewService(ctx.Cfg.EthChainDriver, ctx.Router, ctx.Accounts, ctx.NodeContext, ctx.ValidatorSet, ctx.EthTrackers, ctx.Logger),

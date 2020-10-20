@@ -1,3 +1,7 @@
 requests==2.24.0
 ipdb==0.13.3
 psutil==5.7.2
+
+toml~=0.10.1
+BeneDict~=0.2
+scripts~=2.0

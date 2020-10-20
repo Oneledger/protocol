@@ -1,16 +1,19 @@
 package app
 
 import (
-	"github.com/Oneledger/protocol/external_apps"
-	"github.com/Oneledger/protocol/external_apps/common"
 	"io"
 	"os"
 	"path/filepath"
 	"time"
 
+	"github.com/Oneledger/protocol/external_apps"
+	"github.com/Oneledger/protocol/external_apps/common"
+
 	tmdb "github.com/tendermint/tm-db"
 
 	"github.com/Oneledger/protocol/data"
+	"github.com/Oneledger/protocol/data/network_delegation"
+	netwkDeleg "github.com/Oneledger/protocol/data/network_delegation"
 	"github.com/Oneledger/protocol/data/rewards"
 	"github.com/Oneledger/protocol/data/transactions"
 
@@ -19,6 +22,7 @@ import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/eth"
 	action_gov "github.com/Oneledger/protocol/action/governance"
+	action_netwkdeleg "github.com/Oneledger/protocol/action/network_delegation"
 	action_ons "github.com/Oneledger/protocol/action/ons"
 	action_pen "github.com/Oneledger/protocol/action/penalization"
 	action_rewards "github.com/Oneledger/protocol/action/rewards"
@@ -79,6 +83,7 @@ type context struct {
 	jobBus          *event.JobBus
 	proposalMaster  *governance.ProposalMasterStore
 	delegators      *delegation.DelegationStore
+	netwkDelegators *netwkDeleg.MasterStore
 	evidenceStore   *evidence.EvidenceStore
 	rewardMaster    *rewards.RewardMasterStore
 	transaction     *transactions.TransactionStore
@@ -121,6 +126,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.govern = governance.NewStore("g", storage.NewState(ctx.chainstate))
 	ctx.proposalMaster = NewProposalMasterStore(ctx.chainstate)
 	ctx.delegators = delegation.NewDelegationStore("st", storage.NewState(ctx.chainstate))
+	ctx.netwkDelegators = netwkDeleg.NewMasterStore("deleg", "delegRwz", storage.NewState(ctx.chainstate))
 	ctx.evidenceStore = evidence.NewEvidenceStore("es", storage.NewState(ctx.chainstate))
 	ctx.rewardMaster = NewRewardMasterStore(ctx.chainstate)
 	ctx.btcTrackers = bitcoin.NewTrackerStore("btct", storage.NewState(ctx.chainstate))
@@ -172,7 +178,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	_ = eth.EnableInternalETH(ctx.internalRouter)
 
 	_ = action_rewards.EnableRewards(ctx.actionRouter)
-
+	_ = action_netwkdeleg.EnableNetworkDelegation(ctx.actionRouter)
 	_ = action_gov.EnableGovernance(ctx.actionRouter)
 	_ = action_gov.EnableInternalGovernance(ctx.internalRouter)
 	_ = staking.EnableStaking(ctx.actionRouter)
@@ -199,7 +205,6 @@ func (ctx context) dbDir() string {
 }
 
 func (ctx *context) Action(header *Header, state *storage.State) *action.Context {
-
 	actionCtx := action.NewContext(
 		ctx.actionRouter,
 		header,
@@ -212,6 +217,7 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.witnesses.WithState(state),
 		ctx.domains.WithState(state),
 		ctx.delegators.WithState(state),
+		ctx.netwkDelegators.WithState(state),
 		ctx.evidenceStore.WithState(state),
 		ctx.btcTrackers.WithState(state),
 		ctx.ethTrackers.WithState(state),
@@ -276,29 +282,32 @@ func (ctx *context) Services() (service.Map, error) {
 	rewardMaster := NewRewardMasterStore(ctx.chainstate)
 	rewardMaster.SetOptions(ctx.rewardMaster.GetOptions())
 
+	netwkDelegators := netwkDeleg.NewMasterStore("deleg", "delegRwz", storage.NewState(ctx.chainstate))
+
 	svcCtx := &service.Context{
-		Balances:       balance.NewStore("b", storage.NewState(ctx.chainstate)),
-		Accounts:       ctx.accounts,
-		Currencies:     ctx.currencies,
-		FeePool:        feePool,
-		Cfg:            ctx.cfg,
-		NodeContext:    ctx.node,
-		ValidatorSet:   identity.NewValidatorStore("v", "purged", storage.NewState(ctx.chainstate)),
-		WitnessSet:     identity.NewWitnessStore("w", storage.NewState(ctx.chainstate)),
-		Domains:        onsStore,
-		Delegators:     delegation.NewDelegationStore("st", storage.NewState(ctx.chainstate)),
-		ProposalMaster: proposalMaster,
-		EvidenceStore:  ctx.evidenceStore,
-		RewardMaster:   rewardMaster,
-		ExtStores:      ctx.extStores,
-		ExtServiceMap:  ctx.extServiceMap,
-		Router:         ctx.actionRouter,
-		Logger:         log.NewLoggerWithPrefix(ctx.logWriter, "rpc").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
-		Services:       extSvcs,
-		EthTrackers:    ethTracker,
-		Trackers:       btcTrackers,
-		Govern:         governance.NewStore("g", storage.NewState(ctx.chainstate)),
-		GovUpdate:      ctx.govupdate,
+		Balances:        balance.NewStore("b", storage.NewState(ctx.chainstate)),
+		Accounts:        ctx.accounts,
+		Currencies:      ctx.currencies,
+		FeePool:         feePool,
+		Cfg:             ctx.cfg,
+		NodeContext:     ctx.node,
+		ValidatorSet:    identity.NewValidatorStore("v", "purged", storage.NewState(ctx.chainstate)),
+		WitnessSet:      identity.NewWitnessStore("w", storage.NewState(ctx.chainstate)),
+		Domains:         onsStore,
+		Delegators:      delegation.NewDelegationStore("st", storage.NewState(ctx.chainstate)),
+		NetwkDelegators: netwkDelegators,
+		ProposalMaster:  proposalMaster,
+		EvidenceStore:   ctx.evidenceStore,
+		RewardMaster:    rewardMaster,
+		ExtStores:       ctx.extStores,
+		ExtServiceMap:   ctx.extServiceMap,
+		Router:          ctx.actionRouter,
+		Logger:          log.NewLoggerWithPrefix(ctx.logWriter, "rpc").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
+		Services:        extSvcs,
+		EthTrackers:     ethTracker,
+		Trackers:        btcTrackers,
+		Govern:          governance.NewStore("g", storage.NewState(ctx.chainstate)),
+		GovUpdate:       ctx.govupdate,
 	}
 
 	return service.NewMap(svcCtx)
@@ -329,15 +338,16 @@ func (ctx *context) Restful() (service.RestfulRouter, error) {
 }
 
 type StorageCtx struct {
-	Balances       *balance.Store
-	Domains        *ons.DomainStore
-	Validators     *identity.ValidatorStore // Set of validators currently active
-	Delegators     *delegation.DelegationStore
-	RewardMaster   *rewards.RewardMasterStore
-	ProposalMaster *governance.ProposalMasterStore
-	FeePool        *fees.Store
-	Govern         *governance.Store
-	Trackers       *ethereum.TrackerStore //TODO: Create struct to contain all tracker types including Bitcoin.
+	Balances        *balance.Store
+	Domains         *ons.DomainStore
+	Validators      *identity.ValidatorStore // Set of validators currently active
+	Delegators      *delegation.DelegationStore
+	RewardMaster    *rewards.RewardMasterStore
+	ProposalMaster  *governance.ProposalMasterStore
+	NetwkDelegators *network_delegation.MasterStore
+	FeePool         *fees.Store
+	Govern          *governance.Store
+	Trackers        *ethereum.TrackerStore //TODO: Create struct to contain all tracker types including Bitcoin.
 
 	Currencies *balance.CurrencySet
 	FeeOption  *fees.FeeOption
@@ -348,20 +358,21 @@ type StorageCtx struct {
 
 func (ctx *context) Storage() StorageCtx {
 	return StorageCtx{
-		Version:        ctx.chainstate.Version,
-		Hash:           ctx.chainstate.Hash,
-		Chainstate:     ctx.chainstate,
-		Balances:       ctx.balances,
-		Domains:        ctx.domains,
-		Validators:     ctx.validators,
-		Delegators:     ctx.delegators,
-		RewardMaster:   ctx.rewardMaster,
-		ProposalMaster: ctx.proposalMaster,
-		FeePool:        ctx.feePool,
-		Govern:         ctx.govern,
-		Currencies:     ctx.currencies,
-		FeeOption:      ctx.feePool.GetOpt(),
-		Trackers:       ctx.ethTrackers,
+		Version:         ctx.chainstate.Version,
+		Hash:            ctx.chainstate.Hash,
+		Chainstate:      ctx.chainstate,
+		Balances:        ctx.balances,
+		Domains:         ctx.domains,
+		Validators:      ctx.validators,
+		Delegators:      ctx.delegators,
+		RewardMaster:    ctx.rewardMaster,
+		ProposalMaster:  ctx.proposalMaster,
+		NetwkDelegators: ctx.netwkDelegators,
+		FeePool:         ctx.feePool,
+		Govern:          ctx.govern,
+		Currencies:      ctx.currencies,
+		FeeOption:       ctx.feePool.GetOpt(),
+		Trackers:        ctx.ethTrackers,
 	}
 }
 

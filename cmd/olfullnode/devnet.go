@@ -20,6 +20,7 @@ import (
 
 	"github.com/Oneledger/protocol/data/evidence"
 	"github.com/Oneledger/protocol/data/governance"
+	"github.com/Oneledger/protocol/data/network_delegation"
 	"github.com/Oneledger/protocol/data/rewards"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -127,16 +128,17 @@ type testnetConfig struct {
 	totalFunds          int64
 	initialTokenHolders []string
 
-	ethUrl               string
-	deploySmartcontracts bool
-	cloud                bool
-	loglevel             int
-	rewardsInterval      int64
-	reserved_domains     string
-	maturityTime         int64
-	votingDeadline       int64
-	fundingDeadline      int64
-	timeoutcommit        int64
+	ethUrl                   string
+	deploySmartcontracts     bool
+	cloud                    bool
+	loglevel                 int
+	rewardsInterval          int64
+	reserved_domains         string
+	maturityTime             int64
+	delegRewardsMaturityTime int64
+	votingDeadline           int64
+	fundingDeadline          int64
+	timeoutcommit            int64
 }
 
 func init() {
@@ -158,6 +160,7 @@ func init() {
 	testnetCmd.Flags().Int64Var(&testnetArgs.rewardsInterval, "rewards_interval", 1, "Block rewards interval")
 	testnetCmd.Flags().StringVar(&testnetArgs.reserved_domains, "reserved_domains", "", "Directory which contains Reserved domains list")
 	testnetCmd.Flags().Int64Var(&testnetArgs.maturityTime, "maturity_time", 109200, "Set Maturity time for staking")
+	testnetCmd.Flags().Int64Var(&testnetArgs.delegRewardsMaturityTime, "deleg_rewards_maturity_time", 109200, "Set Maturity time for delegation rewards")
 	testnetCmd.Flags().Int64Var(&testnetArgs.fundingDeadline, "funding_deadline", 75001, "Set Maturity time for staking")
 	testnetCmd.Flags().Int64Var(&testnetArgs.votingDeadline, "voting_deadline", 150000, "Set Maturity time for staking")
 	testnetCmd.Flags().Int64Var(&testnetArgs.timeoutcommit, "timeout_commit", 1000, "Set timecommit for blocks")
@@ -560,6 +563,11 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 		MaturityTime:            args.maturityTime,
 	}
 
+	// network delegation
+	delegOption := network_delegation.Options{
+		RewardsMaturityTime: args.delegRewardsMaturityTime,
+	}
+
 	// evidence
 	evidenceOption := evidence.Options{
 		MinVotesRequired: 2,
@@ -699,6 +707,7 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 			ONSOptions:      onsOption,
 			PropOptions:     propOpt,
 			StakingOptions:  stakingOption,
+			DelegOptions:    delegOption,
 			EvidenceOptions: evidenceOption,
 			RewardOptions:   rewardOpt,
 		},

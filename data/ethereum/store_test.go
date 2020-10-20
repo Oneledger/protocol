@@ -29,7 +29,7 @@ func init() {
 
 	db := db.NewDB("test", db.MemDBBackend, "")
 	cs = storage.NewState(storage.NewChainState("balance", db))
-	store = NewTrackerStore("test", cs)
+	store = NewTrackerStore("test", "testfail", "testsucc", cs)
 }
 
 func TestTrackerStore_Get(t *testing.T) {
