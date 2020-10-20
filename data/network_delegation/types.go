@@ -3,6 +3,7 @@ package network_delegation
 import (
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
+	"math/big"
 )
 
 type DelegationPrefixType int
@@ -32,6 +33,20 @@ type State struct {
 	ActiveList  []Delegator        `json:"active_list"`
 	MatureList  []Delegator        `json:"mature_list"`
 	PendingList []PendingDelegator `json:"pending_list"`
+}
+
+type DelegationRewardCtx struct {
+	TotalRewards    *balance.Amount
+	DelegationPower *big.Int
+	TotalPower      *big.Int
+	Height          int64
+	ProposerAddress keys.Address
+}
+
+type DelegationRewardResponse struct {
+	DelegationRewards *balance.Amount
+	ProposerReward    *balance.Amount
+	Commission        *balance.Amount
 }
 
 func (prefix DelegationPrefixType) GetJSONPrefix() string {

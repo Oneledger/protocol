@@ -2,8 +2,11 @@ package network_delegation
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/pkg/errors"
+	abciTypes "github.com/tendermint/tendermint/abci/types"
+	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
@@ -28,6 +31,10 @@ func NewDelegRewardStore(prefix string, state *storage.State) *DelegRewardStore 
 func (drs *DelegRewardStore) WithState(state *storage.State) *DelegRewardStore {
 	drs.state = state
 	return drs
+}
+
+func (drs *DelegRewardStore) GetState() *storage.State {
+	return drs.state
 }
 
 // Add rewards balance
@@ -65,7 +72,7 @@ func (drs *DelegRewardStore) Withdraw(delegator keys.Address, amount *balance.Am
 
 // Get pending withdrawn rewards
 func (drs *DelegRewardStore) GetPendingRewards(delegator keys.Address, height, blocks int64) (pdRewards *DelegPendingRewards, err error) {
-	pdRewards = &DelegPendingRewards{Address: delegator}
+	pdRewards = &DelegPendingRewards{Address: delegator, Rewards: []*PendingRewards{}}
 	for h := height; h < height+blocks; h++ {
 		key := drs.getPendingRewardsKey(h, delegator)
 		var amt *balance.Amount
@@ -83,8 +90,14 @@ func (drs *DelegRewardStore) GetPendingRewards(delegator keys.Address, height, b
 	return
 }
 
-// Mature, if any, all delegators' pending rewards at a specific height
-func (drs *DelegRewardStore) MaturePendingRewards(height int64) {
+// Mature, if any, all delegators' pending withdrawal at a specific height
+func (drs *DelegRewardStore) MaturePendingRewards(height int64) (event abciTypes.Event, any bool) {
+	event.Type = "deleg_rewards"
+	event.Attributes = append(event.Attributes, kv.Pair{
+		Key:   []byte("height"),
+		Value: []byte(strconv.FormatInt(height, 10)),
+	})
+
 	drs.iteratePD(height, func(delegator keys.Address, amt *balance.Amount) bool {
 		// clear pending amount
 		key := drs.getPendingRewardsKey(height, delegator)
@@ -95,9 +108,16 @@ func (drs *DelegRewardStore) MaturePendingRewards(height int64) {
 		// increase matured amount
 		if !amt.Equals(balance.AmtZero) {
 			err = drs.addMaturedRewards(delegator, amt)
+			event.Attributes = append(event.Attributes, kv.Pair{
+				Key:   []byte(delegator.String()),
+				Value: []byte(amt.String()),
+			})
 		}
 		return err != nil
 	})
+
+	any = len(event.Attributes) > 1
+	return
 }
 
 // Get matured(finalizable) rewards

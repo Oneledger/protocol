@@ -2,11 +2,13 @@ package accounts
 
 import (
 	"fmt"
+	"os"
+	"strconv"
+	"testing"
+
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/stretchr/testify/assert"
-	"os"
-	"testing"
 )
 
 const (
@@ -27,7 +29,7 @@ func init() {
 		if err != nil {
 			break
 		}
-		account, err := NewAccount(chain.ETHEREUM, string(i), &priv, &pub)
+		account, err := NewAccount(chain.ETHEREUM, strconv.FormatInt(int64(i), 10), &priv, &pub)
 		if err != nil {
 			break
 		}
@@ -35,7 +37,7 @@ func init() {
 	}
 
 	for k := 0; k < numAddresses; k++ {
-		passwords = append(passwords, "password"+string(k))
+		passwords = append(passwords, "password"+strconv.FormatInt(int64(k), 10))
 	}
 
 	walletKeyStore, err = NewWalletKeyStore(path)
@@ -80,7 +82,7 @@ func TestWalletKeyStore_ListAddresses(t *testing.T) {
 	assert.Equal(t, nil, err)
 
 	for i := 0; i < numAddresses; i++ {
-		fmt.Println("address" + string(i) + ": " + addresses[i].Humanize())
+		fmt.Println("address" + strconv.FormatInt(int64(i), 10) + ": " + addresses[i].Humanize())
 	}
 }
 

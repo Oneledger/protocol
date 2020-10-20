@@ -2,6 +2,7 @@ package network_delegation
 
 import (
 	"encoding/json"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/Oneledger/protocol/data/balance"
@@ -34,12 +35,12 @@ func (n AddNetworkDelegation) Tags() kv.Pairs {
 		Key:   []byte("tx.type"),
 		Value: []byte(n.Type().String()),
 	}
-	tag2 := kv.Pair{
+	tag3 := kv.Pair{
 		Key:   []byte("tx.delegationAddress"),
 		Value: n.DelegationAddress.Bytes(),
 	}
 
-	tags = append(tags, tag, tag2)
+	tags = append(tags, tag, tag3)
 	return tags
 }
 
@@ -139,7 +140,9 @@ func runNetworkDelegate(ctx *action.Context, tx action.RawTx) (bool, action.Resp
 	}
 
 	//Add balance to delegation
-	err = ctx.NetwkDelegators.Deleg.WithPrefix(network_delegation.ActiveType).Set(delegate.DelegationAddress, &coin)
+	currentDelegation, _ := ctx.NetwkDelegators.Deleg.WithPrefix(network_delegation.ActiveType).Get(delegate.DelegationAddress)
+	newCoin := currentDelegation.Plus(coin)
+	err = ctx.NetwkDelegators.Deleg.WithPrefix(network_delegation.ActiveType).Set(delegate.DelegationAddress, &newCoin)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, balance.ErrBalanceErrorAddFailed, delegate.Tags(), err)
 	}

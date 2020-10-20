@@ -3,9 +3,11 @@ package governance
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/Oneledger/protocol/data/network_delegation"
 	"os"
+	"strconv"
 	"sync"
+
+	"github.com/Oneledger/protocol/data/network_delegation"
 
 	"github.com/Oneledger/protocol/data/delegation"
 	"github.com/Oneledger/protocol/data/evidence"
@@ -99,13 +101,13 @@ func (st *Store) Get(key string, optKey string) ([]byte, error) {
 		panic(errors.Wrap(err, "Unable to get Last Update Height"))
 	}
 	// Get the Options from the last update Height
-	versionedKey := storage.StoreKey(string(luh) + storage.DB_PREFIX + key)
+	versionedKey := storage.StoreKey(strconv.FormatInt(luh, 10) + storage.DB_PREFIX + key)
 	prefixKey := append(st.prefix, versionedKey...)
 	return st.state.Get(prefixKey)
 }
 
 func (st *Store) Set(key string, value []byte) error {
-	versionedKey := storage.StoreKey(string(st.height) + storage.DB_PREFIX + key)
+	versionedKey := storage.StoreKey(strconv.FormatInt(st.height, 10) + storage.DB_PREFIX + key)
 	prefixKey := append(st.prefix, versionedKey...)
 	err := st.state.Set(prefixKey, value)
 	return err
@@ -179,6 +181,10 @@ func (st *Store) SetAllLUH() error {
 		return err
 	}
 	err = st.SetLUH(LAST_UPDATE_HEIGHT_EVIDENCE)
+	if err != nil {
+		return err
+	}
+	err = st.SetLUH(LAST_UPDATE_HEIGHT_NETWK_DELEG)
 	if err != nil {
 		return err
 	}

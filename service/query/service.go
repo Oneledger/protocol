@@ -2,10 +2,9 @@ package query
 
 import (
 	"encoding/hex"
-	net_delg "github.com/Oneledger/protocol/data/network_delegation"
-	"strings"
-
+	netwkDeleg "github.com/Oneledger/protocol/data/network_delegation"
 	"github.com/Oneledger/protocol/data/rewards"
+	"strings"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
@@ -28,6 +27,7 @@ type Service struct {
 	validators      *identity.ValidatorStore
 	witnesses       *identity.WitnessStore
 	delegators      *delegation.DelegationStore
+	netwkDelegators *netwkDeleg.MasterStore
 	govern          *governance.Store
 	ons             *ons.DomainStore
 	feePool         *fees.Store
@@ -36,7 +36,6 @@ type Service struct {
 	governance      *governance.Store
 	logger          *log.Logger
 	txTypes         *[]action.TxTypeDescribe
-	netwkDelegators *net_delg.MasterStore
 }
 
 func Name() string {
@@ -44,8 +43,7 @@ func Name() string {
 }
 
 func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencies *balance.CurrencySet, validators *identity.ValidatorStore, witnesses *identity.WitnessStore,
-	domains *ons.DomainStore, delegators *delegation.DelegationStore, govern *governance.Store, feePool *fees.Store, proposalMaster *governance.ProposalMasterStore,
-	rewardMaster *rewards.RewardMasterStore, logger *log.Logger, txTypes *[]action.TxTypeDescribe, netwkDelegators *net_delg.MasterStore) *Service {
+	domains *ons.DomainStore, delegators *delegation.DelegationStore, netwkDelegators *netwkDeleg.MasterStore, govern *governance.Store, feePool *fees.Store, proposalMaster *governance.ProposalMasterStore, rewardMaster *rewards.RewardMasterStore, logger *log.Logger, txTypes *[]action.TxTypeDescribe) *Service {
 	return &Service{
 		name:            "query",
 		ext:             ctx,
@@ -54,6 +52,7 @@ func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencie
 		validators:      validators,
 		witnesses:       witnesses,
 		delegators:      delegators,
+		netwkDelegators: netwkDelegators,
 		govern:          govern,
 		ons:             domains,
 		feePool:         feePool,
@@ -62,7 +61,6 @@ func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencie
 		logger:          logger,
 		txTypes:         txTypes,
 		governance:      govern,
-		netwkDelegators: netwkDelegators,
 	}
 }
 
