@@ -1,36 +1,18 @@
 from __future__ import print_function
 
-import subprocess
-import os
-import json
 import time
 
+from base import valDict, malicious
 from sdk.actions import (
-    ListValidators,
-    ByzantineFault_Requests,
-    NodeID,
     GetBlockHeight,
     GetFrozenMap,
 )
-
-from sdk.rpc_call import (
-    node_0,
-    node_1,
-    node_2,
-    node_3,
-)
-
 from sdk.cmd_call import (
-    GetNodeCreds,
-    Account_Add,
-    ByzantineFault_Allegation,
-    Send,
-    GetNodeKey,
-    ByzantineFault_Vote,
     KillNode,
 )
-
-from base import valDict, malicious
+from sdk.rpc_call import (
+    node_1,
+)
 
 
 def test_release():
@@ -58,7 +40,7 @@ def test_release():
     fMap = GetFrozenMap()
     assert valDict['1']['address'] in fMap, 'Validator %s not frozen' % malicious
 
-    print("Test for release successfully passed!")
+    print("Validator Frozen successfully passed!")
 
 
 if __name__ == "__main__":

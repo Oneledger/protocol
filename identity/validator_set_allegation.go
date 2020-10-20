@@ -74,7 +74,7 @@ func (vs *ValidatorStore) CheckMaliciousValidators(es *evidence.EvidenceStore, g
 				if plusDiff > vs.lastHeight {
 					continue
 				}
-				logger.Infof("Found validator with missed required votes: %s\n", validator.Address)
+				logger.Detailf("Found validator with missed required votes: %s\n", validator.Address)
 				lvh, err := es.CreateSuspiciousValidator(
 					baddr, evidence.MISSED_REQUIRED_VOTES,
 					vs.lastHeight, vs.lastBlockTime)
@@ -165,7 +165,7 @@ func (vs *ValidatorStore) ExecuteAllegationTracker(ctx *ValidatorContext, active
 				logger.Errorf("Failed to create suspicious validator: %s\n", err)
 				continue
 			}
-			logger.Infof("Suspicious validator created: %s\n", sv.Address)
+			logger.Detailf("Suspicious validator created: %s\n", sv.Address)
 
 			// taking malicoius validator data
 			addrHuman := ar.MaliciousAddress.Humanize()
@@ -221,9 +221,9 @@ func (vs *ValidatorStore) ExecuteAllegationTracker(ctx *ValidatorContext, active
 					logger.Errorf("Failed to add balance on bounty program: %s\n", err)
 					continue
 				}
-				logger.Infof("Successfully added bounty coin to bounty address: %s\n", bountyAddress.Humanize())
+				logger.Detailf("Successfully added bounty coin to bounty address: %s\n", bountyAddress.Humanize())
 			} else {
-				logger.Infof("Nothing to withdraw from addr on bounty program: %s\n", bountyAddress.Humanize())
+				logger.Detailf("Nothing to withdraw from addr on bounty program: %s\n", bountyAddress.Humanize())
 			}
 			//processedValidators[ar.MaliciousAddress.Humanize()] = true
 			addrToDelete = append(addrToDelete, requestID)

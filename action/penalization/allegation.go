@@ -135,6 +135,10 @@ func runAllegationTransaction(ctx *action.Context, tx action.RawTx) (bool, actio
 		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrWrongTxType, al.Tags(), err)
 	}
 
+	if al.BlockHeight > ctx.Header.Height {
+		return helpers.LogAndReturnFalse(ctx.Logger, evidence.ErrInvalidHeight, al.Tags(), err)
+	}
+
 	if ctx.EvidenceStore.IsFrozenValidator(al.MaliciousAddress) {
 		return helpers.LogAndReturnFalse(ctx.Logger, evidence.ErrFrozenValidator, al.Tags(), err)
 	}

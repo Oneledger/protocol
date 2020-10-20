@@ -154,7 +154,6 @@ func (es *EvidenceStore) CreateSuspiciousValidator(validatorAddress keys.Address
 }
 
 func (es *EvidenceStore) UpdateSuspiciousValidator(lvh *LastValidatorHistory) error {
-	fmt.Println("Updating validator", lvh)
 	dat, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(lvh)
 	if err != nil {
 		return err

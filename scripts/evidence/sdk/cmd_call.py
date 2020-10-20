@@ -5,7 +5,7 @@ import time
 
 import psutil
 
-from .rpc_call import devnet
+from sdk import devnet
 
 devnull = open(os.devnull, 'wb')
 
@@ -107,6 +107,25 @@ def ByzantineFault_Vote(node, request_id, address, choice, password):
 def KillNode(node):
     args = [
         "pgrep", "-f", node,
+    ]
+    process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=devnull)
+    process.wait()
+    output = process.stdout.read()
+    pid = output.strip()
+    if not pid.isdigit():
+        return False
+
+    pr = psutil.Process(int(pid))
+    pr.terminate()
+    result = pr.wait(timeout=2)
+    if not result:
+        return True
+    return False
+
+
+def StartNode(node, node_1_log):
+    args = [
+        'olfullnode', 'node', '--root', node, '>>', node_1_log, "2>&1 &"
     ]
     process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=devnull)
     process.wait()

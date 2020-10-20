@@ -1,8 +1,7 @@
 package tx
 
 import (
-	"github.com/google/uuid"
-
+	"fmt"
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/penalization"
 	"github.com/Oneledger/protocol/action/staking"
@@ -20,6 +19,7 @@ import (
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/serialize"
 	codes "github.com/Oneledger/protocol/status_codes"
+	"github.com/google/uuid"
 )
 
 func Name() string {
@@ -199,7 +199,7 @@ func (svc *Service) Vote(args client.VoteRequest, reply *client.VoteReply) error
 		return codes.ErrBadOwner
 	}
 
-	svc.logger.Infof("Vote transaction for address - %s\n", validator.Address)
+	svc.logger.Detailf("Vote transaction for address - %s\n", validator.Address)
 
 	allegation := penalization.AllegationVote{
 		Address:   validator.Address,
@@ -312,6 +312,10 @@ func (svc *Service) Allegation(args client.AllegationRequest, reply *client.Alle
 
 func (svc *Service) Release(args client.ReleaseRequest, reply *client.ReleaseReply) error {
 	validator, err := svc.validators.Get(args.Address)
+	svc.validators.Iterate(func(addr keys.Address, validator *identity.Validator) bool {
+		fmt.Println("Validator :", validator.Address.String())
+		return false
+	})
 	if err != nil {
 		svc.logger.Errorf("validator for address %s not found\n", args.Address)
 		return codes.ErrBadOwner

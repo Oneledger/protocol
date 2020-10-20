@@ -23,6 +23,7 @@ node_1 = os.path.join(devnet, "1-Node")
 node_2 = os.path.join(devnet, "2-Node")
 node_3 = os.path.join(devnet, "3-Node")
 node_4 = os.path.join(devnet, "4-Node")
+node_1_log = os.path.join(node_1, "olfullnode.log")
 
 headers = {
     "Content-Type": "application/json",

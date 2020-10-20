@@ -77,16 +77,16 @@ func (rtx releaseTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, er
 }
 
 func (rtx releaseTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (ok bool, result action.Response) {
-	ctx.Logger.Debug("Processing 'release' transaction for ProcessCheck", tx)
+	ctx.Logger.Detail("Processing 'release' transaction for ProcessCheck", tx)
 	ok, result = runReleaseTransaction(ctx, tx)
-	ctx.Logger.Debug("Result 'release' transaction for ProcessCheck", ok, result)
+	ctx.Logger.Detail("Result 'release' transaction for ProcessCheck", ok, result)
 	return
 }
 
 func (rtx releaseTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (ok bool, result action.Response) {
-	ctx.Logger.Debug("Processing 'release' transaction for ProcessDeliver", tx)
+	ctx.Logger.Detail("Processing 'release' transaction for ProcessDeliver", tx)
 	ok, result = runReleaseTransaction(ctx, tx)
-	ctx.Logger.Debug("Result 'release' transaction for ProcessDeliver", ok, result)
+	ctx.Logger.Detail("Result 'release' transaction for ProcessDeliver", ok, result)
 	return
 }
 
