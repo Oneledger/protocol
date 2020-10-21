@@ -287,6 +287,12 @@ func (app *App) setupState(stateBytes []byte) error {
 		return errors.Wrap(err, "error setup network delegation data")
 	}
 
+	//Setup Delegators
+	err = app.Context.netwkDelegators.Rewards.WithState(app.Context.deliver).LoadState(&initial.DelegatorRew)
+	if err != nil {
+		return errors.Wrap(err, "error setting up network delegation reward data")
+	}
+
 	app.Context.deliver.Write()
 	return nil
 }

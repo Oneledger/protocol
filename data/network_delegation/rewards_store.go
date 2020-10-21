@@ -3,6 +3,7 @@ package network_delegation
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
@@ -223,6 +224,36 @@ func (drs *DelegRewardStore) iteratePD(height int64, fn func(delegator keys.Addr
 	)
 }
 
+func (drs *DelegRewardStore) iterateAllPD(fn func(height int64, delegator keys.Address, amt *balance.Amount) bool) bool {
+	pfxStr := fmt.Sprintf("%spending_", string(drs.prefix))
+	prefix := storage.StoreKey(pfxStr)
+	return drs.state.IterateRange(
+		prefix,
+		storage.Rangefix(string(prefix)),
+		true,
+		func(key, value []byte) bool {
+			keyArr := strings.Split(string(key), storage.DB_PREFIX)
+			addr := &keys.Address{}
+			err := addr.UnmarshalText([]byte(keyArr[len(keyArr)-1]))
+			if err != nil {
+				return true
+			}
+			height, err := strconv.ParseInt(keyArr[len(keyArr)-2], 10, 64)
+			if err != nil {
+				return true
+			}
+
+			amt := balance.NewAmount(0)
+			err = drs.szlr.Deserialize(value, amt)
+			if err != nil {
+				logger.Error("failed to deserialize delegator pending rewards amount")
+				return true
+			}
+			return fn(height, *addr, amt)
+		},
+	)
+}
+
 // Key for delegator rewards balance
 func (drs *DelegRewardStore) getRewardsBalanceKey(delegator keys.Address) []byte {
 	key := fmt.Sprintf("%sbalance_%s", string(drs.prefix), delegator)
@@ -280,4 +311,77 @@ func (drs *DelegRewardStore) addMaturedRewards(delegator keys.Address, amount *b
 
 	err = drs.set(key, amt.Plus(*amount))
 	return err
+}
+
+//---------------------------------- Save Delegation Reward Store -------------------------------------
+func (drs *DelegRewardStore) SaveState() (*RewardState, bool) {
+	balanceKey := string(storage.Prefix("balance"))
+	matureKey := string(storage.Prefix("mature"))
+
+	//Populate Current Balances
+	var balanceList []Reward
+	drs.iterate(balanceKey, func(delegator keys.Address, amt *balance.Amount) bool {
+		reward := Reward{
+			Amount:  amt,
+			Address: delegator,
+		}
+		balanceList = append(balanceList, reward)
+		return false
+	})
+
+	var matureList []Reward
+	//Populate Mature Balances
+	drs.iterate(matureKey, func(delegator keys.Address, amt *balance.Amount) bool {
+		reward := Reward{
+			Amount:  amt,
+			Address: delegator,
+		}
+		matureList = append(matureList, reward)
+		return false
+	})
+
+	var pendingList []PendingReward
+	//Populate Pending Balances
+	drs.iterateAllPD(func(height int64, delegator keys.Address, amt *balance.Amount) bool {
+		pendingRew := PendingReward{
+			Amount:  amt,
+			Address: delegator,
+			Height:  height,
+		}
+		pendingList = append(pendingList, pendingRew)
+		return false
+	})
+
+	return &RewardState{
+		BalanceList: balanceList,
+		MatureList:  matureList,
+		PendingList: pendingList,
+	}, true
+}
+
+//__________________________________ Load Delegation Reward Store -------------------------------------
+func (drs *DelegRewardStore) LoadState(state *RewardState) error {
+	for _, v := range state.BalanceList {
+		err := drs.AddRewardsBalance(v.Address, v.Amount)
+		if err != nil {
+			return err
+		}
+	}
+	for _, v := range state.MatureList {
+		err := drs.addMaturedRewards(v.Address, v.Amount)
+		if err != nil {
+			return err
+		}
+	}
+	for _, v := range state.PendingList {
+		height := v.Height - drs.state.Version()
+		if height <= 0 {
+			continue
+		}
+		err := drs.addPendingRewards(v.Address, v.Amount, height)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
