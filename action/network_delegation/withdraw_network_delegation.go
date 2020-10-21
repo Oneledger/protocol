@@ -97,7 +97,7 @@ func runWithdrawNetworkDelegation(ctx *action.Context, tx action.RawTx) (bool, a
 		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrUnserializable, withdraw.Tags(), err)
 	}
 
-	// Check if delegation address has funds
+	// Check if withdraw amount is valid
 	coin := withdraw.Amount.ToCoinWithBase(ctx.Currencies)
 	if !coin.IsValid() {
 		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrInvalidAmount, withdraw.Tags(), errors.New("Coin is not valid"))
