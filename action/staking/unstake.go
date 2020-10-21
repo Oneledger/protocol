@@ -88,9 +88,6 @@ func (us unstakeTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, err
 		return false, err
 	}
 
-	if ctx.EvidenceStore.CheckRequestExists(ust.ValidatorAddress) {
-		return false, evidence.ErrRequestAlreadyExists
-	}
 	val, err := ctx.Validators.Get(ust.ValidatorAddress)
 	if err == nil && !val.StakeAddress.Equal(ust.StakeAddress) {
 		return false, action.ErrStakeAddressMismatch
@@ -137,6 +134,14 @@ func runCheckUnstake(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 	unstake := identity.Unstake{
 		Address: ust.ValidatorAddress,
 		Amount:  ust.Stake.Value,
+	}
+	val, err := ctx.Validators.Get(ust.ValidatorAddress)
+	if err != nil {
+		return false, action.Response{Log: err.Error()}
+	}
+
+	if ctx.EvidenceStore.CheckRequestExists(ust.ValidatorAddress) && val.Staking.Equals(ust.Stake.Value) {
+		return false, action.Response{Log: evidence.ErrRequestAlreadyExists.Error()}
 	}
 
 	height := ctx.Header.GetHeight()
