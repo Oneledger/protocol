@@ -88,6 +88,9 @@ func (us unstakeTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, err
 		return false, err
 	}
 
+	if ctx.EvidenceStore.CheckRequestExists(ust.ValidatorAddress) {
+		return false, evidence.ErrRequestAlreadyExists
+	}
 	val, err := ctx.Validators.Get(ust.ValidatorAddress)
 	if err == nil && !val.StakeAddress.Equal(ust.StakeAddress) {
 		return false, action.ErrStakeAddressMismatch

@@ -11,4 +11,5 @@ var (
 	ErrNonFrozenValidator     = codes.ProtocolError{codes.TxErrEvidenceError, "error non frozen validator"}
 	ErrNonActiveValidator     = codes.ProtocolError{codes.TxErrEvidenceError, "non active validator"}
 	ErrInvalidHeight          = codes.ProtocolError{codes.TxErrEvidenceError, "error invalid height"}
+	ErrRequestAlreadyExists   = codes.ProtocolError{codes.TxErrEvidenceError, "allegation request already exists against this address"}
 )

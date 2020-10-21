@@ -1,10 +1,10 @@
 import os.path as path
 import sys
 
-sdkcom_path = path.abspath(path.join(path.dirname(__file__), "../.."))
-sys.path.append(sdkcom_path)
+sdkcom_p = path.abspath(path.join(path.dirname(__file__), "../.."))
+sys.path.append(sdkcom_p)
 
-from sdkcom import *
+from sdkcom_p import *
 
 
 class NetWorkDelegate:
@@ -56,7 +56,7 @@ class NetWorkDelegate:
         }
 
         resp = rpc_call('tx.NetworkUndelegate', req)
-        print resp
+        print (resp)
         return resp["result"]["rawTx"]
 
     def send_network_Delegate(self):

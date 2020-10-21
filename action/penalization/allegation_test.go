@@ -199,7 +199,7 @@ func TestAllegationTx_ProcessDeliver_OK(t *testing.T) {
 
 		ID := "test"
 		ctx = assemblyCtxData("OLT", 1000)
-		tx := assemblyAllegationData(ID, 2, "test")
+		tx := assemblyAllegationData(ID, 0, "test")
 
 		ar, err := ctx.EvidenceStore.GetAllegationRequest(ID)
 		assert.Nil(t, ar)
@@ -217,7 +217,7 @@ func TestAllegationTx_ProcessDeliver_OK(t *testing.T) {
 		ar, err = ctx.EvidenceStore.GetAllegationRequest(ID)
 		assert.NoError(t, err)
 		assert.Equal(t, "test", ar.ProofMsg)
-		assert.Equal(t, int64(2), ar.BlockHeight)
+		assert.Equal(t, int64(0), ar.BlockHeight)
 
 		at, _ = ctx.EvidenceStore.GetAllegationTracker()
 		assert.Equal(t, 1, len(at.Requests))

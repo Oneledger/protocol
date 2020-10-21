@@ -176,7 +176,7 @@ func (ar *AllegationRequest) String() string {
 	return strings.TrimSpace(fmt.Sprintf(`ID: %s
 ReporterAddress: %s
 MaliciousAddress: %s
-Votes %s
+Votes %v
 `, ar.ID, ar.ReporterAddress, ar.MaliciousAddress, ar.Votes))
 }
 

@@ -105,21 +105,21 @@ func (atx allegationTx) Validate(ctx *action.Context, tx action.SignedTx) (bool,
 }
 
 func (atx allegationTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (ok bool, result action.Response) {
-	ctx.Logger.Detailf("Processing 'allegation' transaction for ProcessCheck", tx)
+	ctx.Logger.Detail("Processing 'allegation' transaction for ProcessCheck", tx)
 	ok, result = runAllegationTransaction(ctx, tx)
-	ctx.Logger.Detailf("Result 'allegation' transaction for ProcessCheck", ok, result)
+	ctx.Logger.Detail("Result 'allegation' transaction for ProcessCheck", ok, result)
 	return
 }
 
 func (atx allegationTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (ok bool, result action.Response) {
-	ctx.Logger.Detailf("Processing 'allegation' transaction for ProcessDeliver", tx)
+	ctx.Logger.Detail("Processing 'allegation' transaction for ProcessDeliver", tx)
 	ok, result = runAllegationTransaction(ctx, tx)
-	ctx.Logger.Detailf("Result 'allegation' transaction for ProcessDeliver", ok, result)
+	ctx.Logger.Detail("Result 'allegation' transaction for ProcessDeliver", ok, result)
 	return
 }
 
 func (atx allegationTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
-	ctx.Logger.Detailf("Processing 'allegation' Transaction for ProcessFee", signedTx)
+	ctx.Logger.Detail("Processing 'allegation' Transaction for ProcessFee", signedTx)
 	r := &Allegation{}
 	err := r.Unmarshal(signedTx.Data)
 	if err != nil {

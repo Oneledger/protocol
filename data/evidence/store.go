@@ -1,7 +1,6 @@
 package evidence
 
 import (
-	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -136,10 +135,10 @@ func (es *EvidenceStore) IterateRequests(fn func(ar *AllegationRequest) bool) (s
 	)
 }
 
-func (es *EvidenceStore) CheckRequestExists(new *AllegationRequest) bool {
+func (es *EvidenceStore) CheckRequestExists(new keys.Address) bool {
 	requestAlreadyExists := false
 	es.IterateRequests(func(ar *AllegationRequest) bool {
-		if ar.MaliciousAddress.Equal(new.MaliciousAddress) {
+		if ar.MaliciousAddress.Equal(new) {
 			requestAlreadyExists = true
 		}
 		return false
@@ -218,8 +217,8 @@ func (es *EvidenceStore) PerformAllegation(validatorAddress keys.Address, malici
 	}
 
 	ar := NewAllegationRequest(ID, validatorAddress, maliciousAddress, blockHeight, proofMsg)
-	if es.CheckRequestExists(ar) {
-		return errors.New(fmt.Sprintf("allegation for this validator already exists : %s", ar.String()))
+	if es.CheckRequestExists(ar.MaliciousAddress) {
+		return ErrRequestAlreadyExists
 	}
 	err := es.SetAllegationRequest(ar)
 	if err != nil {
