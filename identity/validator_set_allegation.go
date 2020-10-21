@@ -57,7 +57,6 @@ func (vs *ValidatorStore) CheckMaliciousValidators(es *evidence.EvidenceStore, g
 
 			key := append(vs.prefix, baddr...)
 			data := vs.store.GetVersioned(vs.lastHeight-1, key)
-			fmt.Println("Found Malicious validator", addr, " : ", votes)
 			if len(data) == 0 {
 				logger.Errorf("Previous state data not found for address: %s", baddr)
 				continue

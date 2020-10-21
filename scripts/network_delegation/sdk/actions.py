@@ -4,7 +4,7 @@ import sys
 sdkcom_p = path.abspath(path.join(path.dirname(__file__), "../.."))
 sys.path.append(sdkcom_p)
 
-from sdkcom_p import *
+from sdkcom import *
 
 
 class NetWorkDelegate:

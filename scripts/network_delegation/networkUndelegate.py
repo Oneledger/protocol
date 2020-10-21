@@ -1,4 +1,4 @@
-from scripts.sdkcom import *
+
 
 from sdk import *
 
