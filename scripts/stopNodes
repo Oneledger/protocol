@@ -3,6 +3,6 @@
 pids=`pgrep -f "olfullnode node.*"`
 if ! [ -z "$pids" ]
 then
-	sudo pkill -f "olfullnode node.*"
+	pkill -f "olfullnode node.*"
 	killed=true
 fi
