@@ -45,13 +45,27 @@ func (drs *DelegRewardStore) AddRewardsBalance(delegator keys.Address, amount *b
 		return err
 	}
 
+	keyTotal := drs.getTotalRewardsKey()
+	amtTotal, err := drs.get(keyTotal)
+	if err != nil {
+		return err
+	}
+
 	err = drs.set(key, amt.Plus(*amount))
+	err = drs.set(keyTotal, amtTotal.Plus(*amount))
 	return err
 }
 
 // Get rewards balance
 func (drs *DelegRewardStore) GetRewardsBalance(delegator keys.Address) (amt *balance.Amount, err error) {
 	key := drs.getRewardsBalanceKey(delegator)
+	amt, err = drs.get(key)
+	return
+}
+
+// Get total rewards
+func (drs *DelegRewardStore) GetTotalRewards() (amt *balance.Amount, err error) {
+	key := drs.getTotalRewardsKey()
 	amt, err = drs.get(key)
 	return
 }
@@ -226,6 +240,12 @@ func (drs *DelegRewardStore) iteratePD(height int64, fn func(delegator keys.Addr
 // Key for delegator rewards balance
 func (drs *DelegRewardStore) getRewardsBalanceKey(delegator keys.Address) []byte {
 	key := fmt.Sprintf("%sbalance_%s", string(drs.prefix), delegator)
+	return storage.StoreKey(key)
+}
+
+// Key for total rewards
+func (drs *DelegRewardStore) getTotalRewardsKey() []byte {
+	key := fmt.Sprintf("%stotal_rewards", string(drs.prefix))
 	return storage.StoreKey(key)
 }
 
