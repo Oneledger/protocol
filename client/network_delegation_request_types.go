@@ -41,6 +41,13 @@ type GetDelegRewardsRequest struct {
 	InclPending bool         `json:"inclPending"`
 }
 
+type GetTotalDelegRewardsRequest struct{}
+
+type GetTotalDelegRewardsReply struct {
+	TotalRewards balance.Amount `json:"totalRewards"`
+	Height       int64          `json:"height"`
+}
+
 type GetDelegRewardsReply struct {
 	Balance balance.Amount                       `json:"balance"`
 	Pending []*network_delegation.PendingRewards `json:"pending"`

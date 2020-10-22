@@ -290,6 +290,17 @@ def query_rewards(delegator):
     return result
 
 
+def query_total_rewards():
+    req = {}
+    resp = rpc_call('query.GetTotalDelegRewards', req)
+    print json.dumps(resp, indent=4)
+    if "result" in resp:
+        result = resp["result"]
+    else:
+        result = ""
+    return result
+
+
 def query_full_balance(address):
     req = {
         "address": address
