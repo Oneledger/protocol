@@ -45,7 +45,6 @@ func (vs *ValidatorStore) CheckMaliciousValidators(es *evidence.EvidenceStore, g
 		vs.maliciousValidators[lvh.Address.String()] = lvh
 		return false
 	})
-
 	// update found addresses with missed votes
 	for addr, votes := range cv.Addresses {
 		baddr := keys.Address{}
@@ -126,7 +125,7 @@ func (vs *ValidatorStore) ExecuteAllegationTracker(ctx *ValidatorContext, active
 		ar, err := ctx.EvidenceStore.GetAllegationRequest(requestID)
 		decisionMade := false
 		if err != nil {
-			logger.Errorf("Failed to retrieve allegation request: %s\n", err)
+			//logger.Errorf("Failed to retrieve allegation request: %s\n", err)
 			continue
 		}
 
