@@ -136,13 +136,7 @@ func runCheckUnstake(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		Amount:  ust.Stake.Value,
 	}
 
-	// Validator not allowed unstake if there is a allegation against him ,does not matter what amount
-	//_, err = ctx.Validators.Get(ust.ValidatorAddress)
-	//if err != nil {
-	//	return false, action.Response{Log: err.Error()}
-	//}
-
-	if ctx.EvidenceStore.CheckRequestExists(ust.ValidatorAddress) { //&& val.Staking.Equals(ust.Stake.Value)
+	if ctx.EvidenceStore.CheckRequestExists(ust.ValidatorAddress) {
 		return false, action.Response{Log: evidence.ErrRequestAlreadyExists.Error()}
 	}
 
