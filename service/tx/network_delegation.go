@@ -91,7 +91,7 @@ func (s *Service) WithdrawDelegRewards(args client.WithdrawDelegRewardsRequest, 
 	uuidNew, _ := uuid.NewUUID()
 	feeAmount := s.feeOpt.MinFee()
 	tx := &action.RawTx{
-		Type: action.WITHDRAW_NETWORK_DELEGATE,
+		Type: action.REWARDS_WITHDRAW_NETWORK_DELEGATE,
 		Data: data,
 		Fee: action.Fee{
 			Price: action.Amount{Currency: "OLT", Value: *feeAmount.Amount},
@@ -128,6 +128,41 @@ func (s *Service) FinalizeDelegRewards(args client.FinalizeRewardsRequest, reply
 	uuidNew, _ := uuid.NewUUID()
 	tx := &action.RawTx{
 		Type: action.REWARDS_FINALIZE_NETWORK_DELEGATE,
+		Data: data,
+		Fee:  fee,
+		Memo: uuidNew.String(),
+	}
+
+	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
+	if err != nil {
+		return codes.ErrSerialization
+	}
+
+	*reply = client.CreateTxReply{RawTx: packet}
+
+	return nil
+}
+
+func (s *Service) WithDrawNetworkDelegation(args client.NetworkDelegateRequest, reply *client.CreateTxReply) error {
+
+	withdrawNetworkDelegation := nwd.WithdrawNetworkDelegation{
+		DelegationAddress: args.DelegationAddress,
+		Amount:            args.Amount,
+	}
+
+	data, err := withdrawNetworkDelegation.Marshal()
+	if err != nil {
+		return err
+	}
+
+	uuidNew, _ := uuid.NewUUID()
+	fee := action.Fee{
+		Price: args.GasPrice,
+		Gas:   args.Gas,
+	}
+
+	tx := &action.RawTx{
+		Type: action.WITHDRAW_NETWORK_DELEGATION,
 		Data: data,
 		Fee:  fee,
 		Memo: uuidNew.String(),

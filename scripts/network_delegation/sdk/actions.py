@@ -58,6 +58,23 @@ class NetWorkDelegate:
         print resp
         return resp["result"]["rawTx"]
 
+    def _network_withdraw(self, amount):
+        req = {
+            "delegationAddress": self.delegationaddress,
+            "amount": {
+                "currency": "OLT",
+                "value": convertBigInt(amount),
+            },
+            "gasPrice": {
+                "currency": "OLT",
+                "value": "1000000000",
+            },
+            "gas": 40000,
+        }
+        resp = rpc_call('tx.WithDrawNetworkDelegation', req)
+        print resp
+        return resp["result"]["rawTx"]
+
     def send_network_Delegate(self):
         # create Tx
         raw_txn = self._network_Delegate()
@@ -115,6 +132,23 @@ class NetWorkDelegate:
         print json.dumps(resp, indent=4)
         result = resp["result"]
         return result
+
+    def send_network_withdraw(self, amount):
+        # createTx
+        raw_txn = self._network_withdraw(amount)
+
+        # sign Tx
+        signed = sign(raw_txn, self.delegationaddress, self.keypath)
+
+        # broadcast Tx
+        result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
+        if "ok" in result:
+            if not result["ok"]:
+                print "Send withdraw delegation Failed : ", result
+                sys.exit(-1)
+            else:
+                self.txHash = "0x" + result["txHash"]
+                print "################### withdraw delegation"
 
 
 class WithdrawRewards:
@@ -259,6 +293,19 @@ def query_rewards(delegator):
 def query_total_rewards():
     req = {}
     resp = rpc_call('query.GetTotalDelegRewards', req)
+    print json.dumps(resp, indent=4)
+    if "result" in resp:
+        result = resp["result"]
+    else:
+        result = ""
+    return result
+
+
+def query_full_balance(address):
+    req = {
+        "address": address
+    }
+    resp = rpc_call('query.Balance', req)
     print json.dumps(resp, indent=4)
     if "result" in resp:
         result = resp["result"]

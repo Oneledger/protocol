@@ -189,7 +189,7 @@ func (svc *Service) GetTotalDelegRewards(req client.GetTotalDelegRewardsRequest,
 
 	*resp = client.GetTotalDelegRewardsReply{
 		TotalRewards: *total,
-		Height:  height,
+		Height:       height,
 	}
 	return nil
 }
