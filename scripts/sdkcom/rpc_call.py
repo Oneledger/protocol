@@ -10,7 +10,13 @@ url_3 = "http://127.0.0.1:26611/jsonrpc"
 url_4 = "http://127.0.0.1:26614/jsonrpc"
 url_5 = "http://127.0.0.1:26617/jsonrpc"
 
-devnet = os.path.join(os.environ['OLDATA'], "devnet")
+oltest = os.getenv('OLTEST')
+oldata = os.environ['OLDATA']
+devnet = os.path.join(oldata, "devnet")
+loadtest = os.path.join(oldata, "loadtest")
+fullnode_dev = os.path.join(devnet, "4-Node")
+fullnode_prod = os.path.join(oldata, "fullnode")
+
 node_0 = os.path.join(devnet, "0-Node")
 node_1 = os.path.join(devnet, "1-Node")
 node_2 = os.path.join(devnet, "2-Node")
