@@ -29,16 +29,16 @@ func (w WithdrawNetworkDelegation) Type() action.Type {
 func (w WithdrawNetworkDelegation) Tags() kv.Pairs {
 	tags := make([]kv.Pair, 0)
 
-	tag := kv.Pair{
+	tag1 := kv.Pair{
 		Key:   []byte("tx.type"),
 		Value: []byte(w.Type().String()),
 	}
-	tag3 := kv.Pair{
+	tag2 := kv.Pair{
 		Key:   []byte("tx.delegationAddress"),
 		Value: w.DelegationAddress.Bytes(),
 	}
 
-	tags = append(tags, tag, tag3)
+	tags = append(tags, tag1, tag2)
 	return tags
 }
 
@@ -134,5 +134,5 @@ func runWithdrawNetworkDelegation(ctx *action.Context, tx action.RawTx) (bool, a
 		return helpers.LogAndReturnFalse(ctx.Logger, balance.ErrBalanceErrorAddFailed, withdraw.Tags(), err)
 	}
 
-	return helpers.LogAndReturnTrue(ctx.Logger, withdraw.Tags(), "Success")
+	return helpers.LogAndReturnTrue(ctx.Logger, withdraw.Tags(), "delegation withdraw success")
 }
