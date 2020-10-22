@@ -11,12 +11,10 @@ update:
 # Build and install a copy in bin
 #
 install:
-	pip install -r requirements.txt
 	go install -i github.com/Oneledger/protocol/cmd/...
 
 # Enable the clevelDB
 install_c:
-	pip install -r requirements.txt
 	CGO_ENABLED=1 CGO_LDFLAGS="-lsnappy" go install -tags "cleveldb" github.com/Oneledger/protocol/cmd/...
 
 #

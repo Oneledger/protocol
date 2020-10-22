@@ -590,6 +590,8 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 		AllegationDecimals:   100,
 	}
 
+	// Cutting from current stake or cutting from begining stake
+
 	//var initialAddrs []keys.Address
 	initAddrIndex := 0
 	//for _, addr := range args.initialTokenHolders {
