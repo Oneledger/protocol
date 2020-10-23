@@ -1,7 +1,9 @@
 package evidence
 
 import (
+	"bytes"
 	"fmt"
+	"sort"
 	"sync"
 	"time"
 
@@ -173,10 +175,6 @@ func (es *EvidenceStore) IsFrozenValidator(validatorAddress keys.Address) bool {
 	if err != nil {
 		return false
 	}
-
-	if err != nil {
-		return false
-	}
 	return lvh.IsFrozen()
 }
 
@@ -264,7 +262,9 @@ func (es *EvidenceStore) Vote(requestID string, voteAddress keys.Address, choice
 		Choice:  choice,
 	}
 	ar.Votes = append(ar.Votes, vote)
-
+	sort.Slice(ar.Votes, func(i, j int) bool {
+		return bytes.Compare(ar.Votes[i].Address.Bytes(), ar.Votes[j].Address.Bytes()) < 0
+	})
 	err = es.SetAllegationRequest(ar)
 	if err != nil {
 		return err
