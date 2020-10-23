@@ -229,7 +229,7 @@ func (es *EvidenceStore) PerformAllegation(validatorAddress keys.Address, malici
 	}
 
 	at.Requests[ID] = true
-
+	es.CleanTracker()
 	err = es.SetAllegationTracker(at)
 	if err != nil {
 		return err
