@@ -39,8 +39,8 @@ class TxLoad(threading.Thread):
         if not path.exists(self.test_path):
             os.mkdir(self.test_path)
         self.flog = open(self.log_file, "a+")
-        self.log("{}_thread_{} setting up...".format(self.name, self.tid))
         self.node_account = nodeAccount(self.cfg.node_root)
+        self.log("{}_thread_{} setting up..., test_path={}".format(self.name, self.tid, self.test_path))
 
     def run(self):
         self.log("{}_thread_{} started".format(self.name, self.tid))
