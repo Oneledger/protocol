@@ -1,8 +1,8 @@
-import sys
-import time
+import sys, time, subprocess
 
-from rpc_call import *
+from common import *
 from constant import *
+from rpc_call import *
 
 def sign(raw_tx, address, keypath):
     resp = rpc_call('owner.SignWithSecureAddress',
@@ -59,11 +59,25 @@ def query_balance(address):
         result = ""
     return int(float(result))
 
-def wait_for(blocks, url=url_0):
-    resp = rpc_call('query.ListValidators', {}, url)
+def createAccount(node, funds=0, funder="", pswd="1234"):
+    args = ['olclient', 'account', 'add', "--password", pswd]
+    process = subprocess.Popen(args, cwd=node, stdout=subprocess.PIPE)
+    process.wait()
+    output = process.stdout.readlines()
+    newaccount = output[1].split(":")[1].strip()[3:]
+
+    if funds > 0:
+        sendFunds(funder, newaccount, str(funds), pswd, node)
+        balance = query_balance(newaccount)
+        if balance != funds:
+            sys.exit(-1)
+    return newaccount
+
+def wait_for(blocks):
+    resp = rpc_call('query.ListValidators', {})
     hstart = resp["result"]["height"]
     hcur = hstart
     while hcur - hstart < blocks:
         time.sleep(0.5)
-        resp = rpc_call('query.ListValidators', {}, url)
+        resp = rpc_call('query.ListValidators', {})
         hcur = resp["result"]["height"]

@@ -3,9 +3,9 @@ import os.path as path
 import time, datetime
 import threading
 
-from rpc_call import oltest, loadtest
-from common import *
+from config import oltest, loadtest
 from constant import *
+from common import *
 
 class TestConfig:
     def __init__(self, node_root, init_fund, numof_txs, interval=INTERVAL_NORMAL):

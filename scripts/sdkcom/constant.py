@@ -11,7 +11,7 @@ class bcolors:
     
 # load test intervals, in milliseconds
 INTERVAL_NORMAL = 20
-INTERVAL_MAXSPEED = 10
+INTERVAL_SLOW = 1000
 
 # broadcast mode
 TxCommit = 1

@@ -1,6 +1,4 @@
-import subprocess
-import time
-from actions import *
+import os, json, subprocess
 
 def addValidatorWalletAccounts(node):
     args = ['olclient', 'show_node_id']
@@ -32,19 +30,14 @@ def nodeAccount(node):
     address = output[0].split(",")[1].split(":")[1].strip()
     return address
 
-def createAccount(node, funds=0, funder="", pswd="1234"):
-    args = ['olclient', 'account', 'add', "--password", pswd]
+def sdkIPAddress(node):
+    args = ['olfullnode', 'status']
     process = subprocess.Popen(args, cwd=node, stdout=subprocess.PIPE)
     process.wait()
     output = process.stdout.readlines()
-    newaccount = output[1].split(":")[1].strip()[3:]
-
-    if funds > 0:
-        sendFunds(funder, newaccount, str(funds), pswd, node)
-        balance = query_balance(newaccount)
-        if balance != funds:
-            sys.exit(-1)
-    return newaccount
+    sdkport = output[2].split(":")[1].strip().split(" ")
+    ip_addr = sdkport[2].strip() + ":" + sdkport[0].strip()
+    return ip_addr
 
 def sendFunds(party, counterparty, amount, password, node):
     args = ['olclient', 'send', "--password", password, "--party", party, "--counterparty", counterparty, "--amount",

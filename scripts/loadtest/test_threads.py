@@ -16,7 +16,7 @@ class TestThreads:
             addValidatorWalletAccounts(fullnode_dev)
         else:
             # in devnet, please manually create node account and send funds
-            pass
+            addValidatorWalletAccounts(fullnode_prod)
 
         # setup each thread
         for i, t in enumerate(self.threads):

@@ -6,12 +6,12 @@ from network_delegation import *
 # for local
 def add_threads_dev(threads, interval):
     # Delegate, 2 threads
-    threads.add_threads(DelegateTxLoad.dev(3, interval))
+    threads.add_threads(DelegateTxLoad.dev(1, interval))
 
 # for devnet
 def add_threads_prod(threads, interval):
     # Delegate, 2 threads
-    threads.add_threads(DelegateTxLoad.prod(3, interval))
+    threads.add_threads(DelegateTxLoad.prod(2, interval))
 
 def abort_loadtest(signal, frame):
     threads.stop_threads()
