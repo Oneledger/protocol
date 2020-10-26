@@ -28,7 +28,6 @@ class NetWorkDelegate:
         }
 
         resp = rpc_call('tx.AddNetworkDelegation', req)
-        print resp
         return resp["result"]["rawTx"]
 
     def query_delegation(self):
@@ -38,7 +37,7 @@ class NetWorkDelegate:
         resp = rpc_call('query.ListDelegation', req)
         print resp
         result = resp["result"]
-        # print json.dumps(resp, indent=4)
+        # prmodeps(resp, indent=4)
         return result["delegationStats"]
 
     def _network_undelegate(self, amount):
@@ -76,7 +75,7 @@ class NetWorkDelegate:
         print resp
         return resp["result"]["rawTx"]
 
-    def send_network_Delegate(self):
+    def send_network_Delegate(self, mode=TxCommit):
         # create Tx
         raw_txn = self._network_Delegate()
 
@@ -84,13 +83,13 @@ class NetWorkDelegate:
         signed = sign(raw_txn, self.delegationaddress, self.keypath)
 
         # broadcast Tx
-        result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
+        result = broadcast(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'], mode)
         if "ok" in result:
             if not result["ok"]:
-                sys.exit(-1)
+                print "################### delegation failed"
             else:
                 print "################### delegation added"
-                return result["txHash"]
+        return result["log"]
 
     def send_network_undelegate(self, amount):
         # createTx
@@ -222,37 +221,6 @@ class FinalizeRewards:
                 sys.exit(-1)
             else:
                 print "################### finalize rewards sent"
-
-
-def sign(raw_tx, address, keypath):
-    resp = rpc_call('owner.SignWithSecureAddress',
-                    {"rawTx": raw_tx, "address": address, "password": "1234", "keypath": keypath})
-    print resp
-    return resp["result"]
-
-
-def broadcast_commit(raw_tx, signature, pub_key):
-    resp = rpc_call('broadcast.TxCommit', {
-        "rawTx": raw_tx,
-        "signature": signature,
-        "publicKey": pub_key,
-    })
-    print resp
-    if "result" in resp:
-        return resp["result"]
-    else:
-        return resp
-
-
-def broadcast_sync(raw_tx, signature, pub_key):
-    resp = rpc_call('broadcast.TxSync', {
-        "rawTx": raw_tx,
-        "signature": signature,
-        "publicKey": pub_key,
-    })
-    print resp
-    return resp["result"]
-
 
 def query_total(only_active):
     req = {

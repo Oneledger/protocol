@@ -60,6 +60,9 @@ utest:
 		github.com/Oneledger/protocol/action/evidence \
 		-coverprofile a.out
 
+loadtest: reset
+	python scripts/loadtest/run_tests.py
+
 coverage:
 	go tool cover -html=a.out -o cover.html
 

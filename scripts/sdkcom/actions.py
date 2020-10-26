@@ -1,23 +1,12 @@
-import time
+import sys, time, subprocess
 
+from common import *
+from constant import *
 from rpc_call import *
-
-
-class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
-
 
 def sign(raw_tx, address, keypath):
     resp = rpc_call('owner.SignWithSecureAddress',
                     {"rawTx": raw_tx, "address": address, "password": "1234", "keypath": keypath})
-    print resp
     return resp["result"]
 
 
@@ -27,12 +16,10 @@ def broadcast_commit(raw_tx, signature, pub_key):
         "signature": signature,
         "publicKey": pub_key,
     })
-    print resp
     if "result" in resp:
         return resp["result"]
     else:
         return resp
-
 
 def broadcast_sync(raw_tx, signature, pub_key):
     resp = rpc_call('broadcast.TxSync', {
@@ -42,6 +29,23 @@ def broadcast_sync(raw_tx, signature, pub_key):
     })
     return resp["result"]
 
+def broadcast_async(raw_tx, signature, pub_key):
+    resp = rpc_call('broadcast.TxAsync', {
+        "rawTx": raw_tx,
+        "signature": signature,
+        "publicKey": pub_key,
+    })
+    return resp["result"]
+
+def broadcast(raw_tx, signature, pub_key, mode=TxCommit):
+    if mode == TxCommit:
+        return broadcast_commit(raw_tx, signature, pub_key)
+    elif mode == TxSync:
+        return broadcast_sync(raw_tx, signature, pub_key)
+    elif mode == TxAsync:
+        return broadcast_async(raw_tx, signature, pub_key)
+    else:
+        return broadcast_commit(raw_tx, signature, pub_key)
 
 def query_balance(address):
     req = {
@@ -56,12 +60,25 @@ def query_balance(address):
         result = ""
     return int(float(result))
 
+def createAccount(node, funds=0, funder="", pswd="1234"):
+    args = ['olclient', 'account', 'add', "--password", pswd]
+    process = subprocess.Popen(args, cwd=node, stdout=subprocess.PIPE)
+    process.wait()
+    output = process.stdout.readlines()
+    newaccount = output[1].split(":")[1].strip()[3:]
 
-def wait_for(blocks, url=url_0):
-    resp = rpc_call('query.ListValidators', {}, url)
+    if funds > 0:
+        sendFunds(funder, newaccount, str(funds), pswd, node)
+        balance = query_balance(newaccount)
+        if balance != funds:
+            sys.exit(-1)
+    return newaccount
+
+def wait_for(blocks):
+    resp = rpc_call('query.ListValidators', {})
     hstart = resp["result"]["height"]
     hcur = hstart
     while hcur - hstart < blocks:
         time.sleep(0.5)
-        resp = rpc_call('query.ListValidators', {}, url)
+        resp = rpc_call('query.ListValidators', {})
         hcur = resp["result"]["height"]

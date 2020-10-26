@@ -50,7 +50,7 @@ if __name__ == "__main__":
         withdraw.send(True)
         pending.append(str(amt) + '0' * 18)
         total += amt
-        wait_for(1)
+        wait_for(2)
     total = str(total) + '0' * 18
 
     # query and check pending withdrawal
