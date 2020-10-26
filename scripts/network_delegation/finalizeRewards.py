@@ -1,5 +1,3 @@
-import sys
-import time
 
 from sdk import *
 
@@ -135,5 +133,3 @@ if __name__ == "__main__":
     total = query_total_rewards()
     check_total_rewards(total['totalRewards'], int(res['balance']) * pow(10, 18) + int(res1['balance']) * pow(10, 18))
     print bcolors.OKGREEN + "#### Successfully tested query total rewards" + bcolors.ENDC
-
-

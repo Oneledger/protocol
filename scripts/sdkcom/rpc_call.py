@@ -1,5 +1,6 @@
 import json
 import os
+
 import requests
 
 from config import *
@@ -31,6 +32,7 @@ def rpc_call(method, params, url=url_fullnode):
     resp = json.loads(response.text)
     return resp
 
+
 def tx_by_hash(hash):
     params = {"hash": hash}
 
@@ -41,6 +43,7 @@ def tx_by_hash(hash):
 
     resp = json.loads(response.text)
     return resp
+
 
 def convertBigInt(value):
     return str(value)

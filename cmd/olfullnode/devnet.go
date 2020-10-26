@@ -559,7 +559,7 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 	stakingOption := delegation.Options{
 		MinSelfDelegationAmount: *balance.NewAmount(3000000),
 		MinDelegationAmount:     *balance.NewAmount(1),
-		TopValidatorCount:       8,
+		TopValidatorCount:       4,
 		MaturityTime:            args.maturityTime,
 	}
 
@@ -570,8 +570,8 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 
 	// evidence
 	evidenceOption := evidence.Options{
-		MinVotesRequired: 800,
-		BlockVotesDiff:   1000,
+		MinVotesRequired: 2,
+		BlockVotesDiff:   4,
 
 		PenaltyBasePercentage: 30,
 		PenaltyBaseDecimals:   100,
@@ -582,13 +582,15 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 		PenaltyBurnPercentage: 50,
 		PenaltyBurnDecimals:   100,
 
-		ValidatorReleaseTime:    5,
+		ValidatorReleaseTime:    0,
 		ValidatorVotePercentage: 50,
 		ValidatorVoteDecimals:   100,
 
 		AllegationPercentage: 50,
 		AllegationDecimals:   100,
 	}
+
+	// Cutting from current stake or cutting from begining stake
 
 	//var initialAddrs []keys.Address
 	initAddrIndex := 0

@@ -14,7 +14,7 @@ install:
 	go install -i github.com/Oneledger/protocol/cmd/...
 
 # Enable the clevelDB
-install_c:  
+install_c:
 	CGO_ENABLED=1 CGO_LDFLAGS="-lsnappy" go install -tags "cleveldb" github.com/Oneledger/protocol/cmd/...
 
 #
@@ -49,6 +49,7 @@ utest:
 		github.com/Oneledger/protocol/data/governance \
 		github.com/Oneledger/protocol/data/rewards \
 		github.com/Oneledger/protocol/data/network_delegation \
+		github.com/Oneledger/protocol/data/evidence \
 		github.com/Oneledger/protocol/action/transfer \
 		github.com/Oneledger/protocol/serialize \
 		github.com/Oneledger/protocol/utils \
@@ -56,6 +57,7 @@ utest:
 		github.com/Oneledger/protocol/identity \
 		github.com/Oneledger/protocol/app \
 		github.com/Oneledger/protocol/action/staking \
+		github.com/Oneledger/protocol/action/evidence \
 		-coverprofile a.out
 
 loadtest: reset
@@ -102,6 +104,19 @@ govtest: reset
 	@./scripts/stopNodes
 
 #
+# run evidence tests
+#
+evidence: reset
+	python scripts/evidence/allegation_loadtest.py
+	make reset_no_install
+	python scripts/evidence/test_allegation_no.py
+	make reset_no_install
+	python scripts/evidence/test_allegation_yes.py
+	make reset_no_install
+	python scripts/evidence/test_release.py
+	@./scripts/stopNodes
+
+#
 # run staking tests
 #
 stakingtest: reset
@@ -145,6 +160,11 @@ alltest: reset
 	@./scripts/stopNodes
 
 reset: install_c
+	make reset_no_install
+# 	@./scripts/testapply
+# 	@./scripts/testsend
+
+reset_no_install:
 	@./scripts/stopNodes
 	@./scripts/resetDev
 	@./scripts/startDev

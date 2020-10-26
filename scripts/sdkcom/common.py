@@ -1,5 +1,6 @@
 import os, json, subprocess
 
+
 def addValidatorWalletAccounts(node):
     args = ['olclient', 'show_node_id']
     process = subprocess.Popen(args, cwd=node, stdout=subprocess.PIPE)
@@ -38,6 +39,7 @@ def sdkIPAddress(node):
     sdkport = output[2].split(":")[1].strip().split(" ")
     ip_addr = sdkport[2].strip() + ":" + sdkport[0].strip()
     return ip_addr
+
 
 def sendFunds(party, counterparty, amount, password, node):
     args = ['olclient', 'send', "--password", password, "--party", party, "--counterparty", counterparty, "--amount",

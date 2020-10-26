@@ -98,6 +98,21 @@ func (c *ServiceClient) ListAccountAddresses() (out ListAccountAddressesReply, e
 	return
 }
 
+func (c *ServiceClient) Release(req ReleaseRequest) (out ReleaseReply, err error) {
+	err = c.Call("tx.Release", req, &out)
+	return
+}
+
+func (c *ServiceClient) Allegation(req AllegationRequest) (out AllegationReply, err error) {
+	err = c.Call("tx.Allegation", req, &out)
+	return
+}
+
+func (c *ServiceClient) Vote(req VoteRequest) (out VoteReply, err error) {
+	err = c.Call("tx.Vote", req, &out)
+	return
+}
+
 func (c *ServiceClient) Stake(req StakeRequest) (out StakeReply, err error) {
 	err = c.Call("tx.Stake", req, &out)
 	return
@@ -149,6 +164,11 @@ func (c *ServiceClient) CreateRawSendPool(req SendPoolTxRequest) (out *CreateTxR
 /* Governance */
 func (c *ServiceClient) VoteProposal(req VoteProposalRequest) (out *VoteProposalReply, err error) {
 	err = c.Call("tx.VoteProposal", req, &out)
+	return
+}
+
+func (c *ServiceClient) VoteRequests(req VoteRequestRequest) (out VoteRequestReply, err error) {
+	err = c.Call("query.VoteRequests", req, &out)
 	return
 }
 

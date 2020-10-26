@@ -23,6 +23,7 @@ import (
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/delegation"
+	"github.com/Oneledger/protocol/data/evidence"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
@@ -376,12 +377,33 @@ func getInitialState(args *genesisArgument, nodeList []node, option ethchain.Cha
 	initAddrIndex := 0
 
 	// staking
-	// staking
 	stakingOption := delegation.Options{
 		MinSelfDelegationAmount: *balance.NewAmount(3000000),
 		MinDelegationAmount:     *balance.NewAmount(3000000),
 		TopValidatorCount:       32,
 		MaturityTime:            150000,
+	}
+
+	// evidence
+	evidenceOption := evidence.Options{
+		MinVotesRequired: 2,
+		BlockVotesDiff:   4,
+
+		PenaltyBasePercentage: 30,
+		PenaltyBaseDecimals:   100,
+
+		PenaltyBountyPercentage: 50,
+		PenaltyBountyDecimals:   100,
+
+		PenaltyBurnPercentage: 50,
+		PenaltyBurnDecimals:   100,
+
+		ValidatorReleaseTime:    5,
+		ValidatorVotePercentage: 50,
+		ValidatorVoteDecimals:   100,
+
+		AllegationPercentage: 50,
+		AllegationDecimals:   100,
 	}
 
 	for _, node := range nodeList {
@@ -487,11 +509,12 @@ func getInitialState(args *genesisArgument, nodeList []node, option ethchain.Cha
 		Domains:    domains,
 		Fees:       fees_db,
 		Governance: governance.GovernanceState{
-			FeeOption:      feeOpt,
-			ETHCDOption:    option,
-			BTCCDOption:    btcOption,
-			ONSOptions:     onsOption,
-			StakingOptions: stakingOption,
+			FeeOption:       feeOpt,
+			ETHCDOption:     option,
+			BTCCDOption:     btcOption,
+			ONSOptions:      onsOption,
+			StakingOptions:  stakingOption,
+			EvidenceOptions: evidenceOption,
 		},
 	}
 }

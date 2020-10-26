@@ -1,9 +1,9 @@
 package tx
 
 import (
-	"github.com/google/uuid"
-
+	"fmt"
 	"github.com/Oneledger/protocol/action"
+	ev "github.com/Oneledger/protocol/action/evidence"
 	"github.com/Oneledger/protocol/action/staking"
 	"github.com/Oneledger/protocol/action/transfer"
 	"github.com/Oneledger/protocol/app/node"
@@ -11,6 +11,7 @@ import (
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/delegation"
+	"github.com/Oneledger/protocol/data/evidence"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
@@ -18,6 +19,7 @@ import (
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/serialize"
 	codes "github.com/Oneledger/protocol/status_codes"
+	"github.com/google/uuid"
 )
 
 func Name() string {
@@ -25,15 +27,16 @@ func Name() string {
 }
 
 type Service struct {
-	balances    *balance.Store
-	router      action.Router
-	accounts    accounts.Wallet
-	validators  *identity.ValidatorStore
-	govern      *governance.Store
-	delegators  *delegation.DelegationStore
-	feeOpt      *fees.FeeOption
-	logger      *log.Logger
-	nodeContext node.Context
+	balances      *balance.Store
+	router        action.Router
+	accounts      accounts.Wallet
+	validators    *identity.ValidatorStore
+	govern        *governance.Store
+	delegators    *delegation.DelegationStore
+	evidenceStore *evidence.EvidenceStore
+	feeOpt        *fees.FeeOption
+	logger        *log.Logger
+	nodeContext   node.Context
 }
 
 func NewService(
@@ -43,20 +46,22 @@ func NewService(
 	validators *identity.ValidatorStore,
 	govern *governance.Store,
 	delegators *delegation.DelegationStore,
+	evidenceStore *evidence.EvidenceStore,
 	feeOpt *fees.FeeOption,
 	nodeCtx node.Context,
 	logger *log.Logger,
 ) *Service {
 	return &Service{
-		balances:    balances,
-		router:      router,
-		nodeContext: nodeCtx,
-		accounts:    accounts,
-		validators:  validators,
-		govern:      govern,
-		delegators:  delegators,
-		feeOpt:      feeOpt,
-		logger:      logger,
+		balances:      balances,
+		router:        router,
+		nodeContext:   nodeCtx,
+		accounts:      accounts,
+		validators:    validators,
+		govern:        govern,
+		delegators:    delegators,
+		evidenceStore: evidenceStore,
+		feeOpt:        feeOpt,
+		logger:        logger,
 	}
 }
 
@@ -178,6 +183,182 @@ func (svc *Service) CreateRawSendPool(args client.SendPoolTxRequest, reply *clie
 	*reply = client.CreateTxReply{
 		RawTx: packet,
 	}
+
+	return nil
+}
+
+func (svc *Service) Vote(args client.VoteRequest, reply *client.VoteReply) error {
+	if svc.evidenceStore.IsFrozenValidator(args.Address) {
+		svc.logger.Error("got allegation validator", args.Address)
+		return evidence.ErrFrozenValidator
+	}
+
+	validator, err := svc.validators.Get(args.Address)
+	if err != nil {
+		svc.logger.Errorf("validator for address %s not found\n", args.Address)
+		return codes.ErrBadOwner
+	}
+
+	svc.logger.Detailf("Vote transaction for address - %s\n", validator.Address)
+
+	allegation := ev.AllegationVote{
+		Address:   validator.Address,
+		RequestID: args.RequestID,
+		Choice:    args.Choice,
+	}
+
+	data, err := allegation.Marshal()
+	if err != nil {
+		svc.logger.Error("error in serializing vote object", err)
+		return codes.ErrSerialization
+	}
+
+	uuidNew, _ := uuid.NewUUID()
+	feeAmount := svc.feeOpt.MinFee()
+
+	tx := action.RawTx{
+		Type: action.ALLEGATION_VOTE,
+		Data: data,
+		Fee: action.Fee{
+			Price: action.Amount{
+				Currency: "OLT",
+				Value:    *feeAmount.Amount,
+			},
+			Gas: 100000,
+		},
+		Memo: uuidNew.String(),
+	}
+
+	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
+	if err != nil {
+		svc.logger.Error("error in serializing send transaction", err)
+		return codes.ErrSerialization
+	}
+
+	*reply = client.VoteReply{RawTx: packet}
+
+	return nil
+}
+
+func (svc *Service) Allegation(args client.AllegationRequest, reply *client.AllegationReply) error {
+	mv, err := svc.validators.Get(args.MaliciousAddress)
+	if err != nil {
+		svc.logger.Errorf("malicious validator for address %s not found\n", args.MaliciousAddress)
+		return codes.ErrBadOwner
+	}
+
+	if svc.evidenceStore.IsFrozenValidator(mv.Address) {
+		svc.logger.Error("validator already frozen", mv.Address)
+		return evidence.ErrFrozenValidator
+	}
+
+	validator, err := svc.validators.Get(args.Address)
+	if err != nil {
+		svc.logger.Errorf("validator for address %s not found\n", args.Address)
+		return codes.ErrBadOwner
+	}
+
+	if svc.evidenceStore.IsFrozenValidator(validator.Address) {
+		svc.logger.Error("validator could no perform allegation while frosted", validator.Address)
+		return evidence.ErrFrozenValidator
+	}
+
+	requestID, err := svc.evidenceStore.GenerateRequestID()
+	if err != nil {
+		svc.logger.Errorf("failed to generate request ID\n")
+		return codes.ErrSerialization
+	}
+
+	allegation := ev.Allegation{
+		RequestID:        requestID,
+		ValidatorAddress: validator.Address,
+		MaliciousAddress: mv.Address,
+		BlockHeight:      args.BlockHeight,
+		ProofMsg:         args.ProofMsg,
+	}
+
+	data, err := allegation.Marshal()
+	if err != nil {
+		svc.logger.Error("error in serializing allegation object", err)
+		return codes.ErrSerialization
+	}
+
+	uuidNew, _ := uuid.NewUUID()
+	feeAmount := svc.feeOpt.MinFee()
+
+	tx := action.RawTx{
+		Type: action.ALLEGATION,
+		Data: data,
+		Fee: action.Fee{
+			Price: action.Amount{
+				Currency: "OLT",
+				Value:    *feeAmount.Amount,
+			},
+			Gas: 100000,
+		},
+		Memo: uuidNew.String(),
+	}
+
+	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
+	if err != nil {
+		svc.logger.Error("error in serializing send transaction", err)
+		return codes.ErrSerialization
+	}
+
+	*reply = client.AllegationReply{RawTx: packet}
+
+	return nil
+}
+
+func (svc *Service) Release(args client.ReleaseRequest, reply *client.ReleaseReply) error {
+	validator, err := svc.validators.Get(args.Address)
+	svc.validators.Iterate(func(addr keys.Address, validator *identity.Validator) bool {
+		fmt.Println("Validator :", validator.Address.String())
+		return false
+	})
+	if err != nil {
+		svc.logger.Errorf("validator for address %s not found\n", args.Address)
+		return codes.ErrBadOwner
+	}
+
+	if !svc.evidenceStore.IsFrozenValidator(validator.Address) {
+		svc.logger.Error("validator is not frozen", validator.Address)
+		return evidence.ErrNonFrozenValidator
+	}
+
+	release := ev.Release{
+		ValidatorAddress: validator.Address,
+	}
+
+	data, err := release.Marshal()
+	if err != nil {
+		svc.logger.Error("error in serializing release object", err)
+		return codes.ErrSerialization
+	}
+
+	uuidNew, _ := uuid.NewUUID()
+	feeAmount := svc.feeOpt.MinFee()
+
+	tx := action.RawTx{
+		Type: action.RELEASE,
+		Data: data,
+		Fee: action.Fee{
+			Price: action.Amount{
+				Currency: "OLT",
+				Value:    *feeAmount.Amount,
+			},
+			Gas: 100000,
+		},
+		Memo: uuidNew.String(),
+	}
+
+	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
+	if err != nil {
+		svc.logger.Error("error in serializing send transaction", err)
+		return codes.ErrSerialization
+	}
+
+	*reply = client.ReleaseReply{RawTx: packet}
 
 	return nil
 }

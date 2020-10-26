@@ -1,9 +1,8 @@
 import re
 import subprocess
-from os.path import dirname
-
 import sys
 import time
+from os.path import dirname
 
 from rpc_call import *
 
@@ -181,7 +180,7 @@ class Staking:
         # check if on list
 
         target_regex = r"Name " + str(node_number) + r"$"
-        match = re.search(target_regex, output[4])
+        match = re.search(target_regex, output[5])
         if ((match is None) and (on_list is True)) or ((match is not None) and (on_list is False)):
             print "olclient check validatorset failed validatorname"
             sys.exit(-1)
@@ -189,7 +188,7 @@ class Staking:
         # check target power in output
         if on_list is True:
             target_regex = r"Power " + str(target_power) + r"$"
-            match = re.search(target_regex, output[3])
+            match = re.search(target_regex, output[4])
             if match is None:
                 print "olclient check validatorset failed"
                 sys.exit(-1)

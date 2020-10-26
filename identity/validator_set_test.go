@@ -254,7 +254,7 @@ func TestValidatorStore_HandleUnstake(t *testing.T) {
 	//		Amount:   balance.NewAmount(1000),
 	//	}
 	//	unstake.Amount = *coin.Amount
-	//	err = vs.HandleUnstake(unstake)
+	//	err = vs.HandleUnstake(unstake, nil)
 	//	assert.Error(t, err)
 	//})
 }

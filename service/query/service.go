@@ -10,6 +10,7 @@ import (
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/delegation"
+	"github.com/Oneledger/protocol/data/evidence"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/ons"
@@ -28,6 +29,7 @@ type Service struct {
 	witnesses       *identity.WitnessStore
 	delegators      *delegation.DelegationStore
 	netwkDelegators *netwkDeleg.MasterStore
+	evidenceStore   *evidence.EvidenceStore
 	govern          *governance.Store
 	ons             *ons.DomainStore
 	feePool         *fees.Store
@@ -43,7 +45,7 @@ func Name() string {
 }
 
 func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencies *balance.CurrencySet, validators *identity.ValidatorStore, witnesses *identity.WitnessStore,
-	domains *ons.DomainStore, delegators *delegation.DelegationStore, netwkDelegators *netwkDeleg.MasterStore, govern *governance.Store, feePool *fees.Store, proposalMaster *governance.ProposalMasterStore, rewardMaster *rewards.RewardMasterStore, logger *log.Logger, txTypes *[]action.TxTypeDescribe) *Service {
+	domains *ons.DomainStore, delegators *delegation.DelegationStore, netwkDelegators *netwkDeleg.MasterStore, evidenceStore *evidence.EvidenceStore, govern *governance.Store, feePool *fees.Store, proposalMaster *governance.ProposalMasterStore, rewardMaster *rewards.RewardMasterStore, logger *log.Logger, txTypes *[]action.TxTypeDescribe) *Service {
 	return &Service{
 		name:            "query",
 		ext:             ctx,
@@ -53,6 +55,7 @@ func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencie
 		witnesses:       witnesses,
 		delegators:      delegators,
 		netwkDelegators: netwkDelegators,
+		evidenceStore:   evidenceStore,
 		govern:          govern,
 		ons:             domains,
 		feePool:         feePool,
@@ -116,18 +119,14 @@ func (svc *Service) ListValidators(_ client.ListValidatorsRequest, reply *client
 		return codes.ErrListValidators
 	}
 
-	stakingOptions, err := svc.govern.GetStakingOptions()
-	if err != nil {
-		svc.logger.Error("error to fetch staking options")
-		return codes.ErrListValidators
-	}
-
-	vMap := svc.validators.GetValidatorMap(stakingOptions)
+	vMap := svc.evidenceStore.GetValidatorMap()
+	fMap := svc.evidenceStore.GetFrozenMap()
 
 	*reply = client.ListValidatorsReply{
 		Validators: validators,
 		Height:     svc.balances.State.Version(),
 		VMap:       vMap,
+		FMap:       fMap,
 	}
 	return nil
 }
@@ -178,6 +177,24 @@ func (svc *Service) CurrencyBalance(req client.CurrencyBalanceRequest, resp *cli
 		Balance:  coin.Humanize(),
 		Height:   svc.balances.State.Version(),
 	}
+	return nil
+}
+
+func (svc *Service) VoteRequests(req client.VoteRequestRequest, resp *client.VoteRequestReply) error {
+	requests := make([]evidence.AllegationRequest, 0)
+
+	// TODO: Add filter for address
+	svc.evidenceStore.IterateRequests(func(ar *evidence.AllegationRequest) bool {
+		if len(req.Address) == 0 || ar.MaliciousAddress.Equal(req.Address) {
+			requests = append(requests, *ar)
+		}
+		return false
+	})
+
+	*resp = client.VoteRequestReply{
+		Requests: requests,
+	}
+
 	return nil
 }
 
