@@ -10,7 +10,7 @@ class DelegateTxLoad(TxLoad):
     def setup(self):
         super(DelegateTxLoad, self).setup()
         self.test_account = createAccount(node=self.cfg.node_root, funds=self.cfg.init_fund, funder=self.node_account)
-        self.tx = NetWorkDelegate(self.test_account, "10000", self.key_path)
+        self.tx = NetWorkDelegate(self.test_account, "1", self.key_path)
 
     def run_tx(self, i):
         super(DelegateTxLoad, self).run_tx(i)
