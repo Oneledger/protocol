@@ -9,7 +9,7 @@ class TestThreads:
     def add_threads(self, threads):
         self.threads.extend(threads)
 
-    def setup_threads(self):
+    def setup_threads(self, interval):
         # setup node account
         # automatically create node account for convenience
         if oltest == "1":
@@ -18,8 +18,9 @@ class TestThreads:
             addValidatorWalletAccounts(fullnode_prod)
 
         # setup each thread
+        thread_interval = interval / len(self.threads)
         for i, t in enumerate(self.threads):
-            t.setup()
+            t.setup(thread_interval)
 
     def run_threads(self):
         # start all threads

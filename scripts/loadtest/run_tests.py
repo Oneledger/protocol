@@ -4,20 +4,20 @@ from sdkcom import *
 from network_delegation import *
 
 # for local
-def add_threads_dev(threads, interval):
+def add_threads_dev(threads):
     # Delegate, 2 threads
-    threads.add_threads(DelegateTxLoad.dev(2, interval))
+    threads.add_threads(DelegateTxLoad.dev(2))
 
     # UnDelegate, 2 threads
-    threads.add_threads(UnDelegateTxLoad.dev(2, interval))
+    threads.add_threads(UnDelegateTxLoad.dev(2))
 
 # for devnet
 def add_threads_prod(threads, interval):
     # Delegate, 2 threads
-    threads.add_threads(DelegateTxLoad.prod(2, interval))
+    threads.add_threads(DelegateTxLoad.prod(2))
 
     # Delegate, 2 threads
-    threads.add_threads(UnDelegateTxLoad.prod(2, interval))
+    threads.add_threads(UnDelegateTxLoad.prod(2))
 
 def abort_loadtest(signal, frame):
     threads.stop_threads()
@@ -41,15 +41,15 @@ if __name__ == "__main__":
 
     # configuration based on environment
     if oltest == "1":
-        add_threads_dev(threads, interval)
+        add_threads_dev(threads)
     else:
-        add_threads_prod(threads, interval)
+        add_threads_prod(threads)
 
     # clean up test folder
     threads.clean()
 
     # setup threads before run
-    threads.setup_threads()
+    threads.setup_threads(interval)
 
     # run threads
     signal.signal(signal.SIGINT, abort_loadtest)

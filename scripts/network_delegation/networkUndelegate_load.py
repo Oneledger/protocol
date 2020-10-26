@@ -7,8 +7,8 @@ class UnDelegateTxLoad(TxLoad):
     def __init__(self, cfg, tid):
         super(UnDelegateTxLoad, self).__init__(cfg, tid, "UnDelegateTxLoad")
 
-    def setup(self):
-        super(UnDelegateTxLoad, self).setup()
+    def setup(self, interval):
+        super(UnDelegateTxLoad, self).setup(interval)
         self.test_account = createAccount(node=self.cfg.node_root, funds=self.cfg.init_fund, funder=self.node_account)
         self.tx = NetWorkDelegate(self.test_account, "100000", self.key_path)
         self.tx.send_network_Delegate(mode=TxCommit)
@@ -23,12 +23,10 @@ class UnDelegateTxLoad(TxLoad):
         super(UnDelegateTxLoad, self).stop()
 
     @classmethod
-    def dev(cls, numof_threads, interval):
-        cfg_dev.interval = interval
+    def dev(cls, numof_threads):
         return [UnDelegateTxLoad(cfg_dev, tid+1) for tid in range(numof_threads)]
 
     @classmethod
-    def prod(cls, numof_threads, interval):
-        cfg_prod.interval = interval
+    def prod(cls, numof_threads):
         return [UnDelegateTxLoad(cfg_prod, tid+1) for tid in range(numof_threads)]
     
