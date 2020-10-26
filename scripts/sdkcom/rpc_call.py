@@ -1,5 +1,6 @@
 import json
 import os
+
 import requests
 
 url_tmTx = "http://127.0.0.1:26600/tx"
@@ -27,6 +28,7 @@ headers = {
     "Accept": "application/json",
 }
 
+
 def rpc_call(method, params, url=url_0):
     payload = {
         "method": method,
@@ -43,6 +45,7 @@ def rpc_call(method, params, url=url_0):
     resp = json.loads(response.text)
     return resp
 
+
 def tx_by_hash(hash):
     params = {"hash": hash}
 
@@ -53,6 +56,7 @@ def tx_by_hash(hash):
 
     resp = json.loads(response.text)
     return resp
+
 
 def convertBigInt(value):
     return str(value)

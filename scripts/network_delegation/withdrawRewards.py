@@ -1,11 +1,10 @@
-import sys
-import time
-
 from sdk import *
+
 
 def delegate(node, account, amount):
     newDelegation = NetWorkDelegate(account, amount, node + "/keystore/")
     newDelegation.send_network_Delegate()
+
 
 def check_rewards(result, balance, matured, pending):
     if balance != '':
@@ -20,6 +19,7 @@ def check_rewards(result, balance, matured, pending):
         for i, amt in enumerate(pending):
             if amt != result['pending'][i]['amount']:
                 sys.exit(-1)
+
 
 if __name__ == "__main__":
     # create validator account
@@ -45,7 +45,7 @@ if __name__ == "__main__":
     pending = []
     total = 0
     for i in range(2):
-        amt = i+2
+        amt = i + 2
         withdraw = WithdrawRewards(delegator, amt, node_0 + "/keystore/")
         withdraw.send(True)
         pending.append(str(amt) + '0' * 18)

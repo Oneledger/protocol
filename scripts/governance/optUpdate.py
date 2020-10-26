@@ -32,7 +32,7 @@ if __name__ == "__main__":
     update = "feeOption.minFeeDecimal:10"
     updateGov(update, "fee", "id_" + str(randint(10000, 99999)), True)
 
-    update_param = 800
+    update_param = 8000
     update = "evidenceOptions.minVotesRequired:" + str(update_param)
     updateGov(update, "evidence", "id_" + str(randint(10000, 99999)), True)
 
@@ -40,11 +40,7 @@ if __name__ == "__main__":
     update = "onsOptions.perBlockFees:" + str(update_param)
     updateGov(update, "ons", "id_" + str(randint(10000, 99999)), True, False)
 
-    update_param = 10000
-    update = "evidenceOptions.blockVotesDiff:" + str(update_param)
-    updateGov(update, "evidence", "id_" + str(randint(10000, 99999)), False)
-
-    update_param = 1000
+    update_param = 11000
     update = "evidenceOptions.blockVotesDiff:" + str(update_param)
     updateGov(update, "evidence", "id_" + str(randint(10000, 99999)), True)
 

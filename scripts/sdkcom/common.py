@@ -1,6 +1,8 @@
 import subprocess
-import time
+import sys
+
 from actions import *
+
 
 def addValidatorWalletAccounts(node):
     args = ['olclient', 'show_node_id']
@@ -26,6 +28,7 @@ def addValidatorWalletAccounts(node):
     time.sleep(1)
     return output[1].split(":")[1].strip()[3:]
 
+
 def createAccount(node, funds=0, funder="", pswd="1234"):
     args = ['olclient', 'account', 'add', "--password", pswd]
     process = subprocess.Popen(args, cwd=node, stdout=subprocess.PIPE)
@@ -39,6 +42,7 @@ def createAccount(node, funds=0, funder="", pswd="1234"):
         if balance != funds:
             sys.exit(-1)
     return newaccount
+
 
 def sendFunds(party, counterparty, amount, password, node):
     args = ['olclient', 'send', "--password", password, "--party", party, "--counterparty", counterparty, "--amount",

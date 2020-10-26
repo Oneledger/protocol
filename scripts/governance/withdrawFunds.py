@@ -125,7 +125,7 @@ if __name__ == "__main__":
     print "#### THIS PROPOSAL BEFORE WITHDRAWING: ####"
     query_proposal(_encoded_pid)
 
-    # withdraw proposal funds---withdraw initial fund
+    print "#### WITHDRAWING: ####"
     withdraw_fund(_encoded_pid, _proposer, _withdraw_amount, _proposer)
     time.sleep(5)
 

@@ -82,6 +82,7 @@ const (
 	TxErrInsufficientFunds  = 300110
 	TxErrGasOverflow        = 300111
 	TxErrInvalidExtTx       = 300112
+	TxErrMaliciousValidator = 300113
 
 	ExternalErr                        = 400100
 	ExternalErrBitcoinTxNotFound       = 400101
@@ -184,6 +185,7 @@ const (
 	TxErrValidateGovState                 = 700156
 	TxErrGetStakingOptions                = 700158
 	TxErrInvalidOptions                   = 700159
+	TxErrEvidenceError                    = 700160
 
 	//Rewards Error
 	RewardsUnableToGetMaturedAmount = 800001

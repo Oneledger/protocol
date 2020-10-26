@@ -8,6 +8,7 @@ import (
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/evidence"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/identity"
 )
@@ -114,6 +115,7 @@ func (s stakeTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error)
 	if err != nil {
 		return false, action.ErrNotEnoughFund
 	}
+
 	return true, nil
 }
 
@@ -176,6 +178,10 @@ func runCheckStake(ctx *action.Context, tx action.RawTx) (bool, action.Response)
 	err := st.Unmarshal(tx.Data)
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
+	}
+
+	if ctx.EvidenceStore.IsFrozenValidator(st.ValidatorAddress) {
+		return false, action.Response{Log: evidence.ErrFrozenValidator.Error()}
 	}
 
 	stake := identity.Stake{
