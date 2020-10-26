@@ -3,7 +3,7 @@ package tx
 import (
 	"fmt"
 	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/action/penalization"
+	ev "github.com/Oneledger/protocol/action/evidence"
 	"github.com/Oneledger/protocol/action/staking"
 	"github.com/Oneledger/protocol/action/transfer"
 	"github.com/Oneledger/protocol/app/node"
@@ -201,7 +201,7 @@ func (svc *Service) Vote(args client.VoteRequest, reply *client.VoteReply) error
 
 	svc.logger.Detailf("Vote transaction for address - %s\n", validator.Address)
 
-	allegation := penalization.AllegationVote{
+	allegation := ev.AllegationVote{
 		Address:   validator.Address,
 		RequestID: args.RequestID,
 		Choice:    args.Choice,
@@ -269,7 +269,7 @@ func (svc *Service) Allegation(args client.AllegationRequest, reply *client.Alle
 		return codes.ErrSerialization
 	}
 
-	allegation := penalization.Allegation{
+	allegation := ev.Allegation{
 		RequestID:        requestID,
 		ValidatorAddress: validator.Address,
 		MaliciousAddress: mv.Address,
@@ -326,7 +326,7 @@ func (svc *Service) Release(args client.ReleaseRequest, reply *client.ReleaseRep
 		return evidence.ErrNonFrozenValidator
 	}
 
-	release := penalization.Release{
+	release := ev.Release{
 		ValidatorAddress: validator.Address,
 	}
 

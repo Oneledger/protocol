@@ -185,7 +185,7 @@ func (vs *ValidatorStore) ExecuteAllegationTracker(ctx *ValidatorContext, active
 				continue
 			}
 
-			// calculate penalization percent
+			// calculate evidence percent
 			penalizationAmt := new(big.Float).Mul(
 				amt.BigFloat(),
 				big.NewFloat(float64(options.PenaltyBasePercentage)),

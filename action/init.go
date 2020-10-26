@@ -22,7 +22,7 @@ const (
 	UNSTAKE  Type = 0x12
 	WITHDRAW Type = 0x13
 
-	//penalization
+	//evidence
 	RELEASE         Type = 0x61
 	ALLEGATION      Type = 0x62
 	ALLEGATION_VOTE Type = 0x63

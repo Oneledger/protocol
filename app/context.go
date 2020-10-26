@@ -21,10 +21,10 @@ import (
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/eth"
+	action_pen "github.com/Oneledger/protocol/action/evidence"
 	action_gov "github.com/Oneledger/protocol/action/governance"
 	action_netwkdeleg "github.com/Oneledger/protocol/action/network_delegation"
 	action_ons "github.com/Oneledger/protocol/action/ons"
-	action_pen "github.com/Oneledger/protocol/action/penalization"
 	action_rewards "github.com/Oneledger/protocol/action/rewards"
 	"github.com/Oneledger/protocol/action/staking"
 	"github.com/Oneledger/protocol/action/transfer"

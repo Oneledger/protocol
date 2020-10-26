@@ -1,4 +1,4 @@
-package penalization
+package evidence
 
 import (
 	"github.com/pkg/errors"
