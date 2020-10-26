@@ -75,7 +75,7 @@ class NetWorkDelegate:
         print resp
         return resp["result"]["rawTx"]
 
-    def send_network_Delegate(self, mode=TxCommit):
+    def send_network_Delegate(self, exit_on_err=True, mode=TxCommit):
         # create Tx
         raw_txn = self._network_Delegate()
 
@@ -87,11 +87,13 @@ class NetWorkDelegate:
         if "ok" in result:
             if not result["ok"]:
                 print "################### delegation failed"
+                if exit_on_err:
+                    exit(-1)
             else:
                 print "################### delegation added"
         return result["log"]
 
-    def send_network_undelegate(self, amount):
+    def send_network_undelegate(self, amount, exit_on_err=True, mode=TxCommit):
         # createTx
         raw_txn = self._network_undelegate(amount)
 
@@ -99,14 +101,16 @@ class NetWorkDelegate:
         signed = sign(raw_txn, self.delegationaddress, self.keypath)
 
         # broadcast Tx
-        result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
+        result = broadcast(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'], mode)
         if "ok" in result:
             if not result["ok"]:
                 print "Send undelegate Failed : ", result
-                sys.exit(-1)
+                if exit_on_err:
+                    exit(-1)
             else:
                 self.txHash = "0x" + result["txHash"]
                 print "################### undelegate"
+        return result["log"]
 
     def send_network_undelegate_shoud_fail(self, amount):
         # createTx

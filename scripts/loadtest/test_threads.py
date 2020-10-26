@@ -1,6 +1,6 @@
 import os, shutil
 import os.path as path
-from sdkcom import oltest, loadtest, fullnode_dev, addValidatorWalletAccounts
+from sdkcom import oltest, loadtest, fullnode_dev, fullnode_prod, addValidatorWalletAccounts
 
 class TestThreads:
     def __init__(self):
@@ -11,11 +11,10 @@ class TestThreads:
 
     def setup_threads(self):
         # setup node account
+        # automatically create node account for convenience
         if oltest == "1":
-            # in local,  automatically create node account for convenience
             addValidatorWalletAccounts(fullnode_dev)
         else:
-            # in devnet, please manually create node account and send funds
             addValidatorWalletAccounts(fullnode_prod)
 
         # setup each thread
@@ -26,14 +25,16 @@ class TestThreads:
         # start all threads
         for i, t in enumerate(self.threads):
             t.start()
-        # join all threads
-        for i, t in enumerate(self.threads):
-            t.join()
 
     def stop_threads(self):
         # stop all threads
         for i, t in enumerate(self.threads):
             t.stop()
+        self.join_threads()
+
+    def join_threads(self):
+        for t in self.threads:
+            t.join()
 
     def clean(self):
         # delete dirs and files
