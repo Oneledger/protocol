@@ -1,7 +1,7 @@
 from sdk import *
 
-cfg_dev = TestConfig(fullnode_dev, 110000, 100, INTERVAL_NORMAL)
-cfg_prod = TestConfig(fullnode_prod, 110000, 10000, INTERVAL_NORMAL)
+cfg_dev = TestConfig(fullnode_dev, 110000, 100)
+cfg_prod = TestConfig(fullnode_prod, 110000, 10000)
 
 class UnDelegateTxLoad(TxLoad):
     def __init__(self, cfg, tid):

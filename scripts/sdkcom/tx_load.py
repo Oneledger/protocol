@@ -8,7 +8,7 @@ from constant import *
 from common import *
 
 class TestConfig:
-    def __init__(self, node_root, init_fund, numof_txs, interval=INTERVAL_NORMAL):
+    def __init__(self, node_root, init_fund, numof_txs, interval=INTERVAL_DEFAULT):
         """
         Args:
             node_root (str): e.g., /opt/data/devnet/0-Node or /opt/data/fullnode

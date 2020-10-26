@@ -24,16 +24,16 @@ def abort_loadtest(signal, frame):
     sys.exit(0)
 
 def parse_params(argv):
-    interval = INTERVAL_NORMAL
+    txs_persec = TXS_PER_SEC_NORMAL
     try:
-      opts, args = getopt.getopt(argv,"i:",["interval="])
+      opts, args = getopt.getopt(argv,"s:",["speed="])
     except getopt.GetoptError:
-      print 'run_tests.py -i <interval>'
+      print 'run_tests.py -s <speed>'
       sys.exit(-1)
     for opt, arg in opts:
-      if opt in ("-i", "--interval"):
-         interval = arg
-    return int(interval)
+      if opt in ("-s", "--speed"):
+         txs_persec = arg
+    return 1000 / int(txs_persec)
 
 if __name__ == "__main__":
     # parse options

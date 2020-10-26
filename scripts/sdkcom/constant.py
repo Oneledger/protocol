@@ -8,10 +8,13 @@ class bcolors:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
-    
-# load test intervals, in milliseconds
-INTERVAL_NORMAL = 20
-INTERVAL_SLOW = 1000
+
+# default load test intervals, in milliseconds
+INTERVAL_DEFAULT = 1000
+
+# load test speed, txs per second
+TXS_PER_SEC_NORMAL = 100
+TXS_PER_SEC_SLOW = 10
 
 # broadcast mode
 TxCommit = 1
