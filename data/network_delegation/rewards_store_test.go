@@ -209,3 +209,47 @@ func TestDelegRewardStore_Finalize(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, *matured, balance.AmtZero)
 }
+
+func TestGetTotalRewards(t *testing.T) {
+	setup()
+	curHeight := int64(8)
+	storeRwz.AddRewardsBalance(delegators[0], amt1)
+	storeRwz.AddRewardsBalance(delegators[0], amt2)
+	storeRwz.AddRewardsBalance(delegators[1], amt2)
+	storeRwz.AddRewardsBalance(delegators[1], amt3)
+
+	storeRwz.Withdraw(delegators[0], draw1, curHeight+delegOpt.RewardsMaturityTime)
+	storeRwz.Withdraw(delegators[0], draw2, curHeight+delegOpt.RewardsMaturityTime)
+	storeRwz.Withdraw(delegators[0], draw3, curHeight+delegOpt.RewardsMaturityTime+1)
+	storeRwz.Withdraw(delegators[1], draw3, curHeight+delegOpt.RewardsMaturityTime+1)
+
+	storeRwz.state.Commit()
+	storeRwz.MaturePendingRewards(curHeight + delegOpt.RewardsMaturityTime)
+
+	// finalizes all matured rewards for delegator[0]
+	err := storeRwz.Finalize(delegators[0], draw1.Plus(*draw2))
+	assert.Nil(t, err)
+	matured, err := storeRwz.GetMaturedRewards(delegators[0])
+	assert.Nil(t, err)
+	assert.Equal(t, *matured, balance.AmtZero)
+
+	// get total rewards that has been generated
+	totalRewards, err := storeRwz.GetTotalRewards()
+	assert.Equal(t, amt1.Plus(*amt2).Plus(*amt2).Plus(*amt3), totalRewards)
+}
+
+func TestStore_IterateAllPendingAmounts(t *testing.T) {
+	setup()
+	storeRwz.addPendingRewards(delegators[0], balance.NewAmount(30), 500)
+	storeRwz.addPendingRewards(delegators[0], balance.NewAmount(30), 600)
+	storeRwz.addPendingRewards(delegators[0], balance.NewAmount(30), 700)
+	storeRwz.addPendingRewards(delegators[0], balance.NewAmount(30), 800)
+
+	storeRwz.state.Commit()
+	count := 0
+	storeRwz.iterateAllPD(func(height int64, addr keys.Address, amt *balance.Amount) bool {
+		count++
+		return false
+	})
+	assert.Equal(t, 4, count)
+}

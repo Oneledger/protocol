@@ -8,16 +8,7 @@ import (
 
 type DelegationPrefixType int
 
-type PendingRewards struct {
-	Height int64          `json:"height"`
-	Amount balance.Amount `json:"amount"`
-}
-
-type DelegPendingRewards struct {
-	Address keys.Address      `json:"address"`
-	Rewards []*PendingRewards `json:"rewards"`
-}
-
+//------------------------ State Types ------------------------------
 type Delegator struct {
 	Address *keys.Address `json:"address"`
 	Amount  *balance.Coin `json:"amount"`
@@ -29,10 +20,38 @@ type PendingDelegator struct {
 	Height  int64         `json:"height"`
 }
 
+type Reward struct {
+	Amount  *balance.Amount
+	Address keys.Address
+}
+type PendingReward struct {
+	Amount  *balance.Amount
+	Address keys.Address
+	Height  int64
+}
+
 type State struct {
 	ActiveList  []Delegator        `json:"active_list"`
 	MatureList  []Delegator        `json:"mature_list"`
 	PendingList []PendingDelegator `json:"pending_list"`
+}
+
+type RewardState struct {
+	BalanceList []Reward        `json:"balance_list"`
+	MatureList  []Reward        `json:"mature_list"`
+	PendingList []PendingReward `json:"pending_list"`
+}
+
+//------------------------ State Types End ------------------------------
+
+type PendingRewards struct {
+	Height int64          `json:"height"`
+	Amount balance.Amount `json:"amount"`
+}
+
+type DelegPendingRewards struct {
+	Address keys.Address      `json:"address"`
+	Rewards []*PendingRewards `json:"rewards"`
 }
 
 type DelegationRewardCtx struct {

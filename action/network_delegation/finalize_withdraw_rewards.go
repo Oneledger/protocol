@@ -54,11 +54,11 @@ func (wr *DeleWithdrawRewards) Unmarshal(data []byte) error {
 	return json.Unmarshal(data, wr)
 }
 
-type DeleWithdrawRewardsTx struct{}
+type finalizeWithdrawRewardsTx struct{}
 
-var _ action.Tx = &DeleWithdrawRewardsTx{}
+var _ action.Tx = &finalizeWithdrawRewardsTx{}
 
-func (wt DeleWithdrawRewardsTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error) {
+func (wt finalizeWithdrawRewardsTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error) {
 	ctx.Logger.Debug("Validate DeleFinalizeRewardsTx transaction for CheckTx", tx)
 	w := &DeleWithdrawRewards{}
 	err := w.Unmarshal(tx.Data)
@@ -85,16 +85,16 @@ func (wt DeleWithdrawRewardsTx) Validate(ctx *action.Context, tx action.SignedTx
 	return true, nil
 }
 
-func (wt DeleWithdrawRewardsTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+func (wt finalizeWithdrawRewardsTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	ctx.Logger.Debug("ProcessCheck DeleFinalizeRewardsTx transaction for CheckTx", tx)
 	return runFinalizeWithdraw(ctx, tx)
 }
 
-func (wt DeleWithdrawRewardsTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (wt finalizeWithdrawRewardsTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
 
-func (wt DeleWithdrawRewardsTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+func (wt finalizeWithdrawRewardsTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	ctx.Logger.Debug("ProcessDeliver DeleFinalizeRewardsTx transaction for DeliverTx", tx)
 	return runFinalizeWithdraw(ctx, tx)
 }

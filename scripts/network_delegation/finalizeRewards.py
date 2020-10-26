@@ -9,8 +9,8 @@ def delegate(node, account, amount):
 
 def check_rewards(result, balance, matured, pending):
     if balance != '':
-        balance = str(balance) + '0' * 18
-        if result['balance'] < balance:
+        balance = int(balance) * pow(10, 18)
+        if int(result['balance']) < balance:
             sys.exit(-1)
     if matured != '' and result['matured'] != matured:
         sys.exit(-1)
@@ -20,6 +20,11 @@ def check_rewards(result, balance, matured, pending):
         for i, amt in enumerate(pending):
             if amt != result['pending'][i]['amount']:
                 sys.exit(-1)
+
+
+def check_total_rewards(result, expected_exclude_withdrawn):
+    if result < expected_exclude_withdrawn:
+        sys.exit(-1)
 
 
 def check_balance(before, after, expected_diff):
@@ -64,8 +69,8 @@ if __name__ == "__main__":
 
     # query and check again after maturity
     wait_for(4)
-    res1 = query_rewards(delegator)
-    check_rewards(res1, '', total_str, [])
+    res = query_rewards(delegator)
+    check_rewards(res, '', total_str, [])
     print "#### Successfully matured delegator rewards"
 
     # finalize more than withdrawn
@@ -79,8 +84,8 @@ if __name__ == "__main__":
     finalize.send_finalize(total_str, True)
     # query and check
     wait_for(2)
-    res2 = query_rewards(delegator)
-    check_rewards(res2, '', '0', [])
+    res = query_rewards(delegator)
+    check_rewards(res, '', '0', [])
     balance_after = query_balance(delegator)
     check_balance(balance_before, balance_after, total)
     print bcolors.OKGREEN + "#### Successfully finalized delegator rewards" + bcolors.ENDC
@@ -96,8 +101,35 @@ if __name__ == "__main__":
     finalize.send_finalize(str(balance) + '0' * 18, True)
     # query and check
     wait_for(3)
-    res3 = query_rewards(delegator)
-    check_rewards(res3, '', '0', [])
+    res = query_rewards(delegator)
+    check_rewards(res, '', '0', [])
     balance_final = query_balance(delegator)
     check_balance(balance_after, balance_final, balance)
     print bcolors.OKGREEN + "#### Successfully finalized all rewards" + bcolors.ENDC
+
+    # below is to test total rewards query
+    # create another delegator account
+    funder1 = addValidatorWalletAccounts(node_1)
+    delegator1 = createAccount(node_1, 8000000, funder1)
+
+    # delegates some OLT and wait for rewards distribution
+    delegate(node_1, delegator1, '5000000')
+    wait_for(4)
+
+    # initiate 1 withdrawal
+    amt1 = 3
+    withdraw1 = WithdrawRewards(delegator1, amt1, node_1 + "/keystore/")
+    withdraw1.send(True)
+    wait_for(1)
+
+    # finalize withdraw rewards
+    finalize1 = FinalizeRewards(delegator1, node_1 + "/keystore/")
+    wait_for(6)
+    finalize1.send_finalize(str(amt1) + '0' * 18, True)
+
+    # query total rewards and check
+    res = query_rewards(delegator)
+    res1 = query_rewards(delegator1)
+    total = query_total_rewards()
+    check_total_rewards(total['totalRewards'], int(res['balance']) * pow(10, 18) + int(res1['balance']) * pow(10, 18))
+    print bcolors.OKGREEN + "#### Successfully tested query total rewards" + bcolors.ENDC

@@ -178,3 +178,18 @@ func (svc *Service) GetDelegRewards(req client.GetDelegRewardsRequest, resp *cli
 	}
 	return nil
 }
+
+func (svc *Service) GetTotalDelegRewards(req client.GetTotalDelegRewardsRequest, resp *client.GetTotalDelegRewardsReply) error {
+	height := svc.netwkDelegators.Rewards.GetState().Version()
+
+	total, err := svc.netwkDelegators.Rewards.GetTotalRewards()
+	if err != nil {
+		return err
+	}
+
+	*resp = client.GetTotalDelegRewardsReply{
+		TotalRewards: *total,
+		Height:       height,
+	}
+	return nil
+}

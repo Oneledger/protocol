@@ -21,7 +21,7 @@ func (w Withdraw) Signers() []action.Address {
 }
 
 func (w Withdraw) Type() action.Type {
-	return action.WITHDRAW_NETWORK_DELEGATE
+	return action.REWARDS_WITHDRAW_NETWORK_DELEGATE
 }
 
 func (w Withdraw) Tags() kv.Pairs {
@@ -51,10 +51,10 @@ func (w *Withdraw) Unmarshal(bytes []byte) error {
 	return json.Unmarshal(bytes, w)
 }
 
-type delegWithdrawTx struct {
+type delegWithdrawRewardsTx struct {
 }
 
-func (delegWithdrawTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
+func (delegWithdrawRewardsTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
 	withdraw := Withdraw{}
 	err := withdraw.Unmarshal(signedTx.Data)
 	if err != nil {
@@ -86,20 +86,20 @@ func (delegWithdrawTx) Validate(ctx *action.Context, signedTx action.SignedTx) (
 	return true, nil
 }
 
-func (delegWithdrawTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+func (delegWithdrawRewardsTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	return runDeleWithdraw(ctx, tx)
 }
 
-func (delegWithdrawTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+func (delegWithdrawRewardsTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	return runDeleWithdraw(ctx, tx)
 }
 
-func (delegWithdrawTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (delegWithdrawRewardsTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
 
 var _ action.Msg = &Withdraw{}
-var _ action.Tx = &delegWithdrawTx{}
+var _ action.Tx = &delegWithdrawRewardsTx{}
 
 func runDeleWithdraw(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	withdraw := Withdraw{}
