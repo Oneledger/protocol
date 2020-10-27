@@ -82,3 +82,11 @@ def wait_for(blocks):
         time.sleep(0.5)
         resp = rpc_call('query.ListValidators', {})
         hcur = resp["result"]["height"]
+
+def wait_until(method, req, predict):
+    resp = rpc_call(method, req)
+    result = resp["result"]
+    while not predict(result):
+        time.sleep(1.0)
+        resp = rpc_call(method, req)
+        result = resp["result"]

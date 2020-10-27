@@ -88,7 +88,7 @@ class NetWorkDelegate:
             if not result["ok"]:
                 print "################### delegation failed"
                 if exit_on_err:
-                    exit(-1)
+                    sys.exit(-1)
             else:
                 print "################### delegation added"
         return result["log"]
@@ -106,7 +106,7 @@ class NetWorkDelegate:
             if not result["ok"]:
                 print "Send undelegate Failed : ", result
                 if exit_on_err:
-                    exit(-1)
+                    sys.exit(-1)
             else:
                 self.txHash = "0x" + result["txHash"]
                 print "################### undelegate"
@@ -137,7 +137,7 @@ class NetWorkDelegate:
         result = resp["result"]
         return result
 
-    def send_network_withdraw(self, amount):
+    def send_network_withdraw(self, amount, exit_on_err=True, mode=TxCommit):
         # createTx
         raw_txn = self._network_withdraw(amount)
 
@@ -145,15 +145,26 @@ class NetWorkDelegate:
         signed = sign(raw_txn, self.delegationaddress, self.keypath)
 
         # broadcast Tx
-        result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
+        result = broadcast(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'], mode)
         if "ok" in result:
             if not result["ok"]:
                 print "Send withdraw delegation Failed : ", result
-                sys.exit(-1)
+                if exit_on_err:
+                    sys.exit(-1)
             else:
                 self.txHash = "0x" + result["txHash"]
                 print "################### withdraw delegation"
+        return result["log"]
 
+    def waitfor_matured(self, amount):
+        req = {
+            "delegationAddress": '0lt' + self.delegationaddress
+        }
+        def until(result):
+            matured = result["delegationStats"]["matured"]
+            matured_olt = matured.split(" ")[0]
+            return int(matured_olt) >= int(amount)
+        wait_until("query.ListDelegation", req, until)
 
 class WithdrawRewards:
     def __init__(self, delegator, amount, keypath):
