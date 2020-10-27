@@ -8,7 +8,7 @@ from constant import *
 from common import *
 
 class TestConfig:
-    def __init__(self, node_root, init_fund, numof_txs, interval=INTERVAL_NORMAL):
+    def __init__(self, node_root, init_fund, numof_txs, interval=INTERVAL_DEFAULT):
         """
         Args:
             node_root (str): e.g., /opt/data/devnet/0-Node or /opt/data/fullnode
@@ -33,7 +33,8 @@ class TxLoad(threading.Thread):
         self.key_path = path.join(cfg.node_root, "keystore")
         self.log_file = path.join(self.test_path, "{}_thread_{}.log".format(self.name, self.tid))
 
-    def setup(self):
+    def setup(self, interval):
+        self.cfg.interval = interval
         if not path.exists(self.cfg.test_root):
             os.mkdir(self.cfg.test_root)
         if not path.exists(self.test_path):
@@ -46,7 +47,7 @@ class TxLoad(threading.Thread):
         self.log("{}_thread_{} started".format(self.name, self.tid))
         for i in range(self.cfg.numof_txs):
             self.run_tx(i + 1)
-            time.sleep(self.cfg.interval / 1000)
+            time.sleep(self.cfg.interval / 1000.0)
             if self.stop_event.is_set():
                 break
         self.log("{}_thread_{} stopped".format(self.name, self.tid))

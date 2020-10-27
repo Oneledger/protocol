@@ -4,30 +4,36 @@ from sdkcom import *
 from network_delegation import *
 
 # for local
-def add_threads_dev(threads, interval):
+def add_threads_dev(threads):
     # Delegate, 2 threads
-    threads.add_threads(DelegateTxLoad.dev(1, interval))
+    threads.add_threads(DelegateTxLoad.dev(2))
+
+    # UnDelegate, 2 threads
+    threads.add_threads(UnDelegateTxLoad.dev(2))
 
 # for devnet
 def add_threads_prod(threads, interval):
     # Delegate, 2 threads
-    threads.add_threads(DelegateTxLoad.prod(2, interval))
+    threads.add_threads(DelegateTxLoad.prod(2))
+
+    # Delegate, 2 threads
+    threads.add_threads(UnDelegateTxLoad.prod(2))
 
 def abort_loadtest(signal, frame):
     threads.stop_threads()
     sys.exit(0)
 
 def parse_params(argv):
-    interval = INTERVAL_NORMAL
+    txs_persec = TXS_PER_SEC_NORMAL
     try:
-      opts, args = getopt.getopt(argv,"i:",["interval="])
+      opts, args = getopt.getopt(argv,"s:",["speed="])
     except getopt.GetoptError:
-      print 'run_tests.py -i <interval>'
+      print 'run_tests.py -s <speed>'
       sys.exit(-1)
     for opt, arg in opts:
-      if opt in ("-i", "--interval"):
-         interval = arg
-    return int(interval)
+      if opt in ("-s", "--speed"):
+         txs_persec = arg
+    return 1000 / int(txs_persec)
 
 if __name__ == "__main__":
     # parse options
@@ -35,16 +41,19 @@ if __name__ == "__main__":
 
     # configuration based on environment
     if oltest == "1":
-        add_threads_dev(threads, interval)
+        add_threads_dev(threads)
     else:
-        add_threads_prod(threads, interval)
+        add_threads_prod(threads)
 
     # clean up test folder
     threads.clean()
 
     # setup threads before run
-    threads.setup_threads()
+    threads.setup_threads(interval)
 
     # run threads
     signal.signal(signal.SIGINT, abort_loadtest)
     threads.run_threads()
+
+    # join threads
+    threads.join_threads()
