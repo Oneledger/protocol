@@ -210,7 +210,9 @@ class WithdrawRewards:
         def until(result):
             balance = result["balance"]
             return int(balance) >= int(amount)
-        wait_until("query.GetDelegRewards", req, until)
+        result = wait_until("query.GetDelegRewards", req, until)
+        balance = int(result["balance"]) / 10 ** 18
+        return balance
 
 class FinalizeRewards:
     def __init__(self, delegator, keypath):

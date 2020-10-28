@@ -6,7 +6,7 @@ cfg_prod = TestConfig(fullnode_prod, 1010000, 10000)
 class WithdrawRewardsTxLoad(TxLoad):
     def __init__(self, cfg, tid):
         super(WithdrawRewardsTxLoad, self).__init__(cfg, tid, "WithdrawRewardsTxLoad", free_thread=True)
-        self.wait = True
+        self.balance = 0
 
     def setup(self, interval):
         super(WithdrawRewardsTxLoad, self).setup(interval)
@@ -16,16 +16,15 @@ class WithdrawRewardsTxLoad(TxLoad):
         self.tx_draw = WithdrawRewards(self.test_account, 1, self.key_path)
 
     def run_tx(self, i):
-        if self.wait:
+        if self.balance == 0:
             self.log("waiting for rewards distribution...")
-            self.tx_draw.waitfor_rewards("10")
-            self.wait = False
+            self.balance = self.tx_draw.waitfor_rewards("10")
+            self.log("rewards distributed: {} OLT".format(self.balance))
         super(WithdrawRewardsTxLoad, self).run_tx(i)
         log = self.tx_draw.send("1", exit_on_err=True, mode=TxAsync)
+        self.balance -= 1
         if len(log) > 0:
             self.log(log)
-        if i % 10 == 0:
-            self.wait = True
 
     def stop(self):
         super(WithdrawRewardsTxLoad, self).stop()
