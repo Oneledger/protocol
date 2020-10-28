@@ -90,3 +90,4 @@ def wait_until(method, req, predict):
         time.sleep(1.0)
         resp = rpc_call(method, req)
         result = resp["result"]
+    return result

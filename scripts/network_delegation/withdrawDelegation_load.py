@@ -20,7 +20,6 @@ class WithdrawDelegationTxLoad(TxLoad):
             self.log("waiting for undelegated amount to mature...")
             self.tx.waitfor_matured("100000")
             self.wait = False
-            self.log("waiting finished")
         super(WithdrawDelegationTxLoad, self).run_tx(i)
         log = self.tx.send_network_withdraw("1", exit_on_err=False, mode=TxAsync)
         if len(log) > 0:

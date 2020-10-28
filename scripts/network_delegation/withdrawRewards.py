@@ -38,7 +38,7 @@ if __name__ == "__main__":
 
     # overdraw MUST fail
     withdraw = WithdrawRewards(delegator, 100, node_0 + "/keystore/")
-    withdraw.send(False)
+    withdraw.send(False, exit_on_err=True, mode=TxSync)
     print bcolors.OKGREEN + "#### Overdraw rewards failed as expected" + bcolors.ENDC
 
     # initiate 2 withdrawals
@@ -47,7 +47,7 @@ if __name__ == "__main__":
     for i in range(2):
         amt = i + 2
         withdraw = WithdrawRewards(delegator, amt, node_0 + "/keystore/")
-        withdraw.send(True)
+        withdraw.send(True, exit_on_err=True, mode=TxSync)
         pending.append(str(amt) + '0' * 18)
         total += amt
         wait_for(2)
@@ -67,5 +67,5 @@ if __name__ == "__main__":
     # withdraw all balance
     balance = int(res['balance']) / 1000000000000000000
     withdraw = WithdrawRewards(delegator, balance, node_0 + "/keystore/")
-    withdraw.send(True)
+    withdraw.send(True, exit_on_err=True, mode=TxSync)
     print bcolors.OKGREEN + "#### Successfully withdrawn all rewards" + bcolors.ENDC

@@ -162,7 +162,7 @@ func (svc *Service) GetDelegRewards(req client.GetDelegRewardsRequest, resp *cli
 		return err
 	}
 
-	var pending *network_delegation.DelegPendingRewards
+	pending := &network_delegation.DelegPendingRewards{Rewards: []*network_delegation.PendingRewards{}}
 	if req.InclPending {
 		pending, err = svc.netwkDelegators.Rewards.GetPendingRewards(req.Delegator, height, options.RewardsMaturityTime+1)
 		if err != nil {

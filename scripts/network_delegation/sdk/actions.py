@@ -181,10 +181,9 @@ class WithdrawRewards:
             },
         }
         resp = rpc_call('tx.WithdrawDelegRewards', req)
-        print resp
         return resp["result"]["rawTx"]
 
-    def send(self, expect_succeed=True):
+    def send(self, expect_succeed=True, exit_on_err=True, mode=TxCommit):
         # create Tx
         raw_txn = self._request()
 
@@ -192,13 +191,26 @@ class WithdrawRewards:
         signed = sign(raw_txn, self.delegator, self.keypath)
 
         # broadcast Tx
-        result = broadcast_sync(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
+        result = broadcast(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'], mode)
         if "ok" in result:
             if not result["ok"] and expect_succeed:
-                sys.exit(-1)
+                print "################### withdrawal initiation failed"
+                if exit_on_err:
+                    sys.exit(-1)
             else:
-                print "################### withdrawal successfully initiated: "
+                print "################### withdrawal successfully initiated"
+        return result["log"]
 
+    def waitfor_rewards(self, amount):
+        req = {
+            "delegator": self.delegator,
+            "inclPending": False,
+        }
+        amount += "0"*18
+        def until(result):
+            balance = result["balance"]
+            return int(balance) >= int(amount)
+        wait_until("query.GetDelegRewards", req, until)
 
 class FinalizeRewards:
     def __init__(self, delegator, keypath):
