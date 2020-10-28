@@ -183,7 +183,7 @@ class WithdrawRewards:
         resp = rpc_call('tx.WithdrawDelegRewards', req)
         return resp["result"]["rawTx"]
 
-    def send(self, expect_succeed=True, exit_on_err=True, mode=TxCommit):
+    def send(self, exit_on_err=True, mode=TxCommit):
         # create Tx
         raw_txn = self._request()
 
@@ -193,7 +193,7 @@ class WithdrawRewards:
         # broadcast Tx
         result = broadcast(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'], mode)
         if "ok" in result:
-            if not result["ok"] and expect_succeed:
+            if not result["ok"]:
                 print "################### withdrawal initiation failed"
                 if exit_on_err:
                     sys.exit(-1)
@@ -201,18 +201,18 @@ class WithdrawRewards:
                 print "################### withdrawal successfully initiated"
         return result["log"]
 
-    def waitfor_rewards(self, amount):
+    def waitfor_rewards(self, amount, status):
         req = {
             "delegator": self.delegator,
             "inclPending": False,
         }
         amount += "0"*18
         def until(result):
-            balance = result["balance"]
-            return int(balance) >= int(amount)
+            actual = result[status]
+            return int(actual) >= int(amount)
         result = wait_until("query.GetDelegRewards", req, until)
-        balance = int(result["balance"]) / 10 ** 18
-        return balance
+        actual = int(result[status]) / 10 ** 18
+        return actual
 
 class FinalizeRewards:
     def __init__(self, delegator, keypath):
@@ -236,7 +236,7 @@ class FinalizeRewards:
         print resp
         return resp["result"]["rawTx"]
 
-    def send_finalize(self, finalize_amount, expect_succeed=True):
+    def send_finalize(self, finalize_amount, exit_on_err=True, mode=TxCommit):
         # create Tx
         raw_txn = self._request_finalize(finalize_amount)
 
@@ -244,9 +244,9 @@ class FinalizeRewards:
         signed = sign(raw_txn, self.delegator, self.keypath)
 
         # broadcast Tx
-        result = broadcast_sync(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
+        result = broadcast(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'], mode)
         if "ok" in result:
-            if not result["ok"] and expect_succeed:
+            if not result["ok"] and exit_on_err:
                 sys.exit(-1)
             else:
                 print "################### finalize rewards sent"
