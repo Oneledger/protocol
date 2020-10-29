@@ -133,7 +133,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	//Separate DB and chainstate
 	newDB, err := storage.GetDatabase("internaltxdb", ctx.dbDir(), ctx.cfg.Node.DB)
 	if err != nil {
-		return ctx, errors.Wrap(err, "initial db failed")
+		return ctx, errors.Wrap(err, "initialize internal TX db failed")
 	}
 	cs := storage.NewState(storage.NewChainState("chainstateTX", newDB))
 	ctx.transaction = transactions.NewTransactionStore("intx", cs)
