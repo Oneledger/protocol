@@ -3,7 +3,6 @@ package app
 import (
 	"encoding/hex"
 	"fmt"
-
 	"math"
 	"math/big"
 	"runtime/debug"
@@ -145,7 +144,11 @@ func (app *App) blockBeginner() blockBeginner {
 		if err != nil {
 			app.logger.Error("failed to mature pending delegates", err)
 		}
-
+		// directly add matured amount to delegator's balance
+		err = addMaturedAmountsToBalance(&app.Context, app.logger)
+		if err != nil {
+			app.logger.Error("failed to add matured amounts to balance", err)
+		}
 		// update malicious list
 		err = app.Context.validators.CheckMaliciousValidators(
 			app.Context.evidenceStore.WithState(app.Context.deliver),
@@ -770,4 +773,26 @@ func ManageVotes(req *RequestBeginBlock, ctx *context, logger *log.Logger) error
 		return err
 	}
 	return nil
+}
+
+func addMaturedAmountsToBalance(ctx *context, logger *log.Logger) error {
+	// iterate all matured amounts
+	var err error
+	ctx.netwkDelegators.Deleg.IterateMatureAmounts(func(addr *keys.Address, coin *balance.Coin) bool {
+		//Add each of them to user's address
+		err = ctx.balances.WithState(ctx.deliver).AddToAddress(*addr, *coin)
+		if err != nil {
+			logger.Errorf("failed to add matured undelegation amount to address: %s", addr.String())
+			return true
+		}
+		//Clear the matured amount
+		zeroCoin := coin.Currency.NewCoinFromInt(0)
+		err = ctx.netwkDelegators.Deleg.WithState(ctx.deliver).WithPrefix(network_delegation.MatureType).Set(*addr, &zeroCoin)
+		if err != nil {
+			logger.Errorf("failed to clear matured undelegation amount for address: %s", addr.String())
+			return true
+		}
+		return false
+	})
+	return err
 }
