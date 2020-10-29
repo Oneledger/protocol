@@ -131,7 +131,10 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.rewardMaster = NewRewardMasterStore(ctx.chainstate)
 	ctx.btcTrackers = bitcoin.NewTrackerStore("btct", storage.NewState(ctx.chainstate))
 	//Separate DB and chainstate
-	newDB := tmdb.NewDB("internaltxdb", tmdb.MemDBBackend, "")
+	newDB, err := storage.GetDatabase("internaltxdb", ctx.dbDir(), ctx.cfg.Node.DB)
+	if err != nil {
+		return ctx, errors.Wrap(err, "initial db failed")
+	}
 	cs := storage.NewState(storage.NewChainState("chainstateTX", newDB))
 	ctx.transaction = transactions.NewTransactionStore("intx", cs)
 

@@ -4,7 +4,9 @@ echo
 
 rm -rf $OLDATA/devnet/*
 
-olfullnode init devnet --dir $OLDATA/devnet --nonvalidators 5 \
+olfullnode init devnet --dir $OLDATA/devnet --nonvalidators 0 \
+  --db_type cleveldb \
+  --validators 1 \
   --empty_blocks \
   --loglevel 4 \
   --total_funds 1000000000 \
