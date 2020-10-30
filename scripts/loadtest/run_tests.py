@@ -11,6 +11,12 @@ def add_threads_dev(threads):
     # UnDelegate, 2 threads
     threads.add_threads(UnDelegateTxLoad.dev(2))
 
+    # UnDelegate, 2 threads
+    threads.add_threads(WithdrawDelegationTxLoad.dev(2))
+
+    # UnDelegate, 2 threads
+    threads.add_threads(WithdrawRewardsTxLoad.dev(2))
+
 # for devnet
 def add_threads_prod(threads, interval):
     # Delegate, 2 threads
@@ -18,6 +24,12 @@ def add_threads_prod(threads, interval):
 
     # Delegate, 2 threads
     threads.add_threads(UnDelegateTxLoad.prod(2))
+
+    # UnDelegate, 2 threads
+    threads.add_threads(WithdrawDelegationTxLoad.prod(2))
+
+    # UnDelegate, 2 threads
+    threads.add_threads(WithdrawRewardsTxLoad.prod(2))
 
 def abort_loadtest(signal, frame):
     threads.stop_threads()
