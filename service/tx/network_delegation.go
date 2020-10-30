@@ -109,6 +109,38 @@ func (s *Service) WithdrawDelegRewards(args client.WithdrawDelegRewardsRequest, 
 	return nil
 }
 
+func (s *Service) ReinvestDelegRewards(args client.ReinvestDelegRewardsRequest, reply *client.CreateTxReply) error {
+	invest := nwd.Reinvest{
+		Delegator: args.Delegator,
+		Amount:    args.Amount,
+	}
+
+	data, err := invest.Marshal()
+	if err != nil {
+		return err
+	}
+
+	uuidNew, _ := uuid.NewUUID()
+	feeAmount := s.feeOpt.MinFee()
+	tx := &action.RawTx{
+		Type: action.REWARDS_REINVEST_NETWORK_DELEGATE,
+		Data: data,
+		Fee: action.Fee{
+			Price: action.Amount{Currency: "OLT", Value: *feeAmount.Amount},
+			Gas:   80000,
+		},
+		Memo: uuidNew.String(),
+	}
+
+	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
+	if err != nil {
+		return codes.ErrSerialization
+	}
+
+	*reply = client.CreateTxReply{RawTx: packet}
+	return nil
+}
+
 func (s *Service) FinalizeDelegRewards(args client.FinalizeRewardsRequest, reply *client.CreateTxReply) error {
 
 	undelegate := nwd.DeleWithdrawRewards{

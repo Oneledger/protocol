@@ -123,6 +123,7 @@ const (
 	NetDelgErrWithdraw                      = 600507
 	NetDelgErrFinalizingDelgRewards         = 600508
 	NetDelgErrAddingWithdrawAmountToBalance = 600509
+	NetDelgErrReinvest                      = 600510
 
 	GovErr                                = 7001
 	GovErrGetProposalOptions              = 700101
