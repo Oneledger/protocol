@@ -143,8 +143,8 @@ delegationtest: reset
 	python scripts/network_delegation/withdrawRewards.py
 	make reset
 	python scripts/network_delegation/finalizeRewards.py
-	make reset
-	python scripts/network_delegation/withdrawDelegation.py
+# 	make reset
+# 	python scripts/network_delegation/withdrawDelegation.py
 	@./scripts/stopNodes
 
 alltest: reset
