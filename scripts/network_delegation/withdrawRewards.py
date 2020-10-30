@@ -29,7 +29,7 @@ if __name__ == "__main__":
     delegator = createAccount(node_0, 2500000, funder)
 
     # delegates some OLT and wait for rewards distribution
-    delegate(node_0, delegator, '2000000')
+    delegate(node_0, delegator, '2000000' + '0' * 18)
     wait_for(4)
 
     # query and check balance
@@ -37,7 +37,8 @@ if __name__ == "__main__":
     check_rewards(res, '6', '0', [])
 
     # overdraw MUST fail
-    withdraw = WithdrawRewards(delegator, 100, node_0 + "/keystore/")
+    overdraw_amount = '100' + '0' * 18
+    withdraw = WithdrawRewards(delegator, overdraw_amount, node_0 + "/keystore/")
     withdraw.send(exit_on_err=False, mode=TxSync)
     print bcolors.OKGREEN + "#### Overdraw rewards failed as expected" + bcolors.ENDC
 
@@ -46,9 +47,10 @@ if __name__ == "__main__":
     total = 0
     for i in range(2):
         amt = i + 2
-        withdraw = WithdrawRewards(delegator, amt, node_0 + "/keystore/")
+        amt_long = str(amt) + '0' * 18
+        withdraw = WithdrawRewards(delegator, amt_long, node_0 + "/keystore/")
         withdraw.send(exit_on_err=True, mode=TxSync)
-        pending.append(str(amt) + '0' * 18)
+        pending.append(amt_long)
         total += amt
         wait_for(2)
     total = str(total) + '0' * 18
@@ -65,7 +67,6 @@ if __name__ == "__main__":
     print bcolors.OKGREEN + "#### Successfully matured delegator rewards" + bcolors.ENDC
 
     # withdraw all balance
-    balance = int(res['balance']) / 1000000000000000000
-    withdraw = WithdrawRewards(delegator, balance, node_0 + "/keystore/")
+    withdraw = WithdrawRewards(delegator, res['balance'], node_0 + "/keystore/")
     withdraw.send(exit_on_err=True, mode=TxSync)
     print bcolors.OKGREEN + "#### Successfully withdrawn all rewards" + bcolors.ENDC
