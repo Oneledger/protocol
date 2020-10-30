@@ -23,11 +23,12 @@ class TestConfig:
         self.test_root = loadtest
 
 class TxLoad(threading.Thread):
-    def __init__(self, cfg, tid, name):
+    def __init__(self, cfg, tid, name, free_thread=False):
         super(TxLoad, self).__init__()
         self.cfg = cfg
         self.tid = tid
         self.name = name
+        self.free_thread = free_thread
         self.stop_event = threading.Event()
         self.test_path = path.join(cfg.test_root, name)
         self.key_path = path.join(cfg.node_root, "keystore")
@@ -41,13 +42,28 @@ class TxLoad(threading.Thread):
             os.mkdir(self.test_path)
         self.flog = open(self.log_file, "a+")
         self.node_account = nodeAccount(self.cfg.node_root)
-        self.log("{}_thread_{} setting up..., test_path={}".format(self.name, self.tid, self.test_path))
+        self.log("{}_thread_{} setting up...".format(self.name, self.tid))
+        self.log("{}_thread_{} test_path = {}".format(self.name, self.tid, self.test_path))
 
     def run(self):
+        if self.free_thread:
+            self.run_free()
         self.log("{}_thread_{} started".format(self.name, self.tid))
         for i in range(self.cfg.numof_txs):
             self.run_tx(i + 1)
             time.sleep(self.cfg.interval / 1000.0)
+            if self.stop_event.is_set():
+                break
+        self.log("{}_thread_{} stopped".format(self.name, self.tid))
+        self.flog.close()
+
+    def run_free(self):
+        self.log("{}_thread_{} started running freely".format(self.name, self.tid))
+        i = 0
+        while True:
+            i += 1
+            self.run_tx(i)
+            time.sleep(INTERVAL_DEFAULT / 1000.0)
             if self.stop_event.is_set():
                 break
         self.log("{}_thread_{} stopped".format(self.name, self.tid))
