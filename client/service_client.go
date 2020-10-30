@@ -240,3 +240,11 @@ func (c *ServiceClient) CheckCommitResult(hash string, prove bool) (reply TxResp
 
 	return
 }
+
+func (c *ServiceClient) GetTotalNetwkDelegation(onlyActive int) (reply GetTotalNetwkDelgReply, err error) {
+	request := &GetTotalNetwkDelegation{OnlyActive: onlyActive}
+
+	err = c.Call("query.GetTotalNetwkDelegation", request, &reply)
+
+	return
+}
