@@ -141,6 +141,7 @@ delegationtest: reset
 	python scripts/network_delegation/addNetworkDelegation.py
 	make reset
 	python scripts/network_delegation/withdrawRewards.py
+	python scripts/network_delegation/reinvestRewards.py
 	make reset
 	python scripts/network_delegation/finalizeRewards.py
 	make reset

@@ -112,7 +112,7 @@ func runReinvest(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	}
 
 	// cut rewards
-	coinAmt := invest.Amount.ToCoinWithBase(ctx.Currencies)
+	coinAmt := invest.Amount.ToCoin(ctx.Currencies)
 	err = ctx.NetwkDelegators.Rewards.MinusRewardsBalance(invest.Delegator, coinAmt.Amount)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, netwkDeleg.ErrReinvestRewards, invest.Tags(), err)
