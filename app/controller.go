@@ -768,7 +768,6 @@ func ManageVotes(req *RequestBeginBlock, ctx *context, logger *log.Logger) error
 }
 
 func addMaturedAmountsToBalance(ctx *context, logger *log.Logger, req *RequestBeginBlock) {
-	var err error
 	height := req.Header.Height
 	delegStore := ctx.netwkDelegators.Deleg.WithState(ctx.deliver)
 	var pendingList []*network_delegation.PendingDelegator
@@ -785,7 +784,7 @@ func addMaturedAmountsToBalance(ctx *context, logger *log.Logger, req *RequestBe
 
 	for _, delegator := range pendingList {
 		//Add each of them to user's address
-		err = ctx.balances.WithState(ctx.deliver).AddToAddress(*delegator.Address, *delegator.Amount)
+		err := ctx.balances.WithState(ctx.deliver).AddToAddress(*delegator.Address, *delegator.Amount)
 		if err != nil {
 			logger.Errorf("failed to add pending undelegation amount at height: %d to address: %s", req.Header.Height, delegator.Address.String())
 			panic(err)
