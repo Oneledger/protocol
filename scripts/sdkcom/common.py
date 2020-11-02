@@ -1,4 +1,4 @@
-import os, json, subprocess
+import os, sys, json, subprocess
 
 
 def addValidatorWalletAccounts(node):
@@ -48,3 +48,14 @@ def sendFunds(party, counterparty, amount, password, node):
     process.wait()
     output = process.stdout.readlines()
     return output
+
+def check_balance(before, after, expected_diff):
+    diff = after - before
+    # print diff
+    # print expected_diff
+    if diff != expected_diff:
+        print "actual difference:"
+        print after - before
+        print "expected difference:"
+        print expected_diff
+        sys.exit(-1)

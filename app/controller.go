@@ -3,16 +3,13 @@ package app
 import (
 	"encoding/hex"
 	"fmt"
-
+	"github.com/Oneledger/protocol/data/network_delegation"
+	"github.com/Oneledger/protocol/external_apps/common"
+	"github.com/tendermint/tendermint/libs/kv"
 	"math"
 	"math/big"
 	"runtime/debug"
 	"strconv"
-
-	"github.com/Oneledger/protocol/data/network_delegation"
-	"github.com/Oneledger/protocol/external_apps/common"
-
-	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/data/balance"
 
@@ -140,11 +137,9 @@ func (app *App) blockBeginner() blockBeginner {
 		if err != nil {
 			app.logger.Error("validator set with error", err)
 		}
-		//Mature Pending Delegates for withdrawal
-		err = app.Context.netwkDelegators.Deleg.WithState(app.Context.deliver).HandlePendingDelegates(req.Header.Height)
-		if err != nil {
-			app.logger.Error("failed to mature pending delegates", err)
-		}
+
+		// Mature Pending Delegates to delegator's balance
+		addMaturedAmountsToBalance(&app.Context, app.logger, &req)
 
 		// update malicious list
 		err = app.Context.validators.CheckMaliciousValidators(
@@ -770,4 +765,36 @@ func ManageVotes(req *RequestBeginBlock, ctx *context, logger *log.Logger) error
 		return err
 	}
 	return nil
+}
+
+func addMaturedAmountsToBalance(ctx *context, logger *log.Logger, req *RequestBeginBlock) {
+	height := req.Header.Height
+	delegStore := ctx.netwkDelegators.Deleg.WithState(ctx.deliver)
+	var pendingList []*network_delegation.PendingDelegator
+	// get all the pending amounts
+	delegStore.IteratePendingAmounts(height, func(addr *keys.Address, coin *balance.Coin) bool {
+		pendingDelegator := &network_delegation.PendingDelegator{
+			Address: addr,
+			Amount:  coin,
+			Height:  height,
+		}
+		pendingList = append(pendingList, pendingDelegator)
+		return false
+	})
+
+	for _, delegator := range pendingList {
+		//Add each of them to user's address
+		err := ctx.balances.WithState(ctx.deliver).AddToAddress(*delegator.Address, *delegator.Amount)
+		if err != nil {
+			logger.Errorf("failed to add pending undelegation amount at height: %d to address: %s", req.Header.Height, delegator.Address.String())
+			panic(err)
+		}
+		//Clear the pending amount
+		delegator.Amount.Amount = balance.NewAmount(0)
+		err = delegStore.SetPendingAmount(*delegator.Address, delegator.Height, delegator.Amount)
+		if err != nil {
+			logger.Errorf("failed to clear matured undelegation amount at height: %d for address: %s", req.Header.Height, delegator.Address.String())
+			panic(err)
+		}
+	}
 }

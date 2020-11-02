@@ -115,7 +115,7 @@ func runDeleWithdraw(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 	}
 
 	// initiate a withdrawal which matures at block [height+RewardsMaturityTime]
-	coinAmt := withdraw.Amount.ToCoinWithBase(ctx.Currencies)
+	coinAmt := withdraw.Amount.ToCoin(ctx.Currencies)
 	err = ctx.NetwkDelegators.Rewards.Withdraw(withdraw.Delegator, coinAmt.Amount, height+options.RewardsMaturityTime)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, netwkDeleg.ErrInitiateWithdrawal, withdraw.Tags(), err)

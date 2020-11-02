@@ -14,10 +14,13 @@ func EnableNetworkDelegation(r action.Router) error {
 	if err != nil {
 		return errors.Wrap(err, "undelegateTx")
 	}
-	err = r.AddHandler(action.WITHDRAW_NETWORK_DELEGATION, withdrawNetworkDelegationTx{})
-	if err != nil {
-		return errors.Wrap(err, "withdrawNetworkDelegationTx")
-	}
+
+	// below is removed since withdraw logic is moved to block beginner, OLP-1267
+
+	//err = r.AddHandler(action.WITHDRAW_NETWORK_DELEGATION, withdrawNetworkDelegationTx{})
+	//if err != nil {
+	//	return errors.Wrap(err, "withdrawNetworkDelegationTx")
+	//}
 	err = r.AddHandler(action.REWARDS_WITHDRAW_NETWORK_DELEGATE, delegWithdrawRewardsTx{})
 	if err != nil {
 		return errors.Wrap(err, "delegWithdrawRewardsTx")

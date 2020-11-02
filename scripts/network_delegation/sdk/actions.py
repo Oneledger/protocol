@@ -206,7 +206,6 @@ class WithdrawRewards:
             "delegator": self.delegator,
             "inclPending": False,
         }
-        amount += "0"*18
         def until(result):
             actual = result[status]
             return int(actual) >= int(amount)
