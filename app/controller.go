@@ -791,7 +791,7 @@ func addMaturedAmountsToBalance(ctx *context, logger *log.Logger, req *RequestBe
 		}
 		//Clear the pending amount
 		delegator.Amount.Amount = balance.NewAmount(0)
-		err := delegStore.SetPendingAmount(*delegator.Address, delegator.Height, delegator.Amount)
+		err = delegStore.SetPendingAmount(*delegator.Address, delegator.Height, delegator.Amount)
 		if err != nil {
 			logger.Errorf("failed to clear matured undelegation amount at height: %d for address: %s", req.Header.Height, delegator.Address.String())
 			panic(err)
