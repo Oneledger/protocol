@@ -182,7 +182,6 @@ const (
 	TxErrGettingBTCOptions                = 700153
 	TxErrGettingRewardsOptions            = 700154
 	TxErrGettingFeeOptions                = 700155
-	GovErrErrGettingPoolList              = 700156
 	TxErrValidateGovState                 = 700156
 	TxErrGetStakingOptions                = 700158
 	TxErrInvalidOptions                   = 700159

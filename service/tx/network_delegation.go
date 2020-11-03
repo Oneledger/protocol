@@ -127,7 +127,7 @@ func (s *Service) ReinvestDelegRewards(args client.ReinvestDelegRewardsRequest, 
 		Data: data,
 		Fee: action.Fee{
 			Price: action.Amount{Currency: "OLT", Value: *feeAmount.Amount},
-			Gas:   80000,
+			Gas:   20000,
 		},
 		Memo: uuidNew.String(),
 	}
