@@ -1,4 +1,4 @@
-# below is removed since rewards mature logic is moved to block beginner, OLP-1266
+# below is removed since finalize withdraw rewards logic is moved to block beginner, OLP-1266
 # from sdk import *
 #
 #

@@ -108,7 +108,7 @@ func (s *Service) WithdrawDelegRewards(args client.WithdrawDelegRewardsRequest, 
 	*reply = client.CreateTxReply{RawTx: packet}
 	return nil
 }
-// below is removed since rewards mature logic is moved to block beginner, OLP-1266
+// below is removed since finalize withdraw rewards logic is moved to block beginner, OLP-1266
 //func (s *Service) FinalizeDelegRewards(args client.FinalizeRewardsRequest, reply *client.CreateTxReply) error {
 //
 //	undelegate := nwd.DeleWithdrawRewards{
