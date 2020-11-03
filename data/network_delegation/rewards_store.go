@@ -113,7 +113,7 @@ func (drs *DelegRewardStore) MaturePendingRewards(height int64) (event abciTypes
 		Value: []byte(strconv.FormatInt(height, 10)),
 	})
 
-	drs.iteratePD(height, func(delegator keys.Address, amt *balance.Amount) bool {
+	drs.IteratePD(height, func(delegator keys.Address, amt *balance.Amount) bool {
 		// clear pending amount
 		key := drs.getPendingRewardsKey(height, delegator)
 		err := drs.set(key, balance.AmtZero)
@@ -156,6 +156,41 @@ func (drs *DelegRewardStore) Finalize(delegator keys.Address, amount *balance.Am
 	}
 
 	err = drs.set(key, result)
+	return err
+}
+
+// iterate pending rewards by height
+func (drs *DelegRewardStore) IteratePD(height int64, fn func(delegator keys.Address, amt *balance.Amount) bool) (stopped bool) {
+	pfxStr := fmt.Sprintf("%spending_%d_", string(drs.prefix), height)
+	prefix := storage.StoreKey(pfxStr)
+	return drs.state.IterateRange(
+		prefix,
+		storage.Rangefix(string(prefix)),
+		true,
+		func(key, value []byte) bool {
+			amt := balance.NewAmount(0)
+			err := drs.szlr.Deserialize(value, amt)
+			if err != nil {
+				logger.Error("failed to deserialize delegator pending rewards amount")
+				return true
+			}
+			addr := keys.Address{}
+			bytesText := key[len(prefix):]
+			err = addr.UnmarshalText(bytesText)
+			if err != nil {
+				logger.Error("failed to deserialize delegator address")
+				return true
+			}
+			return fn(addr, amt)
+		},
+	)
+}
+
+// Set pending rewards for a certain height
+func (drs *DelegRewardStore) SetPendingRewards(delegator keys.Address, amount *balance.Amount, height int64) error {
+	key := drs.getPendingRewardsKey(height, delegator)
+
+	err := drs.set(key, amount)
 	return err
 }
 
@@ -205,33 +240,6 @@ func (drs *DelegRewardStore) iterate(subkey string, fn func(delegator keys.Addre
 			if err != nil {
 				logger.Error("failed to deserialize delegator address")
 				return false
-			}
-			return fn(addr, amt)
-		},
-	)
-}
-
-// iterate pending rewards by height
-func (drs *DelegRewardStore) iteratePD(height int64, fn func(delegator keys.Address, amt *balance.Amount) bool) (stopped bool) {
-	pfxStr := fmt.Sprintf("%spending_%d_", string(drs.prefix), height)
-	prefix := storage.StoreKey(pfxStr)
-	return drs.state.IterateRange(
-		prefix,
-		storage.Rangefix(string(prefix)),
-		true,
-		func(key, value []byte) bool {
-			amt := balance.NewAmount(0)
-			err := drs.szlr.Deserialize(value, amt)
-			if err != nil {
-				logger.Error("failed to deserialize delegator pending rewards amount")
-				return true
-			}
-			addr := keys.Address{}
-			bytesText := key[len(prefix):]
-			err = addr.UnmarshalText(bytesText)
-			if err != nil {
-				logger.Error("failed to deserialize delegator address")
-				return true
 			}
 			return fn(addr, amt)
 		},

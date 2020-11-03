@@ -133,6 +133,38 @@ func TestDelegRewardStore_GetPendingRewards(t *testing.T) {
 	assert.Equal(t, *pending, *expected)
 }
 
+func TestDelegRewardStore_SetPendingRewards(t *testing.T) {
+	setup()
+	curHeight := int64(8)
+	storeRwz.AddRewardsBalance(delegators[0], amt1)
+	storeRwz.AddRewardsBalance(delegators[0], amt2)
+
+	storeRwz.Withdraw(delegators[0], draw1, curHeight+delegOpt.RewardsMaturityTime)
+	storeRwz.Withdraw(delegators[0], draw3, curHeight+delegOpt.RewardsMaturityTime+1)
+	pending, err := storeRwz.GetPendingRewards(delegators[0], curHeight+1, delegOpt.RewardsMaturityTime+1)
+	assert.Nil(t, err)
+	expected := &DelegPendingRewards{Address: delegators[0]}
+	expected.Rewards = append(expected.Rewards, &PendingRewards{
+		Height: curHeight + delegOpt.RewardsMaturityTime,
+		Amount: *draw1,
+	})
+	expected.Rewards = append(expected.Rewards, &PendingRewards{
+		Height: curHeight + delegOpt.RewardsMaturityTime + 1,
+		Amount: *draw3,
+	})
+	assert.Equal(t, *pending, *expected)
+	err = storeRwz.SetPendingRewards(delegators[0], zero, curHeight+delegOpt.RewardsMaturityTime)
+	assert.Nil(t, err)
+	pendingAfterSet, err := storeRwz.GetPendingRewards(delegators[0], curHeight+1, delegOpt.RewardsMaturityTime+1)
+	assert.Nil(t, err)
+	expected = &DelegPendingRewards{Address: delegators[0]}
+	expected.Rewards = append(expected.Rewards, &PendingRewards{
+		Height: curHeight + delegOpt.RewardsMaturityTime + 1,
+		Amount: *draw3,
+	})
+	assert.Equal(t, *pendingAfterSet, *expected)
+}
+
 func TestDelegRewardStore_MaturePendingRewards(t *testing.T) {
 	setup()
 	curHeight := int64(8)
