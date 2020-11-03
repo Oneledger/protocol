@@ -138,7 +138,6 @@ func (app *App) blockBeginner() blockBeginner {
 			app.logger.Error("validator set with error", err)
 		}
 
-
 		result := ResponseBeginBlock{
 			Events: []abciTypes.Event{},
 		}
@@ -161,11 +160,10 @@ func (app *App) blockBeginner() blockBeginner {
 		blockRewardEvent := handleBlockRewards(&app.Context, req)
 		result.Events = append(result.Events, blockRewardEvent)
 
-		// matured delegators' pending withdrawal
-		delegRewardStore := app.Context.netwkDelegators.Rewards.WithState(app.Context.deliver)
-		delegRewardEvent, anyMatured := delegRewardStore.MaturePendingRewards(req.Header.Height)
-		if anyMatured {
-			result.Events = append(result.Events, delegRewardEvent)
+		// Mature Pending rewards to delegator's balance
+		delegRewardsEvent, anyRewardsMatured := addMaturedRewardsToBalance(&app.Context, app.logger, &req)
+		if anyRewardsMatured {
+			result.Events = append(result.Events, delegRewardsEvent)
 		}
 
 		//update the header to current block
@@ -798,11 +796,52 @@ func addMaturedAmountsToBalance(ctx *context, logger *log.Logger, req *RequestBe
 		zeroCoin := c.NewCoinFromAmount(*balance.NewAmount(0))
 		err = delegStore.SetPendingAmount(*addr, height, &zeroCoin)
 		if err != nil {
-			logger.Errorf("failed to clear matured undelegation amount at height: %d for address: %s", height, addr.String())
+			logger.Errorf("failed to clear pending undelegation amount at height: %d for address: %s", height, addr.String())
 			panic(err)
 		}
 		event.Attributes = append(event.Attributes, kv.Pair{
 			Key:   []byte(addr.String()),
+			Value: []byte(coin.String()),
+		})
+		return false
+	})
+	any = len(event.Attributes) > 1
+	return
+}
+
+func addMaturedRewardsToBalance(ctx *context, logger *log.Logger, req *RequestBeginBlock) (event abciTypes.Event, any bool) {
+	height := req.Header.Height
+	delegStore := ctx.netwkDelegators.Rewards.WithState(ctx.deliver)
+	balanceStore := ctx.balances.WithState(ctx.deliver)
+	c, ok := ctx.currencies.GetCurrencyByName("OLT")
+	if !ok {
+		logger.Errorf("failed to get OLT as currency from context")
+		panic("failed to get OLT as currency from context")
+	}
+	event = abciTypes.Event{}
+	event.Type = "deleg_rewards"
+	event.Attributes = append(event.Attributes, kv.Pair{
+		Key:   []byte("height"),
+		Value: []byte(strconv.FormatInt(height, 10)),
+	})
+	// put all the pending rewards at this height directly to delegator's balance
+	delegStore.IteratePD(height, func(delegator keys.Address, amt *balance.Amount) bool {
+		//Add each of them to user's address
+		coin := c.NewCoinFromAmount(*amt)
+		err := balanceStore.AddToAddress(delegator, coin)
+		if err != nil {
+			logger.Errorf("failed to add pending rewards amount at height: %d to address: %s", height, delegator.String())
+			panic(err)
+		}
+		// clear pending amount
+		zero := balance.NewAmount(0)
+		err = delegStore.SetPendingRewards(delegator, zero, height)
+		if err != nil {
+			logger.Errorf("failed to clear pending rewards amount at height: %d for address: %s", height, delegator.String())
+			panic(err)
+		}
+		event.Attributes = append(event.Attributes, kv.Pair{
+			Key:   []byte(delegator.String()),
 			Value: []byte(coin.String()),
 		})
 		return false
