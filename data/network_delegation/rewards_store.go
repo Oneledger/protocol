@@ -5,14 +5,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pkg/errors"
-	abciTypes "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/kv"
-
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
+	"github.com/pkg/errors"
 )
 
 type DelegRewardStore struct {
@@ -105,59 +102,60 @@ func (drs *DelegRewardStore) GetPendingRewards(delegator keys.Address, height, b
 	return
 }
 
-// Mature, if any, all delegators' pending withdrawal at a specific height
-func (drs *DelegRewardStore) MaturePendingRewards(height int64) (event abciTypes.Event, any bool) {
-	event.Type = "deleg_rewards"
-	event.Attributes = append(event.Attributes, kv.Pair{
-		Key:   []byte("height"),
-		Value: []byte(strconv.FormatInt(height, 10)),
-	})
-
-	drs.IteratePD(height, func(delegator keys.Address, amt *balance.Amount) bool {
-		// clear pending amount
-		key := drs.getPendingRewardsKey(height, delegator)
-		err := drs.set(key, balance.AmtZero)
-		if err != nil {
-			return true
-		}
-		// increase matured amount
-		if !amt.Equals(balance.AmtZero) {
-			err = drs.addMaturedRewards(delegator, amt)
-			event.Attributes = append(event.Attributes, kv.Pair{
-				Key:   []byte(delegator.String()),
-				Value: []byte(amt.String()),
-			})
-		}
-		return err != nil
-	})
-
-	any = len(event.Attributes) > 1
-	return
-}
-
-// Get matured(finalizable) rewards
-func (drs *DelegRewardStore) GetMaturedRewards(delegator keys.Address) (amt *balance.Amount, err error) {
-	key := drs.getMaturedRewardsKey(delegator)
-	amt, err = drs.get(key)
-	return
-}
-
-// Finalize(deduct) an 'amount' of matured rewards
-func (drs *DelegRewardStore) Finalize(delegator keys.Address, amount *balance.Amount) error {
-	key := drs.getMaturedRewardsKey(delegator)
-	amt, err := drs.get(key)
-	if err != nil {
-		return err
-	}
-
-	result, err := amt.Minus(*amount)
-	if err != nil {
-		return err
-	}
-
-	err = drs.set(key, result)
-	return err
-}
+// below is removed since rewards mature logic is moved to block beginner, OLP-1266
+//// Mature, if any, all delegators' pending withdrawal at a specific height
+//func (drs *DelegRewardStore) MaturePendingRewards(height int64) (event abciTypes.Event, any bool) {
+//	event.Type = "deleg_rewards"
+//	event.Attributes = append(event.Attributes, kv.Pair{
+//		Key:   []byte("height"),
+//		Value: []byte(strconv.FormatInt(height, 10)),
+//	})
+//
+//	drs.IteratePD(height, func(delegator keys.Address, amt *balance.Amount) bool {
+//		// clear pending amount
+//		key := drs.getPendingRewardsKey(height, delegator)
+//		err := drs.set(key, balance.AmtZero)
+//		if err != nil {
+//			return true
+//		}
+//		// increase matured amount
+//		if !amt.Equals(balance.AmtZero) {
+//			err = drs.addMaturedRewards(delegator, amt)
+//			event.Attributes = append(event.Attributes, kv.Pair{
+//				Key:   []byte(delegator.String()),
+//				Value: []byte(amt.String()),
+//			})
+//		}
+//		return err != nil
+//	})
+//
+//	any = len(event.Attributes) > 1
+//	return
+//}
+//
+//// Get matured(finalizable) rewards
+//func (drs *DelegRewardStore) GetMaturedRewards(delegator keys.Address) (amt *balance.Amount, err error) {
+//	key := drs.getMaturedRewardsKey(delegator)
+//	amt, err = drs.get(key)
+//	return
+//}
+//
+//// Finalize(deduct) an 'amount' of matured rewards
+//func (drs *DelegRewardStore) Finalize(delegator keys.Address, amount *balance.Amount) error {
+//	key := drs.getMaturedRewardsKey(delegator)
+//	amt, err := drs.get(key)
+//	if err != nil {
+//		return err
+//	}
+//
+//	result, err := amt.Minus(*amount)
+//	if err != nil {
+//		return err
+//	}
+//
+//	err = drs.set(key, result)
+//	return err
+//}
 
 // iterate pending rewards by height
 func (drs *DelegRewardStore) IteratePD(height int64, fn func(delegator keys.Address, amt *balance.Amount) bool) (stopped bool) {
@@ -294,11 +292,11 @@ func (drs *DelegRewardStore) getPendingRewardsKey(height int64, delegator keys.A
 	return storage.StoreKey(key)
 }
 
-// Key for delegator withdrawn and matured amount
-func (drs *DelegRewardStore) getMaturedRewardsKey(delegator keys.Address) []byte {
-	key := fmt.Sprintf("%smatured_%s", string(drs.prefix), delegator)
-	return storage.StoreKey(key)
-}
+//// Key for delegator withdrawn and matured amount
+//func (drs *DelegRewardStore) getMaturedRewardsKey(delegator keys.Address) []byte {
+//	key := fmt.Sprintf("%smatured_%s", string(drs.prefix), delegator)
+//	return storage.StoreKey(key)
+//}
 
 // Deducts an 'amount' of rewards from rewards balance
 func (drs *DelegRewardStore) minusRewardsBalance(delegator keys.Address, amount *balance.Amount) error {
@@ -329,22 +327,22 @@ func (drs *DelegRewardStore) addPendingRewards(delegator keys.Address, amount *b
 	return err
 }
 
-// Add an 'amount' of rewards as matured
-func (drs *DelegRewardStore) addMaturedRewards(delegator keys.Address, amount *balance.Amount) error {
-	key := drs.getMaturedRewardsKey(delegator)
-	amt, err := drs.get(key)
-	if err != nil {
-		return err
-	}
-
-	err = drs.set(key, amt.Plus(*amount))
-	return err
-}
+//// Add an 'amount' of rewards as matured
+//func (drs *DelegRewardStore) addMaturedRewards(delegator keys.Address, amount *balance.Amount) error {
+//	key := drs.getMaturedRewardsKey(delegator)
+//	amt, err := drs.get(key)
+//	if err != nil {
+//		return err
+//	}
+//
+//	err = drs.set(key, amt.Plus(*amount))
+//	return err
+//}
 
 //---------------------------------- Save Delegation Reward Store -------------------------------------
 func (drs *DelegRewardStore) SaveState() (*RewardState, bool) {
 	balanceKey := string(storage.Prefix("balance"))
-	matureKey := string(storage.Prefix("mature"))
+	//matureKey := string(storage.Prefix("mature"))
 
 	//Populate Current Balances
 	var balanceList []Reward
@@ -357,16 +355,16 @@ func (drs *DelegRewardStore) SaveState() (*RewardState, bool) {
 		return false
 	})
 
-	var matureList []Reward
-	//Populate Mature Balances
-	drs.iterate(matureKey, func(delegator keys.Address, amt *balance.Amount) bool {
-		reward := Reward{
-			Amount:  amt,
-			Address: delegator,
-		}
-		matureList = append(matureList, reward)
-		return false
-	})
+	//var matureList []Reward
+	////Populate Mature Balances
+	//drs.iterate(matureKey, func(delegator keys.Address, amt *balance.Amount) bool {
+	//	reward := Reward{
+	//		Amount:  amt,
+	//		Address: delegator,
+	//	}
+	//	matureList = append(matureList, reward)
+	//	return false
+	//})
 
 	var pendingList []PendingReward
 	//Populate Pending Balances
@@ -382,7 +380,7 @@ func (drs *DelegRewardStore) SaveState() (*RewardState, bool) {
 
 	return &RewardState{
 		BalanceList: balanceList,
-		MatureList:  matureList,
+		//MatureList:  matureList,
 		PendingList: pendingList,
 	}, true
 }
@@ -395,12 +393,12 @@ func (drs *DelegRewardStore) LoadState(state *RewardState) error {
 			return err
 		}
 	}
-	for _, v := range state.MatureList {
-		err := drs.addMaturedRewards(v.Address, v.Amount)
-		if err != nil {
-			return err
-		}
-	}
+	//for _, v := range state.MatureList {
+	//	err := drs.addMaturedRewards(v.Address, v.Amount)
+	//	if err != nil {
+	//		return err
+	//	}
+	//}
 	for _, v := range state.PendingList {
 		height := v.Height - drs.state.Version()
 		if height <= 0 {

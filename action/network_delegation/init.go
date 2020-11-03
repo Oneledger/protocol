@@ -25,9 +25,9 @@ func EnableNetworkDelegation(r action.Router) error {
 	if err != nil {
 		return errors.Wrap(err, "delegWithdrawRewardsTx")
 	}
-	err = r.AddHandler(action.REWARDS_FINALIZE_NETWORK_DELEGATE, finalizeWithdrawRewardsTx{})
-	if err != nil {
-		return errors.Wrap(err, "WithdrawRewardsTx")
-	}
+	//err = r.AddHandler(action.REWARDS_FINALIZE_NETWORK_DELEGATE, finalizeWithdrawRewardsTx{})
+	//if err != nil {
+	//	return errors.Wrap(err, "WithdrawRewardsTx")
+	//}
 	return nil
 }
