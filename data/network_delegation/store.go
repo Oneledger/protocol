@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	MatureKey  = "m"
+	//MatureKey  = "m"
 	PendingKey = "p"
 	ActiveKey  = "a"
 )
@@ -89,8 +89,8 @@ func (st *Store) Get(address keys.Address) (coin *balance.Coin, err error) {
 
 func (st *Store) WithPrefix(prefix DelegationPrefixType) *Store {
 	switch prefix {
-	case MatureType:
-		st.currentPrefix = st.buildMatureKey()
+	//case MatureType:
+	//	st.currentPrefix = st.buildMatureKey()
 	case PendingType:
 		st.currentPrefix = st.buildPendingKey()
 	case ActiveType:
@@ -195,61 +195,62 @@ func (st *Store) IterateAllPendingAmounts(fn func(height int64, addr *keys.Addre
 	})
 }
 
-//------------------------------- Mature key store -------------------------------
-
-//build mature key
-func (st *Store) buildMatureKey() storage.StoreKey {
-	return storage.Prefix(string(st.prefix) + storage.DB_PREFIX + MatureKey)
-}
-
-//iterate all matured amounts
-func (st *Store) IterateMatureAmounts(fn func(addr *keys.Address, coin *balance.Coin) bool) bool {
-	prefix := st.buildMatureKey()
-	return st.iterateAddresses(prefix, func(addr *keys.Address, coin *balance.Coin) bool {
-		return fn(addr, coin)
-	})
-}
-
-//mature pending delegator
-func (st *Store) maturePendingDelegator(delegator *PendingDelegator) error {
-	//Get current Matured amount stored for Address
-	currentCoin, err := st.WithPrefix(MatureType).Get(*delegator.Address)
-	if err != nil {
-		return err
-	}
-
-	//Add amount to matured prefix
-	newCoin := currentCoin.Plus(*delegator.Amount)
-	err = st.WithPrefix(MatureType).Set(*delegator.Address, &newCoin)
-	if err != nil {
-		return err
-	}
-
-	//clear pending record amount
-	delegator.Amount.Amount = balance.NewAmount(0)
-	return st.SetPendingAmount(*delegator.Address, delegator.Height, delegator.Amount)
-}
-
-func (st *Store) HandlePendingDelegates(height int64) error {
-	var pendingList []*PendingDelegator
-	st.IteratePendingAmounts(height, func(addr *keys.Address, coin *balance.Coin) bool {
-		pendingDelegator := &PendingDelegator{
-			Address: addr,
-			Amount:  coin,
-			Height:  height,
-		}
-		pendingList = append(pendingList, pendingDelegator)
-		return false
-	})
-
-	for _, delegator := range pendingList {
-		err := st.maturePendingDelegator(delegator)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
+// below is removed since withdraw logic is moved to block beginner, OLP-1267
+////------------------------------- Mature key store -------------------------------
+//
+////build mature key
+//func (st *Store) buildMatureKey() storage.StoreKey {
+//	return storage.Prefix(string(st.prefix) + storage.DB_PREFIX + MatureKey)
+//}
+//
+////iterate all matured amounts
+//func (st *Store) IterateMatureAmounts(fn func(addr *keys.Address, coin *balance.Coin) bool) bool {
+//	prefix := st.buildMatureKey()
+//	return st.iterateAddresses(prefix, func(addr *keys.Address, coin *balance.Coin) bool {
+//		return fn(addr, coin)
+//	})
+//}
+//
+////mature pending delegator
+//func (st *Store) maturePendingDelegator(delegator *PendingDelegator) error {
+//	//Get current Matured amount stored for Address
+//	currentCoin, err := st.WithPrefix(MatureType).Get(*delegator.Address)
+//	if err != nil {
+//		return err
+//	}
+//
+//	//Add amount to matured prefix
+//	newCoin := currentCoin.Plus(*delegator.Amount)
+//	err = st.WithPrefix(MatureType).Set(*delegator.Address, &newCoin)
+//	if err != nil {
+//		return err
+//	}
+//
+//	//clear pending record amount
+//	delegator.Amount.Amount = balance.NewAmount(0)
+//	return st.SetPendingAmount(*delegator.Address, delegator.Height, delegator.Amount)
+//}
+//
+//func (st *Store) HandlePendingDelegates(height int64) error {
+//	var pendingList []*PendingDelegator
+//	st.IteratePendingAmounts(height, func(addr *keys.Address, coin *balance.Coin) bool {
+//		pendingDelegator := &PendingDelegator{
+//			Address: addr,
+//			Amount:  coin,
+//			Height:  height,
+//		}
+//		pendingList = append(pendingList, pendingDelegator)
+//		return false
+//	})
+//
+//	for _, delegator := range pendingList {
+//		err := st.maturePendingDelegator(delegator)
+//		if err != nil {
+//			return err
+//		}
+//	}
+//	return nil
+//}
 
 //__________________________________ Load State ____________________________________
 
@@ -261,13 +262,13 @@ func (st *Store) LoadDelegators(state State) error {
 			return err
 		}
 	}
-	//Load Mature Delegators
-	for _, delegator := range state.MatureList {
-		err := st.WithPrefix(MatureType).Set(*delegator.Address, delegator.Amount)
-		if err != nil {
-			return err
-		}
-	}
+	////Load Mature Delegators
+	//for _, delegator := range state.MatureList {
+	//	err := st.WithPrefix(MatureType).Set(*delegator.Address, delegator.Amount)
+	//	if err != nil {
+	//		return err
+	//	}
+	//}
 	//Load Pending Delegators
 	for _, delegator := range state.PendingList {
 		err := st.SetPendingAmount(*delegator.Address, delegator.Height, delegator.Amount)

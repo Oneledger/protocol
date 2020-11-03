@@ -23,7 +23,6 @@ type SinglePendingAmount struct {
 
 type GetUndelegatedReply struct {
 	PendingAmounts []SinglePendingAmount `json:"pendingAmount"`
-	MaturedAmount  balance.Amount        `json:"maturedAmount"`
 	TotalAmount    balance.Amount        `json:"totalAmount"`
 	Height         int64                 `json:"height"`
 }
@@ -31,7 +30,6 @@ type GetUndelegatedReply struct {
 type GetTotalNetwkDelgReply struct {
 	ActiveAmount  balance.Amount `json:"activeAmount"`
 	PendingAmount balance.Amount `json:"pendingAmount"`
-	MaturedAmount balance.Amount `json:"maturedAmount"`
 	TotalAmount   balance.Amount `json:"totalAmount"`
 	Height        int64          `json:"height"`
 }
@@ -92,7 +90,6 @@ type ListDelegationReply struct {
 type DelegationStats struct {
 	Active  string `json:"active"`
 	Pending string `json:"pending"`
-	Matured string `json:"matured"`
 }
 
 type FinalizeRewardsRequest struct {
