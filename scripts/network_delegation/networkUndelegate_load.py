@@ -10,12 +10,12 @@ class UnDelegateTxLoad(TxLoad):
     def setup(self, interval):
         super(UnDelegateTxLoad, self).setup(interval)
         self.test_account = createAccount(node=self.cfg.node_root, funds=self.cfg.init_fund, funder=self.node_account)
-        self.tx = NetWorkDelegate(self.test_account, "100000", self.key_path)
+        self.tx = NetWorkDelegate(self.test_account, '100000' + '0' * 18, self.key_path)
         self.tx.send_network_Delegate(mode=TxCommit)
 
     def run_tx(self, i):
         super(UnDelegateTxLoad, self).run_tx(i)
-        log = self.tx.send_network_undelegate("1", exit_on_err=False, mode=TxAsync)
+        log = self.tx.send_network_undelegate('1' + '0' * 18, exit_on_err=False, mode=TxAsync)
         if len(log) > 0:
             self.log(log)
 

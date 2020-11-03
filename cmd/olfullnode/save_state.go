@@ -680,19 +680,19 @@ func DumpNetworkDelegatorsToFile(nd *network_delegation.Store, writer io.Writer,
 				iterator++
 				return false
 			})
-		case network_delegation.MatureType:
-			nd.IterateMatureAmounts(func(addr *keys.Address, coin *balance.Coin) bool {
-				if iterator != 0 {
-					writeDelimiter(delimiter, writer)
-				}
-				delegatorState := network_delegation.Delegator{
-					Address: addr,
-					Amount:  coin,
-				}
-				fn(writer, delegatorState)
-				iterator++
-				return false
-			})
+		//case network_delegation.MatureType:
+		//	nd.IterateMatureAmounts(func(addr *keys.Address, coin *balance.Coin) bool {
+		//		if iterator != 0 {
+		//			writeDelimiter(delimiter, writer)
+		//		}
+		//		delegatorState := network_delegation.Delegator{
+		//			Address: addr,
+		//			Amount:  coin,
+		//		}
+		//		fn(writer, delegatorState)
+		//		iterator++
+		//		return false
+		//	})
 		case network_delegation.PendingType:
 			nd.IterateAllPendingAmounts(func(height int64, addr *keys.Address, coin *balance.Coin) bool {
 				if iterator != 0 {

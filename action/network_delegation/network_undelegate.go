@@ -115,7 +115,7 @@ func runUndelegate(ctx *action.Context, tx action.RawTx) (bool, action.Response)
 		return helpers.LogAndReturnFalse(ctx.Logger, net_delg.ErrGettingActiveDelgAmount, ud.Tags(), err)
 	}
 
-	undelegateCoin := ud.Amount.ToCoinWithBase(ctx.Currencies)
+	undelegateCoin := ud.Amount.ToCoin(ctx.Currencies)
 	// cut the amount from active store
 	remainCoin, err := delegationCoin.Minus(undelegateCoin)
 	if err != nil {

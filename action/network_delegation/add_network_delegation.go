@@ -100,7 +100,7 @@ func runNetworkDelegate(ctx *action.Context, tx action.RawTx) (bool, action.Resp
 	}
 
 	// Check if delegation address has funds
-	coin := delegate.Amount.ToCoinWithBase(ctx.Currencies)
+	coin := delegate.Amount.ToCoin(ctx.Currencies)
 	if !coin.IsValid() {
 		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrInvalidAmount, delegate.Tags(), errors.New("Coin is not valid"))
 	}
