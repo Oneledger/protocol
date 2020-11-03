@@ -138,8 +138,15 @@ func (app *App) blockBeginner() blockBeginner {
 			app.logger.Error("validator set with error", err)
 		}
 
-		// Mature Pending Delegates to delegator's balance
-		addMaturedAmountsToBalance(&app.Context, app.logger, &req)
+
+		result := ResponseBeginBlock{
+			Events: []abciTypes.Event{},
+		}
+		// Mature Pending undelegates to delegator's balance
+		delegEvent, anyMatured := addMaturedAmountsToBalance(&app.Context, app.logger, &req)
+		if anyMatured {
+			result.Events = append(result.Events, delegEvent)
+		}
 
 		// update malicious list
 		err = app.Context.validators.CheckMaliciousValidators(
@@ -152,10 +159,7 @@ func (app *App) blockBeginner() blockBeginner {
 
 		// update Block Rewards
 		blockRewardEvent := handleBlockRewards(&app.Context, req)
-
-		result := ResponseBeginBlock{
-			Events: []abciTypes.Event{blockRewardEvent},
-		}
+		result.Events = append(result.Events, blockRewardEvent)
 
 		// matured delegators' pending withdrawal
 		delegRewardStore := app.Context.netwkDelegators.Rewards.WithState(app.Context.deliver)
@@ -767,34 +771,42 @@ func ManageVotes(req *RequestBeginBlock, ctx *context, logger *log.Logger) error
 	return nil
 }
 
-func addMaturedAmountsToBalance(ctx *context, logger *log.Logger, req *RequestBeginBlock) {
+func addMaturedAmountsToBalance(ctx *context, logger *log.Logger, req *RequestBeginBlock) (event abciTypes.Event, any bool) {
 	height := req.Header.Height
 	delegStore := ctx.netwkDelegators.Deleg.WithState(ctx.deliver)
-	var pendingList []*network_delegation.PendingDelegator
-	// get all the pending amounts
-	delegStore.IteratePendingAmounts(height, func(addr *keys.Address, coin *balance.Coin) bool {
-		pendingDelegator := &network_delegation.PendingDelegator{
-			Address: addr,
-			Amount:  coin,
-			Height:  height,
-		}
-		pendingList = append(pendingList, pendingDelegator)
-		return false
+	balanceStore := ctx.balances.WithState(ctx.deliver)
+	c, ok := ctx.currencies.GetCurrencyByName("OLT")
+	if !ok {
+		logger.Errorf("failed to get OLT as currency from context")
+		panic("failed to get OLT as currency from context")
+	}
+	event = abciTypes.Event{}
+	event.Type = "deleg_undelegate"
+	event.Attributes = append(event.Attributes, kv.Pair{
+		Key:   []byte("height"),
+		Value: []byte(strconv.FormatInt(height, 10)),
 	})
-
-	for _, delegator := range pendingList {
+	// put all the pending amounts at this height directly to delegator's balance
+	delegStore.IteratePendingAmounts(height, func(addr *keys.Address, coin *balance.Coin) bool {
 		//Add each of them to user's address
-		err := ctx.balances.WithState(ctx.deliver).AddToAddress(*delegator.Address, *delegator.Amount)
+		err := balanceStore.AddToAddress(*addr, *coin)
 		if err != nil {
-			logger.Errorf("failed to add pending undelegation amount at height: %d to address: %s", req.Header.Height, delegator.Address.String())
+			logger.Errorf("failed to add pending undelegation amount at height: %d to address: %s", height, addr.String())
 			panic(err)
 		}
 		//Clear the pending amount
-		delegator.Amount.Amount = balance.NewAmount(0)
-		err = delegStore.SetPendingAmount(*delegator.Address, delegator.Height, delegator.Amount)
+		zeroCoin := c.NewCoinFromAmount(*balance.NewAmount(0))
+		err = delegStore.SetPendingAmount(*addr, height, &zeroCoin)
 		if err != nil {
-			logger.Errorf("failed to clear matured undelegation amount at height: %d for address: %s", req.Header.Height, delegator.Address.String())
+			logger.Errorf("failed to clear matured undelegation amount at height: %d for address: %s", height, addr.String())
 			panic(err)
 		}
-	}
+		event.Attributes = append(event.Attributes, kv.Pair{
+			Key:   []byte(addr.String()),
+			Value: []byte(coin.String()),
+		})
+		return false
+	})
+	any = len(event.Attributes) > 1
+	return
 }
