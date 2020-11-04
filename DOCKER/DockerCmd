@@ -5,4 +5,4 @@ docker build -t appbuilder .
 docker run -d -t --name protocol_builder -p 8080:8080 -v ~/go/protocol/:/home/ubuntu/go/protocol appbuilder
 
 #log into container as root
-docker exec -it protocol_builder
+docker exec -it protocol_builder /bin/bash

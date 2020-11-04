@@ -17,8 +17,9 @@ RUN apt-get update && apt-get install -y \
 ENV GOVERSION 1.14.7
 ENV GOROOT /usr/local/go
 ENV GOPATH /home/ubuntu/go
-ENV PATH $GOPATH:$GOPATH/bin:$GOROOT/bin:$PATH
-ENV OLDATA /opt/data/
+ENV INCL /usr/local/lib
+ENV PATH $GOPATH:$GOPATH/bin:$GOROOT/bin:$INCL:$PATH
+ENV OLDATA /opt/data/devnet
 ENV OLTEST 1
 ENV GO111MODULE on
 
@@ -33,6 +34,7 @@ RUN cd /usr/local && wget https://github.com/google/leveldb/archive/v1.20.tar.gz
     cp -r out-static/lib* out-shared/lib* /usr/local/lib/ && \
     cd include/ && \
     cp -r leveldb /usr/local/include/ && \
+    ldconfig &&\
     cd /usr/local && \
     rm -f v1.20.tar.gz
 
