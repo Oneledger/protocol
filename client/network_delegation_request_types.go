@@ -73,6 +73,11 @@ type WithdrawDelegRewardsRequest struct {
 	Amount    action.Amount `json:"amount"`
 }
 
+type ReinvestDelegRewardsRequest struct {
+	Delegator keys.Address  `json:"delegator"`
+	Amount    action.Amount `json:"amount"`
+}
+
 type ListDelegationRequest struct {
 	DelegationAddress keys.Address `json:"delegationAddress"`
 }

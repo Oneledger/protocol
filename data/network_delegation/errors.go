@@ -12,4 +12,5 @@ var (
 	ErrSettingPendingDelgAmount      = codes.ProtocolError{codes.NetDelgErrSettingPendingDelgAmount, "failed to set pending network delegation amount"}
 	ErrGettingPendingDelgAmount      = codes.ProtocolError{codes.NetDelgErrGettingPendingDelgAmount, "failed to get pending network delegation amount"}
 	ErrInitiateWithdrawal            = codes.ProtocolError{codes.NetDelgErrWithdraw, "failed to initiate rewards withdrawal"}
+	ErrReinvestRewards               = codes.ProtocolError{codes.NetDelgErrReinvest, "failed to reinvest rewards"}
 )

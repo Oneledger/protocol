@@ -124,14 +124,10 @@ func runNetworkDelegate(ctx *action.Context, tx action.RawTx) (bool, action.Resp
 
 	//Add Delegation
 	//Get Delegation Pool
-	poolList, err := ctx.GovernanceStore.GetPoolList()
+	delagationPool, err := ctx.GovernanceStore.GetPoolByName(gov.POOL_DELEGATION)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, gov.ErrPoolList, delegate.Tags(), err)
-	}
-	if _, ok := poolList["DelegationPool"]; !ok {
 		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrPoolDoesNotExist, delegate.Tags(), err)
 	}
-	delagationPool := poolList["DelegationPool"]
 
 	//Add balance to pool
 	err = ctx.Balances.AddToAddress(delagationPool, coin)
