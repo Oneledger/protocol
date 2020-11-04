@@ -84,7 +84,8 @@ if __name__ == "__main__":
     delegator1 = createAccount(node_1, 8000000, funder1)
 
     # delegates some OLT and wait for rewards distribution
-    delegate(node_1, delegator1, '5000000' + '0' * 18)
+    delegation_amt = '5000000' + '0' * 18
+    delegate(node_1, delegator1, delegation_amt)
     wait_for(4)
 
     # initiate 1 withdrawal
@@ -92,7 +93,14 @@ if __name__ == "__main__":
     amt1_long = str(amt1) + '0' * 18
     withdraw1 = WithdrawRewards(delegator1, amt1_long, node_1 + "/keystore/")
     withdraw1.send(True)
-    query_delegation()
+
+    # test query ListDelegation
+    query_result = query_delegation()
+    expected_delegation = int(delegation_amt)
+    expected_pending_delegation = 0
+    expected_pending_rewards = int(amt1_long)
+    check_query_delegation(query_result, 1, expected_delegation, expected_pending_delegation, expected_pending_rewards)
+
     wait_for(7)
 
     # query total rewards and check

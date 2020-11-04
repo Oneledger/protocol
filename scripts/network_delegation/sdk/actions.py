@@ -350,3 +350,35 @@ def query_delegation(delegation_addresses=None):
     result = resp["result"]
     print json.dumps(resp, indent=4)
     return result["allDelegStats"]
+
+
+def check_query_delegation(query_result, index, expected_delegation, expected_pending_delegation, expected_pending_rewards):
+    actual_delegation = query_result[index]['delegationStats']['active']
+    actual_pending_delegation = query_result[index]['delegationStats']['pending']
+    actual_rewards = query_result[index]['delegationRewardsStats']['active']
+    actual_pending_rewards = query_result[index]['delegationRewardsStats']['pending']
+
+    if int(actual_delegation) != expected_delegation:
+        print "actual_delegation"
+        print actual_delegation
+        print "expected_delegation"
+        print expected_delegation
+        sys.exit(-1)
+
+    if int(actual_pending_delegation) != expected_pending_delegation:
+        print "actual_pending_delegation"
+        print actual_pending_delegation
+        print "expected_pending_delegation"
+        print expected_pending_delegation
+        sys.exit(-1)
+
+    if int(actual_rewards) == 0:
+        print "no rewards found!"
+        sys.exit(-1)
+
+    if int(actual_pending_rewards) != expected_pending_rewards:
+        print "actual_pending_rewards"
+        print actual_pending_rewards
+        print "expected_pending_rewards"
+        print expected_pending_rewards
+        sys.exit(-1)

@@ -19,7 +19,14 @@ if __name__ == "__main__":
     time.sleep(2)
     newDelegation.send_network_undelegate(undelegate_amount_1_long)
     newDelegation.send_network_undelegate(undelegate_amount_2_long)
-    query_delegation()
+
+    # test query ListDelegation
+    query_result = query_delegation()
+    expected_delegation = int(delegationAmount) - int(undelegate_amount_1_long) - int(undelegate_amount_2_long)
+    expected_pending_delegation = int(undelegate_amount_1_long) + int(undelegate_amount_2_long)
+    expected_pending_rewards = 0
+    check_query_delegation(query_result, 0, expected_delegation, expected_pending_delegation, expected_pending_rewards)
+
     time.sleep(5)
     newDelegation.send_network_undelegate(undelegate_amount_3_long)
     time.sleep(2)
