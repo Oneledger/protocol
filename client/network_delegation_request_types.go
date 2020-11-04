@@ -49,7 +49,7 @@ type GetTotalDelegRewardsReply struct {
 type GetDelegRewardsReply struct {
 	Balance balance.Amount                       `json:"balance"`
 	Pending []*network_delegation.PendingRewards `json:"pending"`
-	Matured balance.Amount                       `json:"matured"`
+	//Matured balance.Amount                       `json:"matured"`
 	Height  int64                                `json:"height"`
 }
 
