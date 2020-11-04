@@ -68,9 +68,26 @@ func (drs *DelegRewardStore) GetTotalRewards() (amt *balance.Amount, err error) 
 	return
 }
 
+// Deducts an 'amount' of rewards from rewards balance
+func (drs *DelegRewardStore) MinusRewardsBalance(delegator keys.Address, amount *balance.Amount) error {
+	key := drs.getRewardsBalanceKey(delegator)
+	amt, err := drs.get(key)
+	if err != nil {
+		return err
+	}
+
+	result, err := amt.Minus(*amount)
+	if err != nil {
+		return err
+	}
+
+	err = drs.set(key, result)
+	return err
+}
+
 // Initiate a withdrawal of an 'amount' of rewards
 func (drs *DelegRewardStore) Withdraw(delegator keys.Address, amount *balance.Amount, matureHeight int64) error {
-	err := drs.minusRewardsBalance(delegator, amount)
+	err := drs.MinusRewardsBalance(delegator, amount)
 	if err != nil {
 		return errors.Wrap(err, "Minus from rewards balance")
 	}
@@ -358,23 +375,6 @@ func (drs *DelegRewardStore) getPendingRewardsKey(height int64, delegator keys.A
 //	key := fmt.Sprintf("%smatured_%s", string(drs.prefix), delegator)
 //	return storage.StoreKey(key)
 //}
-
-// Deducts an 'amount' of rewards from rewards balance
-func (drs *DelegRewardStore) minusRewardsBalance(delegator keys.Address, amount *balance.Amount) error {
-	key := drs.getRewardsBalanceKey(delegator)
-	amt, err := drs.get(key)
-	if err != nil {
-		return err
-	}
-
-	result, err := amt.Minus(*amount)
-	if err != nil {
-		return err
-	}
-
-	err = drs.set(key, result)
-	return err
-}
 
 // Add an 'amount' of rewards as pending
 func (drs *DelegRewardStore) addPendingRewards(delegator keys.Address, amount *balance.Amount, height int64) error {

@@ -61,7 +61,7 @@ utest:
 		-coverprofile a.out
 
 loadtest: reset
-	python scripts/loadtest/run_tests.py
+	python scripts/loadtest/run_tests.py -c -s 50
 
 coverage:
 	go tool cover -html=a.out -o cover.html
@@ -141,6 +141,7 @@ delegationtest: reset
 	python scripts/network_delegation/addNetworkDelegation.py
 	make reset
 	python scripts/network_delegation/withdrawRewards.py
+	python scripts/network_delegation/reinvestRewards.py
 # 	make reset
 # 	python scripts/network_delegation/finalizeRewards.py
 # 	make reset

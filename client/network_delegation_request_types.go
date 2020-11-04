@@ -98,9 +98,16 @@ type WithdrawDelegRewardsRequest struct {
 	Amount    action.Amount `json:"amount"`
 }
 
+
 //type FinalizeRewardsRequest struct {
 //	Delegator keys.Address  `json:"delegator"`
 //	Amount    action.Amount `json:"amount"`
 //	GasPrice  action.Amount `json:"gasPrice"`
 //	Gas       int64         `json:"gas"`
 //}
+
+type ReinvestDelegRewardsRequest struct {
+	Delegator keys.Address  `json:"delegator"`
+	Amount    action.Amount `json:"amount"`
+}
+

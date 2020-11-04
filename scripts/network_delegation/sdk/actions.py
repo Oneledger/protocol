@@ -30,15 +30,6 @@ class NetWorkDelegate:
         resp = rpc_call('tx.AddNetworkDelegation', req)
         return resp["result"]["rawTx"]
 
-    def query_delegation(self):
-        req = {
-            "delegationAddresses": [self.delegationaddress],
-        }
-        resp = rpc_call('query.ListDelegation', req)
-        print resp
-        result = resp["result"]
-        # prmodeps(resp, indent=4)
-        return result["allDelegStats"]
 
     def _network_undelegate(self, amount):
         req = {
@@ -166,6 +157,19 @@ class NetWorkDelegate:
             return int(matured_olt) >= int(amount)
         wait_until("query.ListDelegation", req, until)
 
+def waitfor_rewards(delegator, amount, status):
+    req = {
+        "delegator": delegator,
+        "inclPending": False,
+    }
+    amount += "0"*18
+    def until(result):
+        actual = result[status]
+        return int(actual) >= int(amount)
+    result = wait_until("query.GetDelegRewards", req, until)
+    actual = int(result[status]) / 10 ** 18
+    return actual
+
 class WithdrawRewards:
     def __init__(self, delegator, amount, keypath):
         self.delegator = delegator
@@ -201,17 +205,39 @@ class WithdrawRewards:
                 print "################### withdrawal successfully initiated"
         return result["log"]
 
-    def waitfor_rewards(self, amount, status):
+class ReinvestRewards:
+    def __init__(self, delegator, keypath):
+        self.delegator = delegator
+        self.keypath = keypath
+
+    def _request(self, amount):
         req = {
             "delegator": self.delegator,
-            "inclPending": False,
+            "amount": {
+                "currency": "OLT",
+                "value": convertBigInt(amount),
+            },
         }
-        def until(result):
-            actual = result[status]
-            return int(actual) >= int(amount)
-        result = wait_until("query.GetDelegRewards", req, until)
-        actual = int(result[status]) / 10 ** 18
-        return actual
+        resp = rpc_call('tx.ReinvestDelegRewards', req)
+        return resp["result"]["rawTx"]
+
+    def send(self, amount, exit_on_err=True, mode=TxCommit):
+        # create Tx
+        raw_txn = self._request(amount)
+
+        # sign Tx
+        signed = sign(raw_txn, self.delegator, self.keypath)
+
+        # broadcast Tx
+        result = broadcast(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'], mode)
+        if "ok" in result:
+            if not result["ok"]:
+                print "################### failed to reinvest rewards"
+                if exit_on_err:
+                    sys.exit(-1)
+            else:
+                print "################### successfully reinvested rewards"
+        return result["log"]
 
 class FinalizeRewards:
     def __init__(self, delegator, keypath):
