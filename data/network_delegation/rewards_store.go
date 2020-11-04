@@ -171,6 +171,60 @@ func (drs *DelegRewardStore) IterateActiveRewards(fn func(addr *keys.Address, am
 //	err = drs.set(key, result)
 //	return err
 //}
+// below is removed since finalize withdraw rewards logic is moved to block beginner, OLP-1266
+//// Mature, if any, all delegators' pending withdrawal at a specific height
+//func (drs *DelegRewardStore) MaturePendingRewards(height int64) (event abciTypes.Event, any bool) {
+//	event.Type = "deleg_rewards"
+//	event.Attributes = append(event.Attributes, kv.Pair{
+//		Key:   []byte("height"),
+//		Value: []byte(strconv.FormatInt(height, 10)),
+//	})
+//
+//	drs.IteratePD(height, func(delegator keys.Address, amt *balance.Amount) bool {
+//		// clear pending amount
+//		key := drs.getPendingRewardsKey(height, delegator)
+//		err := drs.set(key, balance.AmtZero)
+//		if err != nil {
+//			return true
+//		}
+//		// increase matured amount
+//		if !amt.Equals(balance.AmtZero) {
+//			err = drs.addMaturedRewards(delegator, amt)
+//			event.Attributes = append(event.Attributes, kv.Pair{
+//				Key:   []byte(delegator.String()),
+//				Value: []byte(amt.String()),
+//			})
+//		}
+//		return err != nil
+//	})
+//
+//	any = len(event.Attributes) > 1
+//	return
+//}
+//
+//// Get matured(finalizable) rewards
+//func (drs *DelegRewardStore) GetMaturedRewards(delegator keys.Address) (amt *balance.Amount, err error) {
+//	key := drs.getMaturedRewardsKey(delegator)
+//	amt, err = drs.get(key)
+//	return
+//}
+//
+//// Finalize(deduct) an 'amount' of matured rewards
+//func (drs *DelegRewardStore) Finalize(delegator keys.Address, amount *balance.Amount) error {
+//	key := drs.getMaturedRewardsKey(delegator)
+//	amt, err := drs.get(key)
+//	if err != nil {
+//		return err
+//	}
+//
+//	result, err := amt.Minus(*amount)
+//	if err != nil {
+//		return err
+//	}
+//
+//	err = drs.set(key, result)
+//	return err
+//}
 
 //-----------------------------helper functions
 //
