@@ -24,7 +24,7 @@ func (ri Reinvest) Signers() []action.Address {
 }
 
 func (ri Reinvest) Type() action.Type {
-	return action.REWARDS_WITHDRAW_NETWORK_DELEGATE
+	return action.REWARDS_REINVEST_NETWORK_DELEGATE
 }
 
 func (ri Reinvest) Tags() kv.Pairs {
