@@ -6,6 +6,7 @@ import (
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/data/governance"
 	codes "github.com/Oneledger/protocol/status_codes"
+	"runtime/debug"
 )
 
 // list single proposal by id
@@ -170,6 +171,7 @@ func (svc *Service) GetGovernanceOptionsForHeight(req client.GovernanceOptionsRe
 	if err != nil {
 		return err
 	}
+	debug.FreeOSMemory()
 	*reply = client.GovernanceOptionsReply{
 		GovOptions: governance.GovernanceState{
 			FeeOption:       *feeOpt,

@@ -130,10 +130,10 @@ func (app *App) blockBeginner() blockBeginner {
 		}
 		app.Context.feePool.SetupOpt(feeOpt)
 
-		err = ManageVotes(&req, &app.Context, app.logger)
-		if err != nil {
-			app.logger.Error("manage votes error", err)
-		}
+		//err = ManageVotes(&req, &app.Context, app.logger)
+		//if err != nil {
+		//	app.logger.Error("manage votes error", err)
+		//}
 
 		// update the validator set
 		err = app.Context.validators.WithState(app.Context.deliver).Setup(req, app.Context.node.ValidatorAddress())
@@ -147,19 +147,19 @@ func (app *App) blockBeginner() blockBeginner {
 		}
 
 		// update malicious list
-		err = app.Context.validators.CheckMaliciousValidators(
-			app.Context.evidenceStore.WithState(app.Context.deliver),
-			app.Context.govern.WithState(app.Context.deliver),
-		)
-		if err != nil {
-			app.logger.Error("malicious set with error", err)
-		}
+		//err = app.Context.validators.CheckMaliciousValidators(
+		//	app.Context.evidenceStore.WithState(app.Context.deliver),
+		//	app.Context.govern.WithState(app.Context.deliver),
+		//)
+		//if err != nil {
+		//	app.logger.Error("malicious set with error", err)
+		//}
 
 		// update Block Rewards
-		blockRewardEvent := handleBlockRewards(&app.Context, req)
+		//handleBlockRewards(&app.Context, req)
 
 		result := ResponseBeginBlock{
-			Events: []abciTypes.Event{blockRewardEvent},
+			//Events: []abciTypes.Event{blockRewardEvent},
 		}
 
 		// matured delegators' pending withdrawal

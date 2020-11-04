@@ -536,7 +536,7 @@ func (vs *ValidatorStore) GetEndBlockUpdate(ctx *ValidatorContext, req types.Req
 		// delegation
 		ctx.Delegators.UpdateWithdrawReward(height)
 		// vote requests check
-		vs.ExecuteAllegationTracker(ctx, activeCount)
+		//vs.ExecuteAllegationTracker(ctx, activeCount)
 	}
 	logger.Detailf("GetEndBlockUpdate end at block: %d\n", height)
 
