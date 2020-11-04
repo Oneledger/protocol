@@ -29,7 +29,7 @@ if __name__ == "__main__":
 
     # delegates some OLT and wait for rewards distribution
     delegation = '2000000'
-    delegate(node_0, delegator, delegation + '0' * 18)
+    delegate(node_0, delegator, delegation + '0'*18)
 
     # wait for 10 OLT of rewards
     amount = waitfor_rewards(delegator, "10", "balance")

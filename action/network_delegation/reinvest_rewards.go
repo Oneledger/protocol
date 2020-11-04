@@ -120,14 +120,10 @@ func runReinvest(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
 	//Add Delegation
 	//Get Delegation Pool
-	poolList, err := ctx.GovernanceStore.GetPoolList()
+	delagationPool, err := ctx.GovernanceStore.GetPoolByName(gov.POOL_DELEGATION)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, gov.ErrPoolList, invest.Tags(), err)
-	}
-	if _, ok := poolList["DelegationPool"]; !ok {
 		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrPoolDoesNotExist, invest.Tags(), err)
 	}
-	delagationPool := poolList["DelegationPool"]
 
 	//Add balance to pool
 	err = ctx.Balances.AddToAddress(delagationPool, coinAmt)

@@ -64,6 +64,12 @@ const (
 	LAST_UPDATE_HEIGHT_PROPOSAL    string = "proposalOptions"
 	LAST_UPDATE_HEIGHT_EVIDENCE    string = "evidenceOptions"
 	HEIGHT_INDEPENDENT_VALUE       string = "heightindependent"
+
+	// Pool names
+	POOL_BOUNTY     = "BountyPool"
+	POOL_FEE        = "FeePool"
+	POOL_REWARDS    = "RewardsPool"
+	POOL_DELEGATION = "DelegationPool"
 )
 
 type Store struct {
@@ -554,9 +560,21 @@ func (st *Store) GetPoolList() (map[string]keys.Address, error) {
 	if err != nil {
 		return nil, err
 	}
-	poolList["BountyPool"] = keys.Address(propOpt.BountyProgramAddr)
-	poolList["FeePool"] = keys.Address(fees.POOL_KEY)
-	poolList["RewardsPool"] = keys.Address(rewardOpt.RewardPoolAddress)
-	poolList["DelegationPool"] = keys.Address(network_delegation.DELEGATION_POOL_KEY)
+	poolList[POOL_BOUNTY] = keys.Address(propOpt.BountyProgramAddr)
+	poolList[POOL_FEE] = keys.Address(fees.POOL_KEY)
+	poolList[POOL_REWARDS] = keys.Address(rewardOpt.RewardPoolAddress)
+	poolList[POOL_DELEGATION] = keys.Address(network_delegation.DELEGATION_POOL_KEY)
 	return poolList, nil
+}
+
+func (st *Store) GetPoolByName(poolName string) (address keys.Address, err error) {
+	poolList, err := st.GetPoolList()
+	if err != nil {
+		return
+	}
+	address, ok := poolList[poolName]
+	if !ok {
+		err = errors.New("Pool not found: " + poolName)
+	}
+	return
 }

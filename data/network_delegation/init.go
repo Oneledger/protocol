@@ -11,7 +11,7 @@ var logger *log.Logger
 var prefixMap map[DelegationPrefixType]string
 
 const (
-	MatureType  DelegationPrefixType = 0x103
+	//MatureType  DelegationPrefixType = 0x103
 	PendingType DelegationPrefixType = 0x102
 	ActiveType  DelegationPrefixType = 0x101
 
@@ -28,7 +28,7 @@ func init() {
 
 	prefixMap = make(map[DelegationPrefixType]string)
 	prefixMap[ActiveType] = "active_list"
-	prefixMap[MatureType] = "mature_list"
+	//prefixMap[MatureType] = "mature_list"
 	prefixMap[PendingType] = "pending_list"
 }
 

@@ -9,7 +9,6 @@ import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/Oneledger/protocol/data/balance"
-	gov "github.com/Oneledger/protocol/data/governance"
 )
 
 type SendPool struct {
@@ -132,15 +131,10 @@ func runSendPool(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		return helpers.LogAndReturnFalse(ctx.Logger, balance.ErrBalanceErrorMinusFailed, sendPool.Tags(), err)
 	}
 	// Get Pool Address
-	poolList, err := ctx.GovernanceStore.GetPoolList()
+	toPool, err := ctx.GovernanceStore.GetPoolByName(sendPool.PoolName)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, gov.ErrPoolList, sendPool.Tags(), err)
-	}
-	if _, ok := poolList[sendPool.PoolName]; !ok {
 		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrPoolDoesNotExist, sendPool.Tags(), err)
 	}
-
-	toPool := poolList[sendPool.PoolName]
 
 	//Calculate Updated Balance for Log
 	currencyOlt, _ := ctx.Currencies.GetCurrencyByName(sendPool.Amount.Currency)
