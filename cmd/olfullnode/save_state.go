@@ -659,7 +659,7 @@ func DumpGovProposalsToFile(pm *governance.ProposalMasterStore, writer io.Writer
 }
 
 func DumpNetworkDelegatorsToFile(nd *network_delegation.Store, writer io.Writer, fn func(writer io.Writer, obj interface{}) bool) {
-	prefixList := []network_delegation.DelegationPrefixType{network_delegation.ActiveType, network_delegation.MatureType, network_delegation.PendingType}
+	prefixList := []network_delegation.DelegationPrefixType{network_delegation.ActiveType, network_delegation.PendingType}
 	delimiter := ","
 	version := nd.State.Version()
 
@@ -712,7 +712,7 @@ func DumpNetworkDelegatorsToFile(nd *network_delegation.Store, writer io.Writer,
 			})
 		}
 		endList(writer)
-		if prefix == network_delegation.ActiveType || prefix == network_delegation.MatureType {
+		if prefix == network_delegation.ActiveType {
 			writeDelimiter(delimiter, writer)
 		}
 	}

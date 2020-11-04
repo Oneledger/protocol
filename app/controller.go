@@ -138,7 +138,6 @@ func (app *App) blockBeginner() blockBeginner {
 			app.logger.Error("validator set with error", err)
 		}
 
-
 		result := ResponseBeginBlock{
 			Events: []abciTypes.Event{},
 		}
@@ -158,15 +157,8 @@ func (app *App) blockBeginner() blockBeginner {
 		}
 
 		// update Block Rewards
-		blockRewardEvent := handleBlockRewards(&app.Context, req)
+		blockRewardEvent := handleBlockRewards(&app.Context, req, app.logger)
 		result.Events = append(result.Events, blockRewardEvent)
-
-		// matured delegators' pending withdrawal
-		delegRewardStore := app.Context.netwkDelegators.Rewards.WithState(app.Context.deliver)
-		delegRewardEvent, anyMatured := delegRewardStore.MaturePendingRewards(req.Header.Height)
-		if anyMatured {
-			result.Events = append(result.Events, delegRewardEvent)
-		}
 
 		//update the header to current block
 		app.header = req.Header
@@ -497,8 +489,8 @@ func getRewardForValidator(totalPower *big.Int, validatorPower *big.Int, totalRe
 	return reward
 }
 
-func handleDelegationRewards(delegCtx *network_delegation.DelegationRewardCtx, appCtx *context, kvMap map[string]kv.Pair) (
-	resp *network_delegation.DelegationRewardResponse) {
+func handleDelegationRewards(delegCtx *network_delegation.DelegationRewardCtx, appCtx *context, kvMap map[string]kv.Pair,
+	req *RequestBeginBlock, logger *log.Logger) (resp *network_delegation.DelegationRewardResponse) {
 	var err error
 	networkDelegators := appCtx.netwkDelegators.WithState(appCtx.deliver)
 	//rewardMaster := appCtx.rewardMaster.WithState(appCtx.deliver)
@@ -559,10 +551,44 @@ func handleDelegationRewards(delegCtx *network_delegation.DelegationRewardCtx, a
 		Key:   []byte(poolList["DelegationPool"].String()),
 		Value: []byte(resp.DelegationRewards.String()),
 	}
+
+	//Mature pending rewards to delegator's balance
+	height := req.Header.Height
+	rewardsStore := networkDelegators.Rewards
+	balanceStore := appCtx.balances.WithState(appCtx.deliver)
+	c, ok := appCtx.currencies.GetCurrencyByName("OLT")
+	if !ok {
+		logger.Errorf("failed to get OLT as currency from context")
+		panic("failed to get OLT as currency from context")
+	}
+	// put all the pending rewards at the height directly to delegator's balance
+	rewardsStore.IteratePD(height, func(delegator keys.Address, amt *balance.Amount) bool {
+		//Add each of them to user's address
+		coin := c.NewCoinFromAmount(*amt)
+		err := balanceStore.AddToAddress(delegator, coin)
+		if err != nil {
+			logger.Errorf("failed to add pending rewards amount at height: %d to address: %s", height, delegator.String())
+			panic(err)
+		}
+		// clear pending amount
+		zero := balance.NewAmount(0)
+		err = rewardsStore.SetPendingRewards(delegator, zero, height)
+		if err != nil {
+			logger.Errorf("failed to clear pending rewards amount at height: %d for address: %s", height, delegator.String())
+			panic(err)
+		}
+		//Create Event for maturing rewards
+		rewardsKey := "deleg_rewards_mature_" + delegator.String()
+		kvMap[rewardsKey] = kv.Pair{
+			Key:   []byte(rewardsKey),
+			Value: []byte(coin.String()),
+		}
+		return false
+	})
 	return
 }
 
-func handleBlockRewards(appCtx *context, block RequestBeginBlock) abciTypes.Event {
+func handleBlockRewards(appCtx *context, block RequestBeginBlock, logger *log.Logger) abciTypes.Event {
 	votes := block.LastCommitInfo.Votes
 	lastHeight := block.GetHeader().Height
 	rewardMaster := appCtx.rewardMaster.WithState(appCtx.deliver)
@@ -641,7 +667,7 @@ func handleBlockRewards(appCtx *context, block RequestBeginBlock) abciTypes.Even
 			Height:          lastHeight,
 			ProposerAddress: keys.Address(block.Header.ProposerAddress),
 		}
-		delegationResp = handleDelegationRewards(delegationCtx, appCtx, kvMap)
+		delegationResp = handleDelegationRewards(delegationCtx, appCtx, kvMap, &block, logger)
 
 		//Update Consumed Amount
 		totalConsumed = totalConsumed.Plus(*delegationResp.DelegationRewards)
@@ -798,7 +824,7 @@ func addMaturedAmountsToBalance(ctx *context, logger *log.Logger, req *RequestBe
 		zeroCoin := c.NewCoinFromAmount(*balance.NewAmount(0))
 		err = delegStore.SetPendingAmount(*addr, height, &zeroCoin)
 		if err != nil {
-			logger.Errorf("failed to clear matured undelegation amount at height: %d for address: %s", height, addr.String())
+			logger.Errorf("failed to clear pending undelegation amount at height: %d for address: %s", height, addr.String())
 			panic(err)
 		}
 		event.Attributes = append(event.Attributes, kv.Pair{

@@ -132,10 +132,10 @@ func (svc *Service) GetDelegRewards(req client.GetDelegRewardsRequest, resp *cli
 	if err != nil {
 		return err
 	}
-	matured, err := svc.netwkDelegators.Rewards.GetMaturedRewards(req.Delegator)
-	if err != nil {
-		return err
-	}
+	//matured, err := svc.netwkDelegators.Rewards.GetMaturedRewards(req.Delegator)
+	//if err != nil {
+	//	return err
+	//}
 
 	pending := &network_delegation.DelegPendingRewards{Rewards: []*network_delegation.PendingRewards{}}
 	if req.InclPending {
@@ -148,7 +148,7 @@ func (svc *Service) GetDelegRewards(req client.GetDelegRewardsRequest, resp *cli
 	*resp = client.GetDelegRewardsReply{
 		Balance: *balance,
 		Pending: pending.Rewards,
-		Matured: *matured,
+		//Matured: *matured,
 		Height:  height,
 	}
 	return nil
