@@ -96,6 +96,32 @@ func TestDelegRewardStore_AddGetRewardsBalance(t *testing.T) {
 	assert.Equal(t, balance, amt1.Plus(*amt2))
 }
 
+func TestStore_IterateActiveRewards(t *testing.T) {
+	setup()
+	storeRwz.AddRewardsBalance(delegators[0], balance.NewAmount(30))
+	storeRwz.AddRewardsBalance(delegators[1], balance.NewAmount(20))
+	storeRwz.AddRewardsBalance(delegators[0], balance.NewAmount(10))
+	storeRwz.AddRewardsBalance(delegators[1], balance.NewAmount(300))
+
+	storeRwz.state.Commit()
+	count := 0
+	total0 := balance.NewAmount(0)
+	total1 := balance.NewAmount(0)
+	storeRwz.IterateActiveRewards(func(addr *keys.Address, amt *balance.Amount) bool {
+		if addr.Equal(delegators[0]) {
+			total0 = total0.Plus(*amt)
+		}
+		if addr.Equal(delegators[1]) {
+			total1 = total1.Plus(*amt)
+		}
+		count++
+		return false
+	})
+	assert.Equal(t, 2, count)
+	assert.Equal(t, balance.NewAmount(40), total0)
+	assert.Equal(t, balance.NewAmount(320), total1)
+}
+
 func TestDelegRewardStore_Withdraw(t *testing.T) {
 	setup()
 	curHeight := int64(8)
@@ -270,6 +296,22 @@ func TestGetTotalRewards(t *testing.T) {
 	totalRewards, err := storeRwz.GetTotalRewards()
 	assert.Nil(t, err)
 	assert.Equal(t, amt1.Plus(*amt2).Plus(*amt2).Plus(*amt3), totalRewards)
+}
+
+func TestStore_IteratePendingAmounts(t *testing.T) {
+	setup()
+	storeRwz.addPendingRewards(delegators[0], balance.NewAmount(30), 500)
+	storeRwz.addPendingRewards(delegators[1], balance.NewAmount(30), 500)
+	storeRwz.addPendingRewards(delegators[0], balance.NewAmount(30), 700)
+	storeRwz.addPendingRewards(delegators[0], balance.NewAmount(30), 800)
+
+	storeRwz.state.Commit()
+	count := 0
+	storeRwz.IteratePD(500, func(addr keys.Address, amt *balance.Amount) bool {
+		count++
+		return false
+	})
+	assert.Equal(t, 2, count)
 }
 
 func TestStore_IterateAllPendingAmounts(t *testing.T) {

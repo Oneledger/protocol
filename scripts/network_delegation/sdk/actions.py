@@ -32,13 +32,13 @@ class NetWorkDelegate:
 
     def query_delegation(self):
         req = {
-            "delegationAddress": self.delegationaddress,
+            "delegationAddresses": [self.delegationaddress],
         }
         resp = rpc_call('query.ListDelegation', req)
         print resp
         result = resp["result"]
         # prmodeps(resp, indent=4)
-        return result["delegationStats"]
+        return result["allDelegStats"]
 
     def _network_undelegate(self, amount):
         req = {
@@ -310,3 +310,17 @@ def query_full_balance(address):
     else:
         result = ""
     return result
+
+
+def query_delegation(delegation_addresses=None):
+    if (delegation_addresses == None):
+        delegation_addresses = []
+    req = {
+        "delegationAddresses": delegation_addresses,
+    }
+
+    resp = rpc_call('query.ListDelegation', req)
+    # print resp
+    result = resp["result"]
+    print json.dumps(resp, indent=4)
+    return result["allDelegStats"]

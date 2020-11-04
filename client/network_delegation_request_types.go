@@ -58,7 +58,8 @@ type ListDelegationRequest struct {
 }
 
 type ListDelegationReply struct {
-	AllDelegStats []FullDelegStats `json:"allDelegStats"`
+	AllDelegStats []*FullDelegStats `json:"allDelegStats"`
+	Height        int64            `json:"height"`
 }
 
 type DelegStats struct {

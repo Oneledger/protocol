@@ -19,6 +19,7 @@ if __name__ == "__main__":
     time.sleep(2)
     newDelegation.send_network_undelegate(undelegate_amount_1_long)
     newDelegation.send_network_undelegate(undelegate_amount_2_long)
+    query_delegation()
     time.sleep(5)
     newDelegation.send_network_undelegate(undelegate_amount_3_long)
     time.sleep(2)

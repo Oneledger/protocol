@@ -92,6 +92,7 @@ if __name__ == "__main__":
     amt1_long = str(amt1) + '0' * 18
     withdraw1 = WithdrawRewards(delegator1, amt1_long, node_1 + "/keystore/")
     withdraw1.send(True)
+    query_delegation()
     wait_for(7)
 
     # query total rewards and check

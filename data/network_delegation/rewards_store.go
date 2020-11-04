@@ -171,7 +171,7 @@ func (drs *DelegRewardStore) IterateActiveRewards(fn func(addr *keys.Address, am
 //	err = drs.set(key, result)
 //	return err
 //}
-// below is removed since finalize withdraw rewards logic is moved to block beginner, OLP-1266
+//
 //// Mature, if any, all delegators' pending withdrawal at a specific height
 //func (drs *DelegRewardStore) MaturePendingRewards(height int64) (event abciTypes.Event, any bool) {
 //	event.Type = "deleg_rewards"
