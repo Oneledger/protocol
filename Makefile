@@ -61,7 +61,7 @@ utest:
 		-coverprofile a.out
 
 loadtest: reset
-	python scripts/loadtest/run_tests.py
+	python scripts/loadtest/run_tests.py -c -s 50
 
 coverage:
 	go tool cover -html=a.out -o cover.html

@@ -9,10 +9,10 @@ class WithdrawRewardsTxLoad(TxLoad):
         self.balance = 0 # num of OLTs
 
     def setup(self, interval):
-        super(WithdrawRewardsTxLoad, self).setup(interval)
-        self.test_account = createAccount(node=self.cfg.node_root, funds=self.cfg.init_fund, funder=self.node_account)
-        self.tx_deleg = NetWorkDelegate(self.test_account, '1000000' + '0' * 18, self.key_path)
-        self.tx_deleg.send_network_Delegate(mode=TxCommit)
+        new_run = super(WithdrawRewardsTxLoad, self).setup(interval, False)
+        if new_run:
+            self.tx_deleg = NetWorkDelegate(self.test_account, '1000000' + '0' * 18, self.key_path)
+            self.tx_deleg.send_network_Delegate(mode=TxCommit)
         self.tx_draw = WithdrawRewards(self.test_account, 10**18, self.key_path)
 
     def run_tx(self, i):
