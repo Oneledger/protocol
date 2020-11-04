@@ -55,9 +55,9 @@ func init() {
 		if i >= pendingStartIndex && i < matureStartIndex {
 			pendingAddrList[h.Address().String()] = coinList[i]
 		}
-		if i >= matureStartIndex {
-			matureAddrList[h.Address().String()] = coinList[i]
-		}
+		//if i >= matureStartIndex {
+		//	matureAddrList[h.Address().String()] = coinList[i]
+		//}
 	}
 
 	//Create Test DB
@@ -80,24 +80,24 @@ func TestStore_Set_Get(t *testing.T) {
 		assert.Equal(t, coin, v)
 	}
 
-	//Test Mature Store
-	store.WithPrefix(MatureType)
-	for i, v := range matureAddrList {
-		addr := keys.Address{}
-		_ = addr.UnmarshalText([]byte(i))
-		err := store.Set(addr, v)
-		assert.Equal(t, err, nil)
-
-		coin, err := store.Get(addr)
-		assert.Equal(t, coin, v)
-	}
+	////Test Mature Store
+	//store.WithPrefix(MatureType)
+	//for i, v := range matureAddrList {
+	//	addr := keys.Address{}
+	//	_ = addr.UnmarshalText([]byte(i))
+	//	err := store.Set(addr, v)
+	//	assert.Equal(t, err, nil)
+	//
+	//	coin, err := store.Get(addr)
+	//	assert.Equal(t, coin, v)
+	//}
 
 	store.State.Commit()
 }
 
 func TestStore_Exists(t *testing.T) {
-	store.WithPrefix(MatureType)
-	for key := range matureAddrList {
+	store.WithPrefix(ActiveType)
+	for key := range activeAddrList {
 		addr := &keys.Address{}
 		_ = addr.UnmarshalText([]byte(key))
 		res := store.Exists(addr)
@@ -113,13 +113,13 @@ func TestStore_IterateActiveAmounts(t *testing.T) {
 	})
 }
 
-func TestStore_IterateMatureAmounts(t *testing.T) {
-	//iterate all Active amounts
-	store.IterateMatureAmounts(func(addr *keys.Address, coin *balance.Coin) bool {
-		assert.Equal(t, coin, matureAddrList[addr.String()])
-		return false
-	})
-}
+//func TestStore_IterateMatureAmounts(t *testing.T) {
+//	//iterate all Active amounts
+//	store.IterateMatureAmounts(func(addr *keys.Address, coin *balance.Coin) bool {
+//		assert.Equal(t, coin, matureAddrList[addr.String()])
+//		return false
+//	})
+//}
 
 func TestStore_SetPendingAmount(t *testing.T) {
 	//Test Set Pending Amount at different heights - pending address list is at 500, active address list is at 600

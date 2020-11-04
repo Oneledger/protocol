@@ -2,6 +2,7 @@ package network_delegation
 
 import (
 	"encoding/json"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/Oneledger/protocol/data/balance"
@@ -115,7 +116,7 @@ func runUndelegate(ctx *action.Context, tx action.RawTx) (bool, action.Response)
 		return helpers.LogAndReturnFalse(ctx.Logger, net_delg.ErrGettingActiveDelgAmount, ud.Tags(), err)
 	}
 
-	undelegateCoin := ud.Amount.ToCoinWithBase(ctx.Currencies)
+	undelegateCoin := ud.Amount.ToCoin(ctx.Currencies)
 	// cut the amount from active store
 	remainCoin, err := delegationCoin.Minus(undelegateCoin)
 	if err != nil {
@@ -156,14 +157,10 @@ func runUndelegate(ctx *action.Context, tx action.RawTx) (bool, action.Response)
 	}
 
 	//Get Delegation Pool
-	poolList, err := ctx.GovernanceStore.GetPoolList()
+	delagationPool, err := ctx.GovernanceStore.GetPoolByName(gov.POOL_DELEGATION)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, gov.ErrPoolList, ud.Tags(), err)
-	}
-	if _, ok := poolList["DelegationPool"]; !ok {
 		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrPoolDoesNotExist, ud.Tags(), err)
 	}
-	delagationPool := poolList["DelegationPool"]
 
 	//cut balance from pool
 	err = ctx.Balances.MinusFromAddress(delagationPool, undelegateCoin)

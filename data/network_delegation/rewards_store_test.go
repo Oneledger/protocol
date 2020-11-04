@@ -74,11 +74,11 @@ func TestNewDelegRewardStore(t *testing.T) {
 	assert.Nil(t, err)
 	pending, err := storeRwz.GetPendingRewards(delegators[0], 1, delegOpt.RewardsMaturityTime)
 	assert.Nil(t, err)
-	matured, err := storeRwz.GetMaturedRewards(delegators[0])
-	assert.Nil(t, err)
+	//matured, err := storeRwz.GetMaturedRewards(delegators[0])
+	//assert.Nil(t, err)
 	assert.Equal(t, zero, balance)
 	assert.EqualValues(t, DelegPendingRewards{Address: delegators[0], Rewards: []*PendingRewards{}}, *pending)
-	assert.Equal(t, zero, matured)
+	//assert.Equal(t, zero, matured)
 }
 
 func TestDelegRewardStore_AddGetRewardsBalance(t *testing.T) {
@@ -133,82 +133,115 @@ func TestDelegRewardStore_GetPendingRewards(t *testing.T) {
 	assert.Equal(t, *pending, *expected)
 }
 
-func TestDelegRewardStore_MaturePendingRewards(t *testing.T) {
+func TestDelegRewardStore_SetPendingRewards(t *testing.T) {
 	setup()
 	curHeight := int64(8)
 	storeRwz.AddRewardsBalance(delegators[0], amt1)
 	storeRwz.AddRewardsBalance(delegators[0], amt2)
-	storeRwz.AddRewardsBalance(delegators[1], amt3)
 
 	storeRwz.Withdraw(delegators[0], draw1, curHeight+delegOpt.RewardsMaturityTime)
-	storeRwz.Withdraw(delegators[0], draw2, curHeight+delegOpt.RewardsMaturityTime)
 	storeRwz.Withdraw(delegators[0], draw3, curHeight+delegOpt.RewardsMaturityTime+1)
-	storeRwz.Withdraw(delegators[1], draw4, curHeight+delegOpt.RewardsMaturityTime)
-	storeRwz.Withdraw(delegators[1], draw5, curHeight+delegOpt.RewardsMaturityTime+1)
-	storeRwz.state.Commit()
-	storeRwz.MaturePendingRewards(curHeight + delegOpt.RewardsMaturityTime)
-
-	// check each delegator's pending
-	pending1, err := storeRwz.GetPendingRewards(delegators[0], curHeight+1, delegOpt.RewardsMaturityTime+1)
+	pending, err := storeRwz.GetPendingRewards(delegators[0], curHeight+1, delegOpt.RewardsMaturityTime+1)
 	assert.Nil(t, err)
-	expected1 := &DelegPendingRewards{Address: delegators[0]}
-	expected1.Rewards = append(expected1.Rewards, &PendingRewards{
+	expected := &DelegPendingRewards{Address: delegators[0]}
+	expected.Rewards = append(expected.Rewards, &PendingRewards{
+		Height: curHeight + delegOpt.RewardsMaturityTime,
+		Amount: *draw1,
+	})
+	expected.Rewards = append(expected.Rewards, &PendingRewards{
 		Height: curHeight + delegOpt.RewardsMaturityTime + 1,
 		Amount: *draw3,
 	})
-	assert.Equal(t, *pending1, *expected1)
-
-	pending2, err := storeRwz.GetPendingRewards(delegators[1], curHeight+1, delegOpt.RewardsMaturityTime+1)
+	assert.Equal(t, *pending, *expected)
+	err = storeRwz.SetPendingRewards(delegators[0], zero, curHeight+delegOpt.RewardsMaturityTime)
 	assert.Nil(t, err)
-	expected2 := &DelegPendingRewards{Address: delegators[1]}
-	expected2.Rewards = append(expected2.Rewards, &PendingRewards{
+	pendingAfterSet, err := storeRwz.GetPendingRewards(delegators[0], curHeight+1, delegOpt.RewardsMaturityTime+1)
+	assert.Nil(t, err)
+	expected = &DelegPendingRewards{Address: delegators[0]}
+	expected.Rewards = append(expected.Rewards, &PendingRewards{
 		Height: curHeight + delegOpt.RewardsMaturityTime + 1,
-		Amount: *draw5,
+		Amount: *draw3,
 	})
-	assert.Equal(t, *pending2, *expected2)
-
-	// check each delegator's matured rewards
-	matured1, err := storeRwz.GetMaturedRewards(delegators[0])
-	assert.Nil(t, err)
-	maturedExp1 := draw1.Plus(*draw2)
-	assert.Equal(t, *matured1, *maturedExp1)
-
-	matured2, err := storeRwz.GetMaturedRewards(delegators[1])
-	assert.Nil(t, err)
-	maturedExp2 := *draw4
-	assert.Equal(t, *matured2, maturedExp2)
+	assert.Equal(t, *pendingAfterSet, *expected)
 }
 
-func TestDelegRewardStore_Finalize(t *testing.T) {
-	setup()
-	curHeight := int64(8)
-	storeRwz.AddRewardsBalance(delegators[0], amt1)
-	storeRwz.AddRewardsBalance(delegators[0], amt2)
+// below is removed since finalize withdraw rewards logic is moved to block beginner, OLP-1266
+//func TestDelegRewardStore_MaturePendingRewards(t *testing.T) {
+//	setup()
+//	curHeight := int64(8)
+//	storeRwz.AddRewardsBalance(delegators[0], amt1)
+//	storeRwz.AddRewardsBalance(delegators[0], amt2)
+//	storeRwz.AddRewardsBalance(delegators[1], amt3)
+//
+//	storeRwz.Withdraw(delegators[0], draw1, curHeight+delegOpt.RewardsMaturityTime)
+//	storeRwz.Withdraw(delegators[0], draw2, curHeight+delegOpt.RewardsMaturityTime)
+//	storeRwz.Withdraw(delegators[0], draw3, curHeight+delegOpt.RewardsMaturityTime+1)
+//	storeRwz.Withdraw(delegators[1], draw4, curHeight+delegOpt.RewardsMaturityTime)
+//	storeRwz.Withdraw(delegators[1], draw5, curHeight+delegOpt.RewardsMaturityTime+1)
+//	storeRwz.state.Commit()
+//	storeRwz.MaturePendingRewards(curHeight + delegOpt.RewardsMaturityTime)
+//
+//	// check each delegator's pending
+//	pending1, err := storeRwz.GetPendingRewards(delegators[0], curHeight+1, delegOpt.RewardsMaturityTime+1)
+//	assert.Nil(t, err)
+//	expected1 := &DelegPendingRewards{Address: delegators[0]}
+//	expected1.Rewards = append(expected1.Rewards, &PendingRewards{
+//		Height: curHeight + delegOpt.RewardsMaturityTime + 1,
+//		Amount: *draw3,
+//	})
+//	assert.Equal(t, *pending1, *expected1)
+//
+//	pending2, err := storeRwz.GetPendingRewards(delegators[1], curHeight+1, delegOpt.RewardsMaturityTime+1)
+//	assert.Nil(t, err)
+//	expected2 := &DelegPendingRewards{Address: delegators[1]}
+//	expected2.Rewards = append(expected2.Rewards, &PendingRewards{
+//		Height: curHeight + delegOpt.RewardsMaturityTime + 1,
+//		Amount: *draw5,
+//	})
+//	assert.Equal(t, *pending2, *expected2)
+//
+//	// check each delegator's matured rewards
+//	matured1, err := storeRwz.GetMaturedRewards(delegators[0])
+//	assert.Nil(t, err)
+//	maturedExp1 := draw1.Plus(*draw2)
+//	assert.Equal(t, *matured1, *maturedExp1)
+//
+//	matured2, err := storeRwz.GetMaturedRewards(delegators[1])
+//	assert.Nil(t, err)
+//	maturedExp2 := *draw4
+//	assert.Equal(t, *matured2, maturedExp2)
+//}
 
-	storeRwz.Withdraw(delegators[0], draw1, curHeight+delegOpt.RewardsMaturityTime)
-	storeRwz.Withdraw(delegators[0], draw2, curHeight+delegOpt.RewardsMaturityTime)
-	storeRwz.Withdraw(delegators[0], draw3, curHeight+delegOpt.RewardsMaturityTime+1)
-	storeRwz.state.Commit()
-	storeRwz.MaturePendingRewards(curHeight + delegOpt.RewardsMaturityTime)
-
-	// finalizes a part of matured rewards
-	err := storeRwz.Finalize(delegators[0], draw1)
-	assert.Nil(t, err)
-	matured, err := storeRwz.GetMaturedRewards(delegators[0])
-	assert.Nil(t, err)
-	assert.Equal(t, *matured, *draw2)
-
-	// finalizes more than matured rewards
-	err = storeRwz.Finalize(delegators[0], draw1.Plus(*draw2))
-	assert.NotNil(t, err)
-
-	// finalizes all matured rewards
-	err = storeRwz.Finalize(delegators[0], draw2)
-	assert.Nil(t, err)
-	matured, err = storeRwz.GetMaturedRewards(delegators[0])
-	assert.Nil(t, err)
-	assert.Equal(t, *matured, balance.AmtZero)
-}
+//func TestDelegRewardStore_Finalize(t *testing.T) {
+//	setup()
+//	curHeight := int64(8)
+//	storeRwz.AddRewardsBalance(delegators[0], amt1)
+//	storeRwz.AddRewardsBalance(delegators[0], amt2)
+//
+//	storeRwz.Withdraw(delegators[0], draw1, curHeight+delegOpt.RewardsMaturityTime)
+//	storeRwz.Withdraw(delegators[0], draw2, curHeight+delegOpt.RewardsMaturityTime)
+//	storeRwz.Withdraw(delegators[0], draw3, curHeight+delegOpt.RewardsMaturityTime+1)
+//	storeRwz.state.Commit()
+//	storeRwz.MaturePendingRewards(curHeight + delegOpt.RewardsMaturityTime)
+//
+//	// finalizes a part of matured rewards
+//	err := storeRwz.Finalize(delegators[0], draw1)
+//	assert.Nil(t, err)
+//	matured, err := storeRwz.GetMaturedRewards(delegators[0])
+//	assert.Nil(t, err)
+//	assert.Equal(t, *matured, *draw2)
+//
+//	// finalizes more than matured rewards
+//	err = storeRwz.Finalize(delegators[0], draw1.Plus(*draw2))
+//	assert.NotNil(t, err)
+//
+//	// finalizes all matured rewards
+//	err = storeRwz.Finalize(delegators[0], draw2)
+//	assert.Nil(t, err)
+//	matured, err = storeRwz.GetMaturedRewards(delegators[0])
+//	assert.Nil(t, err)
+//	assert.Equal(t, *matured, balance.AmtZero)
+//}
 
 func TestGetTotalRewards(t *testing.T) {
 	setup()
@@ -224,17 +257,18 @@ func TestGetTotalRewards(t *testing.T) {
 	storeRwz.Withdraw(delegators[1], draw3, curHeight+delegOpt.RewardsMaturityTime+1)
 
 	storeRwz.state.Commit()
-	storeRwz.MaturePendingRewards(curHeight + delegOpt.RewardsMaturityTime)
-
-	// finalizes all matured rewards for delegator[0]
-	err := storeRwz.Finalize(delegators[0], draw1.Plus(*draw2))
-	assert.Nil(t, err)
-	matured, err := storeRwz.GetMaturedRewards(delegators[0])
-	assert.Nil(t, err)
-	assert.Equal(t, *matured, balance.AmtZero)
+	//storeRwz.MaturePendingRewards(curHeight + delegOpt.RewardsMaturityTime)
+	//
+	//// finalizes all matured rewards for delegator[0]
+	//err := storeRwz.Finalize(delegators[0], draw1.Plus(*draw2))
+	//assert.Nil(t, err)
+	//matured, err := storeRwz.GetMaturedRewards(delegators[0])
+	//assert.Nil(t, err)
+	//assert.Equal(t, *matured, balance.AmtZero)
 
 	// get total rewards that has been generated
 	totalRewards, err := storeRwz.GetTotalRewards()
+	assert.Nil(t, err)
 	assert.Equal(t, amt1.Plus(*amt2).Plus(*amt2).Plus(*amt3), totalRewards)
 }
 

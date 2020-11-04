@@ -659,7 +659,7 @@ func DumpGovProposalsToFile(pm *governance.ProposalMasterStore, writer io.Writer
 }
 
 func DumpNetworkDelegatorsToFile(nd *network_delegation.Store, writer io.Writer, fn func(writer io.Writer, obj interface{}) bool) {
-	prefixList := []network_delegation.DelegationPrefixType{network_delegation.ActiveType, network_delegation.MatureType, network_delegation.PendingType}
+	prefixList := []network_delegation.DelegationPrefixType{network_delegation.ActiveType, network_delegation.PendingType}
 	delimiter := ","
 	version := nd.State.Version()
 
@@ -680,19 +680,19 @@ func DumpNetworkDelegatorsToFile(nd *network_delegation.Store, writer io.Writer,
 				iterator++
 				return false
 			})
-		case network_delegation.MatureType:
-			nd.IterateMatureAmounts(func(addr *keys.Address, coin *balance.Coin) bool {
-				if iterator != 0 {
-					writeDelimiter(delimiter, writer)
-				}
-				delegatorState := network_delegation.Delegator{
-					Address: addr,
-					Amount:  coin,
-				}
-				fn(writer, delegatorState)
-				iterator++
-				return false
-			})
+		//case network_delegation.MatureType:
+		//	nd.IterateMatureAmounts(func(addr *keys.Address, coin *balance.Coin) bool {
+		//		if iterator != 0 {
+		//			writeDelimiter(delimiter, writer)
+		//		}
+		//		delegatorState := network_delegation.Delegator{
+		//			Address: addr,
+		//			Amount:  coin,
+		//		}
+		//		fn(writer, delegatorState)
+		//		iterator++
+		//		return false
+		//	})
 		case network_delegation.PendingType:
 			nd.IterateAllPendingAmounts(func(height int64, addr *keys.Address, coin *balance.Coin) bool {
 				if iterator != 0 {
@@ -712,7 +712,7 @@ func DumpNetworkDelegatorsToFile(nd *network_delegation.Store, writer io.Writer,
 			})
 		}
 		endList(writer)
-		if prefix == network_delegation.ActiveType || prefix == network_delegation.MatureType {
+		if prefix == network_delegation.ActiveType {
 			writeDelimiter(delimiter, writer)
 		}
 	}

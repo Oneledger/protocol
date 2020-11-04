@@ -123,6 +123,7 @@ const (
 	NetDelgErrWithdraw                      = 600507
 	NetDelgErrFinalizingDelgRewards         = 600508
 	NetDelgErrAddingWithdrawAmountToBalance = 600509
+	NetDelgErrReinvest                      = 600510
 
 	GovErr                                = 7001
 	GovErrGetProposalOptions              = 700101
@@ -181,7 +182,6 @@ const (
 	TxErrGettingBTCOptions                = 700153
 	TxErrGettingRewardsOptions            = 700154
 	TxErrGettingFeeOptions                = 700155
-	GovErrErrGettingPoolList              = 700156
 	TxErrValidateGovState                 = 700156
 	TxErrGetStakingOptions                = 700158
 	TxErrInvalidOptions                   = 700159

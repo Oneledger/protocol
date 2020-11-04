@@ -109,27 +109,26 @@ func (s *Service) WithdrawDelegRewards(args client.WithdrawDelegRewardsRequest, 
 	return nil
 }
 
-func (s *Service) FinalizeDelegRewards(args client.FinalizeRewardsRequest, reply *client.CreateTxReply) error {
-
-	undelegate := nwd.DeleWithdrawRewards{
+func (s *Service) ReinvestDelegRewards(args client.ReinvestDelegRewardsRequest, reply *client.CreateTxReply) error {
+	invest := nwd.Reinvest{
 		Delegator: args.Delegator,
 		Amount:    args.Amount,
 	}
 
-	data, err := undelegate.Marshal()
+	data, err := invest.Marshal()
 	if err != nil {
 		return err
 	}
 
-	fee := action.Fee{
-		Price: args.GasPrice,
-		Gas:   args.Gas,
-	}
 	uuidNew, _ := uuid.NewUUID()
+	feeAmount := s.feeOpt.MinFee()
 	tx := &action.RawTx{
-		Type: action.REWARDS_FINALIZE_NETWORK_DELEGATE,
+		Type: action.REWARDS_REINVEST_NETWORK_DELEGATE,
 		Data: data,
-		Fee:  fee,
+		Fee: action.Fee{
+			Price: action.Amount{Currency: "OLT", Value: *feeAmount.Amount},
+			Gas:   20000,
+		},
 		Memo: uuidNew.String(),
 	}
 
@@ -139,41 +138,77 @@ func (s *Service) FinalizeDelegRewards(args client.FinalizeRewardsRequest, reply
 	}
 
 	*reply = client.CreateTxReply{RawTx: packet}
-
 	return nil
 }
 
-func (s *Service) WithDrawNetworkDelegation(args client.NetworkDelegateRequest, reply *client.CreateTxReply) error {
+// below is removed since finalize withdraw rewards logic is moved to block beginner, OLP-1266
+//func (s *Service) FinalizeDelegRewards(args client.FinalizeRewardsRequest, reply *client.CreateTxReply) error {
+//
+//	undelegate := nwd.DeleWithdrawRewards{
+//		Delegator: args.Delegator,
+//		Amount:    args.Amount,
+//	}
+//
+//	data, err := undelegate.Marshal()
+//	if err != nil {
+//		return err
+//	}
+//
+//	fee := action.Fee{
+//		Price: args.GasPrice,
+//		Gas:   args.Gas,
+//	}
+//	uuidNew, _ := uuid.NewUUID()
+//	tx := &action.RawTx{
+//		Type: action.REWARDS_FINALIZE_NETWORK_DELEGATE,
+//		Data: data,
+//		Fee:  fee,
+//		Memo: uuidNew.String(),
+//	}
+//
+//	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
+//	if err != nil {
+//		return codes.ErrSerialization
+//	}
+//
+//	*reply = client.CreateTxReply{RawTx: packet}
+//
+//	return nil
+//}
 
-	withdrawNetworkDelegation := nwd.WithdrawNetworkDelegation{
-		DelegationAddress: args.DelegationAddress,
-		Amount:            args.Amount,
-	}
+// below is removed since withdraw logic is moved to block beginner, OLP-1267
 
-	data, err := withdrawNetworkDelegation.Marshal()
-	if err != nil {
-		return err
-	}
-
-	uuidNew, _ := uuid.NewUUID()
-	fee := action.Fee{
-		Price: args.GasPrice,
-		Gas:   args.Gas,
-	}
-
-	tx := &action.RawTx{
-		Type: action.WITHDRAW_NETWORK_DELEGATION,
-		Data: data,
-		Fee:  fee,
-		Memo: uuidNew.String(),
-	}
-
-	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
-	if err != nil {
-		return codes.ErrSerialization
-	}
-
-	*reply = client.CreateTxReply{RawTx: packet}
-
-	return nil
-}
+//func (s *Service) WithDrawNetworkDelegation(args client.NetworkDelegateRequest, reply *client.CreateTxReply) error {
+//
+//	withdrawNetworkDelegation := nwd.WithdrawNetworkDelegation{
+//		DelegationAddress: args.DelegationAddress,
+//		Amount:            args.Amount,
+//	}
+//
+//	data, err := withdrawNetworkDelegation.Marshal()
+//	if err != nil {
+//		return err
+//	}
+//
+//	uuidNew, _ := uuid.NewUUID()
+//	fee := action.Fee{
+//		Price: args.GasPrice,
+//		Gas:   args.Gas,
+//	}
+//
+//	tx := &action.RawTx{
+//		Type: action.WITHDRAW_NETWORK_DELEGATION,
+//		Data: data,
+//		Fee:  fee,
+//		Memo: uuidNew.String(),
+//	}
+//
+//	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
+//	if err != nil {
+//		return codes.ErrSerialization
+//	}
+//
+//	*reply = client.CreateTxReply{RawTx: packet}
+//
+//	return nil
+//}
