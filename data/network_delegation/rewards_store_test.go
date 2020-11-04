@@ -281,7 +281,7 @@ func TestStore_IterateAllPendingAmounts(t *testing.T) {
 
 	storeRwz.state.Commit()
 	count := 0
-	storeRwz.iterateAllPD(func(height int64, addr keys.Address, amt *balance.Amount) bool {
+	storeRwz.IterateAllPD(func(height int64, addr keys.Address, amt *balance.Amount) bool {
 		count++
 		return false
 	})

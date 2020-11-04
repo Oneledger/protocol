@@ -102,6 +102,21 @@ func (drs *DelegRewardStore) GetPendingRewards(delegator keys.Address, height, b
 	return
 }
 
+// Set pending rewards for a certain height
+func (drs *DelegRewardStore) SetPendingRewards(delegator keys.Address, amount *balance.Amount, height int64) error {
+	key := drs.getPendingRewardsKey(height, delegator)
+
+	err := drs.set(key, amount)
+	return err
+}
+
+func (drs *DelegRewardStore) IterateActiveRewards(fn func(addr *keys.Address, amt *balance.Amount) bool) bool {
+	balanceKey := string(storage.Prefix("balance"))
+	return drs.iterate(balanceKey, func(delegator keys.Address, amt *balance.Amount) bool {
+		return fn(&delegator, amt)
+	})
+}
+
 // below is removed since finalize withdraw rewards logic is moved to block beginner, OLP-1266
 //// Mature, if any, all delegators' pending withdrawal at a specific height
 //func (drs *DelegRewardStore) MaturePendingRewards(height int64) (event abciTypes.Event, any bool) {
@@ -157,41 +172,6 @@ func (drs *DelegRewardStore) GetPendingRewards(delegator keys.Address, height, b
 //	return err
 //}
 
-// iterate pending rewards by height
-func (drs *DelegRewardStore) IteratePD(height int64, fn func(delegator keys.Address, amt *balance.Amount) bool) (stopped bool) {
-	pfxStr := fmt.Sprintf("%spending_%d_", string(drs.prefix), height)
-	prefix := storage.StoreKey(pfxStr)
-	return drs.state.IterateRange(
-		prefix,
-		storage.Rangefix(string(prefix)),
-		true,
-		func(key, value []byte) bool {
-			amt := balance.NewAmount(0)
-			err := drs.szlr.Deserialize(value, amt)
-			if err != nil {
-				logger.Error("failed to deserialize delegator pending rewards amount")
-				return true
-			}
-			addr := keys.Address{}
-			bytesText := key[len(prefix):]
-			err = addr.UnmarshalText(bytesText)
-			if err != nil {
-				logger.Error("failed to deserialize delegator address")
-				return true
-			}
-			return fn(addr, amt)
-		},
-	)
-}
-
-// Set pending rewards for a certain height
-func (drs *DelegRewardStore) SetPendingRewards(delegator keys.Address, amount *balance.Amount, height int64) error {
-	key := drs.getPendingRewardsKey(height, delegator)
-
-	err := drs.set(key, amount)
-	return err
-}
-
 //-----------------------------helper functions
 //
 // Set object by key
@@ -244,7 +224,34 @@ func (drs *DelegRewardStore) iterate(subkey string, fn func(delegator keys.Addre
 	)
 }
 
-func (drs *DelegRewardStore) iterateAllPD(fn func(height int64, delegator keys.Address, amt *balance.Amount) bool) bool {
+// iterate pending rewards by height
+func (drs *DelegRewardStore) IteratePD(height int64, fn func(delegator keys.Address, amt *balance.Amount) bool) (stopped bool) {
+	pfxStr := fmt.Sprintf("%spending_%d_", string(drs.prefix), height)
+	prefix := storage.StoreKey(pfxStr)
+	return drs.state.IterateRange(
+		prefix,
+		storage.Rangefix(string(prefix)),
+		true,
+		func(key, value []byte) bool {
+			amt := balance.NewAmount(0)
+			err := drs.szlr.Deserialize(value, amt)
+			if err != nil {
+				logger.Error("failed to deserialize delegator pending rewards amount")
+				return true
+			}
+			addr := keys.Address{}
+			bytesText := key[len(prefix):]
+			err = addr.UnmarshalText(bytesText)
+			if err != nil {
+				logger.Error("failed to deserialize delegator address")
+				return true
+			}
+			return fn(addr, amt)
+		},
+	)
+}
+
+func (drs *DelegRewardStore) IterateAllPD(fn func(height int64, delegator keys.Address, amt *balance.Amount) bool) bool {
 	pfxStr := fmt.Sprintf("%spending_", string(drs.prefix))
 	prefix := storage.StoreKey(pfxStr)
 	return drs.state.IterateRange(
@@ -368,7 +375,7 @@ func (drs *DelegRewardStore) SaveState() (*RewardState, bool) {
 
 	var pendingList []PendingReward
 	//Populate Pending Balances
-	drs.iterateAllPD(func(height int64, delegator keys.Address, amt *balance.Amount) bool {
+	drs.IterateAllPD(func(height int64, delegator keys.Address, amt *balance.Amount) bool {
 		pendingRew := PendingReward{
 			Amount:  amt,
 			Address: delegator,
