@@ -11,8 +11,11 @@ def add_threads_dev(threads):
     # UnDelegate, 2 threads
     threads.add_threads(UnDelegateTxLoad.dev(2))
 
-    # UnDelegate, 2 threads
+    # WithdrawRewards, 2 threads
     threads.add_threads(WithdrawRewardsTxLoad.dev(2))
+
+    # ReinvestRewards, 2 threads
+    threads.add_threads(ReinvestRewardsTxLoad.dev(2))
 
 # for devnet
 def add_threads_prod(threads, interval):
@@ -30,20 +33,23 @@ def abort_loadtest(signal, frame):
     sys.exit(0)
 
 def parse_params(argv):
+    clean_run = False
     txs_persec = TXS_PER_SEC_NORMAL
     try:
-      opts, args = getopt.getopt(argv,"s:",["speed="])
+      opts, args = getopt.getopt(argv,"cs:",["speed="])
     except getopt.GetoptError:
       print 'run_tests.py -s <speed>'
       sys.exit(-1)
     for opt, arg in opts:
+      if opt in ("-c", "--clean"):
+         clean_run = True
       if opt in ("-s", "--speed"):
          txs_persec = arg
-    return 1000 / int(txs_persec)
+    return clean_run, 1000 / int(txs_persec)
 
 if __name__ == "__main__":
     # parse options
-    interval = parse_params(sys.argv[1:])
+    clean_run, interval = parse_params(sys.argv[1:])
 
     # configuration based on environment
     if oltest == "1":
@@ -52,7 +58,8 @@ if __name__ == "__main__":
         add_threads_prod(threads)
 
     # clean up test folder
-    threads.clean()
+    if clean_run:
+        threads.clean()
 
     # setup threads before run
     threads.setup_threads(interval)

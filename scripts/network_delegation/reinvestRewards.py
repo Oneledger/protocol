@@ -37,6 +37,8 @@ if __name__ == "__main__":
     # reinvest
     invest = ReinvestRewards(delegator, node_0 + "/keystore/")
     balance_before = int(query_rewards(delegator)['balance']) / 10**18
+    invest.send(amount * 20 ** 18, exit_on_err=False, mode=TxCommit)
+    print bcolors.OKGREEN + "#### Investing more than actual rewards failed as expected" + bcolors.ENDC
     invest.send(amount * 10 ** 18, exit_on_err=True, mode=TxCommit)
     
     # check rewards left
