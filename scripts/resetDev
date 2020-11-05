@@ -8,12 +8,12 @@ olfullnode init devnet --dir $OLDATA/devnet --nonvalidators 5 \
   --empty_blocks \
   --loglevel 4 \
   --total_funds 1000000000 \
-  --maturity_time 4 \
+  --maturity_time 10 \
   --deleg_rewards_maturity_time 4 \
-  --rewards_interval 1 \
+  --rewards_interval 10 \
   --funding_deadline 10 \
   --voting_deadline 12 \
-  --timeout_commit 1000 \
+  --timeout_commit 15000 \
 #  --db_type cleveldb
 #  --deploy_smart_contracts \
 #  -eth_rpc https://rinkeby.infura.io/v3
