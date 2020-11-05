@@ -1,50 +1,44 @@
-FROM golang:1.10.3-stretch
+FROM ubuntu:16.04
 
 USER root
 
+#Update and install required libs
 RUN apt-get update && apt-get install -y \
   apt-utils \
   build-essential \
   git \
   nano \
   tmux \
-  vim
+  vim \
+  wget \
+  libsnappy-dev
 
-RUN rm -rf /var/lib/apt/lists/* \
-  && useradd -ms /bin/bash oneledger \
-  && mkdir -p /home/oneledger/go/src/github.com/Oneledger/protocol \
-  && mkdir -p /home/oneledger/testnet \
-  && chown -R oneledger:oneledger /home/oneledger
+#Setup environment variables
+ENV GOVERSION 1.14.7
+ENV GOROOT /usr/local/go
+ENV GOPATH /home/ubuntu/go
+ENV INCL /usr/local/lib
+ENV PATH $GOPATH:$GOPATH/bin:$GOROOT/bin:$INCL:$PATH
+ENV OLDATA /opt/data/devnet
+ENV OLTEST 1
+ENV GO111MODULE on
 
-USER oneledger
+#Create Directories
+RUN mkdir -p -- $GOPATH $OLDATA
 
-ENV GOPATH /home/oneledger/go
-ENV OLROOT $GOPATH/src/github.com/Oneledger
-ENV OLTEST $OLROOT/protocol/node/tests
-ENV OLSCRIPT $OLROOT/protocol/node/scripts
-ENV OLSETUP $OLROOT/protocol/node/setup
-ENV OLDATA /home/oneledger/.olfullnode
-ENV OLVERSION v0.8.1
-ENV PATH $PATH:$GOPATH/bin
+#Install dependencies for cleveldb
+RUN cd /usr/local && wget https://github.com/google/leveldb/archive/v1.20.tar.gz && \
+    tar -zxvf v1.20.tar.gz && \
+    cd leveldb-1.20/ && \
+    make && \
+    cp -r out-static/lib* out-shared/lib* /usr/local/lib/ && \
+    cd include/ && \
+    cp -r leveldb /usr/local/include/ && \
+    ldconfig &&\
+    cd /usr/local && \
+    rm -f v1.20.tar.gz
 
-USER oneledger
+#Get Golang and install
+RUN cd /usr/local && wget https://golang.org/dl/go${GOVERSION}.linux-amd64.tar.gz && \
+    tar zxf go${GOVERSION}.linux-amd64.tar.gz && rm go${GOVERSION}.linux-amd64.tar.gz
 
-RUN git clone https://github.com/Oneledger/protocol $OLROOT/protocol
-RUN chown -R oneledger:oneledger $OLROOT/protocol
-
-WORKDIR $OLROOT/protocol
-
-RUN git checkout $OLVERSION
-
-USER root
-RUN cp $OLROOT/protocol/DOCKER/chronos/bootstrapNode /usr/local/bin \
-	&& cp $OLROOT/protocol/DOCKER/chronos/startNode /usr/local/bin \
-	&& cp $OLROOT/protocol/DOCKER/chronos/stopNode /usr/local/bin \
-	&& cp $OLROOT/protocol/DOCKER/chronos/cleanNode /usr/local/bin
-USER oneledger
-
-WORKDIR $OLROOT/protocol/node
-
-RUN make tools update install
-
-VOLUME [ "$OLDATA" ]
