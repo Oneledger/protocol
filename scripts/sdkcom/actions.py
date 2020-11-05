@@ -74,6 +74,10 @@ def createAccount(node, funds=0, funder="", pswd="1234"):
             sys.exit(-1)
     return newaccount
 
+def height():
+    resp = rpc_call('query.ListValidators', {})
+    return resp["result"]["height"]
+
 def wait_for(blocks):
     resp = rpc_call('query.ListValidators', {})
     hstart = resp["result"]["height"]
