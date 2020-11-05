@@ -25,8 +25,11 @@ def add_threads_prod(threads, interval):
     # UnDelegate, 2 threads
     threads.add_threads(UnDelegateTxLoad.prod(2))
 
-    # UnDelegate, 2 threads
+    # WithdrawRewards, 2 threads
     threads.add_threads(WithdrawRewardsTxLoad.prod(2))
+
+    # ReinvestRewards, 2 threads
+    threads.add_threads(ReinvestRewardsTxLoad.dev(2))
 
 def abort_loadtest(signal, frame):
     threads.stop_threads()

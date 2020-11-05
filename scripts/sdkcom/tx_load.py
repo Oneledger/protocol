@@ -45,8 +45,7 @@ class TxLoad(threading.Thread):
         self.flog = open(self.log_file, "a+")
         self.node_account = nodeAccount(self.cfg.node_root)
         self.test_account, new_run = self._test_account(need_funds)
-        self.log("{}_thread_{} setting up...".format(self.name, self.tid))
-        self.log("{}_thread_{} test_path = {}".format(self.name, self.tid, self.test_path))
+        self.log("{}_thread_{} setting up..., test_path = {}".format(self.name, self.tid, self.test_path))
         return new_run
 
     def run(self):
@@ -67,7 +66,7 @@ class TxLoad(threading.Thread):
         while True:
             i += 1
             self.run_tx(i)
-            time.sleep(INTERVAL_DEFAULT / 1000.0)
+            time.sleep(self.cfg.interval / 1000.0)
             if self.stop_event.is_set():
                 break
         self.log("{}_thread_{} stopped".format(self.name, self.tid))
@@ -96,7 +95,7 @@ class TxLoad(threading.Thread):
             new_run = False
             fAcc = open(self.acc_file, "r")
             addr = fAcc.readline()
-            self.log("{}_thread_{} using existing test account: {}".format(self.name, self.tid, addr))
+            self.log("{}_thread_{} existing test account: {}".format(self.name, self.tid, addr))
             funds = int(query_balance(addr))
             if need_funds and funds < self.cfg.init_fund:
                 amount = int(self.cfg.init_fund - funds)

@@ -92,7 +92,7 @@ class NetWorkDelegate:
                     sys.exit(-1)
             else:
                 print "################### delegation added"
-        return result["log"]
+        return "" if "log" not in result else result["log"]
 
     def send_network_undelegate(self, amount, exit_on_err=True, mode=TxCommit):
         # createTx
@@ -111,7 +111,7 @@ class NetWorkDelegate:
             else:
                 self.txHash = "0x" + result["txHash"]
                 print "################### undelegate"
-        return result["log"]
+        return "" if "log" not in result else result["log"]
 
     def send_network_undelegate_shoud_fail(self, amount):
         # createTx
@@ -177,7 +177,7 @@ def waitfor_rewards(delegator, amount, status):
         actual = result[status]
         return int(actual) >= int(amount)
     result = wait_until("query.GetDelegRewards", req, until)
-    actual = int(result[status]) / 10 ** 18
+    actual = (int(result[status]) / 10 ** 18)
     return actual
 
 class WithdrawRewards:
@@ -213,7 +213,7 @@ class WithdrawRewards:
                     sys.exit(-1)
             else:
                 print "################### withdrawal successfully initiated"
-        return result["log"]
+        return "" if "log" not in result else result["log"]
 
 class ReinvestRewards:
     def __init__(self, delegator, keypath):
@@ -247,7 +247,7 @@ class ReinvestRewards:
                     sys.exit(-1)
             else:
                 print "################### successfully reinvested rewards"
-        return result["log"]
+        return "" if "log" not in result else result["log"]
 
 class FinalizeRewards:
     def __init__(self, delegator, keypath):
