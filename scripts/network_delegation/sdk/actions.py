@@ -352,7 +352,7 @@ def query_delegation(delegation_addresses=None):
     return result["allDelegStats"]
 
 
-def check_query_delegation(query_result, index, expected_delegation, expected_pending_delegation, expected_pending_rewards):
+def check_query_delegation(query_result, index, expected_delegation, expected_pending_delegation, have_reward, expected_pending_rewards):
     actual_delegation = query_result[index]['delegationStats']['active']
     actual_pending_delegation = query_result[index]['delegationStats']['pending']
     actual_rewards = query_result[index]['delegationRewardsStats']['active']
@@ -372,7 +372,7 @@ def check_query_delegation(query_result, index, expected_delegation, expected_pe
         print expected_pending_delegation
         sys.exit(-1)
 
-    if int(actual_rewards) == 0:
+    if int(actual_rewards) == 0 and have_reward:
         print "no rewards found!"
         sys.exit(-1)
 

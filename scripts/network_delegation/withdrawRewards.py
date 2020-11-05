@@ -30,7 +30,9 @@ if __name__ == "__main__":
     delegator = createAccount(node_0, 2500000, funder)
 
     # delegates some OLT and wait for rewards distribution
-    delegate(node_0, delegator, '2000000' + '0' * 18)
+    delegation_amt = 2000000
+    delegation_amt_long = str(delegation_amt) + '0' * 18
+    delegate(node_0, delegator, delegation_amt_long)
     wait_for(4)
 
     # query and check balance
@@ -69,14 +71,29 @@ if __name__ == "__main__":
     check_rewards(res1, '', [])
     print bcolors.OKGREEN + "#### Successfully matured delegator rewards" + bcolors.ENDC
 
+    # fully undelegate
+    newDelegation = NetWorkDelegate(delegator, delegation_amt_long, node_0 + "/keystore/")
+    newDelegation.send_network_undelegate(delegation_amt_long)
+    wait_for(4)
+
     # withdraw all balance
-    withdraw = WithdrawRewards(delegator, res['balance'], node_0 + "/keystore/")
+    res2 = query_rewards(delegator)
+    withdraw = WithdrawRewards(delegator, res2['balance'], node_0 + "/keystore/")
     withdraw.send(exit_on_err=True, mode=TxSync)
+
+    # test query ListDelegation when there is no delegation and no rewards balance, only pending rewards
+    wait_for(2)
+    query_result = query_delegation()
+    expected_delegation = 0
+    expected_pending_delegation = 0
+    expected_pending_rewards = int(res2['balance'])
+    check_query_delegation(query_result, 0, expected_delegation, expected_pending_delegation, False, expected_pending_rewards)
+    print bcolors.OKGREEN + "#### Successfully tested query ListDelegation with pending rewards" + bcolors.ENDC
     print bcolors.OKGREEN + "#### Successfully withdrawn all rewards" + bcolors.ENDC
 
     # query and check account balance
     balance_after = query_balance(delegator)
-    check_balance(balance_before, balance_after, total)
+    check_balance(balance_before, balance_after, total + delegation_amt)
 
     # below is to test total rewards query
     # create another delegator account
@@ -85,7 +102,7 @@ if __name__ == "__main__":
 
     # delegates some OLT and wait for rewards distribution
     delegation_amt = '5000000' + '0' * 18
-    delegate(node_1, delegator1, delegation_amt)
+    delegate(node_1, delegator1, delegation_amt_long)
     wait_for(4)
 
     # initiate 1 withdrawal
@@ -93,13 +110,6 @@ if __name__ == "__main__":
     amt1_long = str(amt1) + '0' * 18
     withdraw1 = WithdrawRewards(delegator1, amt1_long, node_1 + "/keystore/")
     withdraw1.send(True)
-
-    # test query ListDelegation
-    query_result = query_delegation()
-    expected_delegation = int(delegation_amt)
-    expected_pending_delegation = 0
-    expected_pending_rewards = int(amt1_long)
-    check_query_delegation(query_result, 1, expected_delegation, expected_pending_delegation, expected_pending_rewards)
 
     wait_for(7)
 

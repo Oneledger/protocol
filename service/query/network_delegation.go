@@ -82,7 +82,7 @@ func (svc *Service) ListDelegation(req client.ListDelegationRequest, reply *clie
 	// get delegation stats
 	// active amounts
 	delegStore.IterateActiveAmounts(func(addr *keys.Address, coin *balance.Coin) bool {
-		// load each result into the reply, and put the pointer to the map
+		// load each result's pointer into the reply, and put the pointer to the map
 		fullDelgStats := CreateFullDelgStats(*addr, *coin.Amount, *zeroAmount, false)
 		reply.AllDelegStats = append(reply.AllDelegStats, &fullDelgStats)
 		delegationMap[addr.String()] = &fullDelgStats
