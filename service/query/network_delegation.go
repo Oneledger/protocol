@@ -39,7 +39,7 @@ func (svc *Service) ListDelegation(req client.ListDelegationRequest, reply *clie
 			return false
 		})
 		delegStats := client.DelegStats{
-			Active: *activeDelegation.Amount,
+			Active:  *activeDelegation.Amount,
 			Pending: *pendingDelegation.Amount,
 		}
 
@@ -56,7 +56,7 @@ func (svc *Service) ListDelegation(req client.ListDelegationRequest, reply *clie
 			return false
 		})
 		delegRewardsStats := client.DelegRewardsStats{
-			Active: *activeRewards,
+			Active:  *activeRewards,
 			Pending: *pendingRewards,
 		}
 
@@ -138,18 +138,18 @@ func CreateFullDelgStats(addr keys.Address, active balance.Amount, pending balan
 	delegRewardsStats := client.DelegRewardsStats{}
 	if rewards {
 		delegRewardsStats = client.DelegRewardsStats{
-			Active: active,
+			Active:  active,
 			Pending: pending,
 		}
 	} else {
 		delegStats = client.DelegStats{
-			Active: active,
+			Active:  active,
 			Pending: pending,
 		}
 	}
 	fullDelgStats := client.FullDelegStats{
-		DelegAddress: addr,
-		DelegStats: delegStats,
+		DelegAddress:      addr,
+		DelegStats:        delegStats,
 		DelegRewardsStats: delegRewardsStats,
 	}
 	return fullDelgStats
@@ -265,7 +265,7 @@ func (svc *Service) GetDelegRewards(req client.GetDelegRewardsRequest, resp *cli
 		Balance: *balance,
 		Pending: pending.Rewards,
 		//Matured: *matured,
-		Height:  height,
+		Height: height,
 	}
 	return nil
 }

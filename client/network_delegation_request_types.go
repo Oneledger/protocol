@@ -59,7 +59,7 @@ type ListDelegationRequest struct {
 
 type ListDelegationReply struct {
 	AllDelegStats []*FullDelegStats `json:"allDelegStats"`
-	Height        int64            `json:"height"`
+	Height        int64             `json:"height"`
 }
 
 type DelegStats struct {
@@ -98,7 +98,6 @@ type WithdrawDelegRewardsRequest struct {
 	Amount    action.Amount `json:"amount"`
 }
 
-
 //type FinalizeRewardsRequest struct {
 //	Delegator keys.Address  `json:"delegator"`
 //	Amount    action.Amount `json:"amount"`
@@ -110,4 +109,3 @@ type ReinvestDelegRewardsRequest struct {
 	Delegator keys.Address  `json:"delegator"`
 	Amount    action.Amount `json:"amount"`
 }
-

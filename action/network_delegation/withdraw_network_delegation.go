@@ -1,4 +1,5 @@
 package network_delegation
+
 // below is removed since withdraw logic is moved to block beginner, OLP-1267
 
 //var _ action.Msg = &WithdrawNetworkDelegation{}
