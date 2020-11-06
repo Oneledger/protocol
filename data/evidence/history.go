@@ -53,7 +53,7 @@ func (lvh *LastValidatorHistory) ReleaseReady(options *Options, blockCreatedAt t
 	case MISSED_REQUIRED_VOTES:
 		return true, nil
 	case BYZANTINE_FAULT:
-		releaseAt := lvh.FrozenAt.AddDate(0, 0, int(options.ValidatorReleaseTime))
+		releaseAt := lvh.FrozenAt.Add(time.Minute * time.Duration(options.ValidatorReleaseTime))
 		if !blockCreatedAt.After(releaseAt) {
 			return false, fmt.Errorf("Validator could be released after: %s", releaseAt)
 		}
