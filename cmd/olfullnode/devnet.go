@@ -619,8 +619,8 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 
 	// evidence
 	evidenceOption := evidence.Options{
-		MinVotesRequired: 9,
-		BlockVotesDiff:   10,
+		MinVotesRequired: 18,
+		BlockVotesDiff:   20,
 
 		PenaltyBasePercentage: 10,
 		PenaltyBaseDecimals:   100,
