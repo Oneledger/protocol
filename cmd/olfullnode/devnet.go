@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
+	"net"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -139,6 +140,8 @@ type testnetConfig struct {
 	votingDeadline           int64
 	fundingDeadline          int64
 	timeoutcommit            int64
+	docker                   bool
+	subnet                   string
 }
 
 func init() {
@@ -164,7 +167,8 @@ func init() {
 	testnetCmd.Flags().Int64Var(&testnetArgs.fundingDeadline, "funding_deadline", 75001, "Set Maturity time for staking")
 	testnetCmd.Flags().Int64Var(&testnetArgs.votingDeadline, "voting_deadline", 150000, "Set Maturity time for staking")
 	testnetCmd.Flags().Int64Var(&testnetArgs.timeoutcommit, "timeout_commit", 1000, "Set timecommit for blocks")
-
+	testnetCmd.Flags().BoolVar(&testnetArgs.docker, "docker", false, "set true for deploying on docker")
+	testnetCmd.Flags().StringVar(&testnetArgs.subnet, "subnet", "10.5.0.0/16", "subnet where all docker containers will run")
 }
 
 func randStr(size int) string {
@@ -210,7 +214,25 @@ func portGenerator(startingPort int) func() int {
 	}
 }
 
-func generateAddress(port int, flags ...bool) string {
+func generateIP(nodeID int) (result string) {
+	result = "127.0.0.1"
+	if testnetArgs.docker {
+		//parse subnet IP
+		ip, _, err := net.ParseCIDR(testnetArgs.subnet)
+		if err != nil {
+			return
+		}
+		ipv4 := ip.To4()
+		if len(ipv4) != 4 {
+			return
+		}
+		ip3 := byte(nodeID) + 1
+		result = fmt.Sprintf("%d.%d.%d.%d", ipv4[0], ipv4[1], ipv4[2], ip3)
+	}
+	return
+}
+
+func generateAddress(nodeID int, port int, flags ...bool) string {
 	// flags
 	var hasProtocol, isRPC bool
 	switch len(flags) {
@@ -222,7 +244,7 @@ func generateAddress(port int, flags ...bool) string {
 	}
 
 	var prefix string
-	ip := "127.0.0.1"
+	ip := generateIP(nodeID)
 	protocol := "tcp://"
 	if isRPC {
 		protocol = "http://"
@@ -347,9 +369,9 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 
 		cfg.Consensus.TimeoutCommit = config.Duration(testnetArgs.timeoutcommit)
 
-		cfg.Network.RPCAddress = generateAddress(generatePort(), true)
-		cfg.Network.P2PAddress = generateAddress(generatePort(), true)
-		cfg.Network.SDKAddress = generateAddress(generatePort(), true, true)
+		cfg.Network.RPCAddress = generateAddress(i, generatePort(), true)
+		cfg.Network.P2PAddress = generateAddress(i, generatePort(), true)
+		cfg.Network.SDKAddress = generateAddress(i, generatePort(), true)
 
 		dirs := []string{configDir, dataDir, nodeDataDir}
 		for _, dir := range dirs {
