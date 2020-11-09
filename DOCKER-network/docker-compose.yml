@@ -1,0 +1,35 @@
+version: "3"
+
+services:
+  builder:
+    container_name: builder
+    image: appbuilder
+    ports:
+    - "8080:8080"
+    volumes:
+    - ~/go/protocol:/home/ubuntu/go/protocol
+    - ~/oldata/docker/bin:/home/ubuntu/go/bin
+    command: >
+      bash -c "cd /home/ubuntu/go/protocol &&
+              make install_c &&
+              /bin/bash"
+    stdin_open: true
+    tty: true
+
+  0-Node:
+    container_name: 0-Node
+    image: appbuilder
+    ports:
+      - "8081:8081"
+    volumes:
+      - ~/oldata/docker/bin:/home/ubuntu/go/bin
+    stdin_open: true
+    tty: true
+
+networks:
+  vpcbr:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.5.0.0/16
+
