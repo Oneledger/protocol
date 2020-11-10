@@ -12,4 +12,4 @@ until [ -n "$(find ~/oldata/docker -name '*Node' -type d)" ]; do
 done
 
 #start node containers
-docker-compose up -d --remove-orphans
+docker-compose up -d
