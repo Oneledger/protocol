@@ -180,6 +180,8 @@ class Proposal:
         raw_txn = self._create_proposal()
 
         # sign Tx
+        print self.proposer
+        print self.keypath
         signed = sign_with_wallet(raw_txn, self.proposer, self.keypath)
 
         # broadcast Tx
@@ -626,8 +628,6 @@ def sign(raw_tx, address):
 
 def sign_with_wallet(raw_tx, address, keypath):
     resp = rpc_call('owner.SignWithSecureAddress', {"rawTx": raw_tx, "address": address, "password": "1234", "keypath": keypath})
-    print address
-    print keypath
     print resp
     return resp["result"]
 
