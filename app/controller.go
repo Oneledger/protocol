@@ -156,10 +156,10 @@ func (app *App) blockBeginner() blockBeginner {
 		//}
 
 		// update Block Rewards
-		//handleBlockRewards(&app.Context, req)
+		blockRewardEvent := handleBlockRewards(&app.Context, req)
 
 		result := ResponseBeginBlock{
-			//Events: []abciTypes.Event{blockRewardEvent},
+			Events: []abciTypes.Event{blockRewardEvent},
 		}
 
 		// matured delegators' pending withdrawal
