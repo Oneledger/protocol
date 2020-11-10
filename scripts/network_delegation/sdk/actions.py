@@ -348,7 +348,6 @@ def query_delegation(delegation_addresses=None):
     resp = rpc_call('query.ListDelegation', req)
     # print resp
     result = resp["result"]
-    print json.dumps(resp, indent=4)
     return result["allDelegStats"]
 
 
