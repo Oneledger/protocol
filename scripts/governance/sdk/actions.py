@@ -626,6 +626,9 @@ def sign(raw_tx, address):
 
 def sign_with_wallet(raw_tx, address, keypath):
     resp = rpc_call('owner.SignWithSecureAddress', {"rawTx": raw_tx, "address": address, "password": "1234", "keypath": keypath})
+    print address
+    print keypath
+    print resp
     return resp["result"]
 
 def broadcast_commit(raw_tx, signature, pub_key):
