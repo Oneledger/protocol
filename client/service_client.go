@@ -248,3 +248,11 @@ func (c *ServiceClient) GetTotalNetwkDelegation(onlyActive int) (reply GetTotalN
 
 	return
 }
+
+func (c *ServiceClient) ListDelegation(delegationAddresses []keys.Address) (reply ListDelegationReply, err error) {
+	request := &ListDelegationRequest{DelegationAddresses: delegationAddresses}
+
+	err = c.Call("query.ListDelegation", request, &reply)
+
+	return
+}

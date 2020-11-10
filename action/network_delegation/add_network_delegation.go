@@ -16,8 +16,8 @@ import (
 var _ action.Msg = &AddNetworkDelegation{}
 
 type AddNetworkDelegation struct {
-	DelegationAddress keys.Address
-	Amount            action.Amount
+	DelegationAddress keys.Address  `json:"delegationAddress"`
+	Amount            action.Amount `json:"amount"`
 }
 
 func (n AddNetworkDelegation) Signers() []action.Address {

@@ -12,31 +12,147 @@ import (
 )
 
 func (svc *Service) ListDelegation(req client.ListDelegationRequest, reply *client.ListDelegationReply) error {
-	zeroAmount := balance.Coin{
+	height := svc.netwkDelegators.Rewards.GetState().Version()
+	zeroAmount := balance.NewAmount(0)
+	zeroCoin := balance.Coin{
 		Currency: balance.Currency{Id: 0, Name: "OLT", Chain: chain.ONELEDGER, Decimal: 18, Unit: "nue"},
-		Amount:   balance.NewAmount(0),
+		Amount:   zeroAmount,
 	}
-	active, err := svc.netwkDelegators.Deleg.WithPrefix(network_delegation.ActiveType).Get(req.DelegationAddress)
-	if err != nil {
-		active = &zeroAmount
+	reply.AllDelegStats = make([]*client.FullDelegStats, 0)
+	reply.Height = height
+	delegStore := svc.netwkDelegators.Deleg
+	delegRewardsStore := svc.netwkDelegators.Rewards
+
+	// if input is a non-empty list of addresses, get info for them
+	for _, address := range req.DelegationAddresses {
+		// get delegation stats
+		activeDelegation, err := delegStore.WithPrefix(network_delegation.ActiveType).Get(address)
+		if err != nil {
+			activeDelegation = &zeroCoin
+		}
+		pendingDelegation := zeroCoin
+		delegStore.WithPrefix(network_delegation.PendingType)
+		delegStore.IterateAllPendingAmounts(func(height int64, addr *keys.Address, coin *balance.Coin) bool {
+			if addr.Equal(address) {
+				pendingDelegation = pendingDelegation.Plus(*coin)
+			}
+			return false
+		})
+		delegStats := client.DelegStats{
+			Active:  *activeDelegation.Amount,
+			Pending: *pendingDelegation.Amount,
+		}
+
+		// get delegation rewards stats
+		activeRewards, err := delegRewardsStore.GetRewardsBalance(address)
+		if err != nil {
+			activeRewards = zeroAmount
+		}
+		pendingRewards := zeroAmount
+		delegRewardsStore.IterateAllPD(func(height int64, addr keys.Address, amt *balance.Amount) bool {
+			if addr.Equal(address) {
+				pendingRewards = pendingRewards.Plus(*amt)
+			}
+			return false
+		})
+		delegRewardsStats := client.DelegRewardsStats{
+			Active:  *activeRewards,
+			Pending: *pendingRewards,
+		}
+
+		// combine info into full delegation stats
+		fullDelegStats := client.FullDelegStats{
+			DelegAddress:      address,
+			DelegStats:        delegStats,
+			DelegRewardsStats: delegRewardsStats,
+		}
+
+		// add into the list
+		reply.AllDelegStats = append(reply.AllDelegStats, &fullDelegStats)
 	}
-	pending := zeroAmount
-	svc.netwkDelegators.Deleg.WithPrefix(network_delegation.PendingType)
-	svc.netwkDelegators.Deleg.IterateAllPendingAmounts(func(height int64, addr *keys.Address, coin *balance.Coin) bool {
-		if addr.Equal(req.DelegationAddress) {
-			pending = pending.Plus(*coin)
+
+	if len(req.DelegationAddresses) > 0 {
+		return nil
+	}
+
+	// if input is an empty list, get info for all delegators
+	// use a map to reduce time complexity, key is address, value is the pointer of fullDelegStats object
+	delegationMap := make(map[string]*client.FullDelegStats)
+
+	// get delegation stats
+	// active amounts
+	delegStore.IterateActiveAmounts(func(addr *keys.Address, coin *balance.Coin) bool {
+		// load each result's pointer into the reply, and put the pointer to the map
+		fullDelgStats := CreateFullDelgStats(*addr, *coin.Amount, *zeroAmount, false)
+		reply.AllDelegStats = append(reply.AllDelegStats, &fullDelgStats)
+		delegationMap[addr.String()] = &fullDelgStats
+		return false
+	})
+
+	// pending amounts
+	// first check if the address is already in the map
+	//, if so, add to existing structure, if not, add new data entry with zero active amount
+	delegStore.IterateAllPendingAmounts(func(height int64, addr *keys.Address, coin *balance.Coin) bool {
+		if fullDelgStats, ok := delegationMap[addr.String()]; ok {
+			pendingAmount := coin.Amount
+			fullDelgStats.DelegStats.Pending = *fullDelgStats.DelegStats.Pending.Plus(*pendingAmount)
+		} else {
+			fullDelgStats := CreateFullDelgStats(*addr, *zeroAmount, *coin.Amount, false)
+			reply.AllDelegStats = append(reply.AllDelegStats, &fullDelgStats)
+			delegationMap[addr.String()] = &fullDelgStats
 		}
 		return false
 	})
-	ds := client.DelegationStats{
-		Active:  active.String(),
-		Pending: pending.String(),
-	}
-	*reply = client.ListDelegationReply{
-		DelegationStats: ds,
-		Height:          svc.proposalMaster.Proposal.GetState().Version(),
-	}
+
+	// get delegation rewards stats
+	// active rewards
+	delegRewardsStore.IterateActiveRewards(func(addr *keys.Address, amt *balance.Amount) bool {
+		// check if the address is already in the map, load each result into the reply, and put the pointer to the map
+		if fullDelgStats, ok := delegationMap[addr.String()]; ok {
+			fullDelgStats.DelegRewardsStats.Active = *amt
+		} else {
+			fullDelgStats := CreateFullDelgStats(*addr, *amt, *zeroAmount, true)
+			reply.AllDelegStats = append(reply.AllDelegStats, &fullDelgStats)
+			delegationMap[addr.String()] = &fullDelgStats
+		}
+		return false
+	})
+
+	// pending withdraw rewards
+	delegRewardsStore.IterateAllPD(func(height int64, addr keys.Address, amt *balance.Amount) bool {
+		// check if the address is already in the map, load each result into the reply, and put the pointer to the map
+		if fullDelgStats, ok := delegationMap[addr.String()]; ok {
+			fullDelgStats.DelegRewardsStats.Pending = *fullDelgStats.DelegRewardsStats.Pending.Plus(*amt)
+		} else {
+			fullDelgStats := CreateFullDelgStats(addr, *zeroAmount, *amt, true)
+			reply.AllDelegStats = append(reply.AllDelegStats, &fullDelgStats)
+			delegationMap[addr.String()] = &fullDelgStats
+		}
+		return false
+	})
 	return nil
+}
+
+func CreateFullDelgStats(addr keys.Address, active balance.Amount, pending balance.Amount, rewards bool) client.FullDelegStats {
+	delegStats := client.DelegStats{}
+	delegRewardsStats := client.DelegRewardsStats{}
+	if rewards {
+		delegRewardsStats = client.DelegRewardsStats{
+			Active:  active,
+			Pending: pending,
+		}
+	} else {
+		delegStats = client.DelegStats{
+			Active:  active,
+			Pending: pending,
+		}
+	}
+	fullDelgStats := client.FullDelegStats{
+		DelegAddress:      addr,
+		DelegStats:        delegStats,
+		DelegRewardsStats: delegRewardsStats,
+	}
+	return fullDelgStats
 }
 
 func (svc *Service) GetUndelegatedAmount(req client.GetUndelegatedRequest, reply *client.GetUndelegatedReply) error {
@@ -149,7 +265,7 @@ func (svc *Service) GetDelegRewards(req client.GetDelegRewardsRequest, resp *cli
 		Balance: *balance,
 		Pending: pending.Rewards,
 		//Matured: *matured,
-		Height:  height,
+		Height: height,
 	}
 	return nil
 }
