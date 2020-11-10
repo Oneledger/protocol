@@ -39,11 +39,10 @@ def fund_proposal(pid, amount, funder):
 if __name__ == "__main__":
     # parse options
     pid, funds = parse_params(sys.argv[1:])
-    print "proposal.py started"
     create = True if funds == "" else False
 
     # node account as proposer
-    proposer = nodeAccount(fullnode_dev)
+    proposer = nodeAccount(fullnode)
 
     # create or fund
     if create:

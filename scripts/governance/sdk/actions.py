@@ -180,8 +180,6 @@ class Proposal:
         raw_txn = self._create_proposal()
 
         # sign Tx
-        print self.proposer
-        print self.keypath
         signed = sign_with_wallet(raw_txn, self.proposer, self.keypath)
 
         # broadcast Tx
