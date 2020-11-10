@@ -60,7 +60,7 @@ if __name__ == "__main__":
         print "delegationRewardsStats: "
         print result[0]["delegationRewardsStats"]
 
-        total = query_delegation_total()
+        total = query_delegation_total(0)
         print "----------------------------------"
         print "activeAmount= " + total["activeAmount"]
         print "pendingAmount= " + total["pendingAmount"]
