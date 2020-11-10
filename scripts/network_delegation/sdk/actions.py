@@ -350,6 +350,16 @@ def query_delegation(delegation_addresses=None):
     result = resp["result"]
     return result["allDelegStats"]
 
+def query_delegation_total(onlyActive=1):
+    req = {
+        "onlyActive": onlyActive,
+    }
+
+    resp = rpc_call('query.GetTotalNetwkDelegation', req)
+    # print resp
+    result = resp["result"]
+    return result
+
 
 def check_query_delegation(query_result, index, expected_delegation, expected_pending_delegation, have_reward, expected_pending_rewards):
     actual_delegation = query_result[index]['delegationStats']['active']

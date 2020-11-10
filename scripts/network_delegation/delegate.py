@@ -54,7 +54,15 @@ if __name__ == "__main__":
         tx.send(int(amt), exit_on_err=True, mode=TxCommit)
     else:
         result = query_delegation([delegator])
+        print "----------------------------------"
         print "delegationStats: "
         print result[0]["delegationStats"]
         print "delegationRewardsStats: "
         print result[0]["delegationRewardsStats"]
+
+        total = query_delegation_total()
+        print "----------------------------------"
+        print "activeAmount= " + total["activeAmount"]
+        print "pendingAmount= " + total["pendingAmount"]
+        print "totalAmount= " + total["totalAmount"]
+        print "height= " + str(total["height"])
