@@ -1,6 +1,7 @@
 FROM ubuntu:16.04
 
-USER root
+USER ${UID}:${GID}
+#WORKDIR /home/${USER}
 
 #Update and install required libs
 RUN apt-get update && apt-get install -y \

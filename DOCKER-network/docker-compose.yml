@@ -1,42 +1,80 @@
 version: "3"
 
 services:
-  builder:
-    container_name: builder
-    image: appbuilder
-    ports:
-    - "8080:8080"
-    volumes:
-    - ~/go/protocol:/home/ubuntu/go/protocol
-    - ~/oldata/docker/bin:/home/ubuntu/go/bin
-    - ~/oldata/docker:/opt/data/devnet
-    command: >
-      bash -c "cd /home/ubuntu/go/protocol &&
-              make install_c &&
-              rm -rf /opt/data/devnet/*-Node &&
-              olfullnode init devnet --dir /opt/data/devnet --nonvalidators 1 \
-                --empty_blocks \
-                --loglevel 4 \
-                --total_funds 1000000000 \
-                --maturity_time 4 \
-                --deleg_rewards_maturity_time 4 \
-                --rewards_interval 1 \
-                --funding_deadline 10 \
-                --voting_deadline 12 \
-                --timeout_commit 1000 \
-                --docker \
-                --subnet \"10.5.0.0/16\" &&
-              /bin/bash"
-    stdin_open: true
-    tty: true
-
   0-Node:
     container_name: 0-Node
     image: appbuilder
     ports:
-      - "8081:8081"
+      - "26602:26602"
     volumes:
       - ~/oldata/docker/bin:/home/ubuntu/go/bin
+      - ~/oldata/docker/0-Node:/opt/data/devnet
+    command: >
+      bash -c "cd /opt/data/devnet &&
+              olfullnode node --root /opt/data/devnet >> /opt/data/devnet/olfullnode.log 2>&1"
+    networks:
+      vpcbr:
+        ipv4_address: 10.5.0.10
+    stdin_open: true
+    tty: true
+
+  1-Node:
+    container_name: 1-Node
+    image: appbuilder
+    volumes:
+      - ~/oldata/docker/bin:/home/ubuntu/go/bin
+      - ~/oldata/docker/1-Node:/opt/data/devnet
+    command: >
+      bash -c "cd /opt/data/devnet &&
+              olfullnode node --root /opt/data/devnet >> /opt/data/devnet/olfullnode.log 2>&1"
+    networks:
+      vpcbr:
+        ipv4_address: 10.5.0.11
+    stdin_open: true
+    tty: true
+
+  2-Node:
+    container_name: 2-Node
+    image: appbuilder
+    volumes:
+      - ~/oldata/docker/bin:/home/ubuntu/go/bin
+      - ~/oldata/docker/2-Node:/opt/data/devnet
+    command: >
+      bash -c "cd /opt/data/devnet &&
+              olfullnode node --root /opt/data/devnet >> /opt/data/devnet/olfullnode.log 2>&1"
+    networks:
+      vpcbr:
+        ipv4_address: 10.5.0.12
+    stdin_open: true
+    tty: true
+
+  3-Node:
+    container_name: 3-Node
+    image: appbuilder
+    volumes:
+      - ~/oldata/docker/bin:/home/ubuntu/go/bin
+      - ~/oldata/docker/3-Node:/opt/data/devnet
+    command: >
+      bash -c "cd /opt/data/devnet &&
+              olfullnode node --root /opt/data/devnet >> /opt/data/devnet/olfullnode.log 2>&1"
+    networks:
+      vpcbr:
+        ipv4_address: 10.5.0.13
+    stdin_open: true
+    tty: true
+
+  4-Node:
+    container_name: 4-Node
+    image: appbuilder
+    volumes:
+      - ~/oldata/docker/bin:/home/ubuntu/go/bin
+      - ~/oldata/docker/4-Node:/opt/data/devnet
+    command: >
+      bash -c "cd /opt/data/devnet &&
+              olfullnode node --root /opt/data/devnet >> /opt/data/devnet/olfullnode.log 2>&1"
+    networks:
+      vpcbr:
+        ipv4_address: 10.5.0.14
     stdin_open: true
     tty: true
 

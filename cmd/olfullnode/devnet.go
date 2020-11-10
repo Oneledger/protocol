@@ -226,7 +226,7 @@ func generateIP(nodeID int) (result string) {
 		if len(ipv4) != 4 {
 			return
 		}
-		ip3 := byte(nodeID) + 1
+		ip3 := byte(nodeID) + 10
 		result = fmt.Sprintf("%d.%d.%d.%d", ipv4[0], ipv4[1], ipv4[2], ip3)
 	}
 	return
