@@ -1,4 +1,5 @@
 package network_delegation
+
 // below is removed since finalize withdraw rewards logic is moved to block beginner, OLP-1266
 //
 //import (

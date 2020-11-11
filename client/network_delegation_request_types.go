@@ -50,7 +50,32 @@ type GetDelegRewardsReply struct {
 	Balance balance.Amount                       `json:"balance"`
 	Pending []*network_delegation.PendingRewards `json:"pending"`
 	//Matured balance.Amount                       `json:"matured"`
-	Height  int64                                `json:"height"`
+	Height int64 `json:"height"`
+}
+
+type ListDelegationRequest struct {
+	DelegationAddresses []keys.Address `json:"delegationAddresses"`
+}
+
+type ListDelegationReply struct {
+	AllDelegStats []*FullDelegStats `json:"allDelegStats"`
+	Height        int64             `json:"height"`
+}
+
+type DelegStats struct {
+	Active  balance.Amount `json:"active"`
+	Pending balance.Amount `json:"pending"`
+}
+
+type DelegRewardsStats struct {
+	Active  balance.Amount `json:"active"`
+	Pending balance.Amount `json:"pending"`
+}
+
+type FullDelegStats struct {
+	DelegAddress      keys.Address      `json:"delegationAddress"`
+	DelegStats        DelegStats        `json:"delegationStats"`
+	DelegRewardsStats DelegRewardsStats `json:"delegationRewardsStats"`
 }
 
 //-------------TX
@@ -73,28 +98,14 @@ type WithdrawDelegRewardsRequest struct {
 	Amount    action.Amount `json:"amount"`
 }
 
+//type FinalizeRewardsRequest struct {
+//	Delegator keys.Address  `json:"delegator"`
+//	Amount    action.Amount `json:"amount"`
+//	GasPrice  action.Amount `json:"gasPrice"`
+//	Gas       int64         `json:"gas"`
+//}
+
 type ReinvestDelegRewardsRequest struct {
 	Delegator keys.Address  `json:"delegator"`
 	Amount    action.Amount `json:"amount"`
-}
-
-type ListDelegationRequest struct {
-	DelegationAddress keys.Address `json:"delegationAddress"`
-}
-
-type ListDelegationReply struct {
-	DelegationStats DelegationStats `json:"delegationStats"`
-	Height          int64           `json:"height"`
-}
-
-type DelegationStats struct {
-	Active  string `json:"active"`
-	Pending string `json:"pending"`
-}
-
-type FinalizeRewardsRequest struct {
-	Delegator keys.Address  `json:"delegator"`
-	Amount    action.Amount `json:"amount"`
-	GasPrice  action.Amount `json:"gasPrice"`
-	Gas       int64         `json:"gas"`
 }

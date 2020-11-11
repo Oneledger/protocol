@@ -30,16 +30,6 @@ class NetWorkDelegate:
         resp = rpc_call('tx.AddNetworkDelegation', req)
         return resp["result"]["rawTx"]
 
-    @classmethod
-    def query_delegation(cls, delegator):
-        req = {
-            "delegationAddress": delegator,
-        }
-        resp = rpc_call('query.ListDelegation', req)
-        print resp
-        result = resp["result"]
-        # prmodeps(resp, indent=4)
-        return result["delegationStats"]
 
     def _network_undelegate(self, amount):
         req = {
@@ -346,3 +336,49 @@ def query_full_balance(address):
     else:
         result = ""
     return result
+
+
+def query_delegation(delegation_addresses=None):
+    if (delegation_addresses == None):
+        delegation_addresses = []
+    req = {
+        "delegationAddresses": delegation_addresses,
+    }
+
+    resp = rpc_call('query.ListDelegation', req)
+    # print resp
+    result = resp["result"]
+    print json.dumps(resp, indent=4)
+    return result["allDelegStats"]
+
+
+def check_query_delegation(query_result, index, expected_delegation, expected_pending_delegation, have_reward, expected_pending_rewards):
+    actual_delegation = query_result[index]['delegationStats']['active']
+    actual_pending_delegation = query_result[index]['delegationStats']['pending']
+    actual_rewards = query_result[index]['delegationRewardsStats']['active']
+    actual_pending_rewards = query_result[index]['delegationRewardsStats']['pending']
+
+    if int(actual_delegation) != expected_delegation:
+        print "actual_delegation"
+        print actual_delegation
+        print "expected_delegation"
+        print expected_delegation
+        sys.exit(-1)
+
+    if int(actual_pending_delegation) != expected_pending_delegation:
+        print "actual_pending_delegation"
+        print actual_pending_delegation
+        print "expected_pending_delegation"
+        print expected_pending_delegation
+        sys.exit(-1)
+
+    if int(actual_rewards) == 0 and have_reward:
+        print "no rewards found!"
+        sys.exit(-1)
+
+    if int(actual_pending_rewards) != expected_pending_rewards:
+        print "actual_pending_rewards"
+        print actual_pending_rewards
+        print "expected_pending_rewards"
+        print expected_pending_rewards
+        sys.exit(-1)

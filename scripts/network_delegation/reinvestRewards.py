@@ -48,9 +48,9 @@ if __name__ == "__main__":
         sys.exit(-1)
 
     # check delegation amount
-    amount_actual = int(NetWorkDelegate.query_delegation(delegator)['active'].split(" ")[0])
+    amount_actual = int(query_delegation([delegator])[0]['delegationStats']['active'])
     amount_expect = int(delegation) + int(amount)
-    if amount_actual != amount_expect:
+    if amount_actual != amount_expect * 10 ** 18:
         print bcolors.FAIL + "#### Reinvested rewards failed" + bcolors.ENDC
         sys.exit(-1)
     print bcolors.OKGREEN + "#### Successfully reinvested rewards" + bcolors.ENDC
