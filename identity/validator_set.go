@@ -162,7 +162,7 @@ func (vs *ValidatorStore) Setup(req types.RequestBeginBlock, nodeValidatorAddres
 		logger.Infof("slashed byzantine validator, address = %s", remove.Address)
 	}
 
-	vs.fetchPostponedUnstakes()
+	//vs.fetchPostponedUnstakes()
 	vs.InitValidatorQueue(nodeValidatorAddress)
 	vs.cacheActiveValidators(req.LastCommitInfo)
 
