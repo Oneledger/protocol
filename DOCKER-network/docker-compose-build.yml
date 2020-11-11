@@ -3,7 +3,7 @@ version: "3"
 services:
   builder:
     container_name: builder
-    image: appbuilder
+    image: olprotocol
     ports:
     - "8080:8080"
     volumes:

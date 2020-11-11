@@ -3,7 +3,7 @@ version: "3"
 services:
   0-Node:
     container_name: 0-Node
-    image: appbuilder
+    image: olprotocol
     ports:
       - "26602:26602"
     volumes:
@@ -20,7 +20,7 @@ services:
 
   1-Node:
     container_name: 1-Node
-    image: appbuilder
+    image: olprotocol
     volumes:
       - ~/oldata/docker/bin:/home/ubuntu/go/bin
       - ~/oldata/docker/1-Node:/opt/data/devnet
@@ -35,7 +35,7 @@ services:
 
   2-Node:
     container_name: 2-Node
-    image: appbuilder
+    image: olprotocol
     volumes:
       - ~/oldata/docker/bin:/home/ubuntu/go/bin
       - ~/oldata/docker/2-Node:/opt/data/devnet
@@ -50,7 +50,7 @@ services:
 
   3-Node:
     container_name: 3-Node
-    image: appbuilder
+    image: olprotocol
     volumes:
       - ~/oldata/docker/bin:/home/ubuntu/go/bin
       - ~/oldata/docker/3-Node:/opt/data/devnet
@@ -65,7 +65,7 @@ services:
 
   4-Node:
     container_name: 4-Node
-    image: appbuilder
+    image: olprotocol
     volumes:
       - ~/oldata/docker/bin:/home/ubuntu/go/bin
       - ~/oldata/docker/4-Node:/opt/data/devnet
