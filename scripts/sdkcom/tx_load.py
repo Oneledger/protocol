@@ -75,7 +75,7 @@ class TxLoad(threading.Thread):
     def run_tx(self, i):
         self.log("{}_thread_{} sending {}th transactions".format(self.name, self.tid, i))
         if i % 10 == 0:
-            self.log("{}_thread_{} height= {}".format(self.name, self.tid, i, height()))
+            self.log("{}_thread_{} height= {}".format(self.name, self.tid, height()))
 
     def stop(self):
         self.log("{}_thread_{} stopping...".format(self.name, self.tid))
