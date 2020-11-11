@@ -22,6 +22,7 @@ package storage
 
 import (
 	"encoding/hex"
+	"strconv"
 	"sync"
 
 	"github.com/Oneledger/protocol/config"
@@ -43,7 +44,6 @@ type ChainState struct {
 	LastHash           []byte
 	Hash               []byte
 	TreeHeight         int8
-	counter            int
 	ChainStateRotation ChainStateRotationSetting
 
 	sync.RWMutex
@@ -70,14 +70,13 @@ type ChainStateRotationSetting struct {
 }
 
 // NewChainState generates a new ChainState object
-func NewChainState(name string, db tmdb.DB) *ChainState {
+func NewChainState(name string, db tmdb.DB, rdb tmdb.DB) *ChainState {
 
 	chain := &ChainState{
 		Name:    name,
 		Version: 0,
 	}
-	chain.loadDB(db)
-	chain.counter = 0
+	chain.loadDB(db, rdb)
 
 	return chain
 }
@@ -143,7 +142,6 @@ func (state *ChainState) Get(key StoreKey) ([]byte, error) {
 	defer state.RUnlock()
 	_, value := state.Delivered.ImmutableTree.Get(key)
 	//fmt.Println("size of immutable tree " ,state.Delivered.ImmutableTree.Size())
-	state.counter++
 	return value, nil
 }
 
@@ -177,42 +175,38 @@ func (state *ChainState) Delete(key StoreKey) (bool, error) {
 
 // TODO: Not sure about this, it seems to be Cosmos-sdk's way of getting arround the immutable copy problem...
 func (state *ChainState) Commit() ([]byte, int64) {
-	//fmt.Println(state.Delivered.AvailableVersions())
-	//state.Lock()
-	//defer state.Unlock()
-	//// Persist the Delivered merkle tree
-	////fmt.Println("Chain counter : " ,state.counter)
-	//state.counter = 0
-	//hash, version, err := state.Delivered.SaveVersion()
-	//
-	//if err != nil {
-	//	panic(errors.Wrap(err, "failed to commit, version: "+strconv.FormatInt(version, 10)))
-	//}
-	//
-	//
-	//state.LastVersion, state.Version = state.Version, version
-	//state.LastHash, state.Hash = state.Hash, hash
-	//
-	//release := state.LastVersion - state.ChainStateRotation.recent
-	//if release > 0 {
-	//	if state.ChainStateRotation.every == 0 || release%state.ChainStateRotation.every != 0 {
-	//		err := state.Delivered.DeleteVersion(release)
-	//		if err != nil {
-	//			log.Error("Failed to delete old version of chainstate", "err:", err, "version:", release)
-	//		}
-	//	}
-	//	if state.ChainStateRotation.cycles != 0 && state.ChainStateRotation.every != 0 && release%state.ChainStateRotation.every == 0 {
-	//		release = release - state.ChainStateRotation.cycles*state.ChainStateRotation.every
-	//		err := state.Delivered.DeleteVersion(release)
-	//		if err != nil {
-	//			log.Error("Failed to delete old version of chainstate", "err", err, "version:", release)
-	//		}
-	//	}
-	//
-	//}
-	//return hash,version
+	state.Lock()
+	defer state.Unlock()
+	// Persist the Delivered merkle tree
+	hash, version, err := state.Delivered.SaveVersion()
 
-	return state.Delivered.Hash(), state.Delivered.Version()
+	if err != nil {
+		panic(errors.Wrap(err, "failed to commit, version: "+strconv.FormatInt(version, 10)))
+	}
+
+	state.LastVersion, state.Version = state.Version, version
+	state.LastHash, state.Hash = state.Hash, hash
+
+	release := state.LastVersion - state.ChainStateRotation.recent
+	if release > 0 {
+		if state.ChainStateRotation.every == 0 || release%state.ChainStateRotation.every != 0 {
+			err := state.Delivered.DeleteVersion(release)
+			if err != nil {
+				log.Error("Failed to delete old version of chainstate", "err:", err, "version:", release)
+			}
+		}
+		if state.ChainStateRotation.cycles != 0 && state.ChainStateRotation.every != 0 && release%state.ChainStateRotation.every == 0 {
+			release = release - state.ChainStateRotation.cycles*state.ChainStateRotation.every
+			err := state.Delivered.DeleteVersion(release)
+			if err != nil {
+				log.Error("Failed to delete old version of chainstate", "err", err, "version:", release)
+			}
+		}
+
+	}
+	return hash, version
+
+	//	return state.Delivered.Hash(), state.Delivered.Version()
 }
 
 func (state *ChainState) LoadVersion(version int64) (int64, error) {
@@ -220,8 +214,14 @@ func (state *ChainState) LoadVersion(version int64) (int64, error) {
 }
 
 // Reset the chain state from persistence
-func (state *ChainState) loadDB(db tmdb.DB) ([]byte, int64) {
-	tree, _ := iavl.NewMutableTree(db, CHAINSTATE_CACHE_SIZE) // Do I need a historic tree here?
+func (state *ChainState) loadDB(db tmdb.DB, rdb tmdb.DB) ([]byte, int64) {
+	//recentDb :=  tmdb.NewDB("rdb",tmdb.CLevelDBBackend,"")
+	tree, _ := iavl.NewMutableTreeWithOpts(db, rdb, CHAINSTATE_CACHE_SIZE, &iavl.Options{
+		KeepEvery:  1,
+		KeepRecent: 0,
+		Sync:       false,
+	})
+	//tree, _ := iavl.NewMutableTree(db, CHAINSTATE_CACHE_SIZE) // Do I need a historic tree here?
 	version, err := tree.Load()
 	if err != nil {
 		log.Error("error in loading tree version", "version", version, "err", err)

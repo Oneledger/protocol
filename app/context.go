@@ -109,8 +109,12 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	if err != nil {
 		return ctx, errors.Wrap(err, "initial db failed")
 	}
+	rdb, err := storage.GetDatabase("recentDB", ctx.dbDir(), ctx.cfg.Node.DB)
+	if err != nil {
+		return ctx, errors.Wrap(err, "initial db failed")
+	}
 	ctx.db = db
-	ctx.chainstate = storage.NewChainState("chainstate", db)
+	ctx.chainstate = storage.NewChainState("chainstate", db, rdb)
 	errRotation := ctx.chainstate.SetupRotation(ctx.cfg.Node.ChainStateRotation)
 	if errRotation != nil {
 		return ctx, errors.Wrap(errRotation, "error in loading chain state rotation config")
@@ -135,7 +139,11 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	if err != nil {
 		return ctx, errors.Wrap(err, "initialize internal TX db failed")
 	}
-	cs := storage.NewState(storage.NewChainState("chainstateTX", newDB))
+	rdb2, err := storage.GetDatabase("rdb2", ctx.dbDir(), ctx.cfg.Node.DB)
+	if err != nil {
+		return ctx, errors.Wrap(err, "initial db failed")
+	}
+	cs := storage.NewState(storage.NewChainState("chainstateTX", newDB, rdb2))
 	ctx.transaction = transactions.NewTransactionStore("intx", cs)
 
 	ctx.ethTrackers = ethereum.NewTrackerStore("etht", "ethfailed", "ethsuccess", storage.NewState(ctx.chainstate))
