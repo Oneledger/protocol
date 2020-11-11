@@ -10,8 +10,6 @@ import (
 	"strconv"
 
 	"github.com/Oneledger/protocol/data/network_delegation"
-	"github.com/Oneledger/protocol/external_apps/common"
-
 	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/data/balance"
@@ -173,21 +171,22 @@ func (app *App) blockBeginner() blockBeginner {
 		app.header = req.Header
 		//Adds proposals that meet the requirements to either Expired or Finalizing Keys from transaction store
 		//Transaction store is not part of chainstate ,it just maintains a list of proposals from BlockBeginner to BlockEnder .Gets cleared at each Block Ender
-		AddInternalTX(app.Context.proposalMaster, app.Context.node.ValidatorAddress(), app.header.Height, app.Context.transaction, app.logger)
-		functionList, err := app.Context.extFunctions.Iterate(common.BlockBeginner)
-		functionParam := common.ExtParam{
-			InternalTxStore: app.Context.transaction,
-			Logger:          app.logger,
-			ActionCtx:       *app.Context.Action(&app.header, app.Context.deliver),
-			Validator:       app.Context.node.ValidatorAddress(),
-			Header:          app.header,
-			Deliver:         app.Context.deliver,
-		}
-		if err == nil {
-			for _, function := range functionList {
-				function(functionParam)
-			}
-		}
+		//AddInternalTX(app.Context.proposalMaster, app.Context.node.ValidatorAddress(), app.header.Height, app.Context.transaction, app.logger)
+		//functionList, err := app.Context.extFunctions.Iterate(common.BlockBeginner)
+		//functionParam := common.ExtParam{
+		//	InternalTxStore: app.Context.transaction,
+		//	Logger:          app.logger,
+		//	ActionCtx:       *app.Context.Action(&app.header, app.Context.deliver),
+		//	Validator:       app.Context.node.ValidatorAddress(),
+		//	Header:          app.header,
+		//	Deliver:         app.Context.deliver,
+		//}
+		//if err == nil {
+		//	for _, function := range functionList {
+		//		function(functionParam)
+		//	}
+		//}
+		result.Events = nil
 		app.logger.Detail("Begin Block:", result, "height:", req.Header.Height, "AppHash:", hex.EncodeToString(req.Header.AppHash))
 		return result
 	}
@@ -249,7 +248,7 @@ func (app *App) txChecker() txChecker {
 		} else {
 			app.Context.check.CommitTxSession()
 		}
-
+		result.Events = nil
 		app.logger.Detail("Check Tx: ", result, "log", response.Log)
 		return result
 
@@ -307,7 +306,7 @@ func (app *App) txDeliverer() txDeliverer {
 		} else {
 			app.Context.deliver.CommitTxSession()
 		}
-
+		result.Events = nil
 		return result
 	}
 }
@@ -333,26 +332,27 @@ func (app *App) blockEnder() blockEnder {
 		// If Expire or Finalize TX returns false,they will added to the proposals queue in the next block
 		// Errors are logged at the function level
 		// These functions iterate the transactions store
-		ExpireProposals(&app.header, &app.Context, app.logger)
-		FinalizeProposals(&app.header, &app.Context, app.logger)
-		functionList, err := app.Context.extFunctions.Iterate(common.BlockEnder)
-		functionParam := common.ExtParam{
-			InternalTxStore: app.Context.transaction,
-			Logger:          app.logger,
-			ActionCtx:       *app.Context.Action(&app.header, app.Context.deliver),
-			Validator:       app.Context.node.ValidatorAddress(),
-			Header:          app.header,
-			Deliver:         app.Context.deliver,
-		}
-		if err == nil {
-			for _, function := range functionList {
-				function(functionParam)
-			}
-		}
+		//ExpireProposals(&app.header, &app.Context, app.logger)
+		//FinalizeProposals(&app.header, &app.Context, app.logger)
+		//functionList, err := app.Context.extFunctions.Iterate(common.BlockEnder)
+		//functionParam := common.ExtParam{
+		//	InternalTxStore: app.Context.transaction,
+		//	Logger:          app.logger,
+		//	ActionCtx:       *app.Context.Action(&app.header, app.Context.deliver),
+		//	Validator:       app.Context.node.ValidatorAddress(),
+		//	Header:          app.header,
+		//	Deliver:         app.Context.deliver,
+		//}
+		//if err == nil {
+		//	for _, function := range functionList {
+		//		function(functionParam)
+		//	}
+		//}
 		result := ResponseEndBlock{
 			ValidatorUpdates: updates,
 			Events:           events,
 		}
+		result.Events = nil
 		app.logger.Detail("End Block: ", result, "height:", req.Height)
 
 		return result

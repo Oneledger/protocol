@@ -22,7 +22,6 @@ package storage
 
 import (
 	"encoding/hex"
-	"strconv"
 	"sync"
 
 	"github.com/Oneledger/protocol/config"
@@ -39,12 +38,12 @@ type ChainState struct {
 	Delivered *iavl.MutableTree // Build us a new set of transactions
 
 	// Last committed values
-	LastVersion int64
-	Version     int64
-	LastHash    []byte
-	Hash        []byte
-	TreeHeight  int8
-
+	LastVersion        int64
+	Version            int64
+	LastHash           []byte
+	Hash               []byte
+	TreeHeight         int8
+	counter            int
 	ChainStateRotation ChainStateRotationSetting
 
 	sync.RWMutex
@@ -78,6 +77,7 @@ func NewChainState(name string, db tmdb.DB) *ChainState {
 		Version: 0,
 	}
 	chain.loadDB(db)
+	chain.counter = 0
 
 	return chain
 }
@@ -142,7 +142,8 @@ func (state *ChainState) Get(key StoreKey) ([]byte, error) {
 	state.RLock()
 	defer state.RUnlock()
 	_, value := state.Delivered.ImmutableTree.Get(key)
-
+	//fmt.Println("size of immutable tree " ,state.Delivered.ImmutableTree.Size())
+	state.counter++
 	return value, nil
 }
 
@@ -176,38 +177,42 @@ func (state *ChainState) Delete(key StoreKey) (bool, error) {
 
 // TODO: Not sure about this, it seems to be Cosmos-sdk's way of getting arround the immutable copy problem...
 func (state *ChainState) Commit() ([]byte, int64) {
+	//fmt.Println(state.Delivered.AvailableVersions())
+	//state.Lock()
+	//defer state.Unlock()
+	//// Persist the Delivered merkle tree
+	////fmt.Println("Chain counter : " ,state.counter)
+	//state.counter = 0
+	//hash, version, err := state.Delivered.SaveVersion()
+	//
+	//if err != nil {
+	//	panic(errors.Wrap(err, "failed to commit, version: "+strconv.FormatInt(version, 10)))
+	//}
+	//
+	//
+	//state.LastVersion, state.Version = state.Version, version
+	//state.LastHash, state.Hash = state.Hash, hash
+	//
+	//release := state.LastVersion - state.ChainStateRotation.recent
+	//if release > 0 {
+	//	if state.ChainStateRotation.every == 0 || release%state.ChainStateRotation.every != 0 {
+	//		err := state.Delivered.DeleteVersion(release)
+	//		if err != nil {
+	//			log.Error("Failed to delete old version of chainstate", "err:", err, "version:", release)
+	//		}
+	//	}
+	//	if state.ChainStateRotation.cycles != 0 && state.ChainStateRotation.every != 0 && release%state.ChainStateRotation.every == 0 {
+	//		release = release - state.ChainStateRotation.cycles*state.ChainStateRotation.every
+	//		err := state.Delivered.DeleteVersion(release)
+	//		if err != nil {
+	//			log.Error("Failed to delete old version of chainstate", "err", err, "version:", release)
+	//		}
+	//	}
+	//
+	//}
+	//return hash,version
 
-	state.Lock()
-	defer state.Unlock()
-	// Persist the Delivered merkle tree
-	hash, version, err := state.Delivered.SaveVersion()
-	if err != nil {
-		panic(errors.Wrap(err, "failed to commit, version: "+strconv.FormatInt(version, 10)))
-	}
-
-	state.LastVersion, state.Version = state.Version, version
-	state.LastHash, state.Hash = state.Hash, hash
-
-	release := state.LastVersion - state.ChainStateRotation.recent
-
-	if release > 0 {
-		if state.ChainStateRotation.every == 0 || release%state.ChainStateRotation.every != 0 {
-			err := state.Delivered.DeleteVersion(release)
-			if err != nil {
-				log.Error("Failed to delete old version of chainstate", "err:", err, "version:", release)
-			}
-		}
-		if state.ChainStateRotation.cycles != 0 && state.ChainStateRotation.every != 0 && release%state.ChainStateRotation.every == 0 {
-			release = release - state.ChainStateRotation.cycles*state.ChainStateRotation.every
-			err := state.Delivered.DeleteVersion(release)
-			if err != nil {
-				log.Error("Failed to delete old version of chainstate", "err", err, "version:", release)
-			}
-		}
-
-	}
-
-	return hash, version
+	return state.Delivered.Hash(), state.Delivered.Version()
 }
 
 func (state *ChainState) LoadVersion(version int64) (int64, error) {
