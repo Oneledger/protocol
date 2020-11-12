@@ -42,3 +42,4 @@ RUN cd /usr/local && wget https://github.com/google/leveldb/archive/v1.20.tar.gz
 RUN cd /usr/local && wget https://golang.org/dl/go${GOVERSION}.linux-amd64.tar.gz && \
     tar zxf go${GOVERSION}.linux-amd64.tar.gz && rm go${GOVERSION}.linux-amd64.tar.gz
 
+CMD ["/bin/bash"]
