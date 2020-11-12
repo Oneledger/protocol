@@ -1,9 +1,6 @@
-from sdkcom import oltest, fullnode_dev, fullnode_prod, addValidatorAccounts
+from sdkcom import fullnode, addValidatorAccounts
 
 if __name__ == "__main__":
-    if oltest == "1":
-        account = addValidatorAccounts(fullnode_dev)
-    else:
-        account = addValidatorAccounts(fullnode_prod)
+    account = addValidatorAccounts(fullnode)
     if len(account) > 0:
         print account
