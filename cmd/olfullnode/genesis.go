@@ -196,9 +196,9 @@ func runGenesis(_ *cobra.Command, _ []string) error {
 			cfg.Consensus.CreateEmptyBlocks = false
 		}
 
-		cfg.Network.RPCAddress = generateAddress(generatePort(), true)
-		cfg.Network.P2PAddress = generateAddress(generatePort(), true)
-		cfg.Network.SDKAddress = generateAddress(generatePort(), true, true)
+		cfg.Network.RPCAddress = generateAddress(i, generatePort(), true)
+		cfg.Network.P2PAddress = generateAddress(i, generatePort(), true)
+		cfg.Network.SDKAddress = generateAddress(i, generatePort(), true)
 		// cfg.Network.OLVMAddress = generateAddress(generatePort(), true)
 
 		n := node{isValidator: isValidator, cfg: cfg, key: nodekey, esdcaPk: ecdsaPk}
