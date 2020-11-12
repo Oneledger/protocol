@@ -34,7 +34,7 @@ def fund_proposal(pid, amount, funder):
     # fund the proposal
     prop_fund = ProposalFund(pid, amount, funder)
     prop_fund.keypath = path.join(fullnode, "keystore")
-    prop_fund.send_fund()
+    prop_fund.send_fund_prod()
 
 if __name__ == "__main__":
     # parse options

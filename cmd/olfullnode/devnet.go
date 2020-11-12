@@ -89,23 +89,21 @@ var (
 		ProposerReward: 00.00,
 	}
 
-	estimatedSecondsPerCycle  = int64(172800)
-	blockSpeedCalculateCycle  = int64(10000)
+	estimatedSecondsPerCycle  = int64(1728)
+	blockSpeedCalculateCycle  = int64(100)
 	burnoutRate, _            = balance.NewAmountFromString("5000000000000000000", 10)
 	yearCloseWindow           = int64(3600 * 24)
-	yearBlockRewardShare_1, _ = balance.NewAmountFromString("24000000000000000000000000", 10)
-	yearBlockRewardShare_2, _ = balance.NewAmountFromString("33600000000000000000000000", 10)
-	yearBlockRewardShare_3, _ = balance.NewAmountFromString("52800000000000000000000000", 10)
-	yearBlockRewardShare_4, _ = balance.NewAmountFromString("52800000000000000000000000", 10)
-	yearBlockRewardShare_5, _ = balance.NewAmountFromString("52800000000000000000000000", 10)
-	yearBlockRewardShare_6, _ = balance.NewAmountFromString("34000000000000000000000000", 10)
+	yearBlockRewardShare_1, _ = balance.NewAmountFromString("70000000000000000000000000", 10)
+	yearBlockRewardShare_2, _ = balance.NewAmountFromString("70000000000000000000000000", 10)
+	yearBlockRewardShare_3, _ = balance.NewAmountFromString("40000000000000000000000000", 10)
+	yearBlockRewardShare_4, _ = balance.NewAmountFromString("40000000000000000000000000", 10)
+	yearBlockRewardShare_5, _ = balance.NewAmountFromString("30000000000000000000000000", 10)
 	yearBlockRewardShares     = []balance.Amount{
 		*yearBlockRewardShare_1,
 		*yearBlockRewardShare_2,
 		*yearBlockRewardShare_3,
 		*yearBlockRewardShare_4,
 		*yearBlockRewardShare_5,
-		*yearBlockRewardShare_6,
 	}
 
 	testnetArgs = &testnetConfig{}
@@ -162,20 +160,15 @@ func init() {
 	testnetCmd.Flags().BoolVar(&testnetArgs.deploySmartcontracts, "deploy_smart_contracts", false, "deploy eth contracts")
 	testnetCmd.Flags().BoolVar(&testnetArgs.cloud, "cloud_deploy", false, "set true for deploying on cloud")
 	testnetCmd.Flags().IntVar(&testnetArgs.loglevel, "loglevel", 3, "Specify the log level for olfullnode. 0: Fatal, 1: Error, 2: Warning, 3: Info, 4: Debug, 5: Detail")
-	testnetCmd.Flags().Int64Var(&testnetArgs.rewardsInterval, "rewards_interval", 10, "Block rewards interval")
+	testnetCmd.Flags().Int64Var(&testnetArgs.rewardsInterval, "rewards_interval", 1, "Block rewards interval")
 	testnetCmd.Flags().StringVar(&testnetArgs.reserved_domains, "reserved_domains", "", "Directory which contains Reserved domains list")
-	testnetCmd.Flags().Int64Var(&testnetArgs.maturityTime, "maturity_time", 10, "Set Maturity time for staking")
+	testnetCmd.Flags().Int64Var(&testnetArgs.maturityTime, "maturity_time", 109200, "Set Maturity time for staking")
 	testnetCmd.Flags().Int64Var(&testnetArgs.delegRewardsMaturityTime, "deleg_rewards_maturity_time", 109200, "Set Maturity time for delegation rewards")
 	testnetCmd.Flags().Int64Var(&testnetArgs.fundingDeadline, "funding_deadline", 75001, "Set Maturity time for staking")
 	testnetCmd.Flags().Int64Var(&testnetArgs.votingDeadline, "voting_deadline", 150000, "Set Maturity time for staking")
 	testnetCmd.Flags().Int64Var(&testnetArgs.timeoutcommit, "timeout_commit", 1000, "Set timecommit for blocks")
 	testnetCmd.Flags().BoolVar(&testnetArgs.docker, "docker", false, "set true for deploying on docker")
 	testnetCmd.Flags().StringVar(&testnetArgs.subnet, "subnet", "10.5.0.0/16", "subnet where all docker containers will run")
-}
-
-func createAmount(amt string) *balance.Amount {
-	amount, _ := balance.NewAmountFromString(amt, 10)
-	return amount
 }
 
 func randStr(size int) string {
@@ -486,76 +479,34 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 	proposalVotingDeadline = args.votingDeadline
 	propOpt := governance.ProposalOptionSet{
 		ConfigUpdate: governance.ProposalOption{
-			InitialFunding:  createAmount("20000000000000000000000"),
-			FundingGoal:     createAmount("60000000000000000000000"),
-			FundingDeadline: 10,
-			VotingDeadline:  12,
-			PassPercentage:  67,
-			PassedFundDistribution: governance.ProposalFundDistribution{
-				Validators:     0.00,
-				FeePool:        10.00,
-				Burn:           5.00,
-				ExecutionCost:  15.00,
-				BountyPool:     60.00,
-				ProposerReward: 10.00,
-			},
-			FailedFundDistribution: governance.ProposalFundDistribution{
-				Validators:     0.00,
-				FeePool:        15.00,
-				Burn:           25.00,
-				ExecutionCost:  0.00,
-				BountyPool:     60.00,
-				ProposerReward: 0.00,
-			},
-			ProposalExecutionCost: executionCostAddrConfig,
+			InitialFunding:         proposalInitialFunding,
+			FundingGoal:            proposalFundingGoal,
+			FundingDeadline:        proposalFundingDeadline,
+			VotingDeadline:         proposalVotingDeadline,
+			PassPercentage:         proposalPassPercentage,
+			PassedFundDistribution: passedProposalDistribution,
+			FailedFundDistribution: failedProposalDistribution,
+			ProposalExecutionCost:  executionCostAddrConfig,
 		},
 		CodeChange: governance.ProposalOption{
-			InitialFunding:  createAmount("200000000000000000000000"),
-			FundingGoal:     createAmount("1000000000000000000000000"),
-			FundingDeadline: 10,
-			VotingDeadline:  12,
-			PassPercentage:  67,
-			PassedFundDistribution: governance.ProposalFundDistribution{
-				Validators:     0.00,
-				FeePool:        15.00,
-				Burn:           0.00,
-				ExecutionCost:  85.00,
-				BountyPool:     0.00,
-				ProposerReward: 0.00,
-			},
-			FailedFundDistribution: governance.ProposalFundDistribution{
-				Validators:     0.00,
-				FeePool:        15.00,
-				Burn:           25.00,
-				ExecutionCost:  0.00,
-				BountyPool:     60.00,
-				ProposerReward: 0.00,
-			},
-			ProposalExecutionCost: executionCostAddrCodeChange,
+			InitialFunding:         proposalInitialFunding,
+			FundingGoal:            proposalFundingGoal,
+			FundingDeadline:        proposalFundingDeadline,
+			VotingDeadline:         proposalVotingDeadline,
+			PassPercentage:         proposalPassPercentage,
+			PassedFundDistribution: passedProposalDistribution,
+			FailedFundDistribution: failedProposalDistribution,
+			ProposalExecutionCost:  executionCostAddrCodeChange,
 		},
 		General: governance.ProposalOption{
-			InitialFunding:  createAmount("5000000000000000000000"),
-			FundingGoal:     createAmount("15000000000000000000000"),
-			FundingDeadline: 10,
-			VotingDeadline:  12,
-			PassPercentage:  51,
-			PassedFundDistribution: governance.ProposalFundDistribution{
-				Validators:     0.00,
-				FeePool:        75.00,
-				Burn:           5.00,
-				ExecutionCost:  0.00,
-				BountyPool:     10.00,
-				ProposerReward: 10.00,
-			},
-			FailedFundDistribution: governance.ProposalFundDistribution{
-				Validators:     0.00,
-				FeePool:        15.00,
-				Burn:           25.00,
-				ExecutionCost:  0.00,
-				BountyPool:     60.00,
-				ProposerReward: 0.00,
-			},
-			ProposalExecutionCost: executionCostAddrGeneral,
+			InitialFunding:         proposalInitialFunding,
+			FundingGoal:            proposalFundingGoal,
+			FundingDeadline:        proposalFundingDeadline,
+			VotingDeadline:         proposalVotingDeadline,
+			PassPercentage:         proposalPassPercentage,
+			PassedFundDistribution: passedProposalDistribution,
+			FailedFundDistribution: failedProposalDistribution,
+			ProposalExecutionCost:  executionCostAddrGeneral,
 		},
 		BountyProgramAddr: bountyProgramAddr,
 	}
@@ -641,10 +592,10 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 
 	// evidence
 	evidenceOption := evidence.Options{
-		MinVotesRequired: 18,
-		BlockVotesDiff:   20,
+		MinVotesRequired: 2,
+		BlockVotesDiff:   4,
 
-		PenaltyBasePercentage: 10,
+		PenaltyBasePercentage: 30,
 		PenaltyBaseDecimals:   100,
 
 		PenaltyBountyPercentage: 50,
@@ -653,11 +604,11 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 		PenaltyBurnPercentage: 50,
 		PenaltyBurnDecimals:   100,
 
-		ValidatorReleaseTime:    5,
-		ValidatorVotePercentage: 100,
+		ValidatorReleaseTime:    0,
+		ValidatorVotePercentage: 50,
 		ValidatorVoteDecimals:   100,
 
-		AllegationPercentage: 67,
+		AllegationPercentage: 50,
 		AllegationDecimals:   100,
 	}
 

@@ -389,7 +389,7 @@ class ProposalFund:
         raw_txn = self._fund_proposal()
 
         # sign Tx
-        signed = sign_with_wallet(raw_txn, self.funder, self.keypath)
+        signed = sign(raw_txn, self.funder)
 
         # broadcast Tx
         result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
@@ -406,7 +406,7 @@ class ProposalFund:
         raw_txn = self._fund_proposal()
 
         # sign Tx
-        signed = sign(raw_txn, self.funder)
+        signed = sign_with_wallet(raw_txn, self.funder, self.keypath)
 
         # broadcast Tx
         result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])

@@ -1,7 +1,7 @@
 from sdk import *
 
 cfg_dev = TestConfig(fullnode_dev, 1010000, 100)
-cfg_prod = TestConfig(fullnode_prod, 1010000, 1000)
+cfg_prod = TestConfig(fullnode_prod, 1010000, 10000)
 
 class WithdrawRewardsTxLoad(TxLoad):
     def __init__(self, cfg, tid):

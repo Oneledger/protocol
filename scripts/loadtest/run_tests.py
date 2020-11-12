@@ -6,30 +6,30 @@ from network_delegation import *
 # for local
 def add_threads_dev(threads):
     # Delegate, 2 threads
-    threads.add_threads(DelegateTxLoad.dev(1))
+    threads.add_threads(DelegateTxLoad.dev(2))
 
     # UnDelegate, 2 threads
-    threads.add_threads(UnDelegateTxLoad.dev(1))
+    threads.add_threads(UnDelegateTxLoad.dev(2))
 
     # WithdrawRewards, 2 threads
-    threads.add_threads(WithdrawRewardsTxLoad.dev(1))
+    threads.add_threads(WithdrawRewardsTxLoad.dev(2))
 
     # ReinvestRewards, 2 threads
-    threads.add_threads(ReinvestRewardsTxLoad.dev(1))
+    threads.add_threads(ReinvestRewardsTxLoad.dev(2))
 
 # for devnet
 def add_threads_prod(threads):
     # Delegate, 2 threads
-    threads.add_threads(DelegateTxLoad.prod(1))
+    threads.add_threads(DelegateTxLoad.prod(2))
 
     # UnDelegate, 2 threads
-    threads.add_threads(UnDelegateTxLoad.prod(1))
+    threads.add_threads(UnDelegateTxLoad.prod(2))
 
     # WithdrawRewards, 2 threads
-    threads.add_threads(WithdrawRewardsTxLoad.prod(1))
+    threads.add_threads(WithdrawRewardsTxLoad.prod(2))
 
     # ReinvestRewards, 2 threads
-    threads.add_threads(ReinvestRewardsTxLoad.prod(1))
+    threads.add_threads(ReinvestRewardsTxLoad.prod(2))
 
 def abort_loadtest(signal, frame):
     threads.stop_threads()

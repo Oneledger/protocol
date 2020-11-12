@@ -6,7 +6,7 @@ cfg_prod = TestConfig(fullnode_prod, 1010000, 10000)
 class ReinvestRewardsTxLoad(TxLoad):
     def __init__(self, cfg, tid):
         super(ReinvestRewardsTxLoad, self).__init__(cfg, tid, "ReinvestRewardsTxLoad", free_thread=True)
-        self.balance = 0 # in 0.001 OLT
+        self.balance = 0 # in 0.01 OLT
 
     def setup(self, interval):
         new_run = super(ReinvestRewardsTxLoad, self).setup(interval, False)
