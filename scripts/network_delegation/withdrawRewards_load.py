@@ -17,9 +17,9 @@ class WithdrawRewardsTxLoad(TxLoad):
 
     def run_tx(self, i):
         if self.balance == 0:
-            wait_for(1) # wait 1 block to refresh reduced rewards balance
             self.log("waiting for rewards distribution...")
-            balance = waitfor_rewards(self.tx_draw.delegator, "1", "balance")
+            wait_for(1) # wait 1 block to refresh reduced rewards balance
+            balance = waitfor_rewards(self.test_account, "1", "balance")
             self.balance = balance * 100
             self.log("rewards distributed: {} OLT".format(balance))
         super(WithdrawRewardsTxLoad, self).run_tx(i)

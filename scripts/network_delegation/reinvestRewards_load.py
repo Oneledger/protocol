@@ -18,8 +18,10 @@ class ReinvestRewardsTxLoad(TxLoad):
     def run_tx(self, i):
         if self.balance == 0:
             self.log("waiting for rewards distribution...")
-            self.balance = waitfor_rewards(self.test_account, '1', "balance") * 100
-            self.log("rewards distributed: {} OLT".format(self.balance))
+            wait_for(1) # wait 1 block to refresh reduced rewards balance
+            balance = waitfor_rewards(self.test_account, "1", "balance")
+            self.balance = balance * 100
+            self.log("rewards distributed: {} OLT".format(balance))
         super(ReinvestRewardsTxLoad, self).run_tx(i)
         log = self.tx_invest.send(10**16, exit_on_err=False, mode=TxAsync)
         self.balance -= 1
