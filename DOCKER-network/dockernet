@@ -1,0 +1,84 @@
+import argparse
+import yaml
+
+
+#
+# --empty_blocks \
+# --loglevel 4 \
+# --total_funds 1000000000 \
+# --maturity_time 4 \
+# --deleg_rewards_maturity_time 4 \
+# --rewards_interval 1 \
+# --funding_deadline 10 \
+# --voting_deadline 12 \
+# --timeout_commit 1000 \
+# --docker \
+# --subnet \"10.5.0.0/16\" &&
+
+
+def init(arguments):
+    print 'Initializing docker compose files...'
+    version = '3'
+
+    # Generate docker-compose-build.yml
+    build_yml_file = {}
+    services = {}
+    build_service = {}
+
+    build_yml_file['version'] = version
+
+
+
+
+    # Loop through each node and generate docker-compose.yml
+
+
+def start(arguments):
+    print 'START CMD', arguments
+    # Setup environment
+    # Run docker-compose commands
+
+
+def update(arguments):
+    print 'UPDATE CMD', arguments
+
+
+def stop(arguments):
+    print 'STOP CMD', arguments
+
+
+if __name__ == '__main__':
+    # initialize commands
+    cmd_list = {'init': init, 'start': start, 'update': update, 'stop': stop}
+
+    # Initialize Parser
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers(dest='subparsers', help='sub-command help')
+
+    # Initialize init Parser
+    parser_init = subparsers.add_parser('init', help='generate docker compose files')
+    parser_init.add_argument('--validators')
+    parser_init.add_argument('--nonvalidators')
+    parser_init.add_argument('--loglevel')
+    parser_init.add_argument('--total_funds')
+    parser_init.add_argument('--deleg_rewards_maturity_time')
+    parser_init.add_argument('--rewards_interval')
+    parser_init.add_argument('--funding_deadline')
+    parser_init.add_argument('--voting_deadline')
+    parser_init.add_argument('--timeout_commit')
+    parser_init.add_argument('--docker')
+    parser_init.add_argument('--subnet')
+    parser_init.add_argument('--empty_blocks')
+
+    # Initialize start Parser
+    parser_start = subparsers.add_parser('start', help='start network with generated docker compose files')
+
+    # Initialize update Parser
+    parser_update = subparsers.add_parser('update', help='stop containers, rebuild binaries and start back up')
+
+    # Initialize stop Parser
+    parser_stop = subparsers.add_parser('stop', help='stop and remove all containers and networks')
+
+    # Execute command
+    args = vars(parser.parse_args())
+    cmd_list[args['subparsers']](args)
