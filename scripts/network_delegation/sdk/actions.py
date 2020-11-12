@@ -167,7 +167,7 @@ def waitfor_rewards(delegator, amount, status):
         actual = result[status]
         return int(actual) >= int(amount)
     result = wait_until("query.GetDelegRewards", req, until)
-    actual = (int(result[status]) / 10 ** 18)
+    actual = int(result[status]) / 10 ** 18
     return actual
 
 class WithdrawRewards:
