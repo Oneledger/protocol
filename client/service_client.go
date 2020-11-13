@@ -256,3 +256,8 @@ func (c *ServiceClient) ListDelegation(delegationAddresses []keys.Address) (repl
 
 	return
 }
+
+func (c *ServiceClient) HealthCheck() (reply HealthCheckResponse, err error) {
+	err = c.Call("query.HealthCheck", struct{}{}, &reply)
+	return
+}

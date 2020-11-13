@@ -316,3 +316,10 @@ func (svc *Service) Tx(req client.TxRequest, reply *client.TxResponse) error {
 
 	return nil
 }
+
+func (svc *Service) HealthCheck(_ client.HealthCheckRequest, reply *client.HealthCheckResponse) error {
+	*reply = client.HealthCheckResponse{
+		Height: svc.netwkDelegators.Rewards.GetState().Version(),
+	}
+	return nil
+}
