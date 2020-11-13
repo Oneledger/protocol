@@ -1,36 +1,146 @@
 import argparse
+import shutil
 import yaml
 
 
-#
-# --empty_blocks \
-# --loglevel 4 \
-# --total_funds 1000000000 \
-# --maturity_time 4 \
-# --deleg_rewards_maturity_time 4 \
-# --rewards_interval 1 \
-# --funding_deadline 10 \
-# --voting_deadline 12 \
-# --timeout_commit 1000 \
-# --docker \
-# --subnet \"10.5.0.0/16\" &&
+def get_builder_volumes(docker_path, docker_bin, protocol_path):
+    return [
+        protocol_path + ':/home/ubuntu/go/protocol',
+        docker_bin + ':/home/ubuntu/go/bin',
+        docker_path + ':/opt/data/devnet'
+    ]
 
 
-def init(arguments):
-    print 'Initializing docker compose files...'
+def get_node_volumes(docker_path, docker_bin, node_name):
+    return [
+        docker_bin + ':/home/ubuntu/go/bin',
+        docker_path + '/' + node_name + ':/opt/data/devnet'
+    ]
+
+
+def get_node_network(subnet, node_id):
+    subnet_parsed = subnet.split('/')
+    subnet_ip = subnet_parsed[0]
+    ip_parsed = subnet_ip.split('.')
+    ip = '%s.%s.%s.%s' % (ip_parsed[0], ip_parsed[1], ip_parsed[2], str(node_id + 10))
+    return {
+        'vpcbr': {
+            'ipv4_address': ip
+        }
+    }
+
+
+def setup_network(subnet):
+    return {
+        'vpcbr': {
+            'driver': 'bridge',
+            'ipam': {
+                'config': [{'subnet': subnet}]
+            }
+        }
+    }
+
+
+def generate_node_config(arguments):
     version = '3'
+    port = 26600
+    node_yml_file = {}
+    services = {}
+    cmd = 'bash -c \"cd /opt/data/devnet && ' \
+          'olfullnode node --root /opt/data/devnet >> /opt/data/devnet/olfullnode.log 2>&1\"'
+
+    # Clean up subnet string
+    subnet = arguments['subnet']
+    subnet = subnet.replace('\\', '')
+    subnet = subnet.replace('\"', '')
+
+    # Loop through each node and generate docker-compose.yml
+    num_nodes = int(arguments['validators']) + int(arguments['nonvalidators'])
+    for i in range(num_nodes):
+        node_service = {}
+        container_name = str(i) + '-Node'
+        node_service['image'] = arguments['image']
+        node_service['container_name'] = container_name
+        node_service['ports'] = []
+        port_base = port
+        for k in range(3):
+            node_service['ports'].append('%d:%d' % (port_base + k, port_base + k))
+            port += 1
+        node_service['volumes'] = get_node_volumes(arguments['docker_path'], arguments['docker_bin'], container_name)
+        node_service['command'] = cmd
+        node_service['networks'] = get_node_network(subnet, i)
+        node_service['stdin_open'] = True
+        node_service['tty'] = True
+        services[container_name] = node_service
+
+    node_yml_file['version'] = version
+    node_yml_file['services'] = services
+    node_yml_file['networks'] = setup_network(subnet)
+
+    return node_yml_file
+
+
+def generate_build_config(arguments):
+    image = arguments.pop('image', None)
+    container_name = arguments.pop('container_name', None)
+    docker_path = arguments.pop('docker_path', None)
+    protocol_path = arguments.pop('protocol_path', None)
+    docker_bin = arguments.pop('docker_bin', None)
 
     # Generate docker-compose-build.yml
+    version = "3"
     build_yml_file = {}
     services = {}
     build_service = {}
 
     build_yml_file['version'] = version
+    services['builder'] = build_service
+
+    build_service['image'] = image
+    build_service['container_name'] = container_name
+    build_service['volumes'] = get_builder_volumes(docker_path, docker_bin, protocol_path)
+    build_service['tty'] = True
+    build_service['stdin_open'] = True
+
+    build_cmd = 'bash -c \"cd /home/ubuntu/go/protocol && make install_c && olfullnode init devnet ' \
+                '--dir /opt/data/devnet '
+
+    for key in arguments:
+        value = arguments[key]
+        flag = '--' + key + ' '
+        if isinstance(value, bool) and value:
+            build_cmd += flag
+            continue
+        if value:
+            build_cmd += flag + value + ' '
+
+    build_cmd += '&& /bin/bash\"'
+
+    build_service['command'] = build_cmd
+    build_yml_file['services'] = services
+    return build_yml_file
 
 
+def init(arguments):
+    print 'Initializing docker compose files...'
 
+    # If default flag is true then use default docker compose files
+    if arguments['default']:
+        shutil.copy('default/docker-compose-build.yml', '.')
+        shutil.copy('default/docker-compose.yml', '.')
+        return
 
-    # Loop through each node and generate docker-compose.yml
+    # Remove unnecessary keys
+    arguments.pop('subparsers', None)
+    arguments.pop('default', None)
+
+    node_yml_file = generate_node_config(arguments)
+    with open(r'docker-compose.yml', 'w') as out_file:
+        yaml.dump(node_yml_file, out_file)
+
+    build_yml_file = generate_build_config(arguments)
+    with open(r'docker-compose-build.yml', 'w') as out_file:
+        yaml.dump(build_yml_file, out_file)
 
 
 def start(arguments):
@@ -57,18 +167,25 @@ if __name__ == '__main__':
 
     # Initialize init Parser
     parser_init = subparsers.add_parser('init', help='generate docker compose files')
-    parser_init.add_argument('--validators')
-    parser_init.add_argument('--nonvalidators')
-    parser_init.add_argument('--loglevel')
-    parser_init.add_argument('--total_funds')
-    parser_init.add_argument('--deleg_rewards_maturity_time')
-    parser_init.add_argument('--rewards_interval')
-    parser_init.add_argument('--funding_deadline')
-    parser_init.add_argument('--voting_deadline')
-    parser_init.add_argument('--timeout_commit')
-    parser_init.add_argument('--docker')
-    parser_init.add_argument('--subnet')
-    parser_init.add_argument('--empty_blocks')
+    parser_init.add_argument('--validators', default='4', help='number of validator nodes')
+    parser_init.add_argument('--nonvalidators', default='1', help='number of non validator nodes')
+    parser_init.add_argument('--loglevel', default='4', help='level of logging for each node')
+    parser_init.add_argument('--total_funds', default='1000000000', help='initial funds for the network')
+    parser_init.add_argument('--maturity_time', default='4')
+    parser_init.add_argument('--deleg_rewards_maturity_time', default='4')
+    parser_init.add_argument('--rewards_interval', default='1')
+    parser_init.add_argument('--funding_deadline', default='10')
+    parser_init.add_argument('--voting_deadline', default='12')
+    parser_init.add_argument('--timeout_commit', default='1')
+    parser_init.add_argument('--docker', action='store_true', default=True)
+    parser_init.add_argument('--subnet', default='\\\"10.5.0.0/16\\\"')
+    parser_init.add_argument('--empty_blocks', action="store_true")
+    parser_init.add_argument('--default', action='store_true', help='use default docker compose files')
+    parser_init.add_argument('--image', default='olprotocol')
+    parser_init.add_argument('--container_name', default='builder')
+    parser_init.add_argument('--protocol_path', default='~/go/protocol', help='source code path')
+    parser_init.add_argument('--docker_path', default='~/oldata/docker', help='docker shared volume for nodes')
+    parser_init.add_argument('--docker_bin', default='~/oldata/docker/bin', help='path for protocol executables')
 
     # Initialize start Parser
     parser_start = subparsers.add_parser('start', help='start network with generated docker compose files')
