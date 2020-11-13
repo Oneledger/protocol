@@ -1,11 +1,7 @@
 import hashlib
 import sys
-import os.path as path
 
-sdkcom_p = path.abspath(path.join(path.dirname(__file__), "../.."))
-sys.path.append(sdkcom_p)
-
-from sdkcom import *
+from rpc_call import *
 
 # Proposal Types
 ProposalTypeInvalid = 0xEE
