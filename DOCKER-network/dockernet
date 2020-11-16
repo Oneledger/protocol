@@ -1,6 +1,9 @@
 import argparse
 import shutil
 import yaml
+import os
+import time
+import glob
 
 
 def get_builder_volumes(docker_path, docker_bin, protocol_path):
@@ -102,7 +105,8 @@ def generate_build_config(arguments):
     build_service['tty'] = True
     build_service['stdin_open'] = True
 
-    build_cmd = 'bash -c \"cd /home/ubuntu/go/protocol && make install_c && olfullnode init devnet ' \
+    build_cmd = 'bash -c \"rm -rf /opt/data/devnet/*-Node &&' \
+                'cd /home/ubuntu/go/protocol && make install_c && olfullnode init devnet ' \
                 '--dir /opt/data/devnet '
 
     for key in arguments:
@@ -142,11 +146,30 @@ def init(arguments):
     with open(r'docker-compose-build.yml', 'w') as out_file:
         yaml.dump(build_yml_file, out_file)
 
+    print 'done'
+
 
 def start(arguments):
-    print 'START CMD', arguments
+    print 'Starting up docker network...'
     # Setup environment
-    # Run docker-compose commands
+    docker_path = arguments['docker_path']
+    docker_bin = arguments['docker_bin']
+
+    if not os.path.exists(docker_path):
+        os.mkdir(docker_path)
+
+    if not os.path.exists(docker_bin):
+        os.mkdir(docker_bin)
+
+    # Start build container and initialize build
+    os.system('docker-compose -f docker-compose-build.yml up -d')
+
+    # Wait for build to complete
+    while len(glob.glob(os.path.join(docker_path, '*-Node'))) == 0:
+        print 'building binaries...'
+        time.sleep(10)
+
+    os.system('docker-compose up -d')
 
 
 def update(arguments):
@@ -176,7 +199,7 @@ if __name__ == '__main__':
     parser_init.add_argument('--rewards_interval', default='1')
     parser_init.add_argument('--funding_deadline', default='10')
     parser_init.add_argument('--voting_deadline', default='12')
-    parser_init.add_argument('--timeout_commit', default='1')
+    parser_init.add_argument('--timeout_commit', default='1000')
     parser_init.add_argument('--docker', action='store_true', default=True)
     parser_init.add_argument('--subnet', default='\\\"10.5.0.0/16\\\"')
     parser_init.add_argument('--empty_blocks', action="store_true")
@@ -189,6 +212,8 @@ if __name__ == '__main__':
 
     # Initialize start Parser
     parser_start = subparsers.add_parser('start', help='start network with generated docker compose files')
+    parser_start.add_argument('--docker_path', default='/home/kevin/oldata/docker', help='docker shared volume for nodes')
+    parser_start.add_argument('--docker_bin', default='/home/kevin/oldata/docker/bin', help='path for protocol executables')
 
     # Initialize update Parser
     parser_update = subparsers.add_parser('update', help='stop containers, rebuild binaries and start back up')
