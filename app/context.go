@@ -109,10 +109,11 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	if err != nil {
 		return ctx, errors.Wrap(err, "initial db failed")
 	}
-	rdb, err := storage.GetDatabase("recentDB", ctx.dbDir(), ctx.cfg.Node.DB)
-	if err != nil {
-		return ctx, errors.Wrap(err, "initial db failed")
-	}
+	//rdb, err := storage.GetDatabase("recentDB", ctx.dbDir(), ctx.cfg.Node.DB)
+	//if err != nil {
+	//	return ctx, errors.Wrap(err, "initial db failed")
+	//}
+	rdb := tmdb.NewDB("recentDB", tmdb.MemDBBackend, ctx.dbDir())
 	ctx.db = db
 	ctx.chainstate = storage.NewChainState("chainstate", db, rdb)
 	errRotation := ctx.chainstate.SetupRotation(ctx.cfg.Node.ChainStateRotation)
@@ -139,10 +140,11 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	if err != nil {
 		return ctx, errors.Wrap(err, "initialize internal TX db failed")
 	}
-	rdb2, err := storage.GetDatabase("rdb2", ctx.dbDir(), ctx.cfg.Node.DB)
-	if err != nil {
-		return ctx, errors.Wrap(err, "initial db failed")
-	}
+	//rdb2, err := storage.GetDatabase("rdb2", ctx.dbDir(), ctx.cfg.Node.DB)
+	//if err != nil {
+	//	return ctx, errors.Wrap(err, "initial db failed")
+	//}
+	rdb2 := tmdb.NewDB("rdb2", tmdb.MemDBBackend, ctx.dbDir())
 	cs := storage.NewState(storage.NewChainState("chainstateTX", newDB, rdb2))
 	ctx.transaction = transactions.NewTransactionStore("intx", cs)
 

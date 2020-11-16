@@ -99,9 +99,13 @@ func newKeyValue(name, dbDir, configDB string, newType StorageType) *KeyValue {
 			log.Error("Database create failed", "err", err)
 			panic("Can't create a database " + dbDir + "/" + name)
 		}
-
+		//kvrecent := db.NewDB(name+"rdb",db.CLevelDBBackend,dbDir)
+		//tree, _ := iavl.NewMutableTreeWithOpts(storage,kvrecent, 100,&iavl.Options{
+		//	KeepEvery:  1,
+		//	KeepRecent: 1,
+		//	Sync:       false,
+		//})
 		tree, _ := iavl.NewMutableTree(storage, 100)
-
 		// Note: the tree is empty, until at least one version is loaded
 		tree.LoadVersion(0)
 

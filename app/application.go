@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/Oneledger/protocol/event"
 	"net/url"
 	"os"
 
@@ -19,7 +20,6 @@ import (
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/ons"
-	"github.com/Oneledger/protocol/event"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/serialize"
@@ -443,7 +443,7 @@ func (app *App) Prepare() error {
 	app.Context.witnesses.Init(chain.ETHEREUM, app.Context.node.ValidatorAddress())
 
 	// Init reward cumulative store
-	app.Context.rewardMaster.RewardCm.Init(app.node.BlockStore())
+	//app.Context.rewardMaster.RewardCm.Init(app.node.BlockStore())
 
 	// Initialize internal Services
 	app.Context.internalService = event.NewService(app.Context.node,

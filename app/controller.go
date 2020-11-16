@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/Oneledger/protocol/data/fees"
 
 	"math"
 	"math/big"
@@ -25,7 +26,6 @@ import (
 	"github.com/Oneledger/protocol/data/bitcoin"
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/ethereum"
-	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/jobs"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/event"
@@ -91,7 +91,7 @@ func (app *App) chainInitializer() chainInitializer {
 		defer app.handlePanic()
 		app.Context.deliver = storage.NewState(app.Context.chainstate)
 		app.Context.govern.WithState(app.Context.deliver)
-		app.Context.btcTrackers.WithState(app.Context.deliver)
+		//app.Context.btcTrackers.WithState(app.Context.deliver)
 
 		err := app.setupState(req.AppStateBytes)
 		// This should cause consensus to halt
@@ -139,10 +139,10 @@ func (app *App) blockBeginner() blockBeginner {
 			app.logger.Error("validator set with error", err)
 		}
 		//Mature Pending Delegates for withdrawal
-		err = app.Context.netwkDelegators.Deleg.WithState(app.Context.deliver).HandlePendingDelegates(req.Header.Height)
-		if err != nil {
-			app.logger.Error("failed to mature pending delegates", err)
-		}
+		//err = app.Context.netwkDelegators.Deleg.WithState(app.Context.deliver).HandlePendingDelegates(req.Header.Height)
+		//if err != nil {
+		//	app.logger.Error("failed to mature pending delegates", err)
+		//}
 
 		// update malicious list
 		//err = app.Context.validators.CheckMaliciousValidators(
@@ -154,18 +154,18 @@ func (app *App) blockBeginner() blockBeginner {
 		//}
 
 		// update Block Rewards
-		blockRewardEvent := handleBlockRewards(&app.Context, req)
+		//blockRewardEvent := handleBlockRewards(&app.Context, req)
 
 		result := ResponseBeginBlock{
-			Events: []abciTypes.Event{blockRewardEvent},
+			//Events: []abciTypes.Event{blockRewardEvent},
 		}
 
 		// matured delegators' pending withdrawal
-		delegRewardStore := app.Context.netwkDelegators.Rewards.WithState(app.Context.deliver)
-		delegRewardEvent, anyMatured := delegRewardStore.MaturePendingRewards(req.Header.Height)
-		if anyMatured {
-			result.Events = append(result.Events, delegRewardEvent)
-		}
+		//delegRewardStore := app.Context.netwkDelegators.Rewards.WithState(app.Context.deliver)
+		//delegRewardEvent, anyMatured := delegRewardStore.MaturePendingRewards(req.Header.Height)
+		//if anyMatured {
+		//	result.Events = append(result.Events, delegRewardEvent)
+		//}
 
 		//update the header to current block
 		app.header = req.Header
@@ -325,9 +325,9 @@ func (app *App) blockEnder() blockEnder {
 
 		app.Context.validators.WithState(app.Context.deliver).ClearEvents()
 
-		ethTrackerlog := log.NewLoggerWithPrefix(app.Context.logWriter, "ethtracker").WithLevel(log.Level(app.Context.cfg.Node.LogLevel))
-		doTransitions(app.Context.jobStore, app.Context.btcTrackers.WithState(app.Context.deliver), app.Context.validators)
-		doEthTransitions(app.Context.jobStore, app.Context.ethTrackers, app.Context.node.ValidatorAddress(), ethTrackerlog, app.Context.witnesses, app.Context.deliver)
+		//ethTrackerlog := log.NewLoggerWithPrefix(app.Context.logWriter, "ethtracker").WithLevel(log.Level(app.Context.cfg.Node.LogLevel))
+		//doTransitions(app.Context.jobStore, app.Context.btcTrackers.WithState(app.Context.deliver), app.Context.validators)
+		//doEthTransitions(app.Context.jobStore, app.Context.ethTrackers, app.Context.node.ValidatorAddress(), ethTrackerlog, app.Context.witnesses, app.Context.deliver)
 		// Proposals currently in store are cleared if deliver is successful
 		// If Expire or Finalize TX returns false,they will added to the proposals queue in the next block
 		// Errors are logged at the function level
@@ -352,7 +352,6 @@ func (app *App) blockEnder() blockEnder {
 			ValidatorUpdates: updates,
 			Events:           events,
 		}
-		result.Events = nil
 		app.logger.Detail("End Block: ", result, "height:", req.Height)
 
 		return result

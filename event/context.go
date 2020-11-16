@@ -9,9 +9,6 @@ import (
 
 	"github.com/Oneledger/protocol/data/governance"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
-
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/bitcoin"
@@ -19,6 +16,7 @@ import (
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 type JobsContext struct {
@@ -65,16 +63,17 @@ func NewJobsContext(cfg config.Server,
 }
 
 func (jc *JobsContext) GetValidatorETHAddress() common.Address {
-	privkey := keys.ETHSECP256K1TOECDSA(jc.ETHPrivKey.Data)
-
-	pubkey := privkey.Public()
-	ecdsapubkey, ok := pubkey.(*ecdsa.PublicKey)
-	if !ok {
-		jc.Logger.Error("failed to cast pubkey", pubkey)
-		return common.Address{}
-	}
-	addr := crypto.PubkeyToAddress(*ecdsapubkey)
-	return addr
+	//privkey := keys.ETHSECP256K1TOECDSA(jc.ETHPrivKey.Data)
+	//
+	//pubkey := privkey.Public()
+	//ecdsapubkey, ok := pubkey.(*ecdsa.PublicKey)
+	//if !ok {
+	//	jc.Logger.Error("failed to cast pubkey", pubkey)
+	//	return common.Address{}
+	//}
+	//addr := crypto.PubkeyToAddress(*ecdsapubkey)
+	//return addr
+	return [20]byte{}
 }
 
 func (jc *JobsContext) GetValidatorETHPrivKey() *ecdsa.PrivateKey {

@@ -7,8 +7,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcutil"
+	//"github.com/btcsuite/btcd/chaincfg"
+	//"github.com/btcsuite/btcutil"
 	"github.com/tendermint/tendermint/p2p"
 	"github.com/tendermint/tendermint/privval"
 
@@ -108,20 +108,20 @@ func (n Context) ValidatorECDSAPrivateKey() *keys.PrivateKey {
 	return &n.ecdsaPrivVal
 }
 
-func (n Context) ValidatorBTCScriptAddress(params *chaincfg.Params) (keys.Address, error) {
-
-	h, err := n.ecdsaPrivVal.GetHandler()
-	if err != nil {
-		return nil, err
-	}
-
-	apk, err := btcutil.NewAddressPubKey(h.PubKey().Data, params)
-	if err != nil {
-		return nil, err
-	}
-
-	return apk.ScriptAddress(), nil
-}
+//func (n Context) ValidatorBTCScriptAddress(params *chaincfg.Params) (keys.Address, error) {
+//
+//	h, err := n.ecdsaPrivVal.GetHandler()
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	apk, err := btcutil.NewAddressPubKey(h.PubKey().Data, params)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	return apk.ScriptAddress(), nil
+//}
 
 func (n Context) isValid() bool {
 	if n.ValidatorAddress() == nil || n.Address() == nil {
@@ -179,7 +179,6 @@ func readKeyFiles(cfg *consensus.Config) (*Context, error) {
 
 	// This function quits the process if either of these files don't exist
 	filePV := privval.LoadFilePV(pvKeyF, pvStateF)
-
 	pvkey, err := keys.PVKeyFromTendermint(&filePV.Key)
 	if err != nil {
 		return nil, err

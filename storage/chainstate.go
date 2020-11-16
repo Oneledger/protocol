@@ -215,10 +215,10 @@ func (state *ChainState) LoadVersion(version int64) (int64, error) {
 
 // Reset the chain state from persistence
 func (state *ChainState) loadDB(db tmdb.DB, rdb tmdb.DB) ([]byte, int64) {
-	//recentDb :=  tmdb.NewDB("rdb",tmdb.CLevelDBBackend,"")
+	//rbb :=  tmdb.NewDB("rdb",tmdb.MemDBBackend,"")
 	tree, _ := iavl.NewMutableTreeWithOpts(db, rdb, CHAINSTATE_CACHE_SIZE, &iavl.Options{
 		KeepEvery:  1,
-		KeepRecent: 0,
+		KeepRecent: 1,
 		Sync:       false,
 	})
 	//tree, _ := iavl.NewMutableTree(db, CHAINSTATE_CACHE_SIZE) // Do I need a historic tree here?
