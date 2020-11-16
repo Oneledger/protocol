@@ -85,7 +85,7 @@ def generate_node_config(arguments):
 
 def generate_build_config(arguments):
     image = arguments.pop('image', None)
-    container_name = arguments.pop('container_name', None)
+    container_name = 'builder'
     docker_path = arguments.pop('docker_path', None)
     protocol_path = arguments.pop('protocol_path', None)
     docker_bin = arguments.pop('docker_bin', None)
@@ -105,7 +105,7 @@ def generate_build_config(arguments):
     build_service['tty'] = True
     build_service['stdin_open'] = True
 
-    build_cmd = 'bash -c \"rm -rf /opt/data/devnet/*-Node &&' \
+    build_cmd = 'bash -c \"rm -rf /opt/data/devnet/*-Node && ' \
                 'cd /home/ubuntu/go/protocol && make install_c && olfullnode init devnet ' \
                 '--dir /opt/data/devnet '
 
@@ -161,23 +161,34 @@ def start(arguments):
     if not os.path.exists(docker_bin):
         os.mkdir(docker_bin)
 
+    if not os.path.exists('docker-compose-build.yml') or not os.path.exists('docker-compose.yml'):
+        print 'error: need to run > python dockernet init'
+        return
+
     # Start build container and initialize build
     os.system('docker-compose -f docker-compose-build.yml up -d')
 
     # Wait for build to complete
+    print 'building binaries...'
     while len(glob.glob(os.path.join(docker_path, '*-Node'))) == 0:
-        print 'building binaries...'
         time.sleep(10)
+    print 'done'
 
     os.system('docker-compose up -d')
 
 
 def update(arguments):
-    print 'UPDATE CMD', arguments
+    print 'Updating Docker Network...'
+    os.system('docker container kill $(docker ps -q)')
+    os.system('docker start builder')
+    os.system('docker exec -it builder bash -c "cd /home/ubuntu/go/protocol && make install_c"')
+    os.system('docker-compose up -d')
 
 
 def stop(arguments):
-    print 'STOP CMD', arguments
+    print 'Stopping Docker Network...'
+    os.system('docker container kill $(docker ps -q)')
+    os.system('docker system prune -f')
 
 
 if __name__ == '__main__':
@@ -194,19 +205,18 @@ if __name__ == '__main__':
     parser_init.add_argument('--nonvalidators', default='1', help='number of non validator nodes')
     parser_init.add_argument('--loglevel', default='4', help='level of logging for each node')
     parser_init.add_argument('--total_funds', default='1000000000', help='initial funds for the network')
-    parser_init.add_argument('--maturity_time', default='4')
-    parser_init.add_argument('--deleg_rewards_maturity_time', default='4')
-    parser_init.add_argument('--rewards_interval', default='1')
-    parser_init.add_argument('--funding_deadline', default='10')
-    parser_init.add_argument('--voting_deadline', default='12')
-    parser_init.add_argument('--timeout_commit', default='1000')
-    parser_init.add_argument('--docker', action='store_true', default=True)
-    parser_init.add_argument('--subnet', default='\\\"10.5.0.0/16\\\"')
-    parser_init.add_argument('--empty_blocks', action="store_true")
+    parser_init.add_argument('--maturity_time', default='4', help='staking maturity time in blocks')
+    parser_init.add_argument('--deleg_rewards_maturity_time', default='4', help='delegation rewards maturity in blocks')
+    parser_init.add_argument('--rewards_interval', default='1', help='number of reward blocks stored in one record')
+    parser_init.add_argument('--funding_deadline', default='10', help='governance proposal funding deadline in blocks')
+    parser_init.add_argument('--voting_deadline', default='12', help='governance proposal voting deadline in blocks')
+    parser_init.add_argument('--timeout_commit', default='1000', help='time between each block creation in (ms)')
+    parser_init.add_argument('--docker', action='store_true', default=True, help='docker flag used by olfullnode init')
+    parser_init.add_argument('--subnet', default='\\\"10.5.0.0/16\\\"', help='subnet of all node IP addresses')
+    parser_init.add_argument('--empty_blocks', action="store_true", help='create empty blocks')
     parser_init.add_argument('--default', action='store_true', help='use default docker compose files')
-    parser_init.add_argument('--image', default='olprotocol')
-    parser_init.add_argument('--container_name', default='builder')
-    parser_init.add_argument('--protocol_path', default='~/go/protocol', help='source code path')
+    parser_init.add_argument('--image', default='olprotocol', help='name of docker image')
+    parser_init.add_argument('--protocol_path', default='~/go/protocol', help='protocol source code path')
     parser_init.add_argument('--docker_path', default='~/oldata/docker', help='docker shared volume for nodes')
     parser_init.add_argument('--docker_bin', default='~/oldata/docker/bin', help='path for protocol executables')
 
