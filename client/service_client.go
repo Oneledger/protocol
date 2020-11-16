@@ -256,3 +256,4 @@ func (c *ServiceClient) ListDelegation(delegationAddresses []keys.Address) (repl
 
 	return
 }
+
