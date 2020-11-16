@@ -387,8 +387,3 @@ type TxResponse struct {
 	Result ctypes.ResultTx `json:"result"`
 }
 
-type HealthCheckRequest struct {}
-
-type HealthCheckResponse struct {
-	Height int64           `json:"height"`
-}
