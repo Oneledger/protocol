@@ -490,7 +490,7 @@ func getRewardForValidator(totalPower *big.Int, validatorPower *big.Int, totalRe
 }
 
 func handleDelegationRewards(delegCtx *network_delegation.DelegationRewardCtx, appCtx *context, kvMap map[string]kv.Pair,
-	req *RequestBeginBlock, logger *log.Logger) (resp *network_delegation.DelegationRewardResponse) {
+) (resp *network_delegation.DelegationRewardResponse) {
 	var err error
 	networkDelegators := appCtx.netwkDelegators.WithState(appCtx.deliver)
 	//rewardMaster := appCtx.rewardMaster.WithState(appCtx.deliver)
@@ -633,7 +633,7 @@ func handleBlockRewards(appCtx *context, block RequestBeginBlock, logger *log.Lo
 			Height:          lastHeight,
 			ProposerAddress: keys.Address(block.Header.ProposerAddress),
 		}
-		delegationResp = handleDelegationRewards(delegationCtx, appCtx, kvMap, &block, logger)
+		delegationResp = handleDelegationRewards(delegationCtx, appCtx, kvMap)
 
 		//Update Consumed Amount
 		totalConsumed = totalConsumed.Plus(*delegationResp.DelegationRewards)
