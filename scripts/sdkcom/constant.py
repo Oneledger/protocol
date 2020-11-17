@@ -10,7 +10,7 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 # default load test intervals, in milliseconds
-INTERVAL_DEFAULT = 500
+INTERVAL_DEFAULT = 200
 
 # load test speed, txs per second
 TXS_PER_SEC_NORMAL = 100

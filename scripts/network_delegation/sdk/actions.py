@@ -82,7 +82,7 @@ class NetWorkDelegate:
                     sys.exit(-1)
             else:
                 print "################### delegation added"
-        return result["log"]
+        return "" if "log" not in result else result["log"]
 
     def send_network_undelegate(self, amount, exit_on_err=True, mode=TxCommit):
         # createTx
@@ -101,7 +101,7 @@ class NetWorkDelegate:
             else:
                 self.txHash = "0x" + result["txHash"]
                 print "################### undelegate"
-        return result["log"]
+        return "" if "log" not in result else result["log"]
 
     def send_network_undelegate_shoud_fail(self, amount):
         # createTx
@@ -203,7 +203,7 @@ class WithdrawRewards:
                     sys.exit(-1)
             else:
                 print "################### withdrawal successfully initiated"
-        return result["log"]
+        return "" if "log" not in result else result["log"]
 
 class ReinvestRewards:
     def __init__(self, delegator, keypath):
@@ -237,7 +237,7 @@ class ReinvestRewards:
                     sys.exit(-1)
             else:
                 print "################### successfully reinvested rewards"
-        return result["log"]
+        return "" if "log" not in result else result["log"]
 
 class FinalizeRewards:
     def __init__(self, delegator, keypath):
@@ -348,8 +348,17 @@ def query_delegation(delegation_addresses=None):
     resp = rpc_call('query.ListDelegation', req)
     # print resp
     result = resp["result"]
-    print json.dumps(resp, indent=4)
     return result["allDelegStats"]
+
+def query_delegation_total(onlyActive=1):
+    req = {
+        "onlyActive": onlyActive,
+    }
+
+    resp = rpc_call('query.GetTotalNetwkDelegation', req)
+    # print resp
+    result = resp["result"]
+    return result
 
 
 def check_query_delegation(query_result, index, expected_delegation, expected_pending_delegation, have_reward, expected_pending_rewards):

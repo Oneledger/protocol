@@ -18,7 +18,7 @@ class TestThreads:
             addValidatorWalletAccounts(fullnode_prod)
 
         # setup each thread
-        thread_interval = interval / len(self.threads)
+        thread_interval = interval * len(self.threads)
         for i, t in enumerate(self.threads):
             t.setup(thread_interval)
 

@@ -27,3 +27,4 @@ node_9 = os.path.join(devnet, "9-Node")
 
 fullnode_dev = os.path.join(devnet, "4-Node")
 fullnode_prod = os.path.join(oldata, "fullnode")
+fullnode = fullnode_dev if oltest == "1" else fullnode_prod
