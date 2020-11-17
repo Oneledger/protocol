@@ -490,7 +490,7 @@ func getRewardForValidator(totalPower *big.Int, validatorPower *big.Int, totalRe
 }
 
 func handleDelegationRewards(delegCtx *network_delegation.DelegationRewardCtx, appCtx *context, kvMap map[string]kv.Pair,
-	req *RequestBeginBlock, logger *log.Logger) (resp *network_delegation.DelegationRewardResponse) {
+) (resp *network_delegation.DelegationRewardResponse) {
 	var err error
 	networkDelegators := appCtx.netwkDelegators.WithState(appCtx.deliver)
 	//rewardMaster := appCtx.rewardMaster.WithState(appCtx.deliver)
@@ -551,40 +551,6 @@ func handleDelegationRewards(delegCtx *network_delegation.DelegationRewardCtx, a
 		Key:   []byte(poolList["DelegationPool"].String()),
 		Value: []byte(resp.DelegationRewards.String()),
 	}
-
-	//Mature pending rewards to delegator's balance
-	height := req.Header.Height
-	rewardsStore := networkDelegators.Rewards
-	balanceStore := appCtx.balances.WithState(appCtx.deliver)
-	c, ok := appCtx.currencies.GetCurrencyByName("OLT")
-	if !ok {
-		logger.Errorf("failed to get OLT as currency from context")
-		panic("failed to get OLT as currency from context")
-	}
-	// put all the pending rewards at the height directly to delegator's balance
-	rewardsStore.IteratePD(height, func(delegator keys.Address, amt *balance.Amount) bool {
-		//Add each of them to user's address
-		coin := c.NewCoinFromAmount(*amt)
-		err := balanceStore.AddToAddress(delegator, coin)
-		if err != nil {
-			logger.Errorf("failed to add pending rewards amount at height: %d to address: %s", height, delegator.String())
-			panic(err)
-		}
-		// clear pending amount
-		zero := balance.NewAmount(0)
-		err = rewardsStore.SetPendingRewards(delegator, zero, height)
-		if err != nil {
-			logger.Errorf("failed to clear pending rewards amount at height: %d for address: %s", height, delegator.String())
-			panic(err)
-		}
-		//Create Event for maturing rewards
-		rewardsKey := "deleg_rewards_mature_" + delegator.String()
-		kvMap[rewardsKey] = kv.Pair{
-			Key:   []byte(rewardsKey),
-			Value: []byte(coin.String()),
-		}
-		return false
-	})
 	return
 }
 
@@ -667,7 +633,7 @@ func handleBlockRewards(appCtx *context, block RequestBeginBlock, logger *log.Lo
 			Height:          lastHeight,
 			ProposerAddress: keys.Address(block.Header.ProposerAddress),
 		}
-		delegationResp = handleDelegationRewards(delegationCtx, appCtx, kvMap, &block, logger)
+		delegationResp = handleDelegationRewards(delegationCtx, appCtx, kvMap)
 
 		//Update Consumed Amount
 		totalConsumed = totalConsumed.Plus(*delegationResp.DelegationRewards)
@@ -713,7 +679,7 @@ func handleBlockRewards(appCtx *context, block RequestBeginBlock, logger *log.Lo
 		}
 	}
 
-	//Update Matured Amount
+	//Update Validators' Matured Amount
 	rewardMaster.Reward.IterateAddrList(func(addr keys.Address) bool {
 		matured := lastHeight % options.RewardInterval
 		if matured == 0 {
@@ -729,6 +695,9 @@ func handleBlockRewards(appCtx *context, block RequestBeginBlock, logger *log.Lo
 		}
 		return false
 	})
+
+	//Update delegators' Matured Amount
+	matureDelegationRewards(appCtx, &block, kvMap, logger)
 
 	//pass total consumed amount to cumulative db
 	_ = rewardMaster.RewardCm.ConsumeRewards(totalConsumed)
@@ -835,4 +804,41 @@ func addMaturedAmountsToBalance(ctx *context, logger *log.Logger, req *RequestBe
 	})
 	any = len(event.Attributes) > 1
 	return
+}
+
+func matureDelegationRewards(appCtx *context, req *RequestBeginBlock, kvMap map[string]kv.Pair, logger *log.Logger) {
+	networkDelegators := appCtx.netwkDelegators.WithState(appCtx.deliver)
+	//Mature pending rewards to delegator's balance
+	height := req.Header.Height
+	rewardsStore := networkDelegators.Rewards
+	balanceStore := appCtx.balances.WithState(appCtx.deliver)
+	c, ok := appCtx.currencies.GetCurrencyByName("OLT")
+	if !ok {
+		logger.Errorf("failed to get OLT as currency from context")
+		panic("failed to get OLT as currency from context")
+	}
+	// put all the pending rewards at the height directly to delegator's balance
+	rewardsStore.IteratePD(height, func(delegator keys.Address, amt *balance.Amount) bool {
+		//Add each of them to user's address
+		coin := c.NewCoinFromAmount(*amt)
+		err := balanceStore.AddToAddress(delegator, coin)
+		if err != nil {
+			logger.Errorf("failed to add pending rewards amount at height: %d to address: %s", height, delegator.String())
+			panic(err)
+		}
+		// clear pending amount
+		zero := balance.NewAmount(0)
+		err = rewardsStore.SetPendingRewards(delegator, zero, height)
+		if err != nil {
+			logger.Errorf("failed to clear pending rewards amount at height: %d for address: %s", height, delegator.String())
+			panic(err)
+		}
+		//Create Event for maturing rewards
+		rewardsKey := "deleg_rewards_mature_" + delegator.String()
+		kvMap[rewardsKey] = kv.Pair{
+			Key:   []byte(rewardsKey),
+			Value: []byte(coin.String()),
+		}
+		return false
+	})
 }
