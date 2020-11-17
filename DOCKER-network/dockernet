@@ -191,9 +191,16 @@ def stop(arguments):
     os.system('docker system prune -f')
 
 
+def run(arguments):
+    container = arguments['container']
+    cmd = arguments['cmd']
+    docker_cmd = 'docker exec -it ' + container + ' bash -c \"cd /opt/data/devnet && ' + cmd + '\"'
+    os.system(docker_cmd)
+
+
 if __name__ == '__main__':
     # initialize commands
-    cmd_list = {'init': init, 'start': start, 'update': update, 'stop': stop}
+    cmd_list = {'init': init, 'start': start, 'update': update, 'stop': stop, 'run': run}
 
     # Initialize Parser
     parser = argparse.ArgumentParser()
@@ -230,6 +237,11 @@ if __name__ == '__main__':
 
     # Initialize stop Parser
     parser_stop = subparsers.add_parser('stop', help='stop and remove all containers and networks')
+
+    # Initialize run Parser
+    parser_run = subparsers.add_parser('run', help='run command inside container')
+    parser_run.add_argument('container', help='container to execute command in')
+    parser_run.add_argument('cmd', help='command to be executed in container')
 
     # Execute command
     args = vars(parser.parse_args())
