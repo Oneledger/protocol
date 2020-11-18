@@ -3,7 +3,6 @@ package app
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/Oneledger/protocol/data/fees"
 
 	"math"
 	"math/big"
@@ -122,11 +121,11 @@ func (app *App) blockBeginner() blockBeginner {
 		gc := getGasCalculator(app.genesisDoc.ConsensusParams)
 		app.Context.deliver = storage.NewState(app.Context.chainstate).WithGas(gc)
 
-		feeOpt, err := app.Context.govern.GetFeeOption()
-		if err != nil {
-			app.logger.Error("failed to get feeOption", err)
-		}
-		app.Context.feePool.SetupOpt(feeOpt)
+		//feeOpt, err := app.Context.govern.GetFeeOption()
+		//if err != nil {
+		//	app.logger.Error("failed to get feeOption", err)
+		//}
+		//app.Context.feePool.SetupOpt(feeOpt)
 
 		//err = ManageVotes(&req, &app.Context, app.logger)
 		//if err != nil {
@@ -134,10 +133,10 @@ func (app *App) blockBeginner() blockBeginner {
 		//}
 
 		// update the validator set
-		err = app.Context.validators.WithState(app.Context.deliver).Setup(req, app.Context.node.ValidatorAddress())
-		if err != nil {
-			app.logger.Error("validator set with error", err)
-		}
+		//err = app.Context.validators.WithState(app.Context.deliver).Setup(req, app.Context.node.ValidatorAddress())
+		//if err != nil {
+		//	app.logger.Error("validator set with error", err)
+		//}
 		//Mature Pending Delegates for withdrawal
 		//err = app.Context.netwkDelegators.Deleg.WithState(app.Context.deliver).HandlePendingDelegates(req.Header.Height)
 		//if err != nil {
@@ -315,15 +314,15 @@ func (app *App) blockEnder() blockEnder {
 	return func(req RequestEndBlock) ResponseEndBlock {
 		defer app.handlePanic()
 
-		fee, err := app.Context.feePool.WithState(app.Context.deliver).Get([]byte(fees.POOL_KEY))
-		app.logger.Detail("endblock fee", fee, err)
-		updates := app.Context.validators.WithState(app.Context.deliver).GetEndBlockUpdate(app.Context.ValidatorCtx(), req)
-		app.logger.Detailf("Sending updates with nodes to tendermint: %+v\n", updates)
+		//fee, err := app.Context.feePool.WithState(app.Context.deliver).Get([]byte(fees.POOL_KEY))
+		//app.logger.Detail("endblock fee", fee, err)
+		//updates := app.Context.validators.WithState(app.Context.deliver).GetEndBlockUpdate(app.Context.ValidatorCtx(), req)
+		//app.logger.Detailf("Sending updates with nodes to tendermint: %+v\n", updates)
 
-		events := app.Context.validators.WithState(app.Context.deliver).GetEvents()
-		app.logger.Detailf("Sending events with nodes to tendermint: %+v\n", events)
+		//events := app.Context.validators.WithState(app.Context.deliver).GetEvents()
+		//app.logger.Detailf("Sending events with nodes to tendermint: %+v\n", events)
 
-		app.Context.validators.WithState(app.Context.deliver).ClearEvents()
+		//app.Context.validators.WithState(app.Context.deliver).ClearEvents()
 
 		//ethTrackerlog := log.NewLoggerWithPrefix(app.Context.logWriter, "ethtracker").WithLevel(log.Level(app.Context.cfg.Node.LogLevel))
 		//doTransitions(app.Context.jobStore, app.Context.btcTrackers.WithState(app.Context.deliver), app.Context.validators)
@@ -349,8 +348,8 @@ func (app *App) blockEnder() blockEnder {
 		//	}
 		//}
 		result := ResponseEndBlock{
-			ValidatorUpdates: updates,
-			Events:           events,
+			//ValidatorUpdates: updates,
+			//Events:           events,
 		}
 		app.logger.Detail("End Block: ", result, "height:", req.Height)
 
