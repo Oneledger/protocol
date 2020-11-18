@@ -347,7 +347,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 
 		cfg.Consensus.TimeoutCommit = config.Duration(testnetArgs.timeoutcommit)
 		//cfg.Consensus.LogLevel = "debug"
-
+		cfg.Consensus.TMConfig()
 		cfg.Network.RPCAddress = generateAddress(generatePort(), true)
 		cfg.Network.P2PAddress = generateAddress(generatePort(), true)
 		cfg.Network.SDKAddress = generateAddress(generatePort(), true, true)

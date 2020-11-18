@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/Oneledger/protocol/data/fees"
+	"github.com/Oneledger/protocol/external_apps/common"
 
 	"math"
 	"math/big"
@@ -154,38 +155,38 @@ func (app *App) blockBeginner() blockBeginner {
 		//}
 
 		// update Block Rewards
-		//blockRewardEvent := handleBlockRewards(&app.Context, req)
+		blockRewardEvent := handleBlockRewards(&app.Context, req)
 
 		result := ResponseBeginBlock{
-			//Events: []abciTypes.Event{blockRewardEvent},
+			Events: []abciTypes.Event{blockRewardEvent},
 		}
 
 		// matured delegators' pending withdrawal
-		//delegRewardStore := app.Context.netwkDelegators.Rewards.WithState(app.Context.deliver)
-		//delegRewardEvent, anyMatured := delegRewardStore.MaturePendingRewards(req.Header.Height)
-		//if anyMatured {
-		//	result.Events = append(result.Events, delegRewardEvent)
-		//}
+		delegRewardStore := app.Context.netwkDelegators.Rewards.WithState(app.Context.deliver)
+		delegRewardEvent, anyMatured := delegRewardStore.MaturePendingRewards(req.Header.Height)
+		if anyMatured {
+			result.Events = append(result.Events, delegRewardEvent)
+		}
 
 		//update the header to current block
 		app.header = req.Header
 		//Adds proposals that meet the requirements to either Expired or Finalizing Keys from transaction store
 		//Transaction store is not part of chainstate ,it just maintains a list of proposals from BlockBeginner to BlockEnder .Gets cleared at each Block Ender
-		//AddInternalTX(app.Context.proposalMaster, app.Context.node.ValidatorAddress(), app.header.Height, app.Context.transaction, app.logger)
-		//functionList, err := app.Context.extFunctions.Iterate(common.BlockBeginner)
-		//functionParam := common.ExtParam{
-		//	InternalTxStore: app.Context.transaction,
-		//	Logger:          app.logger,
-		//	ActionCtx:       *app.Context.Action(&app.header, app.Context.deliver),
-		//	Validator:       app.Context.node.ValidatorAddress(),
-		//	Header:          app.header,
-		//	Deliver:         app.Context.deliver,
-		//}
-		//if err == nil {
-		//	for _, function := range functionList {
-		//		function(functionParam)
-		//	}
-		//}
+		AddInternalTX(app.Context.proposalMaster, app.Context.node.ValidatorAddress(), app.header.Height, app.Context.transaction, app.logger)
+		functionList, err := app.Context.extFunctions.Iterate(common.BlockBeginner)
+		functionParam := common.ExtParam{
+			InternalTxStore: app.Context.transaction,
+			Logger:          app.logger,
+			ActionCtx:       *app.Context.Action(&app.header, app.Context.deliver),
+			Validator:       app.Context.node.ValidatorAddress(),
+			Header:          app.header,
+			Deliver:         app.Context.deliver,
+		}
+		if err == nil {
+			for _, function := range functionList {
+				function(functionParam)
+			}
+		}
 		result.Events = nil
 		app.logger.Detail("Begin Block:", result, "height:", req.Header.Height, "AppHash:", hex.EncodeToString(req.Header.AppHash))
 		return result
@@ -325,29 +326,29 @@ func (app *App) blockEnder() blockEnder {
 
 		app.Context.validators.WithState(app.Context.deliver).ClearEvents()
 
-		//ethTrackerlog := log.NewLoggerWithPrefix(app.Context.logWriter, "ethtracker").WithLevel(log.Level(app.Context.cfg.Node.LogLevel))
-		//doTransitions(app.Context.jobStore, app.Context.btcTrackers.WithState(app.Context.deliver), app.Context.validators)
-		//doEthTransitions(app.Context.jobStore, app.Context.ethTrackers, app.Context.node.ValidatorAddress(), ethTrackerlog, app.Context.witnesses, app.Context.deliver)
-		// Proposals currently in store are cleared if deliver is successful
-		// If Expire or Finalize TX returns false,they will added to the proposals queue in the next block
-		// Errors are logged at the function level
-		// These functions iterate the transactions store
-		//ExpireProposals(&app.header, &app.Context, app.logger)
-		//FinalizeProposals(&app.header, &app.Context, app.logger)
-		//functionList, err := app.Context.extFunctions.Iterate(common.BlockEnder)
-		//functionParam := common.ExtParam{
-		//	InternalTxStore: app.Context.transaction,
-		//	Logger:          app.logger,
-		//	ActionCtx:       *app.Context.Action(&app.header, app.Context.deliver),
-		//	Validator:       app.Context.node.ValidatorAddress(),
-		//	Header:          app.header,
-		//	Deliver:         app.Context.deliver,
-		//}
-		//if err == nil {
-		//	for _, function := range functionList {
-		//		function(functionParam)
-		//	}
-		//}
+		ethTrackerlog := log.NewLoggerWithPrefix(app.Context.logWriter, "ethtracker").WithLevel(log.Level(app.Context.cfg.Node.LogLevel))
+		doTransitions(app.Context.jobStore, app.Context.btcTrackers.WithState(app.Context.deliver), app.Context.validators)
+		doEthTransitions(app.Context.jobStore, app.Context.ethTrackers, app.Context.node.ValidatorAddress(), ethTrackerlog, app.Context.witnesses, app.Context.deliver)
+		//Proposals currently in store are cleared if deliver is successful
+		//If Expire or Finalize TX returns false,they will added to the proposals queue in the next block
+		//Errors are logged at the function level
+		//These functions iterate the transactions store
+		ExpireProposals(&app.header, &app.Context, app.logger)
+		FinalizeProposals(&app.header, &app.Context, app.logger)
+		functionList, err := app.Context.extFunctions.Iterate(common.BlockEnder)
+		functionParam := common.ExtParam{
+			InternalTxStore: app.Context.transaction,
+			Logger:          app.logger,
+			ActionCtx:       *app.Context.Action(&app.header, app.Context.deliver),
+			Validator:       app.Context.node.ValidatorAddress(),
+			Header:          app.header,
+			Deliver:         app.Context.deliver,
+		}
+		if err == nil {
+			for _, function := range functionList {
+				function(functionParam)
+			}
+		}
 		result := ResponseEndBlock{
 			ValidatorUpdates: updates,
 			Events:           events,
