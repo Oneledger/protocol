@@ -184,7 +184,7 @@ def update(arguments):
     os.system('docker kill $(docker ps -q -f network=docker-network_vpcbr)')
 
     if deploy_genesis:
-        print 'DEPLOY GENESIS'
+        print 'Deploying Genesis...'
         os.system('docker exec -it builder bash -c '
                   '"./home/ubuntu/go/protocol/DOCKER-network/default/scripts/genesis.sh"')
 
@@ -194,6 +194,13 @@ def update(arguments):
 
 def stop(arguments):
     print 'Stopping Docker Network...'
+    # stop all nodes
+    os.system('docker kill $(docker ps -q -f network=docker-network_vpcbr)')
+    # remove node data if clean flag is set
+    if arguments['clean']:
+        print 'Cleaning Node Data...'
+        os.system('docker exec -it builder bash -c "rm -rf /opt/data/devnet/*-Node"')
+    # remove the remaining containers
     os.system('docker container kill $(docker ps -q)')
     os.system('docker system prune -f')
 
@@ -241,10 +248,11 @@ if __name__ == '__main__':
 
     # Initialize update Parser
     parser_update = subparsers.add_parser('update', help='stop containers, rebuild binaries and start back up')
-    parser_update.add_argument('--genesis', action='store_true', help='clean data and use genesis from docker path')
+    parser_update.add_argument('--genesis', action='store_true', help='clean node data and use genesis from docker path')
 
     # Initialize stop Parser
     parser_stop = subparsers.add_parser('stop', help='stop and remove all containers and networks')
+    parser_stop.add_argument('--clean', action='store_true', help='clean node data')
 
     # Initialize run Parser
     parser_run = subparsers.add_parser('run', help='run command inside container')
