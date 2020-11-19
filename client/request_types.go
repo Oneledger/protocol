@@ -386,3 +386,4 @@ type TxRequest struct {
 type TxResponse struct {
 	Result ctypes.ResultTx `json:"result"`
 }
+

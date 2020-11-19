@@ -23,6 +23,21 @@ def addValidatorWalletAccounts(node):
         return output[2].split(" ")[1].strip()[3:]
     return output[1].split(":")[1].strip()[3:]
 
+def addValidatorAccounts(node):
+    f = open(os.path.join(node, "consensus", "config", "priv_validator_key.json"), "r")
+    contents = json.loads(f.read())
+    pubKey = contents['pub_key']['value']
+    privKey = contents['priv_key']['value']
+    args = ['olclient', 'account', 'add', '--privkey', privKey, '--pubkey', pubKey, "--password", '1234']
+    process = subprocess.Popen(args, cwd=node, stdout=subprocess.PIPE)
+    process.wait()
+    output = process.stdout.readlines()
+
+    if "exists" in output[0]:
+        print "account already exists"
+        return ""
+    return output[1].split(":")[1].strip()[3:]
+
 def nodeAccount(node):
     args = ['olclient', 'show_node_id']
     process = subprocess.Popen(args, cwd=node, stdout=subprocess.PIPE)

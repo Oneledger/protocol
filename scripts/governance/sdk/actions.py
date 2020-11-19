@@ -171,6 +171,23 @@ class Proposal:
                 self.txHash = "0x" + result["txHash"]
                 print "################### proposal created: " + self.pid
 
+    def send_create_prod(self):
+        # createTx
+        raw_txn = self._create_proposal()
+
+        # sign Tx
+        signed = sign_with_wallet(raw_txn, self.proposer, self.keypath)
+
+        # broadcast Tx
+        result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
+        if "ok" in result:
+            if not result["ok"]:
+                print "Send Create Failed : ", result
+            else:
+                self.pid = self.get_encoded_pid()
+                self.txHash = "0x" + result["txHash"]
+                print "################### proposal created: " + self.pid
+
     def send_create_invalid_info(self, invalid_field):
         # createTx
         raw_txn = self._create_proposal_invalid_info(invalid_field)
@@ -380,6 +397,22 @@ class ProposalFund:
                 print "################### proposal funded: " + self.pid
                 return result["txHash"]
 
+    def send_fund_prod(self):
+        # create Tx
+        raw_txn = self._fund_proposal()
+
+        # sign Tx
+        signed = sign_with_wallet(raw_txn, self.funder, self.keypath)
+
+        # broadcast Tx
+        result = broadcast_commit(raw_txn, signed['signature']['Signed'], signed['signature']['Signer'])
+
+        if "ok" in result:
+            if not result["ok"]:
+                sys.exit(-1)
+            else:
+                print "################### proposal funded: " + self.pid
+                return result["txHash"]
 
 class ProposalCancel:
     def __init__(self, pid, proposer, reason):
@@ -587,6 +620,10 @@ def sign(raw_tx, address):
     resp = rpc_call('owner.SignWithAddress', {"rawTx": raw_tx, "address": address})
     return resp["result"]
 
+def sign_with_wallet(raw_tx, address, keypath):
+    resp = rpc_call('owner.SignWithSecureAddress', {"rawTx": raw_tx, "address": address, "password": "1234", "keypath": keypath})
+    print resp
+    return resp["result"]
 
 def broadcast_commit(raw_tx, signature, pub_key):
     resp = rpc_call('broadcast.TxCommit', {

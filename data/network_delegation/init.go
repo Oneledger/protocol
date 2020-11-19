@@ -16,8 +16,8 @@ const (
 	ActiveType  DelegationPrefixType = 0x101
 
 	DELEGATION_POOL_KEY       = "00000000000000000001"
-	COMMISSION_PERCENTAGE     = 15
-	BLOCK_PROPOSER_COMMISSION = 30
+	COMMISSION_PERCENTAGE     = 25
+	BLOCK_PROPOSER_COMMISSION = 20
 
 	//TODO this is hardcoded for now, will be changed in the future
 	RewardsMaturityTime = 4
