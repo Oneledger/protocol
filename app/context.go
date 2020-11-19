@@ -297,7 +297,7 @@ func (ctx *context) Services() (service.Map, error) {
 		Delegators:      delegation.NewDelegationStore("st", storage.NewState(ctx.chainstate)),
 		NetwkDelegators: netwkDelegators,
 		ProposalMaster:  proposalMaster,
-		EvidenceStore:   ctx.evidenceStore,
+		EvidenceStore:   evidence.NewEvidenceStore("es", storage.NewState(ctx.chainstate)),
 		RewardMaster:    rewardMaster,
 		ExtStores:       ctx.extStores,
 		ExtServiceMap:   ctx.extServiceMap,
