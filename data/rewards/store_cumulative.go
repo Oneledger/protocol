@@ -1,6 +1,8 @@
 package rewards
 
 import (
+	"time"
+
 	"github.com/pkg/errors"
 	tmstore "github.com/tendermint/tendermint/store"
 
@@ -175,9 +177,20 @@ func (rws *RewardCumulativeStore) GetOptions() *Options {
 	return rws.rewardOptions
 }
 
-func (rws *RewardCumulativeStore) Init(blockStore *tmstore.BlockStore) {
-	rws.blockStore = blockStore
-	rws.calculator.Init(blockStore)
+func (rws *RewardCumulativeStore) Init(blockStore *tmstore.BlockStore, cacheTime bool) {
+	if cacheTime {
+		// cache all cycle begin/end time stamps [1, cycle+1, 2*cycle+1, 3*cycle+1, ...]
+		blockTimes := make(map[int64]time.Time)
+		cycle := rws.rewardOptions.BlockSpeedCalculateCycle
+		for height := int64(1); height <= blockStore.Height(); height += cycle {
+			blockTime := blockStore.LoadBlock(height).Header.Time.UTC()
+			blockTimes[height] = blockTime
+		}
+		rws.calculator.Init(blockStore, blockTimes)
+	} else {
+		rws.blockStore = blockStore
+		rws.calculator.Init(blockStore, nil)
+	}
 }
 
 //-----------------------------helper functions

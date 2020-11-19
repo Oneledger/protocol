@@ -333,6 +333,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		cfg.Node.NodeName = nodeName
 		cfg.Node.LogLevel = args.loglevel
 		cfg.Node.DB = args.dbType
+		cfg.Consensus.TimeoutCommit = 5000
 		if args.createEmptyBlock {
 			cfg.Consensus.CreateEmptyBlocks = true
 			cfg.Consensus.CreateEmptyBlocksInterval = 3000

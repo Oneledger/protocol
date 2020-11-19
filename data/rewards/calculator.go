@@ -46,6 +46,7 @@ type RewardCalculator struct {
 	cached      RewardCached
 	rewardYears RewardYears
 	blockStore  *tmstore.BlockStore
+	blockTimes  map[int64]time.Time
 	options     *Options
 }
 
@@ -107,8 +108,18 @@ func (calc *RewardCalculator) Calculate() (amt *balance.Amount, err error) {
 	return
 }
 
+func (calc *RewardCalculator) blockTime(height int64) time.Time {
+	if calc.blockTimes != nil {
+		logger.Infof("Getting block time from cache on block replay, height: %v", height)
+		return calc.blockTimes[height]
+	} else {
+		blockMeta := calc.blockStore.LoadBlockMeta(height)
+		return blockMeta.Header.Time.UTC()
+	}
+}
+
 func (calc *RewardCalculator) secondsPerCycleLatest() (int64, time.Time) {
-	tEnd := calc.blockStore.LoadBlockMeta(1).Header.Time.UTC()
+	tEnd := calc.blockTime(1)
 	secsPerCycle := calc.options.EstimatedSecondsPerCycle
 	if calc.height > calc.options.BlockSpeedCalculateCycle {
 		// get speed calculation [begin, end] height
@@ -117,8 +128,8 @@ func (calc *RewardCalculator) secondsPerCycleLatest() (int64, time.Time) {
 		cycleBeginHeight := cycleEndHeight - cycle
 
 		// duration of the cycle, in secs
-		tBegin := calc.blockStore.LoadBlockMeta(cycleBeginHeight).Header.Time.UTC()
-		tEnd = calc.blockStore.LoadBlockMeta(cycleEndHeight).Header.Time.UTC()
+		tBegin := calc.blockTime(cycleBeginHeight)
+		tEnd = calc.blockTime(cycleEndHeight)
 		secsPerCycle = int64(tEnd.Sub(tBegin).Seconds())
 	}
 	return secsPerCycle, tEnd
@@ -166,6 +177,7 @@ func (rws *RewardCalculator) SetOptions(options *Options) {
 	rws.options = options
 }
 
-func (calc *RewardCalculator) Init(blockStore *tmstore.BlockStore) {
+func (calc *RewardCalculator) Init(blockStore *tmstore.BlockStore, blockTimes map[int64]time.Time) {
 	calc.blockStore = blockStore
+	calc.blockTimes = blockTimes
 }

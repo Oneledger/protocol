@@ -408,6 +408,20 @@ func (app *App) Prepare() error {
 	}
 	app.genesisDoc = genesisDoc
 
+	//---- FIX nil blockstore when replaying last block-----
+	tmpStore, tmpStoreDB, err := consensus.TempBlockStore(nodecfg)
+	if err != nil {
+		app.logger.Error("Failed to create temp block store")
+		return errors.Wrap(err, "Failed to create temp block store")
+	}
+	app.Context.rewardMaster.RewardCm.Init(tmpStore, true)
+	err = tmpStoreDB.Close()
+	if err != nil {
+		app.logger.Error("Failed to close block store db")
+		return errors.Wrap(err, "Failed to close block store db")
+	}
+	//---- FIX nil blockstore when replaying last block-----
+
 	app.node, err = consensus.NewNode(app.ABCI(), nodecfg)
 	if err != nil {
 		app.logger.Error("Failed to create consensus.Node")
@@ -418,7 +432,7 @@ func (app *App) Prepare() error {
 	app.Context.witnesses.Init(chain.ETHEREUM, app.Context.node.ValidatorAddress())
 
 	// Init reward cumulative store
-	app.Context.rewardMaster.RewardCm.Init(app.node.BlockStore())
+	app.Context.rewardMaster.RewardCm.Init(app.node.BlockStore(), false)
 
 	// Initialize internal Services
 	app.Context.internalService = event.NewService(app.Context.node,
