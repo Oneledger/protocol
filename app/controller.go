@@ -4,8 +4,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/Oneledger/protocol/data/fees"
-	"github.com/Oneledger/protocol/external_apps/common"
-
 	"math"
 	"math/big"
 	"runtime/debug"
@@ -172,21 +170,21 @@ func (app *App) blockBeginner() blockBeginner {
 		app.header = req.Header
 		//Adds proposals that meet the requirements to either Expired or Finalizing Keys from transaction store
 		//Transaction store is not part of chainstate ,it just maintains a list of proposals from BlockBeginner to BlockEnder .Gets cleared at each Block Ender
-		AddInternalTX(app.Context.proposalMaster, app.Context.node.ValidatorAddress(), app.header.Height, app.Context.transaction, app.logger)
-		functionList, err := app.Context.extFunctions.Iterate(common.BlockBeginner)
-		functionParam := common.ExtParam{
-			InternalTxStore: app.Context.transaction,
-			Logger:          app.logger,
-			ActionCtx:       *app.Context.Action(&app.header, app.Context.deliver),
-			Validator:       app.Context.node.ValidatorAddress(),
-			Header:          app.header,
-			Deliver:         app.Context.deliver,
-		}
-		if err == nil {
-			for _, function := range functionList {
-				function(functionParam)
-			}
-		}
+		//AddInternalTX(app.Context.proposalMaster, app.Context.node.ValidatorAddress(), app.header.Height, app.Context.transaction, app.logger)
+		//functionList, err := app.Context.extFunctions.Iterate(common.BlockBeginner)
+		//functionParam := common.ExtParam{
+		//	InternalTxStore: app.Context.transaction,
+		//	Logger:          app.logger,
+		//	ActionCtx:       *app.Context.Action(&app.header, app.Context.deliver),
+		//	Validator:       app.Context.node.ValidatorAddress(),
+		//	Header:          app.header,
+		//	Deliver:         app.Context.deliver,
+		//}
+		//if err == nil {
+		//	for _, function := range functionList {
+		//		function(functionParam)
+		//	}
+		//}
 		result.Events = nil
 		app.logger.Detail("Begin Block:", result, "height:", req.Header.Height, "AppHash:", hex.EncodeToString(req.Header.AppHash))
 		return result
@@ -335,20 +333,20 @@ func (app *App) blockEnder() blockEnder {
 		//These functions iterate the transactions store
 		ExpireProposals(&app.header, &app.Context, app.logger)
 		FinalizeProposals(&app.header, &app.Context, app.logger)
-		functionList, err := app.Context.extFunctions.Iterate(common.BlockEnder)
-		functionParam := common.ExtParam{
-			InternalTxStore: app.Context.transaction,
-			Logger:          app.logger,
-			ActionCtx:       *app.Context.Action(&app.header, app.Context.deliver),
-			Validator:       app.Context.node.ValidatorAddress(),
-			Header:          app.header,
-			Deliver:         app.Context.deliver,
-		}
-		if err == nil {
-			for _, function := range functionList {
-				function(functionParam)
-			}
-		}
+		//functionList, err := app.Context.extFunctions.Iterate(common.BlockEnder)
+		//functionParam := common.ExtParam{
+		//	InternalTxStore: app.Context.transaction,
+		//	Logger:          app.logger,
+		//	ActionCtx:       *app.Context.Action(&app.header, app.Context.deliver),
+		//	Validator:       app.Context.node.ValidatorAddress(),
+		//	Header:          app.header,
+		//	Deliver:         app.Context.deliver,
+		//}
+		//if err == nil {
+		//	for _, function := range functionList {
+		//		function(functionParam)
+		//	}
+		//}
 		result := ResponseEndBlock{
 			ValidatorUpdates: updates,
 			Events:           events,
