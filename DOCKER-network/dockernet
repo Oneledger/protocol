@@ -237,14 +237,14 @@ if __name__ == '__main__':
     parser_init.add_argument('--empty_blocks', action="store_true", help='create empty blocks')
     parser_init.add_argument('--default', action='store_true', help='use default docker compose files')
     parser_init.add_argument('--image', default='olprotocol', help='name of docker image')
-    parser_init.add_argument('--protocol_path', default='~/go/protocol', help='protocol source code path')
-    parser_init.add_argument('--docker_path', default='~/oldata/docker', help='docker shared volume for nodes')
-    parser_init.add_argument('--docker_bin', default='~/oldata/docker/bin', help='path for protocol executables')
+    parser_init.add_argument('--protocol_path', default=os.getenv('PROTOCOLPATH'), help='protocol source code path')
+    parser_init.add_argument('--docker_path', default=os.getenv('DOCKERPATH'), help='docker shared volume for nodes')
+    parser_init.add_argument('--docker_bin', default=os.getenv('DOCKERBIN'), help='path for protocol executables')
 
     # Initialize start Parser
     parser_start = subparsers.add_parser('start', help='start network with generated docker compose files')
-    parser_start.add_argument('--docker_path', default='/home/kevin/oldata/docker', help='docker shared volume for nodes')
-    parser_start.add_argument('--docker_bin', default='/home/kevin/oldata/docker/bin', help='path for protocol executables')
+    parser_start.add_argument('--docker_path', default=os.getenv('DOCKERPATH'), help='docker shared volume for nodes')
+    parser_start.add_argument('--docker_bin', default=os.getenv('DOCKERBIN'), help='path for protocol executables')
 
     # Initialize update Parser
     parser_update = subparsers.add_parser('update', help='stop containers, rebuild binaries and start back up')
