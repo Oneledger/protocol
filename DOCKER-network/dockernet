@@ -104,6 +104,9 @@ def generate_build_config(arguments):
     build_service['volumes'] = get_builder_volumes(docker_path, docker_bin, protocol_path)
     build_service['tty'] = True
     build_service['stdin_open'] = True
+    build_service['ports'] = []
+    build_service['ports'].append('443:443')
+    build_service['ports'].append('8080:8080')
 
     build_cmd = 'bash -c \"rm -rf /opt/data/devnet/*-Node && ' \
                 'cd /home/ubuntu/go/protocol && make install_c && olfullnode init devnet ' \
@@ -174,6 +177,10 @@ def start(arguments):
         time.sleep(10)
     print 'done'
 
+    # Wait for builder to finish
+    if arguments['deploy_smart_contracts']:
+        time.sleep(40)
+
     os.system('docker-compose up -d')
 
 
@@ -235,6 +242,9 @@ if __name__ == '__main__':
     parser_init.add_argument('--docker', action='store_true', default=True, help='docker flag used by olfullnode init')
     parser_init.add_argument('--subnet', default='\\\"10.5.0.0/16\\\"', help='subnet of all node IP addresses')
     parser_init.add_argument('--empty_blocks', action="store_true", help='create empty blocks')
+    parser_init.add_argument('--eth_rpc', default="https://rinkeby.infura.io/v3", help='create empty blocks')
+    parser_init.add_argument('--deploy_smart_contracts', action="store_true", help='deploy ethereum smart contract')
+    parser_init.add_argument('--eth_pk', default="", help='ethereum test private key')
     parser_init.add_argument('--default', action='store_true', help='use default docker compose files')
     parser_init.add_argument('--image', default='olprotocol', help='name of docker image')
     parser_init.add_argument('--protocol_path', default=os.getenv('PROTOCOLPATH'), help='protocol source code path')
@@ -245,6 +255,7 @@ if __name__ == '__main__':
     parser_start = subparsers.add_parser('start', help='start network with generated docker compose files')
     parser_start.add_argument('--docker_path', default=os.getenv('DOCKERPATH'), help='docker shared volume for nodes')
     parser_start.add_argument('--docker_bin', default=os.getenv('DOCKERBIN'), help='path for protocol executables')
+    parser_start.add_argument('--deploy_smart_contracts', action="store_true", help='deploy ethereum smart contract')
 
     # Initialize update Parser
     parser_update = subparsers.add_parser('update', help='stop containers, rebuild binaries and start back up')
