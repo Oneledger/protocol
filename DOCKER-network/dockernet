@@ -171,6 +171,9 @@ def start(arguments):
     # Start build container and initialize build
     os.system('docker-compose -f docker-compose-build.yml up -d')
 
+    # Allow Builder to complete preliminary tasks
+    time.sleep(5)
+
     # Wait for build to complete
     print 'building binaries...'
     while len(glob.glob(os.path.join(docker_path, '*-Node'))) == 0:
