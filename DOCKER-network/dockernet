@@ -171,7 +171,8 @@ def start(arguments):
     # Start build container and initialize build
     os.system('docker-compose -f docker-compose-build.yml up -d')
 
-    time.sleep(2)
+    # Allow Builder to complete preliminary tasks
+    time.sleep(5)
 
     # Wait for build to complete
     print 'building binaries...'
