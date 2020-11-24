@@ -131,6 +131,7 @@ type testnetConfig struct {
 
 	ethUrl                   string
 	deploySmartcontracts     bool
+	ethpk                    string
 	cloud                    bool
 	loglevel                 int
 	rewardsInterval          int64
@@ -158,6 +159,7 @@ func init() {
 	testnetCmd.Flags().StringSliceVar(&testnetArgs.initialTokenHolders, "initial_token_holders", []string{}, "Initial list of addresses that hold an equal share of Total funds")
 	testnetCmd.Flags().StringVar(&testnetArgs.ethUrl, "eth_rpc", "", "URL for ethereum network")
 	testnetCmd.Flags().BoolVar(&testnetArgs.deploySmartcontracts, "deploy_smart_contracts", false, "deploy eth contracts")
+	testnetCmd.Flags().StringVar(&testnetArgs.ethpk, "eth_pk", "", "ethereum test private key")
 	testnetCmd.Flags().BoolVar(&testnetArgs.cloud, "cloud_deploy", false, "set true for deploying on cloud")
 	testnetCmd.Flags().IntVar(&testnetArgs.loglevel, "loglevel", 3, "Specify the log level for olfullnode. 0: Fatal, 1: Error, 2: Warning, 3: Info, 4: Debug, 5: Detail")
 	testnetCmd.Flags().Int64Var(&testnetArgs.rewardsInterval, "rewards_interval", 1, "Block rewards interval")
@@ -453,7 +455,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 	fmt.Println("Deploy Smart contracts : ", args.deploySmartcontracts)
 	if args.deploySmartcontracts {
 		if len(args.ethUrl) > 0 {
-			cdo, err = deployethcdcontract(url, nodeList)
+			cdo, err = deployethcdcontract(url, nodeList, args.ethpk)
 			if err != nil {
 				return errors.Wrap(err, "failed to deploy the initial eth contract")
 			}
@@ -738,19 +740,24 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 	}
 }
 
-func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOption, error) {
+func deployethcdcontract(conn string, nodeList []node, ethprivKey string) (*ethchain.ChainDriverOption, error) {
+	pkStr := ""
+	if len(ethprivKey) == 0 {
+		b1 := make([]byte, 64)
+		f, err := os.Open(os.Getenv("ETHPKPATH"))
+		if err != nil {
+			return nil, errors.Wrap(err, "Error Reading File")
+		}
+		pk, err := f.Read(b1)
+		if err != nil {
+			return nil, errors.Wrap(err, "Error reading private key")
+		}
+		pkStr = string(b1[:pk])
+	} else {
+		pkStr = ethprivKey
+	}
+	//fmt.Println("Private key used to deploy : ", pkStr)
 
-	f, err := os.Open(os.Getenv("ETHPKPATH"))
-	if err != nil {
-		return nil, errors.Wrap(err, "Error Reading File")
-	}
-	b1 := make([]byte, 64)
-	pk, err := f.Read(b1)
-	if err != nil {
-		return nil, errors.Wrap(err, "Error reading private key")
-	}
-	//fmt.Println("Private key used to deploy : ", string(b1[:pk]))
-	pkStr := string(b1[:pk])
 	privatekey, err := crypto.HexToECDSA(pkStr)
 
 	if err != nil {
@@ -837,6 +844,7 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 	if err != nil {
 		return nil, errors.Wrap(err, "Deployement Eth LockRedeem")
 	}
+	time.Sleep(10 * time.Second)
 	err = activateContract(fromAddress, address, privatekey, cli)
 	if err != nil {
 		return nil, errors.Wrap(err, "Unable to activate new contract")
