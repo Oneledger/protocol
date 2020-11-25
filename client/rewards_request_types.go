@@ -11,10 +11,15 @@ type RewardsRequest struct {
 	Validator string `json:"validator"`
 }
 
+type RewardRecord struct {
+	Index  int64
+	Amount balance.Amount
+}
+
 type ListRewardsReply struct {
-	Validator keys.Address     `json:"validator"`
-	Rewards   []balance.Amount `json:"rewards"`
-	Height    int64            `json:"height"`
+	Validator keys.Address   `json:"validator"`
+	Rewards   []RewardRecord `json:"rewards"`
+	Height    int64          `json:"height"`
 }
 
 type ValidatorRewardStats struct {

@@ -20,6 +20,7 @@ type Service struct {
 func NewService(accts accounts.Wallet, logger *log.Logger) *Service {
 	return &Service{
 		accounts: accts,
+		logger:   logger,
 	}
 }
 
@@ -125,6 +126,31 @@ func (svc *Service) SignWithAddress(req client.SignRawTxRequest, reply *client.S
 		}
 		return codes.ErrSigningError
 	}
+	*reply = client.SignRawTxResponse{Signature: action.Signature{Signed: signed, Signer: pkey}}
+	return nil
+}
+
+func (svc *Service) SignWithSecureAddress(req client.SecureSignRawTxRequest, reply *client.SignRawTxResponse) error {
+	wallet, err := accounts.NewWalletKeyStore(req.KeyPath)
+	if err != nil {
+		return codes.ErrSigningError
+	}
+
+	if !wallet.Open(req.Address, req.Password) {
+		return codes.ErrSigningError
+	}
+
+	pkey, signed, err := wallet.SignWithAddress(req.RawTx, req.Address)
+	if err != nil {
+		//svc.logger.Error("error while signing with address", err)
+		if err == accounts.ErrGetAccountByAddress {
+			return codes.ErrAccountNotFound
+		}
+		return err //codes.ErrSigningError
+	}
+
+	wallet.Close()
+
 	*reply = client.SignRawTxResponse{Signature: action.Signature{Signed: signed, Signer: pkey}}
 	return nil
 }

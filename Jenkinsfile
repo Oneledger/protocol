@@ -117,6 +117,19 @@ pipeline {
                 }
             }
         }
+        
+        stage('Delegation test') {
+            steps {
+                script {
+                    try {
+                        sh 'make delegationtest'
+                    } catch (e) {
+                        unstable('delegation test stage failed!')
+                        sh 'exit 0'
+                    }
+                }
+            }
+        }
          
         stage('Results') {
           steps {

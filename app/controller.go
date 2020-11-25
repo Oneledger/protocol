@@ -3,15 +3,15 @@ package app
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/Oneledger/protocol/data/network_delegation"
+	"github.com/Oneledger/protocol/external_apps/common"
+	"github.com/tendermint/tendermint/libs/kv"
 	"math"
 	"math/big"
 	"runtime/debug"
 	"strconv"
 
-	"github.com/tendermint/tendermint/libs/kv"
-
 	"github.com/Oneledger/protocol/data/balance"
-	"github.com/Oneledger/protocol/data/rewards"
 
 	"github.com/pkg/errors"
 
@@ -126,32 +126,59 @@ func (app *App) blockBeginner() blockBeginner {
 			app.logger.Error("failed to get feeOption", err)
 		}
 		app.Context.feePool.SetupOpt(feeOpt)
+
+		err = ManageVotes(&req, &app.Context, app.logger)
+		if err != nil {
+			app.logger.Error("manage votes error", err)
+		}
+
 		// update the validator set
-		err = app.Context.validators.Setup(req, app.Context.node.ValidatorAddress())
+		err = app.Context.validators.WithState(app.Context.deliver).Setup(req, app.Context.node.ValidatorAddress())
 		if err != nil {
 			app.logger.Error("validator set with error", err)
 		}
 
-		blockRewardEvent := handleBlockRewards(app.Context.validators, app.Context.balances,
-			app.Context.rewardMaster.WithState(app.Context.deliver), app.Context.currencies, req)
-
 		result := ResponseBeginBlock{
-			Events: []abciTypes.Event{blockRewardEvent},
+			Events: []abciTypes.Event{},
 		}
+		// Mature Pending undelegates to delegator's balance
+		delegEvent, anyMatured := addMaturedAmountsToBalance(&app.Context, app.logger, &req)
+		if anyMatured {
+			result.Events = append(result.Events, delegEvent)
+		}
+
+		// update malicious list
+		err = app.Context.validators.CheckMaliciousValidators(
+			app.Context.evidenceStore.WithState(app.Context.deliver),
+			app.Context.govern.WithState(app.Context.deliver),
+		)
+		if err != nil {
+			app.logger.Error("malicious set with error", err)
+		}
+
+		// update Block Rewards
+		blockRewardEvent := handleBlockRewards(&app.Context, req, app.logger)
+		result.Events = append(result.Events, blockRewardEvent)
 
 		//update the header to current block
 		app.header = req.Header
 		//Adds proposals that meet the requirements to either Expired or Finalizing Keys from transaction store
 		//Transaction store is not part of chainstate ,it just maintains a list of proposals from BlockBeginner to BlockEnder .Gets cleared at each Block Ender
 		AddInternalTX(app.Context.proposalMaster, app.Context.node.ValidatorAddress(), app.header.Height, app.Context.transaction, app.logger)
-
-		functionList, err := app.Context.controllerFunctions.Iterate(BlockBeginner)
+		functionList, err := app.Context.extFunctions.Iterate(common.BlockBeginner)
+		functionParam := common.ExtParam{
+			InternalTxStore: app.Context.transaction,
+			Logger:          app.logger,
+			ActionCtx:       *app.Context.Action(&app.header, app.Context.deliver),
+			Validator:       app.Context.node.ValidatorAddress(),
+			Header:          app.header,
+			Deliver:         app.Context.deliver,
+		}
 		if err == nil {
 			for _, function := range functionList {
-				function(app)
+				function(functionParam)
 			}
 		}
-
 		app.logger.Detail("Begin Block:", result, "height:", req.Header.Height, "AppHash:", hex.EncodeToString(req.Header.AppHash))
 		return result
 	}
@@ -193,7 +220,6 @@ func (app *App) txChecker() txChecker {
 			}
 		}
 		ok, response := handler.ProcessCheck(txCtx, tx.RawTx)
-
 		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, storage.Gas(len(msg.Tx)))
 
 		logString := marshalLog(ok, response, feeResponse)
@@ -283,9 +309,13 @@ func (app *App) blockEnder() blockEnder {
 
 		fee, err := app.Context.feePool.WithState(app.Context.deliver).Get([]byte(fees.POOL_KEY))
 		app.logger.Detail("endblock fee", fee, err)
-
 		updates := app.Context.validators.WithState(app.Context.deliver).GetEndBlockUpdate(app.Context.ValidatorCtx(), req)
 		app.logger.Detailf("Sending updates with nodes to tendermint: %+v\n", updates)
+
+		events := app.Context.validators.WithState(app.Context.deliver).GetEvents()
+		app.logger.Detailf("Sending events with nodes to tendermint: %+v\n", events)
+
+		app.Context.validators.WithState(app.Context.deliver).ClearEvents()
 
 		ethTrackerlog := log.NewLoggerWithPrefix(app.Context.logWriter, "ethtracker").WithLevel(log.Level(app.Context.cfg.Node.LogLevel))
 		doTransitions(app.Context.jobStore, app.Context.btcTrackers.WithState(app.Context.deliver), app.Context.validators)
@@ -296,15 +326,23 @@ func (app *App) blockEnder() blockEnder {
 		// These functions iterate the transactions store
 		ExpireProposals(&app.header, &app.Context, app.logger)
 		FinalizeProposals(&app.header, &app.Context, app.logger)
-
-		functionList, err := app.Context.controllerFunctions.Iterate(BlockEnder)
+		functionList, err := app.Context.extFunctions.Iterate(common.BlockEnder)
+		functionParam := common.ExtParam{
+			InternalTxStore: app.Context.transaction,
+			Logger:          app.logger,
+			ActionCtx:       *app.Context.Action(&app.header, app.Context.deliver),
+			Validator:       app.Context.node.ValidatorAddress(),
+			Header:          app.header,
+			Deliver:         app.Context.deliver,
+		}
 		if err == nil {
 			for _, function := range functionList {
-				function(app)
+				function(functionParam)
 			}
 		}
 		result := ResponseEndBlock{
 			ValidatorUpdates: updates,
+			Events:           events,
 		}
 		app.logger.Detail("End Block: ", result, "height:", req.Height)
 
@@ -445,21 +483,89 @@ func doEthTransitions(js *jobs.JobStore, ts *ethereum.TrackerStore, myValAddr ke
 }
 
 //Get Individual Validator reward based on power
-func getRewardForValidator(totalPower int64, validatorPower int64, totalRewards *balance.Amount) *balance.Amount {
-	numerator := big.NewInt(0).Mul(totalRewards.BigInt(), big.NewInt(validatorPower))
-	reward := balance.NewAmountFromBigInt(big.NewInt(0).Div(numerator, big.NewInt(totalPower)))
+func getRewardForValidator(totalPower *big.Int, validatorPower *big.Int, totalRewards *balance.Amount) *balance.Amount {
+	numerator := big.NewInt(0).Mul(totalRewards.BigInt(), validatorPower)
+	reward := balance.NewAmountFromBigInt(big.NewInt(0).Div(numerator, totalPower))
 	return reward
 }
 
-func handleBlockRewards(validators *identity.ValidatorStore, balances *balance.Store, rewardMaster *rewards.RewardMasterStore,
-	currency *balance.CurrencySet, block RequestBeginBlock) abciTypes.Event {
+func handleDelegationRewards(delegCtx *network_delegation.DelegationRewardCtx, appCtx *context, kvMap map[string]kv.Pair,
+) (resp *network_delegation.DelegationRewardResponse) {
+	var err error
+	networkDelegators := appCtx.netwkDelegators.WithState(appCtx.deliver)
+	//rewardMaster := appCtx.rewardMaster.WithState(appCtx.deliver)
+	resp = &network_delegation.DelegationRewardResponse{
+		DelegationRewards: balance.NewAmount(0),
+		ProposerReward:    balance.NewAmount(0),
+		Commission:        balance.NewAmount(0),
+	}
 
+	//Get Total Rewards "T" for Delegator Pool
+	numerator := big.NewInt(0).Mul(delegCtx.TotalRewards.BigInt(), delegCtx.DelegationPower)
+	delegationRewards := balance.NewAmountFromBigInt(big.NewInt(0).Div(numerator, delegCtx.TotalPower))
+
+	//Cut X% from Total Delegation Rewards "T" as Commission "C"
+	numerator = big.NewInt(0).Mul(big.NewInt(network_delegation.COMMISSION_PERCENTAGE), delegationRewards.BigInt())
+	commission := balance.NewAmountFromBigInt(big.NewInt(0).Div(numerator, big.NewInt(100)))
+
+	//Distribute Y% of Commission "C" to block proposer
+	numerator = big.NewInt(0).Mul(big.NewInt(network_delegation.BLOCK_PROPOSER_COMMISSION), commission.BigInt())
+	resp.ProposerReward = balance.NewAmountFromBigInt(big.NewInt(0).Div(numerator, big.NewInt(100)))
+
+	//Deduct Commission from Total delegation Rewards
+	resp.DelegationRewards, err = delegationRewards.Minus(*commission)
+	if err != nil {
+		return
+	}
+
+	//Deduct Proposer Reward from Commission Amount
+	resp.Commission, err = commission.Minus(*resp.ProposerReward)
+	if err != nil {
+		return
+	}
+
+	//Distribute Rewards to Each Delegator
+	networkDelegators.Deleg.IterateActiveAmounts(func(addr *keys.Address, coin *balance.Coin) bool {
+		//Calculate reward portion for each delegator based on delegated amount
+		numerator := big.NewInt(0).Mul(resp.DelegationRewards.BigInt(), coin.Amount.BigInt())
+		delegatorReward := balance.NewAmountFromBigInt(big.NewInt(0).Div(numerator, delegCtx.DelegationPower))
+
+		//Add reward to address
+		err := networkDelegators.Rewards.AddRewardsBalance(*addr, delegatorReward)
+		if err != nil {
+			return true
+		}
+		return false
+	})
+
+	//Create Event for Proposer Reward
+	proposerKey := "proposer_" + delegCtx.ProposerAddress.String()
+	kvMap[proposerKey] = kv.Pair{
+		Key:   []byte(proposerKey),
+		Value: []byte(resp.ProposerReward.String()),
+	}
+
+	//Create Event for Delegation Rewards
+	poolList, _ := appCtx.govern.GetPoolList()
+	kvMap[poolList["DelegationPool"].String()] = kv.Pair{
+		Key:   []byte(poolList["DelegationPool"].String()),
+		Value: []byte(resp.DelegationRewards.String()),
+	}
+	return
+}
+
+func handleBlockRewards(appCtx *context, block RequestBeginBlock, logger *log.Logger) abciTypes.Event {
 	votes := block.LastCommitInfo.Votes
 	lastHeight := block.GetHeader().Height
+	rewardMaster := appCtx.rewardMaster.WithState(appCtx.deliver)
 	options := rewardMaster.Reward.GetOptions()
 
-	heightKey := "height"
+	curr, ok := appCtx.currencies.GetCurrencyById(0)
+	if !ok {
+		return abciTypes.Event{}
+	}
 
+	heightKey := "height"
 	//Initialize Event for Block Response
 	result := abciTypes.Event{}
 	kvMap := make(map[string]kv.Pair)
@@ -470,7 +576,7 @@ func handleBlockRewards(validators *identity.ValidatorStore, balances *balance.S
 	}
 
 	//Initialize kvMap with validators containing 0 rewards
-	validators.Iterate(func(addr keys.Address, validator *identity.Validator) bool {
+	appCtx.validators.Iterate(func(addr keys.Address, validator *identity.Validator) bool {
 		kvMap[addr.String()] = kv.Pair{
 			Key:   []byte(addr.String()),
 			Value: []byte(balance.NewAmount(0).String()),
@@ -479,39 +585,85 @@ func handleBlockRewards(validators *identity.ValidatorStore, balances *balance.S
 	})
 
 	//get total power of active validators
-	totalPower := int64(0)
+	totValPower := big.NewInt(0)
+	validatorPowerMap := make(map[string]*big.Int)
 	for _, vote := range votes {
-		totalPower += vote.Validator.Power
+		powerStr := utils.PadZero(strconv.FormatInt(vote.Validator.Power, 10))
+		validatorPower, err := balance.NewAmountFromString(powerStr, 10)
+		if err != nil {
+			return abciTypes.Event{}
+		}
+
+		totValPower.Add(totValPower, validatorPower.BigInt())
+		validatorPowerMap[keys.Address(vote.Validator.Address).String()] = validatorPower.BigInt()
 	}
 
-	//get total rewards for the block
-	rewardPoolBalance, err := balances.GetBalance(keys.Address(options.RewardPoolAddress), currency)
-	curr, ok := currency.GetCurrencyById(0)
-	if err != nil || !ok {
+	//Initialize total Power as total Validator Power
+	totalPower := totValPower
+
+	//Add Delegator Pool Balance to the Total Power
+	poolList, err := appCtx.govern.GetPoolList()
+	if err != nil {
 		return abciTypes.Event{}
 	}
-	currency.GetCurrencyById(0)
-	coin := rewardPoolBalance.GetCoin(curr)
-	totalRewards, err := rewardMaster.RewardCm.PullRewards(lastHeight, coin.Amount)
+	delegationPoolCoin, err := appCtx.balances.WithState(appCtx.deliver).GetBalanceForCurr(poolList["DelegationPool"], &curr)
+	if err != nil {
+		return abciTypes.Event{}
+	}
+	delegationPower := delegationPoolCoin.Amount.BigInt()
+	totalPower.Add(totalPower, delegationPower)
+
+	//get total rewards for the block
+	rewardPoolCoin, err := appCtx.balances.WithState(appCtx.deliver).GetBalanceForCurr(poolList["RewardsPool"], &curr)
+	if err != nil {
+		return abciTypes.Event{}
+	}
+	totalRewards, err := rewardMaster.RewardCm.PullRewards(lastHeight, rewardPoolCoin.Amount)
 	if err != nil {
 		return abciTypes.Event{}
 	}
 
-	//Loop through all validators that participated in signing the last block
 	totalConsumed := balance.NewAmount(0)
+	delegationResp := &network_delegation.DelegationRewardResponse{}
+	if delegationPower.Cmp(big.NewInt(0)) > 0 {
+		delegationCtx := &network_delegation.DelegationRewardCtx{
+			TotalRewards:    totalRewards,
+			DelegationPower: delegationPower,
+			TotalPower:      totalPower,
+			Height:          lastHeight,
+			ProposerAddress: keys.Address(block.Header.ProposerAddress),
+		}
+		delegationResp = handleDelegationRewards(delegationCtx, appCtx, kvMap)
+
+		//Update Consumed Amount
+		totalConsumed = totalConsumed.Plus(*delegationResp.DelegationRewards)
+	}
+
+	//Loop through all validators that participated in signing the last block
 	for _, vote := range votes {
 		//Verify Validator Address
 		valAddress := keys.Address(vote.Validator.Address)
 		if valAddress.Err() != nil {
 			continue
 		}
-		val, err := validators.Get(valAddress)
+		val, err := appCtx.validators.Get(valAddress)
 		if err != nil || len(val.Bytes()) == 0 {
 			continue
 		}
-
 		if vote.GetSignedLastBlock() {
-			amount := getRewardForValidator(totalPower, vote.Validator.Power, totalRewards)
+			//Get Commission and Reward Amounts for Validator
+			rewardAmount := getRewardForValidator(totalPower, validatorPowerMap[valAddress.String()], totalRewards)
+			commissionAmount := balance.NewAmount(0)
+			if delegationPower.Cmp(big.NewInt(0)) > 0 {
+				commissionAmount = getRewardForValidator(totValPower, validatorPowerMap[valAddress.String()], delegationResp.Commission)
+
+				if valAddress.String() == keys.Address(block.Header.ProposerAddress).String() {
+					commissionAmount = commissionAmount.Plus(*delegationResp.ProposerReward)
+				}
+			}
+			//Add Commission from Delegation rewards
+			amount := rewardAmount.Plus(*commissionAmount)
+			//Add Amount to reward store
 			err = rewardMaster.Reward.AddToAddress(valAddress, lastHeight, amount)
 			if err != nil {
 				continue
@@ -527,7 +679,7 @@ func handleBlockRewards(validators *identity.ValidatorStore, balances *balance.S
 		}
 	}
 
-	//Update Matured Amount
+	//Update Validators' Matured Amount
 	rewardMaster.Reward.IterateAddrList(func(addr keys.Address) bool {
 		matured := lastHeight % options.RewardInterval
 		if matured == 0 {
@@ -543,6 +695,9 @@ func handleBlockRewards(validators *identity.ValidatorStore, balances *balance.S
 		}
 		return false
 	})
+
+	//Update delegators' Matured Amount
+	matureDelegationRewards(appCtx, &block, kvMap, logger)
 
 	//pass total consumed amount to cumulative db
 	_ = rewardMaster.RewardCm.ConsumeRewards(totalConsumed)
@@ -585,4 +740,105 @@ func marshalLog(ok bool, response action.Response, feeResponse action.Response) 
 
 	return errorObj.Marshal()
 
+}
+
+func ManageVotes(req *RequestBeginBlock, ctx *context, logger *log.Logger) error {
+	eopts, err := ctx.govern.WithState(ctx.deliver).GetEvidenceOptions()
+	if err != nil {
+		logger.Error("error in GetEvidenceOptions")
+		return err
+	}
+	err = ctx.evidenceStore.WithState(ctx.deliver).SetVoteBlock(req.Header.GetHeight(), req.LastCommitInfo.Votes)
+	if err != nil {
+		logger.Error("error in SetVoteBlock")
+		return err
+	}
+	cv, err := ctx.evidenceStore.WithState(ctx.deliver).GetCumulativeVote()
+	if err != nil {
+		logger.Error("error in GetCumulativeVote")
+		return err
+	}
+	err = ctx.evidenceStore.WithState(ctx.deliver).SetCumulativeVote(cv, req.Header.GetHeight(), eopts.BlockVotesDiff)
+	if err != nil {
+		logger.Error("error in SetCumulativeVote")
+		return err
+	}
+	return nil
+}
+
+func addMaturedAmountsToBalance(ctx *context, logger *log.Logger, req *RequestBeginBlock) (event abciTypes.Event, any bool) {
+	height := req.Header.Height
+	delegStore := ctx.netwkDelegators.Deleg.WithState(ctx.deliver)
+	balanceStore := ctx.balances.WithState(ctx.deliver)
+	c, ok := ctx.currencies.GetCurrencyByName("OLT")
+	if !ok {
+		logger.Errorf("failed to get OLT as currency from context")
+		panic("failed to get OLT as currency from context")
+	}
+	event = abciTypes.Event{}
+	event.Type = "deleg_undelegate"
+	event.Attributes = append(event.Attributes, kv.Pair{
+		Key:   []byte("height"),
+		Value: []byte(strconv.FormatInt(height, 10)),
+	})
+	// put all the pending amounts at this height directly to delegator's balance
+	delegStore.IteratePendingAmounts(height, func(addr *keys.Address, coin *balance.Coin) bool {
+		//Add each of them to user's address
+		err := balanceStore.AddToAddress(*addr, *coin)
+		if err != nil {
+			logger.Errorf("failed to add pending undelegation amount at height: %d to address: %s", height, addr.String())
+			panic(err)
+		}
+		//Clear the pending amount
+		zeroCoin := c.NewCoinFromAmount(*balance.NewAmount(0))
+		err = delegStore.SetPendingAmount(*addr, height, &zeroCoin)
+		if err != nil {
+			logger.Errorf("failed to clear pending undelegation amount at height: %d for address: %s", height, addr.String())
+			panic(err)
+		}
+		event.Attributes = append(event.Attributes, kv.Pair{
+			Key:   []byte(addr.String()),
+			Value: []byte(coin.String()),
+		})
+		return false
+	})
+	any = len(event.Attributes) > 1
+	return
+}
+
+func matureDelegationRewards(appCtx *context, req *RequestBeginBlock, kvMap map[string]kv.Pair, logger *log.Logger) {
+	networkDelegators := appCtx.netwkDelegators.WithState(appCtx.deliver)
+	//Mature pending rewards to delegator's balance
+	height := req.Header.Height
+	rewardsStore := networkDelegators.Rewards
+	balanceStore := appCtx.balances.WithState(appCtx.deliver)
+	c, ok := appCtx.currencies.GetCurrencyByName("OLT")
+	if !ok {
+		logger.Errorf("failed to get OLT as currency from context")
+		panic("failed to get OLT as currency from context")
+	}
+	// put all the pending rewards at the height directly to delegator's balance
+	rewardsStore.IteratePD(height, func(delegator keys.Address, amt *balance.Amount) bool {
+		//Add each of them to user's address
+		coin := c.NewCoinFromAmount(*amt)
+		err := balanceStore.AddToAddress(delegator, coin)
+		if err != nil {
+			logger.Errorf("failed to add pending rewards amount at height: %d to address: %s", height, delegator.String())
+			panic(err)
+		}
+		// clear pending amount
+		zero := balance.NewAmount(0)
+		err = rewardsStore.SetPendingRewards(delegator, zero, height)
+		if err != nil {
+			logger.Errorf("failed to clear pending rewards amount at height: %d for address: %s", height, delegator.String())
+			panic(err)
+		}
+		//Create Event for maturing rewards
+		rewardsKey := "deleg_rewards_mature_" + delegator.String()
+		kvMap[rewardsKey] = kv.Pair{
+			Key:   []byte(rewardsKey),
+			Value: []byte(coin.String()),
+		}
+		return false
+	})
 }

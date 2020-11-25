@@ -17,6 +17,7 @@ import (
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/delegation"
+	"github.com/Oneledger/protocol/data/evidence"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
@@ -103,6 +104,7 @@ func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, se
 	ctx.GovernanceStore = governance.NewStore("tg", cs)
 	ctx.Delegators = delegation.NewDelegationStore("tst", cs)
 	ctx.Validators = identity.NewValidatorStore("tv", "purged", cs)
+	ctx.EvidenceStore = evidence.NewEvidenceStore("tes", cs)
 	ctx.GovernanceStore.SetFeeOption(*ctx.FeeOpt)
 	validator := identity.NewValidator(
 		from.Bytes(),

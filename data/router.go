@@ -1,6 +1,9 @@
 package data
 
-import "errors"
+import (
+	"errors"
+	"github.com/Oneledger/protocol/storage"
+)
 
 type Type string
 
@@ -11,18 +14,18 @@ var (
 
 // Router interface supplies functionality to add a store to the Data package.
 type Router interface {
-	Add(Type, interface{}) error
-	Get(Type) (interface{}, error)
+	Add(Type, ExtStore) error
+	Get(Type) (ExtStore, error)
 }
 
 var _ Router = &StorageRouter{}
 
 type StorageRouter struct {
-	router map[Type]interface{}
+	router map[Type]ExtStore
 }
 
 // Add a new store to the router
-func (s StorageRouter) Add(storeType Type, storeObj interface{}) error {
+func (s StorageRouter) Add(storeType Type, storeObj ExtStore) error {
 	if storeType == "" || storeObj == nil {
 		return errInvalidInput
 	}
@@ -31,7 +34,7 @@ func (s StorageRouter) Add(storeType Type, storeObj interface{}) error {
 }
 
 // Get the structure of store ,using the Type
-func (s StorageRouter) Get(storeType Type) (interface{}, error) {
+func (s StorageRouter) Get(storeType Type) (ExtStore, error) {
 	if store, ok := s.router[storeType]; ok {
 		return store, nil
 	}
@@ -40,6 +43,17 @@ func (s StorageRouter) Get(storeType Type) (interface{}, error) {
 
 func NewStorageRouter() StorageRouter {
 	return StorageRouter{
-		router: make(map[Type]interface{}),
+		router: make(map[Type]ExtStore),
 	}
+}
+
+func (s *StorageRouter) WithState(state *storage.State) *StorageRouter {
+	for _, v := range s.router {
+		v.WithState(state)
+	}
+	return s
+}
+
+type ExtStore interface {
+	WithState(*storage.State) ExtStore
 }

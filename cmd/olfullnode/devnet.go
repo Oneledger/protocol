@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
+	"net"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -20,6 +21,7 @@ import (
 
 	"github.com/Oneledger/protocol/data/evidence"
 	"github.com/Oneledger/protocol/data/governance"
+	"github.com/Oneledger/protocol/data/network_delegation"
 	"github.com/Oneledger/protocol/data/rewards"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -127,15 +129,20 @@ type testnetConfig struct {
 	totalFunds          int64
 	initialTokenHolders []string
 
-	ethUrl               string
-	deploySmartcontracts bool
-	cloud                bool
-	loglevel             int
-	rewardsInterval      int64
-	reserved_domains     string
-	maturityTime         int64
-	votingDeadline       int64
-	fundingDeadline      int64
+	ethUrl                   string
+	deploySmartcontracts     bool
+	ethpk                    string
+	cloud                    bool
+	loglevel                 int
+	rewardsInterval          int64
+	reserved_domains         string
+	maturityTime             int64
+	delegRewardsMaturityTime int64
+	votingDeadline           int64
+	fundingDeadline          int64
+	timeoutcommit            int64
+	docker                   bool
+	subnet                   string
 }
 
 func init() {
@@ -152,14 +159,18 @@ func init() {
 	testnetCmd.Flags().StringSliceVar(&testnetArgs.initialTokenHolders, "initial_token_holders", []string{}, "Initial list of addresses that hold an equal share of Total funds")
 	testnetCmd.Flags().StringVar(&testnetArgs.ethUrl, "eth_rpc", "", "URL for ethereum network")
 	testnetCmd.Flags().BoolVar(&testnetArgs.deploySmartcontracts, "deploy_smart_contracts", false, "deploy eth contracts")
+	testnetCmd.Flags().StringVar(&testnetArgs.ethpk, "eth_pk", "", "ethereum test private key")
 	testnetCmd.Flags().BoolVar(&testnetArgs.cloud, "cloud_deploy", false, "set true for deploying on cloud")
 	testnetCmd.Flags().IntVar(&testnetArgs.loglevel, "loglevel", 3, "Specify the log level for olfullnode. 0: Fatal, 1: Error, 2: Warning, 3: Info, 4: Debug, 5: Detail")
 	testnetCmd.Flags().Int64Var(&testnetArgs.rewardsInterval, "rewards_interval", 1, "Block rewards interval")
 	testnetCmd.Flags().StringVar(&testnetArgs.reserved_domains, "reserved_domains", "", "Directory which contains Reserved domains list")
 	testnetCmd.Flags().Int64Var(&testnetArgs.maturityTime, "maturity_time", 109200, "Set Maturity time for staking")
+	testnetCmd.Flags().Int64Var(&testnetArgs.delegRewardsMaturityTime, "deleg_rewards_maturity_time", 109200, "Set Maturity time for delegation rewards")
 	testnetCmd.Flags().Int64Var(&testnetArgs.fundingDeadline, "funding_deadline", 75001, "Set Maturity time for staking")
 	testnetCmd.Flags().Int64Var(&testnetArgs.votingDeadline, "voting_deadline", 150000, "Set Maturity time for staking")
-
+	testnetCmd.Flags().Int64Var(&testnetArgs.timeoutcommit, "timeout_commit", 1000, "Set timecommit for blocks")
+	testnetCmd.Flags().BoolVar(&testnetArgs.docker, "docker", false, "set true for deploying on docker")
+	testnetCmd.Flags().StringVar(&testnetArgs.subnet, "subnet", "10.5.0.0/16", "subnet where all docker containers will run")
 }
 
 func randStr(size int) string {
@@ -205,7 +216,25 @@ func portGenerator(startingPort int) func() int {
 	}
 }
 
-func generateAddress(port int, flags ...bool) string {
+func generateIP(nodeID int) (result string) {
+	result = "127.0.0.1"
+	if testnetArgs.docker {
+		//parse subnet IP
+		ip, _, err := net.ParseCIDR(testnetArgs.subnet)
+		if err != nil {
+			return
+		}
+		ipv4 := ip.To4()
+		if len(ipv4) != 4 {
+			return
+		}
+		ip3 := byte(nodeID) + 10
+		result = fmt.Sprintf("%d.%d.%d.%d", ipv4[0], ipv4[1], ipv4[2], ip3)
+	}
+	return
+}
+
+func generateAddress(nodeID int, port int, flags ...bool) string {
 	// flags
 	var hasProtocol, isRPC bool
 	switch len(flags) {
@@ -217,7 +246,7 @@ func generateAddress(port int, flags ...bool) string {
 	}
 
 	var prefix string
-	ip := "127.0.0.1"
+	ip := generateIP(nodeID)
 	protocol := "tcp://"
 	if isRPC {
 		protocol = "http://"
@@ -340,9 +369,11 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 			cfg.Consensus.CreateEmptyBlocks = false
 		}
 
-		cfg.Network.RPCAddress = generateAddress(generatePort(), true)
-		cfg.Network.P2PAddress = generateAddress(generatePort(), true)
-		cfg.Network.SDKAddress = generateAddress(generatePort(), true, true)
+		cfg.Consensus.TimeoutCommit = config.Duration(testnetArgs.timeoutcommit)
+
+		cfg.Network.RPCAddress = generateAddress(i, generatePort(), true)
+		cfg.Network.P2PAddress = generateAddress(i, generatePort(), true)
+		cfg.Network.SDKAddress = generateAddress(i, generatePort(), true)
 
 		dirs := []string{configDir, dataDir, nodeDataDir}
 		for _, dir := range dirs {
@@ -424,7 +455,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 	fmt.Println("Deploy Smart contracts : ", args.deploySmartcontracts)
 	if args.deploySmartcontracts {
 		if len(args.ethUrl) > 0 {
-			cdo, err = deployethcdcontract(url, nodeList)
+			cdo, err = deployethcdcontract(url, nodeList, args.ethpk)
 			if err != nil {
 				return errors.Wrap(err, "failed to deploy the initial eth contract")
 			}
@@ -552,14 +583,19 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 	stakingOption := delegation.Options{
 		MinSelfDelegationAmount: *balance.NewAmount(3000000),
 		MinDelegationAmount:     *balance.NewAmount(1),
-		TopValidatorCount:       8,
+		TopValidatorCount:       4,
 		MaturityTime:            args.maturityTime,
+	}
+
+	// network delegation
+	delegOption := network_delegation.Options{
+		RewardsMaturityTime: args.delegRewardsMaturityTime,
 	}
 
 	// evidence
 	evidenceOption := evidence.Options{
-		MinVotesRequired: 800,
-		BlockVotesDiff:   1000,
+		MinVotesRequired: 2,
+		BlockVotesDiff:   4,
 
 		PenaltyBasePercentage: 30,
 		PenaltyBaseDecimals:   100,
@@ -570,13 +606,15 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 		PenaltyBurnPercentage: 50,
 		PenaltyBurnDecimals:   100,
 
-		ValidatorReleaseTime:    5,
+		ValidatorReleaseTime:    0,
 		ValidatorVotePercentage: 50,
 		ValidatorVoteDecimals:   100,
 
 		AllegationPercentage: 50,
 		AllegationDecimals:   100,
 	}
+
+	// Cutting from current stake or cutting from begining stake
 
 	//var initialAddrs []keys.Address
 	initAddrIndex := 0
@@ -695,28 +733,31 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 			ONSOptions:      onsOption,
 			PropOptions:     propOpt,
 			StakingOptions:  stakingOption,
+			DelegOptions:    delegOption,
 			EvidenceOptions: evidenceOption,
 			RewardOptions:   rewardOpt,
 		},
 	}
 }
 
-func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOption, error) {
+func deployethcdcontract(conn string, nodeList []node, ethprivKey string) (*ethchain.ChainDriverOption, error) {
+	pkStr := ""
+	if len(ethprivKey) == 0 {
+		b1 := make([]byte, 64)
+		f, err := os.Open(os.Getenv("ETHPKPATH"))
+		if err != nil {
+			return nil, errors.Wrap(err, "Error Reading File")
+		}
+		pk, err := f.Read(b1)
+		if err != nil {
+			return nil, errors.Wrap(err, "Error reading private key")
+		}
+		pkStr = string(b1[:pk])
+	} else {
+		pkStr = ethprivKey
+	}
+	//fmt.Println("Private key used to deploy : ", pkStr)
 
-	f, err := os.Open(os.Getenv("ETHPKPATH"))
-	if err != nil {
-		return nil, errors.Wrap(err, "Error Reading File")
-	}
-	if err != nil {
-		return nil, errors.Wrap(err, "Error Reading File Wallet Address")
-	}
-	b1 := make([]byte, 64)
-	pk, err := f.Read(b1)
-	if err != nil {
-		return nil, errors.Wrap(err, "Error reading private key")
-	}
-	//fmt.Println("Private key used to deploy : ", string(b1[:pk]))
-	pkStr := string(b1[:pk])
 	privatekey, err := crypto.HexToECDSA(pkStr)
 
 	if err != nil {
@@ -803,6 +844,7 @@ func deployethcdcontract(conn string, nodeList []node) (*ethchain.ChainDriverOpt
 	if err != nil {
 		return nil, errors.Wrap(err, "Deployement Eth LockRedeem")
 	}
+	time.Sleep(10 * time.Second)
 	err = activateContract(fromAddress, address, privatekey, cli)
 	if err != nil {
 		return nil, errors.Wrap(err, "Unable to activate new contract")

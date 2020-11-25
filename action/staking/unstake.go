@@ -7,6 +7,7 @@ import (
 	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/data/evidence"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/identity"
 )
@@ -126,9 +127,17 @@ func runCheckUnstake(ctx *action.Context, tx action.RawTx) (bool, action.Respons
 		return false, action.Response{Log: err.Error()}
 	}
 
+	if ctx.EvidenceStore.IsFrozenValidator(ust.ValidatorAddress) {
+		return false, action.Response{Log: evidence.ErrFrozenValidator.Error()}
+	}
+
 	unstake := identity.Unstake{
 		Address: ust.ValidatorAddress,
 		Amount:  ust.Stake.Value,
+	}
+
+	if ctx.EvidenceStore.CheckRequestExists(ust.ValidatorAddress) {
+		return false, action.Response{Log: evidence.ErrRequestAlreadyExists.Error()}
 	}
 
 	height := ctx.Header.GetHeight()

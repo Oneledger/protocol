@@ -66,17 +66,20 @@ func ListValidator(cmd *cobra.Command, args []string) {
 
 	// Print validators
 	for _, v := range activeList {
-		printValidator(v, true)
+		isFrozen := out.FMap[v.Address.String()]
+		printValidator(v, true, isFrozen)
 	}
 	for _, v := range noActiveList {
-		printValidator(v, false)
+		isFrozen := out.FMap[v.Address.String()]
+		printValidator(v, false, isFrozen)
 	}
 
 	fmt.Println("Height", out.Height)
 }
 
-func printValidator(v identity.Validator, isActive bool) {
+func printValidator(v identity.Validator, isActive bool, isFrozen bool) {
 	fmt.Println("Active", isActive)
+	fmt.Println("Frozen", isFrozen)
 	fmt.Println("Address", v.Address)
 	fmt.Println("StakeAddress", v.StakeAddress)
 	fmt.Println("Power", v.Power)

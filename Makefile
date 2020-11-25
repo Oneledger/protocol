@@ -14,7 +14,7 @@ install:
 	go install -i github.com/Oneledger/protocol/cmd/...
 
 # Enable the clevelDB
-install_c:  
+install_c:
 	CGO_ENABLED=1 CGO_LDFLAGS="-lsnappy" go install -tags "cleveldb" github.com/Oneledger/protocol/cmd/...
 
 #
@@ -48,6 +48,8 @@ utest:
 		github.com/Oneledger/protocol/data/keys \
 		github.com/Oneledger/protocol/data/governance \
 		github.com/Oneledger/protocol/data/rewards \
+		github.com/Oneledger/protocol/data/network_delegation \
+		github.com/Oneledger/protocol/data/evidence \
 		github.com/Oneledger/protocol/action/transfer \
 		github.com/Oneledger/protocol/serialize \
 		github.com/Oneledger/protocol/utils \
@@ -55,7 +57,11 @@ utest:
 		github.com/Oneledger/protocol/identity \
 		github.com/Oneledger/protocol/app \
 		github.com/Oneledger/protocol/action/staking \
+		github.com/Oneledger/protocol/action/evidence \
 		-coverprofile a.out
+
+loadtest: reset
+	python scripts/loadtest/run_tests.py -c -s 50
 
 coverage:
 	go tool cover -html=a.out -o cover.html
@@ -82,7 +88,7 @@ withdrawtest: reset
 # run governance tests
 #
 
-govtest: resetInvalidValues
+govtest: reset
 	@./scripts/testsend
 	python scripts/governance/createProposals.py
 	python scripts/governance/fundProposals.py
@@ -98,9 +104,22 @@ govtest: resetInvalidValues
 	@./scripts/stopNodes
 
 #
+# run evidence tests
+#
+evidence: reset
+	python scripts/evidence/allegation_loadtest.py
+	make reset_no_install
+	python scripts/evidence/test_allegation_no.py
+	make reset_no_install
+	python scripts/evidence/test_allegation_yes.py
+	make reset_no_install
+	python scripts/evidence/test_release.py
+	@./scripts/stopNodes
+
+#
 # run staking tests
 #
-stakingtest: resetInvalidValues
+stakingtest: reset
 	python scripts/staking/self_staking.py
 	@./scripts/stopNodes
 
@@ -117,6 +136,18 @@ rewardtest: reset
 	python scripts/reward/listRewards.py
 	@./scripts/stopNodes
 
+delegationtest: reset
+	python scripts/network_delegation/networkUndelegate.py
+	python scripts/network_delegation/addNetworkDelegation.py
+	make reset
+	python scripts/network_delegation/withdrawRewards.py
+	python scripts/network_delegation/reinvestRewards.py
+# 	make reset
+# 	python scripts/network_delegation/finalizeRewards.py
+# 	make reset
+# 	python scripts/network_delegation/withdrawDelegation.py
+	@./scripts/stopNodes
+
 alltest: reset
 	@./scripts/testsend
 	@./scripts/getValidators
@@ -130,11 +161,14 @@ alltest: reset
 	@./scripts/stopNodes
 
 reset: install_c
+	make reset_no_install
+# 	@./scripts/testapply
+# 	@./scripts/testsend
+
+reset_no_install:
 	@./scripts/stopNodes
 	@./scripts/resetDev
 	@./scripts/startDev
-# 	@./scripts/testapply
-# 	@./scripts/testsend
 
 resetInvalidValues: install_c
 	@./scripts/stopNodes
