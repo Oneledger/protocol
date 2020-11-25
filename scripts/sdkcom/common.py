@@ -1,9 +1,11 @@
-import os, sys, json, subprocess
+import os, sys, json, subprocess, re
 
+devnull = open(os.devnull, 'wb')
 
 def addValidatorWalletAccounts(node):
     args = ['olclient', 'show_node_id']
-    process = subprocess.Popen(args, cwd=node, stdout=subprocess.PIPE)
+    args_in_use = args_wrapper(args, node)
+    process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
     process.wait()
     output = process.stdout.readlines()
     pubKey = output[0].split(",")[0].split(":")[1].strip()
@@ -11,13 +13,15 @@ def addValidatorWalletAccounts(node):
     contents = json.loads(f.read())
     privKey = contents['priv_key']['value']
     args = ['olclient', 'account', 'add', '--privkey', privKey, '--pubkey', pubKey, "--password", '1234']
-    process = subprocess.Popen(args, cwd=node, stdout=subprocess.PIPE)
+    args_in_use = args_wrapper(args, node)
+    process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
     process.wait()
     output = process.stdout.readlines()
 
     if "exists" in output[0]:
         args = ['olclient', 'list']
-        process = subprocess.Popen(args, cwd=node, stdout=subprocess.PIPE)
+        args_in_use = args_wrapper(args, node)
+        process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
         process.wait()
         output = process.stdout.readlines()
         return output[2].split(" ")[1].strip()[3:]
@@ -29,7 +33,8 @@ def addValidatorAccounts(node):
     pubKey = contents['pub_key']['value']
     privKey = contents['priv_key']['value']
     args = ['olclient', 'account', 'add', '--privkey', privKey, '--pubkey', pubKey, "--password", '1234']
-    process = subprocess.Popen(args, cwd=node, stdout=subprocess.PIPE)
+    args_in_use = args_wrapper(args, node)
+    process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
     process.wait()
     output = process.stdout.readlines()
 
@@ -40,7 +45,8 @@ def addValidatorAccounts(node):
 
 def nodeAccount(node):
     args = ['olclient', 'show_node_id']
-    process = subprocess.Popen(args, cwd=node, stdout=subprocess.PIPE)
+    args_in_use = args_wrapper(args, node)
+    process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
     process.wait()
     output = process.stdout.readlines()
     address = output[0].split(",")[1].split(":")[1].strip()
@@ -48,18 +54,23 @@ def nodeAccount(node):
 
 def sdkIPAddress(node):
     args = ['olfullnode', 'status']
-    process = subprocess.Popen(args, cwd=node, stdout=subprocess.PIPE)
+    args_in_use = args_wrapper(args, node)
+    process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
     process.wait()
     output = process.stdout.readlines()
     sdkport = output[2].split(":")[1].strip().split(" ")
-    ip_addr = sdkport[2].strip() + ":" + sdkport[0].strip()
-    return ip_addr
+    if is_docker():
+        ip_addr = '127.0.0.1'
+    else:
+        ip_addr = sdkport[2].strip()
+    return ip_addr + ":" + sdkport[0].strip()
 
 
 def sendFunds(party, counterparty, amount, password, node):
     args = ['olclient', 'send', "--password", password, "--party", party, "--counterparty", counterparty, "--amount",
             amount, "--fee", "0.001"]
-    process = subprocess.Popen(args, cwd=node, stdout=subprocess.PIPE)
+    args_in_use = args_wrapper(args, node)
+    process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
     process.wait()
     output = process.stdout.readlines()
     return output
@@ -74,3 +85,57 @@ def check_balance(before, after, expected_diff):
         print "expected difference:"
         print expected_diff
         sys.exit(-1)
+
+
+def is_docker():
+    args = ['docker', 'ps']
+    process = subprocess.Popen(args, stdout=subprocess.PIPE)
+    process.wait()
+    output = process.stdout.readlines()
+    for line in output:
+        if '0-Node' in line:
+            return True
+    return False
+
+
+def args_wrapper(args, node):
+    node_name = node.split('/')[-1]
+    result = [args, node]
+    if not is_docker():
+        return result
+    execute_command = 'cd /opt/data/devnet &&'
+    count = 0
+    for arg in args:
+        count = count + 1
+        # remove --root flag since we are already in node folder
+        if arg == '--root' or args[count-2] == '--root':
+            continue
+        execute_command += ' ' + arg
+    new_args = ['docker', 'exec', node_name, 'bash', '-c', execute_command]
+    return [new_args, '/']
+
+
+def get_volume_info(container_name='0-Node'):
+    args = ['docker', 'inspect', container_name]
+    process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=devnull)
+    process.wait()
+    output = process.stdout.readlines()
+    for line in output:
+        volume_path = re.search('"Source": "(.*)\d-Node"', line)
+        if volume_path:
+            return volume_path.group(1)
+    return None
+
+# this is needed because sometimes we use keystore belongs to one node and sign the tx using another node
+# and docker instance cannot get what's outside its own volume
+def update_keystore(from_node, to_node):
+    from_keystore = os.path.join(from_node, 'keystore/*')
+    to_keystore = os.path.join(to_node, 'keystore')
+    args_copy = 'mkdir -p ' + to_keystore + ' && cp ' + from_keystore + ' ' + to_keystore
+    process = subprocess.Popen(args_copy, stderr=subprocess.PIPE, shell=True)
+    process.wait()
+    err = process.stderr.readlines()
+    if err:
+        print err
+        sys.exit(-1)
+

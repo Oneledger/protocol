@@ -1,10 +1,13 @@
 import sys, time, subprocess
+from common import *
 
 from common import *
 from constant import *
 from rpc_call import *
 
 def sign(raw_tx, address, keypath):
+    if is_docker():
+        keypath = './keystore/'
     resp = rpc_call('owner.SignWithSecureAddress',
                     {"rawTx": raw_tx, "address": address, "password": "1234", "keypath": keypath})
     return resp["result"]
@@ -62,7 +65,8 @@ def query_balance(address):
 
 def createAccount(node, funds=0, funder="", pswd="1234"):
     args = ['olclient', 'account', 'add', "--password", pswd]
-    process = subprocess.Popen(args, cwd=node, stdout=subprocess.PIPE)
+    args_in_use = args_wrapper(args, node)
+    process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
     process.wait()
     output = process.stdout.readlines()
     newaccount = output[1].split(":")[1].strip()[3:]

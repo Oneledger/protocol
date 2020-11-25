@@ -11,7 +11,8 @@ class Staking:
     def __init__(self, node):
         self.node = node
         args = ['olclient', 'show_node_id']
-        process = subprocess.Popen(args, cwd=self.node, stdout=subprocess.PIPE)
+        args_in_use = args_wrapper(args, self.node)
+        process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
         process.wait()
         output = process.stdout.readlines()
         time.sleep(1)
@@ -20,7 +21,8 @@ class Staking:
         contents = json.loads(f.read())
         privKey = contents['priv_key']['value']
         args = ['olclient', 'account', 'add', '--privkey', privKey, '--pubkey', pubKey, "--password", 'pass']
-        process = subprocess.Popen(args, cwd=self.node, stdout=subprocess.PIPE)
+        args_in_use = args_wrapper(args, self.node)
+        process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
         process.wait()
         output = process.stdout.readlines()
         time.sleep(1)
@@ -29,7 +31,8 @@ class Staking:
     def prepare(self, secs=1):
         # add new account to node wallet
         args = ['olclient', 'account', 'add', "--password", 'pass']
-        process = subprocess.Popen(args, cwd=self.node, stdout=subprocess.PIPE)
+        args_in_use = args_wrapper(args, self.node)
+        process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
         process.wait()
         output = process.stdout.readlines()
         time.sleep(1)
@@ -38,7 +41,8 @@ class Staking:
         # Fund this account for future staking
         args = ['olclient', 'send', '--party', self.staking_address, '--counterparty', new_staking_address, '--amount',
                 '5000000', '--fee', '0.0001', "--password", 'pass']
-        process = subprocess.Popen(args, cwd=self.node, stdout=subprocess.PIPE)
+        args_in_use = args_wrapper(args, self.node)
+        process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
         process.wait()
         return new_staking_address
 
@@ -48,8 +52,8 @@ class Staking:
                 self.staking_address,
                 '--password', 'pass']
         target = dirname(dirname(os.getcwd()))
-        # set protocol root path as current path
-        process = subprocess.Popen(args, cwd=self.node, stdout=subprocess.PIPE)
+        args_in_use = args_wrapper(args, self.node)
+        process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
         process.wait()
         output = process.stdout.readlines()
         time.sleep(secs)
@@ -75,8 +79,8 @@ class Staking:
                 self.staking_address,
                 '--password', 'pass']
         target = dirname(dirname(os.getcwd()))
-        # set protocol root path as current path
-        process = subprocess.Popen(args, cwd=self.node, stdout=subprocess.PIPE)
+        args_in_use = args_wrapper(args, self.node)
+        process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
         process.wait()
         output = process.stdout.readlines()
         time.sleep(secs)
@@ -103,8 +107,8 @@ class Staking:
                 self.staking_address,
                 '--password', 'pass']
         target = dirname(dirname(os.getcwd()))
-        # set protocol root path as current path
-        process = subprocess.Popen(args, cwd=self.node, stdout=subprocess.PIPE)
+        args_in_use = args_wrapper(args, self.node)
+        process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
         process.wait()
         output = process.stdout.readlines()
         time.sleep(secs)
@@ -122,8 +126,8 @@ class Staking:
     def checkStatus(self, delegation_amount, withdrawable_amount, hasFifthLine, secs=1):
         args = ['olclient', 'delegation', 'status', '--address', self.staking_address]
         target = dirname(dirname(os.getcwd()))
-        # set protocol root path as current path
-        process = subprocess.Popen(args, cwd=self.node, stdout=subprocess.PIPE)
+        args_in_use = args_wrapper(args, self.node)
+        process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
         process.wait()
         output = process.stdout.readlines()
         time.sleep(secs)
@@ -166,8 +170,8 @@ class Staking:
     def checkValidatorSet(self, node_number, on_list, target_power, secs=1):
         args = ['olclient', 'validatorset', 'status']
         target = dirname(dirname(os.getcwd()))
-        # set protocol root path as current path
-        process = subprocess.Popen(args, cwd=self.node, stdout=subprocess.PIPE)
+        args_in_use = args_wrapper(args, self.node)
+        process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
         process.wait()
         output = process.stdout.readlines()
         time.sleep(secs)

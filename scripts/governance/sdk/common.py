@@ -1,9 +1,15 @@
 import subprocess
 import time
+import os.path as path
 
 from benedict import benedict
 
 from actions import *
+
+sdkcom_p = path.abspath(path.join(path.dirname(__file__), "../.."))
+sys.path.append(sdkcom_p)
+
+from sdkcom import *
 
 success = "Returned Successfully"
 
@@ -43,9 +49,8 @@ def vote_proposal_cli(pid, opinion, node, address, secs=1):
     # vote the proposal through CLI
     args = ['olclient', 'gov', 'vote', '--root', node, '--id', pid, '--address', address[3:], '--opinion', opinion,
             '--password', 'pass', '--gasprice', '0.00001', '--gas', '40000']
-
-    # set cwd for the purpose of wallet path
-    process = subprocess.Popen(args, cwd=os.getcwd())
+    args_in_use = args_wrapper(args, node)
+    process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
     process.wait()
     time.sleep(secs)
 
@@ -59,7 +64,8 @@ def vote_proposal_cli(pid, opinion, node, address, secs=1):
 def list_proposal_cli(pid, node):
     # vote the proposal through CLI
     args = ['olclient', 'gov', 'list', '--root', node, '--id', pid]
-    process = subprocess.Popen(args)
+    args_in_use = args_wrapper(args, node)
+    process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1])
     process.wait()
 
     # check return code
@@ -84,7 +90,8 @@ def check_proposal_state(pid, outcome_expected, status_expected, type_expected=P
 
 def getActiveValidators():
     args = ['olclient', 'validatorset']
-    process = subprocess.Popen(args, cwd=node_0, stdout=subprocess.PIPE)
+    args_in_use = args_wrapper(args, node_0)
+    process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
     process.wait()
     output = process.stdout.readlines()
     active_count = 0
@@ -96,7 +103,8 @@ def getActiveValidators():
 
 def getAllValidators():
     args = ['olclient', 'validatorset']
-    process = subprocess.Popen(args, cwd=node_0, stdout=subprocess.PIPE)
+    args_in_use = args_wrapper(args, node_0)
+    process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
     process.wait()
     output = process.stdout.readlines()
     active_count = 0
@@ -108,7 +116,8 @@ def getAllValidators():
 
 def addValidatorAccounts(node):
     args = ['olclient', 'show_node_id']
-    process = subprocess.Popen(args, cwd=node, stdout=subprocess.PIPE)
+    args_in_use = args_wrapper(args, node)
+    process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
     process.wait()
     output = process.stdout.readlines()
     time.sleep(1)
@@ -117,13 +126,15 @@ def addValidatorAccounts(node):
     contents = json.loads(f.read())
     privKey = contents['priv_key']['value']
     args = ['olclient', 'account', 'add', '--privkey', privKey, '--pubkey', pubKey, "--password", '1234']
-    process = subprocess.Popen(args, cwd=node, stdout=subprocess.PIPE)
+    args_in_use = args_wrapper(args, node)
+    process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
     process.wait()
     output = process.stdout.readlines()
 
     if "exists" in output[0]:
         args = ['olclient', 'list']
-        process = subprocess.Popen(args, cwd=node, stdout=subprocess.PIPE)
+        args_in_use = args_wrapper(args, node)
+        process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
         process.wait()
         output = process.stdout.readlines()
         return output[2].split(" ")[1].strip()[3:]
@@ -143,7 +154,8 @@ def stake(node, amount='3000000'):
     # print output
     args = ['olclient', 'delegation', 'stake', '--address', validatorAccount, '--amount', amount, '--password',
             '1234']
-    process = subprocess.Popen(args, cwd=node, stdout=subprocess.PIPE)
+    args_in_use = args_wrapper(args, node)
+    process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
     process.wait()
     output = process.stdout.read()
     if not success in output:
@@ -163,7 +175,8 @@ def unstake(node, amount='3000000'):
     # print output
     args = ['olclient', 'delegation', 'unstake', '--address', validatorAccount, '--amount', amount, '--password',
             '1234']
-    process = subprocess.Popen(args, cwd=node, stdout=subprocess.PIPE)
+    args_in_use = args_wrapper(args, node)
+    process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
     process.wait()
     output = process.stdout.read()
     if not success in output:
@@ -174,10 +187,11 @@ def unstake(node, amount='3000000'):
 def validateCatchup():
     args = ['olclient', 'validatorset', 'status']
     # set protocol root path as current path
-    process1 = subprocess.Popen(args, cwd=node_0, stdout=subprocess.PIPE)
-    process2 = subprocess.Popen(args, cwd=node_1, stdout=subprocess.PIPE)
-    process3 = subprocess.Popen(args, cwd=node_2, stdout=subprocess.PIPE)
-    process4 = subprocess.Popen(args, cwd=node_3, stdout=subprocess.PIPE)
+    args_in_use = args_wrapper(args, node_0)
+    process1 = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
+    process2 = subprocess.Popen(args_in_use[0], cwd=node_1, stdout=subprocess.PIPE)
+    process3 = subprocess.Popen(args_in_use[0], cwd=node_2, stdout=subprocess.PIPE)
+    process4 = subprocess.Popen(args_in_use[0], cwd=node_3, stdout=subprocess.PIPE)
     process1.wait()
     process2.wait()
     process3.wait()

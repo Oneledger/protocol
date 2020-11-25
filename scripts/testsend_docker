@@ -1,0 +1,14 @@
+#!/bin/bash
+# find node folder from docker inspect result
+node_folder=$(docker inspect 0-Node | sed -n 's/^.*"Source"\: "\(.*\)\/[0-9]-Node.*$/\1/p')
+# find binary folder from docker inspect result
+bin_folder=$(docker inspect 0-Node | sed -n '/[0-9]-Node",$/! s/^.*"Source"\: "\(.*\)",/\1/p')
+name=$(ls -l $node_folder | grep Node | awk '(NR==1){print $9}')
+# shellcheck disable=SC2070
+if [ -n "$name" ]; then
+  echo "run load test command on node $name"
+  python $OLROOT/protocol/DOCKER-network/dockernet run $name "olclient loadtest --threads 2 --interval 2 --max-tx 20"
+
+fi
+
+sleep 5

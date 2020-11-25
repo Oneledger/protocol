@@ -9,7 +9,7 @@ def delegate(node, account, amount):
 def check_rewards(result, balance, pending):
     if balance != '':
         balance = str(balance) + '0' * 18
-        if result['balance'] < balance:
+        if int(result['balance']) < int(balance):
             sys.exit(-1)
     if pending != None:
         if len(result['pending']) != len(pending):
@@ -28,6 +28,7 @@ if __name__ == "__main__":
 
     # create delegator account
     delegator = createAccount(node_0, 2500000, funder)
+    update_keystore(node_0, node_4)
 
     # delegates some OLT and wait for rewards distribution
     delegation_amt = 2000000
@@ -99,6 +100,7 @@ if __name__ == "__main__":
     # create another delegator account
     funder1 = addValidatorWalletAccounts(node_1)
     delegator1 = createAccount(node_1, 8000000, funder1)
+    update_keystore(node_1, node_4)
 
     # delegates some OLT and wait for rewards distribution
     delegation_amt = '5000000' + '0' * 18

@@ -1,6 +1,7 @@
 from sdk import *
 if __name__ == "__main__":
     delegationAccount = addValidatorWalletAccounts(node_5)
+    update_keystore(node_5, node_4)
     delegationAmount = "1000000"
     delegationAmount_long = delegationAmount + '0' * 18
     no_of_delagations = 5
