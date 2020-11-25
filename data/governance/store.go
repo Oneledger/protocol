@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"os"
-	"strconv"
 	"sync"
 
 	"github.com/Oneledger/protocol/data/network_delegation"
@@ -107,13 +106,13 @@ func (st *Store) Get(key string, optKey string) ([]byte, error) {
 		panic(errors.Wrap(err, "Unable to get Last Update Height"))
 	}
 	// Get the Options from the last update Height
-	versionedKey := storage.StoreKey(strconv.FormatInt(luh, 10) + storage.DB_PREFIX + key)
+	versionedKey := storage.StoreKey(string(luh) + storage.DB_PREFIX + key)
 	prefixKey := append(st.prefix, versionedKey...)
 	return st.state.Get(prefixKey)
 }
 
 func (st *Store) Set(key string, value []byte) error {
-	versionedKey := storage.StoreKey(strconv.FormatInt(st.height, 10) + storage.DB_PREFIX + key)
+	versionedKey := storage.StoreKey(string(st.height) + storage.DB_PREFIX + key)
 	prefixKey := append(st.prefix, versionedKey...)
 	err := st.state.Set(prefixKey, value)
 	return err
