@@ -8,9 +8,15 @@ olfullnode init devnet --dir $OLDATA/devnet --nonvalidators 5 \
   --empty_blocks \
   --loglevel 4 \
   --total_funds 1000000000 \
-  --maturity_time 10 \
+  --maturity_time 4 \
+  --deleg_rewards_maturity_time 4 \
+  --rewards_interval 1 \
   --funding_deadline 10 \
-  --voting_deadline 12
+  --voting_deadline 12 \
+  --timeout_commit 1000 \
+  --min_votes 8000 \
+  --block_diff 10000 \
+  --top_validators 8
 #--eth_rpc HTTP://127.0.0.1:7545 \
 
 #--deploy_smart_contracts \

@@ -170,6 +170,11 @@ reset_no_install:
 	@./scripts/resetDev
 	@./scripts/startDev
 
+reset_invalid :
+	@./scripts/stopNodes
+	@./scripts/resetDev_invalidValues
+	@./scripts/startDev
+
 resetInvalidValues: install_c
 	@./scripts/stopNodes
 	@./scripts/resetDev_invalidValues
@@ -218,7 +223,7 @@ testData:
 	python scripts/ons/update_domain.py
 
 
-updatetest: reset
+updatetest: reset_invalid
 	python scripts/governance/optUpdate.py
 	@./scripts/testsend
 	python scripts/reward/testWithdraw.py
