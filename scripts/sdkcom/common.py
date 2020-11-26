@@ -90,7 +90,7 @@ def check_balance(before, after, expected_diff):
 
 
 def is_docker():
-    args = ['pgrep' | 'docker']
+    args = ['pgrep', 'docker']
     process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     process.wait()
     output = process.stdout.readlines()
@@ -158,3 +158,9 @@ def update_keystore(from_node):
                 print err
                 sys.exit(-1)
 
+
+def generate_subprocess(args, cwd):
+    args = ['olclient', 'gov', 'vote', '--root', node, '--id', pid, '--address', address[3:], '--opinion', opinion,
+            '--password', 'pass', '--gasprice', '0.00001', '--gas', '40000']
+    args_in_use = args_wrapper(args, node)
+    process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
