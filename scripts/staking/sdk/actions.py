@@ -46,7 +46,7 @@ class Staking:
         process.wait()
         return new_staking_address
 
-    def stake(self, amount, expect_success, secs=1):
+    def stake(self, amount, expect_success, secs=3):
 
         args = ['olclient', 'delegation', 'stake', '--amount', amount, '--address',
                 self.staking_address,
@@ -74,7 +74,7 @@ class Staking:
 
         print "################### olclient stake succeed or failed as expected"
 
-    def unstake(self, amount, expect_success, secs=1):
+    def unstake(self, amount, expect_success, secs=3):
         args = ['olclient', 'delegation', 'unstake', '--amount', amount, '--address',
                 self.staking_address,
                 '--password', 'pass']
@@ -94,10 +94,10 @@ class Staking:
         target_regex = r"Failed"
         match = re.search(target_regex, output[1])
         if (match is None) and (expect_success is False):
-            print "olclient stake succeed, but it should fail!"
+            print "olclient unstake succeed, but it should fail!"
             sys.exit(-1)
         elif (match is not None) and (expect_success is True):
-            print "olclient stake failed"
+            print "olclient unstake failed"
             sys.exit(-1)
 
         print "################### olclient unstake succeed or failed as expected"

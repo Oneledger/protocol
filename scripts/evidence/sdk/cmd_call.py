@@ -111,7 +111,7 @@ def KillNode(node):
     args = [
         "pgrep", "-f", node,
     ]
-    args_in_use = args
+    args_in_use = [args, node]
     if is_docker():
         args_in_use = args_wrapper(["pgrep", "olfullnode"], node)
     process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE, stderr=devnull)

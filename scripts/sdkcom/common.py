@@ -157,8 +157,3 @@ def update_keystore(from_node):
             if err:
                 print err
                 sys.exit(-1)
-
-
-def generate_subprocess(args, cwd):
-    args_in_use = args_wrapper(args, cwd)
-    process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE, )
