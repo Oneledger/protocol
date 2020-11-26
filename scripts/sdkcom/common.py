@@ -131,9 +131,10 @@ def get_volume_info(container_name='0-Node'):
 # this is needed because sometimes we use keystore belongs to one node and sign the tx using another node
 # and docker instance cannot get what's outside its own volume
 def update_keystore(from_node):
-    from_keystore = os.path.join(from_node, 'keystore/*')
+    from_keystore = os.path.join(from_node, 'keystore')
     if not os.path.isdir(from_keystore):
         sys.exit(-1)
+    from_keystore = os.path.join(from_keystore, '*')
     parent_folder = os.path.dirname(from_node)
     subdirs = [os.path.join(parent_folder, o) for o in os.listdir(parent_folder) if os.path.isdir(os.path.join(parent_folder,o))]
     for dir in subdirs:
