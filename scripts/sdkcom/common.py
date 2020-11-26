@@ -119,8 +119,9 @@ def args_wrapper(args, node):
 
 def get_volume_info(container_name='0-Node'):
     args = ['docker', 'inspect', container_name]
-    process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=devnull)
+    process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     process.wait()
+    error = process.stderr.readlines()
     output = process.stdout.readlines()
     for line in output:
         volume_path = re.search('"Source": "(.*)\d-Node"', line)

@@ -14,9 +14,8 @@ oltest = os.getenv('OLTEST')
 oldata = os.environ['OLDATA']
 devnet = os.path.join(oldata, "devnet")
 loadtest = os.path.join(oldata, "loadtest")
-docker_path = get_volume_info()
 if is_docker():
-    devnet = docker_path
+    devnet = get_volume_info()
 
 node_0 = os.path.join(devnet, "0-Node")
 node_1 = os.path.join(devnet, "1-Node")

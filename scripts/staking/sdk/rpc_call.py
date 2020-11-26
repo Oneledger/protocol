@@ -16,9 +16,8 @@ url_3 = "http://127.0.0.1:26611/jsonrpc"
 url_4 = "http://127.0.0.1:26614/jsonrpc"
 
 devnet = os.path.join(os.environ['OLDATA'], "devnet")
-docker_path = get_volume_info()
 if is_docker():
-    devnet = docker_path
+    devnet = get_volume_info()
 node_0 = os.path.join(devnet, "0-Node")
 node_1 = os.path.join(devnet, "1-Node")
 node_2 = os.path.join(devnet, "2-Node")
