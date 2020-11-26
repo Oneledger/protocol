@@ -50,7 +50,7 @@ def vote_proposal_cli(pid, opinion, node, address, secs=1):
     args = ['olclient', 'gov', 'vote', '--root', node, '--id', pid, '--address', address[3:], '--opinion', opinion,
             '--password', 'pass', '--gasprice', '0.00001', '--gas', '40000']
     args_in_use = args_wrapper(args, node)
-    process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
+    process = subprocess.Popen(args_in_use[0], cwd=os.getcwd(), stdout=subprocess.PIPE)
     process.wait()
     time.sleep(secs)
 

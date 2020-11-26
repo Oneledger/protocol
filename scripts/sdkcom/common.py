@@ -109,9 +109,9 @@ def is_docker():
     return False
 
 
-def args_wrapper(args, node):
-    node_name = node.split('/')[-1]
-    result = [args, node]
+def args_wrapper(args, cwd):
+    node_name = cwd.split('/')[-1]
+    result = [args, cwd]
     if not is_docker():
         return result
     execute_command = 'cd /opt/data/devnet &&'
@@ -160,7 +160,5 @@ def update_keystore(from_node):
 
 
 def generate_subprocess(args, cwd):
-    args = ['olclient', 'gov', 'vote', '--root', node, '--id', pid, '--address', address[3:], '--opinion', opinion,
-            '--password', 'pass', '--gasprice', '0.00001', '--gas', '40000']
-    args_in_use = args_wrapper(args, node)
-    process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
+    args_in_use = args_wrapper(args, cwd)
+    process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE, )

@@ -24,7 +24,6 @@ def setup():
     addValidatorWalletAccounts(node_1)
     validators = [(reporterAccount, node_0), (v2, node_2), (v3, node_3)]
     maliciousAccount = addOwnerAccount(node_1)
-    # default signing node for evidence is node 0 (in evidence sdk)
     # print "olclient byzantine_fault allegation --address " + reporterAccount + " --maliciousAddress " + maliciousAccount + " --blockHeight 1 --password 1234 --proofMsg test"
     # print "olclient byzantine_fault allegation --address " + v2 + " --maliciousAddress " + maliciousAccount + " --blockHeight 1 --password 1234 --proofMsg test"
     # print "olclient byzantine_fault allegation --address " + v3 + " --maliciousAddress " + maliciousAccount + " --blockHeight 1 --password 1234 --proofMsg test"
