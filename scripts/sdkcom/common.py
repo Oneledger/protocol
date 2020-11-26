@@ -91,8 +91,11 @@ def check_balance(before, after, expected_diff):
 
 def is_docker():
     args = ['docker', 'ps']
-    process = subprocess.Popen(args, stdout=subprocess.PIPE)
+    process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     process.wait()
+    error = process.stderr.readlines()
+    if error:
+        return False
     output = process.stdout.readlines()
     for line in output:
         if '-Node' in line:
