@@ -66,11 +66,6 @@ func (es *EvidenceStore) getSuspiciousValidatorKey(validatorAddress keys.Address
 	return key
 }
 
-func (es *EvidenceStore) getSuspiciousVL() []byte {
-	key := []byte(fmt.Sprintf("_svvl"))
-	return key
-}
-
 func (es *EvidenceStore) GetSuspiciousValidator(validatorAddress keys.Address, height int64, diff int64) (*LastValidatorHistory, error) {
 	var dat []byte
 	if height == 0 {
