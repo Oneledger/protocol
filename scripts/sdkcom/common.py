@@ -17,6 +17,7 @@ def addValidatorWalletAccounts(node):
     process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
     process.wait()
     output = process.stdout.readlines()
+    update_keystore(node)
 
     if "exists" in output[0]:
         args = ['olclient', 'list']
@@ -37,6 +38,7 @@ def addValidatorAccounts(node):
     process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
     process.wait()
     output = process.stdout.readlines()
+    update_keystore(node)
 
     if "exists" in output[0]:
         print "account already exists"
@@ -93,7 +95,7 @@ def is_docker():
     process.wait()
     output = process.stdout.readlines()
     for line in output:
-        if '0-Node' in line:
+        if '-Node' in line:
             return True
     return False
 
@@ -128,14 +130,20 @@ def get_volume_info(container_name='0-Node'):
 
 # this is needed because sometimes we use keystore belongs to one node and sign the tx using another node
 # and docker instance cannot get what's outside its own volume
-def update_keystore(from_node, to_node):
+def update_keystore(from_node):
     from_keystore = os.path.join(from_node, 'keystore/*')
-    to_keystore = os.path.join(to_node, 'keystore')
-    args_copy = 'mkdir -p ' + to_keystore + ' && cp ' + from_keystore + ' ' + to_keystore
-    process = subprocess.Popen(args_copy, stderr=subprocess.PIPE, shell=True)
-    process.wait()
-    err = process.stderr.readlines()
-    if err:
-        print err
+    if not os.path.isdir(from_keystore):
         sys.exit(-1)
+    parent_folder = os.path.dirname(from_node)
+    subdirs = [os.path.join(parent_folder, o) for o in os.listdir(parent_folder) if os.path.isdir(os.path.join(parent_folder,o))]
+    for dir in subdirs:
+        if dir != from_node:
+            to_keystore = os.path.join(dir, 'keystore')
+            args_copy = 'mkdir -p ' + to_keystore + ' && cp ' + from_keystore + ' ' + to_keystore
+            process = subprocess.Popen(args_copy, stderr=subprocess.PIPE, shell=True)
+            process.wait()
+            err = process.stderr.readlines()
+            if err:
+                print err
+                sys.exit(-1)
 

@@ -26,7 +26,6 @@ if __name__ == "__main__":
 
     # create delegator account
     delegator = createAccount(node_0, 2500000, funder)
-    update_keystore(node_0, node_4)
 
     # delegates some OLT and wait for rewards distribution
     delegation = '2000000'

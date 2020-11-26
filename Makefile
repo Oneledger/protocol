@@ -260,6 +260,11 @@ reset_docker:
 	python DOCKER-network/dockernet init --validators 4 --nonvalidators 5
 	python DOCKER-network/dockernet start
 
+reset_invalid_docker :
+	python DOCKER-network/dockernet stop
+	python DOCKER-network/dockernet init --validators 4 --nonvalidators 5 --min_votes 8000 --block_diff 10000 --top_validators 8
+	python DOCKER-network/dockernet start
+
 #
 # test with send transaction in loadtest with docker
 #
@@ -392,7 +397,7 @@ delegationtest_docker: reset_docker
 #
 # run update config tests with docker
 #
-updatetest_docker: reset_docker
+updatetest_docker: reset_invalid_docker
 	python scripts/governance/optUpdate.py
 	@./scripts/testsend_docker
 	python scripts/reward/testWithdraw.py
