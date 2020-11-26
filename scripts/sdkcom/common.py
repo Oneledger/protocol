@@ -90,14 +90,20 @@ def check_balance(before, after, expected_diff):
 
 
 def is_docker():
+    args = ['pgrep' | 'docker']
+    process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    process.wait()
+    output = process.stdout.readlines()
+    if not output:
+        return False
     args = ['docker', 'ps']
     process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     process.wait()
     error = process.stderr.readlines()
     if error:
         return False
-    output = process.stdout.readlines()
-    for line in output:
+    docker_output = process.stdout.readlines()
+    for line in docker_output:
         if '-Node' in line:
             return True
     return False
