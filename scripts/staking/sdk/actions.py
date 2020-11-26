@@ -46,7 +46,7 @@ class Staking:
         process.wait()
         return new_staking_address
 
-    def stake(self, amount, expect_success, secs=3):
+    def stake(self, amount, expect_success, secs=1):
 
         args = ['olclient', 'delegation', 'stake', '--amount', amount, '--address',
                 self.staking_address,
@@ -74,7 +74,7 @@ class Staking:
 
         print "################### olclient stake succeed or failed as expected"
 
-    def unstake(self, amount, expect_success, secs=3):
+    def unstake(self, amount, expect_success, secs=1):
         args = ['olclient', 'delegation', 'unstake', '--amount', amount, '--address',
                 self.staking_address,
                 '--password', 'pass']
@@ -130,6 +130,7 @@ class Staking:
         process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
         process.wait()
         output = process.stdout.readlines()
+        print output
         time.sleep(secs)
         # check return code
         if process.returncode != 0:
