@@ -210,16 +210,16 @@ def validateCatchup():
         sys.exit(-1)
     output1 = process1.stdout.readlines()
     height1 = output1[len(output1) - 1].split(" ")[1]
-    # print 'height1: ' + height1
+    print 'height1: ' + height1
     output2 = process2.stdout.readlines()
     height2 = output2[len(output2) - 1].split(" ")[1]
-    # print 'height2: ' + height2
+    print 'height2: ' + height2
     output3 = process3.stdout.readlines()
     height3 = output3[len(output3) - 1].split(" ")[1]
-    # print 'height3: ' + height3
+    print 'height3: ' + height3
     output4 = process4.stdout.readlines()
     height4 = output4[len(output4) - 1].split(" ")[1]
-    # print 'height4: ' + height4
+    print 'height4: ' + height4
     if not height2 == height1 == height3 == height4:
         print "Node Failed to catchup"
         sys.exit(-1)

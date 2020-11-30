@@ -10,7 +10,10 @@ def sign(raw_tx, address, keypath):
         keypath = './keystore/'
     resp = rpc_call('owner.SignWithSecureAddress',
                     {"rawTx": raw_tx, "address": address, "password": "1234", "keypath": keypath})
-    return resp["result"]
+    if "result" in resp:
+        return resp["result"]
+    else:
+        return resp
 
 
 def broadcast_commit(raw_tx, signature, pub_key):
@@ -70,6 +73,7 @@ def createAccount(node, funds=0, funder="", pswd="1234"):
     process.wait()
     output = process.stdout.readlines()
     newaccount = output[1].split(":")[1].strip()[3:]
+    update_keystore(node)
 
     if funds > 0:
         sendFunds(funder, newaccount, str(funds), pswd, node)

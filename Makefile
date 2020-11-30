@@ -316,7 +316,6 @@ onstest_docker: reset_docker
 #
 # run governance tests with docker
 #
-
 govtest_docker: reset_docker
 	@./scripts/testsend_docker
 	python scripts/governance/createProposals.py
