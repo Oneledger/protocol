@@ -598,6 +598,13 @@ func (st *DelegationStore) LoadState(state DelegationState) (succeed bool) {
 			blk.Data = append(blk.Data, data)
 		}
 	}
+	// write pending mature amounts to db
+	for height, mature := range blocks {
+		err := st.SetMatureAmounts(height, mature)
+		if err != nil {
+			return
+		}
+	}
 
 	succeed = true
 	return
