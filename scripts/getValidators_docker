@@ -1,7 +1,11 @@
 #!/bin/bash
-# find node folder from docker inspect result
-node_folder=$(docker inspect 0-Node | sed -n 's/^.*"Source"\: "\(.*\)\/[0-9]-Node.*$/\1/p')
-name=$(ls -l $node_folder | grep Node | awk '(NR==1){print $9}')
+if [ -z "$DOCKERPATH" ]
+then
+    echo "DOCKERPATH not set, please use this environment variable as nodes folder for docker"
+    exit  255
+fi
+
+name=$(ls -l $DOCKERPATH | grep Node | awk '(NR==1){print $9}')
 echo "run list validator set test command on node $name"
 # shellcheck disable=SC2070
 
@@ -10,6 +14,6 @@ echo $cnt
 if [ $cnt -ne 4 ]
 then
     echo "Validator test failed, only $cnt validators"
-    exit  -1
+    exit  255
 fi
 echo "validator test success"
