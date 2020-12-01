@@ -4,6 +4,7 @@ import yaml
 import os
 import time
 import glob
+import subprocess
 
 
 def get_builder_volumes(docker_path, docker_bin, protocol_path):
@@ -37,11 +38,32 @@ def setup_network(subnet):
     return {
         'vpcbr': {
             'driver': 'bridge',
+            'name': 'docker-network_vpcbr',
             'ipam': {
                 'config': [{'subnet': subnet}]
             }
         }
     }
+
+
+def stop_nodes():
+    out_str = subprocess.check_output(['docker', 'ps', '-q', '-f', 'network=docker-network_vpcbr'])
+    containers = out_str.split('\n')
+    cmd = 'docker container kill'
+    for c in containers:
+        cmd = cmd + ' ' + c
+    os.system(cmd)
+    return
+
+
+def stop_containers():
+    out_str = subprocess.check_output(['docker', 'ps', '-q'])
+    containers = out_str.split('\n')
+    cmd = 'docker container kill'
+    for c in containers:
+        cmd = cmd + ' ' + c
+    os.system(cmd)
+    return
 
 
 def generate_node_config(arguments):
@@ -191,7 +213,8 @@ def update(arguments):
     print 'Updating Docker Network...'
     deploy_genesis = arguments['genesis']
 
-    os.system('docker kill $(docker ps -q -f network=docker-network_vpcbr)')
+    # Stop all running nodes
+    stop_nodes()
 
     if deploy_genesis:
         print 'Deploying Genesis...'
@@ -205,13 +228,13 @@ def update(arguments):
 def stop(arguments):
     print 'Stopping Docker Network...'
     # stop all nodes
-    os.system('docker kill $(docker ps -q -f network=docker-network_vpcbr)')
+    stop_nodes()
     # remove node data if clean flag is set
     if arguments['clean']:
         print 'Cleaning Node Data...'
         os.system('docker exec -it builder bash -c "rm -rf /opt/data/devnet/*-Node"')
     # remove the remaining containers
-    os.system('docker container kill $(docker ps -q)')
+    stop_containers()
     os.system('docker system prune -f')
 
 
