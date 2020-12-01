@@ -5,16 +5,26 @@ GRN="\e[32m"
 YEL="\e[33m"
 NC='\033[0m'
 
-node_num=$1
-root_dir="$OLDATA/devnet/$1-Node"
+docker_info=$(docker ps | grep "[0-9]\-Node")
+if [ -n "$docker_info" ]
+then
+  is_docker=1
+  root_dir="$DOCKERPATH/$1-Node"
+  echo "Stopping Node  : $1-Node in docker"
+  docker kill $1-Node
+else
+  is_docker=0
+  root_dir="$OLDATA/devnet/$1-Node"
+  echo "Stopping Node  : $root_dir"
+  kill $(ps aux | grep "[$1]-Node" | awk '{print $2}')
+fi
+
 #root_dir_alternalte="$OLDATA/devnet/$2-Node"
-echo "Stopping Node  : $root_dir"
 
 #pushd $root_dir
 
 # shellcheck disable=SC2046
 # shellcheck disable=SC2009
-kill $(ps aux | grep "[$1]-Node" | awk '{print $2}')
 
 echo "Cleaning Node : $root_dir"
 rm -rf $root_dir/nodedata/*.db
@@ -32,6 +42,12 @@ cat >priv_validator_state.json <<EOF
 }
 EOF
 
-echo "Starting Node : $root_dir"
-olfullnode node --root $root_dir >>$root_dir/olfullnode.log 2>&1 &
+if (( "$is_docker" == 1 ))
+then
+  echo "Starting Node : $1-Node in docker"
+  docker start $1-Node
+else
+  echo "Starting Node : $root_dir"
+  olfullnode node --root $root_dir >>$root_dir/olfullnode.log 2>&1 &
+fi
 #popd

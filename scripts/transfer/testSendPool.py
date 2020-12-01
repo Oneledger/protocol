@@ -4,17 +4,15 @@ import re
 import subprocess
 import sys
 import time
+import os.path as path
+sdkcom_p = path.abspath(path.join(path.dirname(__file__), ".."))
+sys.path.append(sdkcom_p)
+from sdkcom import *
 
 success = "Returned Successfully"
 sendAmount = "10000"
 
 url = "http://127.0.0.1:26602/jsonrpc"
-devnet = os.path.join(os.environ['OLDATA'], "devnet")
-node_0 = os.path.join(devnet, "0-Node")
-node_2 = os.path.join(devnet, "2-Node")
-node_3 = os.path.join(devnet, "3-Node")
-node_4 = os.path.join(devnet, "4-Node")
-
 
 class bcolors:
     HEADER = '\033[95m'
@@ -33,7 +31,8 @@ def addValidatorAccounts(numofValidators):
         args = ['olclient', 'show_node_id']
         node = str(i) + "-Node"
         nodedir = os.path.join(devnet, node)
-        process = subprocess.Popen(args, cwd=nodedir, stdout=subprocess.PIPE)
+        args_in_use = args_wrapper(args, nodedir)
+        process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
         process.wait()
         output = process.stdout.readlines()
         pubKey = output[0].split(",")[0].split(":")[1].strip()
@@ -41,12 +40,14 @@ def addValidatorAccounts(numofValidators):
         contents = json.loads(f.read())
         privKey = contents['priv_key']['value']
         args = ['olclient', 'account', 'add', '--privkey', privKey, '--pubkey', pubKey, "--password", '1234']
-        process = subprocess.Popen(args, cwd=nodedir, stdout=subprocess.PIPE)
+        args_in_use = args_wrapper(args, nodedir)
+        process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
         process.wait()
         output = process.stdout.readlines()
         if "exists" in output[0]:
             args = ['olclient', 'list']
-            process = subprocess.Popen(args, cwd=nodedir, stdout=subprocess.PIPE)
+            args_in_use = args_wrapper(args, nodedir)
+            process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
             process.wait()
             output = process.stdout.readlines()
             validatorAcounts.append(output[2].split(" ")[1].strip()[3:])
@@ -60,7 +61,8 @@ if __name__ == "__main__":
     # send some funds to pool through olclient
     args = ['olclient', 'sendpool', '--amount', sendAmount, '--party', validatorAccounts[0],
             '--poolname', 'RewardsPool', '--fee', '0.0001', '--password', '1234']
-    process = subprocess.Popen(args, cwd=node_0, stdout=subprocess.PIPE)
+    args_in_use = args_wrapper(args, node_0)
+    process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
     process.wait()
     output = process.stdout.read()
     if not success in output:
@@ -70,7 +72,8 @@ if __name__ == "__main__":
     time.sleep(1)
     # Check balance
     args = ['olclient', 'balance', '--poolname', 'RewardsPool']
-    process = subprocess.Popen(args, cwd=node_0, stdout=subprocess.PIPE)
+    args_in_use = args_wrapper(args, node_0)
+    process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
     process.wait()
     output = process.stdout.read()
     m = re.search(r'(?:[, ])Balance: (\d+)', output)
