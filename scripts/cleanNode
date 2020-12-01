@@ -1,0 +1,32 @@
+#!/bin/bash
+
+RED='\e[31m'
+GRN="\e[32m"
+YEL="\e[33m"
+NC='\033[0m'
+
+node_num=$1
+root_dir="$OLDATA/devnet/$1-Node"
+
+echo "Stopping Node  : $root_dir"
+pid=$(ps aux | grep "[$1]-Node" | awk '{print $2}')
+if [ ! -z "$pid" ]
+then
+      kill $(ps aux | grep "[$1]-Node" | awk '{print $2}')
+fi
+
+echo "Cleaning Node : $root_dir"
+rm -rf $root_dir/nodedata/*.db
+rm -rf $root_dir/consensus/data/*.db
+rm -rf $root_dir/consensus/data/cs.wal
+rm -rf $root_dir/consensus/config/addressbook.json
+rm -rf $root_dir/consensus.log
+rm -rf $root_dir/olfullnode.log
+
+cat > $root_dir/consensus/data/priv_validator_state.json <<EOF
+{
+  "height": "0",
+  "round": "0",
+  "step": 0
+}
+EOF
