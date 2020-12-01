@@ -38,6 +38,7 @@ def setup_network(subnet):
     return {
         'vpcbr': {
             'driver': 'bridge',
+            'name': 'docker-network_vpcbr',
             'ipam': {
                 'config': [{'subnet': subnet}]
             }
