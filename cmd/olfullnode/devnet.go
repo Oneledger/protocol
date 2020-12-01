@@ -143,6 +143,9 @@ type testnetConfig struct {
 	timeoutcommit            int64
 	docker                   bool
 	subnet                   string
+	minVotesRequired         int64
+	blockVotesDiff           int64
+	topValidators            int64
 }
 
 func init() {
@@ -169,6 +172,9 @@ func init() {
 	testnetCmd.Flags().Int64Var(&testnetArgs.fundingDeadline, "funding_deadline", 75001, "Set Maturity time for staking")
 	testnetCmd.Flags().Int64Var(&testnetArgs.votingDeadline, "voting_deadline", 150000, "Set Maturity time for staking")
 	testnetCmd.Flags().Int64Var(&testnetArgs.timeoutcommit, "timeout_commit", 1000, "Set timecommit for blocks")
+	testnetCmd.Flags().Int64Var(&testnetArgs.minVotesRequired, "min_votes", 2, "Set Min votes for evidence")
+	testnetCmd.Flags().Int64Var(&testnetArgs.blockVotesDiff, "block_diff", 4, "Set block Votes diff evidence")
+	testnetCmd.Flags().Int64Var(&testnetArgs.topValidators, "top_validators", 4, "Set top valdiators for staking")
 	testnetCmd.Flags().BoolVar(&testnetArgs.docker, "docker", false, "set true for deploying on docker")
 	testnetCmd.Flags().StringVar(&testnetArgs.subnet, "subnet", "10.5.0.0/16", "subnet where all docker containers will run")
 }
@@ -583,7 +589,7 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 	stakingOption := delegation.Options{
 		MinSelfDelegationAmount: *balance.NewAmount(3000000),
 		MinDelegationAmount:     *balance.NewAmount(1),
-		TopValidatorCount:       4,
+		TopValidatorCount:       args.topValidators,
 		MaturityTime:            args.maturityTime,
 	}
 
@@ -594,8 +600,8 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 
 	// evidence
 	evidenceOption := evidence.Options{
-		MinVotesRequired: 2,
-		BlockVotesDiff:   4,
+		MinVotesRequired: args.minVotesRequired,
+		BlockVotesDiff:   args.blockVotesDiff,
 
 		PenaltyBasePercentage: 30,
 		PenaltyBaseDecimals:   100,

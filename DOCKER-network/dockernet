@@ -4,6 +4,7 @@ import yaml
 import os
 import time
 import glob
+import subprocess
 
 
 def get_builder_volumes(docker_path, docker_bin, protocol_path):
@@ -37,11 +38,32 @@ def setup_network(subnet):
     return {
         'vpcbr': {
             'driver': 'bridge',
+            'name': 'docker-network_vpcbr',
             'ipam': {
                 'config': [{'subnet': subnet}]
             }
         }
     }
+
+
+def stop_nodes():
+    out_str = subprocess.check_output(['docker', 'ps', '-q', '-f', 'network=docker-network_vpcbr'])
+    containers = out_str.split('\n')
+    cmd = 'docker container kill'
+    for c in containers:
+        cmd = cmd + ' ' + c
+    os.system(cmd)
+    return
+
+
+def stop_containers():
+    out_str = subprocess.check_output(['docker', 'ps', '-q'])
+    containers = out_str.split('\n')
+    cmd = 'docker container kill'
+    for c in containers:
+        cmd = cmd + ' ' + c
+    os.system(cmd)
+    return
 
 
 def generate_node_config(arguments):
@@ -191,7 +213,8 @@ def update(arguments):
     print 'Updating Docker Network...'
     deploy_genesis = arguments['genesis']
 
-    os.system('docker kill $(docker ps -q -f network=docker-network_vpcbr)')
+    # Stop all running nodes
+    stop_nodes()
 
     if deploy_genesis:
         print 'Deploying Genesis...'
@@ -205,13 +228,13 @@ def update(arguments):
 def stop(arguments):
     print 'Stopping Docker Network...'
     # stop all nodes
-    os.system('docker kill $(docker ps -q -f network=docker-network_vpcbr)')
+    stop_nodes()
     # remove node data if clean flag is set
     if arguments['clean']:
         print 'Cleaning Node Data...'
         os.system('docker exec -it builder bash -c "rm -rf /opt/data/devnet/*-Node"')
     # remove the remaining containers
-    os.system('docker container kill $(docker ps -q)')
+    stop_containers()
     os.system('docker system prune -f')
 
 
@@ -243,6 +266,9 @@ if __name__ == '__main__':
     parser_init.add_argument('--voting_deadline', default='12', help='governance proposal voting deadline in blocks')
     parser_init.add_argument('--timeout_commit', default='1000', help='time between each block creation in (ms)')
     parser_init.add_argument('--docker', action='store_true', default=True, help='docker flag used by olfullnode init')
+    parser_init.add_argument('--block_diff', default='4', help='block votes diff evidence')
+    parser_init.add_argument('--min_votes', default='2', help='min votes for evidence')
+    parser_init.add_argument('--top_validators', default='4', help='top validators to be active')
     parser_init.add_argument('--subnet', default='\\\"10.5.0.0/16\\\"', help='subnet of all node IP addresses')
     parser_init.add_argument('--empty_blocks', action="store_true", help='create empty blocks')
     parser_init.add_argument('--eth_rpc', default="https://rinkeby.infura.io/v3", help='create empty blocks')

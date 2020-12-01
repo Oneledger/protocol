@@ -15,7 +15,8 @@ def testrewardswithdraw(validatorAccounts, result, error_message):
         withdrawAmount = 1
         args = ['olclient', 'rewards', 'withdraw', '--address', validatorAccounts[i], '--amount', str(withdrawAmount),
                 '--password', '1234']
-        process = subprocess.Popen(args, cwd=nodedir, stdout=subprocess.PIPE)
+        args_in_use = args_wrapper(args, nodedir)
+        process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
         process.wait()
         output = process.stdout.readlines()
         time.sleep(1)
@@ -38,7 +39,8 @@ def testrewardswithdraw(validatorAccounts, result, error_message):
 
 def addNewAccount():
     args = ['olclient', 'account', 'add', "--password", '1234']
-    process = subprocess.Popen(args, cwd=node_0, stdout=subprocess.PIPE)
+    args_in_use = args_wrapper(args, node_0)
+    process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
     process.wait()
     output = process.stdout.readlines()
     sleep(1)
@@ -52,6 +54,7 @@ def addNewAccount():
 if __name__ == "__main__":
     # Expected to fail with error message for stake address
     newAccount = addNewAccount()
+    time.sleep(5)
     testrewardswithdraw([newAccount], False, stake_error)
     print bcolors.OKGREEN + "#### Should Fail for withdraw to new address" + bcolors.ENDC
     # Creating accounts for Validators
@@ -60,7 +63,8 @@ if __name__ == "__main__":
     # send some funds to pool through olclient
     args = ['olclient', 'sendpool', '--amount', '100000', '--party', validatorAccounts[0],
             '--poolname', 'RewardsPool', '--fee', '0.0001', '--password', '1234']
-    process = subprocess.Popen(args, cwd=node_0, stdout=subprocess.PIPE)
+    args_in_use = args_wrapper(args, node_0)
+    process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
     process.wait()
     output = process.stdout.read()
     if not success in output:
@@ -75,7 +79,8 @@ if __name__ == "__main__":
     # Unstaking from 0-Node
     args = ['olclient', 'delegation', 'unstake', '--address', validatorAccounts[0], '--amount', '3000000', '--password',
             '1234']
-    process = subprocess.Popen(args, cwd=node_0, stdout=subprocess.PIPE)
+    args_in_use = args_wrapper(args, node_0)
+    process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
     process.wait()
     output = process.stdout.readlines()
     if not success in output[1]:
@@ -91,7 +96,8 @@ if __name__ == "__main__":
     # Staking Back from 0-Node (To restore Validator = Active)
     args = ['olclient', 'delegation', 'stake', '--address', validatorAccounts[0], '--amount', '3000000', '--password',
             '1234']
-    process = subprocess.Popen(args, cwd=node_0, stdout=subprocess.PIPE)
+    args_in_use = args_wrapper(args, node_0)
+    process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
     process.wait()
     output = process.stdout.readlines()
     if not success in output[1]:
