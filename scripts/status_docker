@@ -6,4 +6,4 @@
 echo -n "all running nodes: "
 echo
 
-docker ps | grep '\d\-Node'
+docker ps -f network=docker-network_vpcbr
