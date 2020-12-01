@@ -9,7 +9,7 @@ def delegate(node, account, amount):
 def check_rewards(result, balance, pending):
     if balance != '':
         balance = str(balance) + '0' * 18
-        if result['balance'] < balance:
+        if int(result['balance']) < int(balance):
             sys.exit(-1)
     if pending != None:
         if len(result['pending']) != len(pending):

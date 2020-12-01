@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# List of pids if the chain is running
+# No output if the chain isn't running
+
+echo -n "all running nodes: "
+echo
+
+docker ps -f network=docker-network_vpcbr

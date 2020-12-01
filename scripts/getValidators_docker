@@ -1,0 +1,19 @@
+#!/bin/bash
+if [ -z "$DOCKERPATH" ]
+then
+    echo "DOCKERPATH not set, please use this environment variable as nodes folder for docker"
+    exit  255
+fi
+
+name=$(ls -l $DOCKERPATH | grep Node | awk '(NR==1){print $9}')
+echo "run list validator set test command on node $name"
+# shellcheck disable=SC2070
+
+cnt=$(python $OLROOT/protocol/DOCKER-network/dockernet run $name "olclient validatorset | grep "^Address" | wc -l" | tr -d '\r')
+echo $cnt
+if [ $cnt -ne 4 ]
+then
+    echo "Validator test failed, only $cnt validators"
+    exit  255
+fi
+echo "validator test success"

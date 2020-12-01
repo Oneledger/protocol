@@ -1,0 +1,16 @@
+#!/bin/bash
+if [ -z "$DOCKERPATH" ]
+then
+    echo "DOCKERPATH not set, please use this environment variable as nodes folder for docker"
+    exit  255
+fi
+
+name=$(ls -l $DOCKERPATH | grep Node | awk '(NR==1){print $9}')
+# shellcheck disable=SC2070
+if [ -n "$name" ]; then
+  echo "run load test command on node $name"
+  python $OLROOT/protocol/DOCKER-network/dockernet run $name "olclient loadtest --threads 2 --interval 2 --max-tx 20"
+
+fi
+
+sleep 5
