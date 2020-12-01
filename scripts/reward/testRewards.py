@@ -60,7 +60,8 @@ if __name__ == "__main__":
     validatorAccounts = addValidatorAccounts(4)
     args = ['olclient', 'sendpool', '--amount', '10000', '--party', validatorAccounts[0], '--poolname',
             'RewardsPool', '--fee', '0.0001', '--password', '1234']
-    process = subprocess.Popen(args, cwd=node_0, stdout=subprocess.PIPE)
+    args_in_use = args_wrapper(args, node_0)
+    process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
     process.wait()
     output = process.stdout.read()
     if not success in output:

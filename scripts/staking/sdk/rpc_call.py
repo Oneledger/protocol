@@ -1,6 +1,12 @@
 import os
 import requests
 import json
+import os.path as path
+import sys
+sdkcom_p = path.abspath(path.join(path.dirname(__file__), "../.."))
+sys.path.append(sdkcom_p)
+
+from sdkcom import *
 
 url_tmTx = "http://127.0.0.1:26600/tx"
 url_0 = "http://127.0.0.1:26602/jsonrpc"
@@ -10,6 +16,8 @@ url_3 = "http://127.0.0.1:26611/jsonrpc"
 url_4 = "http://127.0.0.1:26614/jsonrpc"
 
 devnet = os.path.join(os.environ['OLDATA'], "devnet")
+if is_docker():
+    devnet = get_volume_info()
 node_0 = os.path.join(devnet, "0-Node")
 node_1 = os.path.join(devnet, "1-Node")
 node_2 = os.path.join(devnet, "2-Node")

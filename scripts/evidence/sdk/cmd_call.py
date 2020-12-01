@@ -2,7 +2,7 @@ import json
 import os
 import subprocess
 import time
-
+from rpc_call import *
 import psutil
 from sdk import *
 
@@ -43,7 +43,8 @@ def Send(node, party, counterparty, amount, password, currency='OLT', fee=10):
         '--fee', str(fee),
         '--password', password,
     ]
-    process = subprocess.Popen(args, cwd=node, stdout=subprocess.PIPE, stderr=devnull)
+    args_in_use = args_wrapper(args, node)
+    process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE, stderr=devnull)
     process.wait()
     output = process.stdout.read()
     if u'Returned Successfully' in output:
@@ -58,7 +59,8 @@ def Account_Add(node, pubkey, privkey, password):
         '--privkey', privkey,
         '--password', password,
     ]
-    process = subprocess.Popen(args, cwd=node, stdout=subprocess.PIPE, stderr=devnull)
+    args_in_use = args_wrapper(args, node)
+    process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE, stderr=devnull)
     process.wait()
     output = process.stdout.read()
     if u'Successfully added' in output:
@@ -78,7 +80,8 @@ def ByzantineFault_Allegation(node, address, malicious_address, block_height, pr
         '--password', password,
     ]
     DETACHED_PROCESS = 0x00000008
-    process = subprocess.Popen(args, cwd=node, stdin=None, stdout=None, stderr=None, close_fds=True)
+    args_in_use = args_wrapper(args, node)
+    process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdin=None, stdout=None, stderr=None, close_fds=True)
     return True
     # process.wait()
     # output = process.stdout.read()
@@ -95,7 +98,8 @@ def ByzantineFault_Vote(node, request_id, address, choice, password):
         '--choice', choice,
         '--password', password,
     ]
-    process = subprocess.Popen(args, cwd=node, stdout=subprocess.PIPE, stderr=devnull)
+    args_in_use = args_wrapper(args, node)
+    process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE, stderr=devnull)
     process.wait()
     output = process.stdout.read()
     if u'Returned Successfully' in output:
@@ -107,13 +111,23 @@ def KillNode(node):
     args = [
         "pgrep", "-f", node,
     ]
-    process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=devnull)
+    args_in_use = [args, node]
+    if is_docker():
+        args_in_use = args_wrapper(["pgrep", "olfullnode"], node)
+    process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE, stderr=devnull)
     process.wait()
     output = process.stdout.read()
     pid = output.strip()
     if not pid.isdigit():
         return False
-
+    if is_docker():
+        args_in_use = args_wrapper(['kill', pid], node)
+        process = subprocess.Popen(args_in_use[0], stdout=subprocess.PIPE, stderr=devnull)
+        process.wait()
+        output = process.stdout.read()
+        if not output:
+            return True
+        return False
     pr = psutil.Process(int(pid))
     pr.terminate()
     result = pr.wait(timeout=2)
@@ -126,13 +140,21 @@ def StartNode(node, node_1_log):
     args = [
         'olfullnode', 'node', '--root', node, '>>', node_1_log, "2>&1 &"
     ]
-    process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=devnull)
+    args_in_use = args_wrapper(args, node)
+    process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE, stderr=devnull)
     process.wait()
     output = process.stdout.read()
     pid = output.strip()
     if not pid.isdigit():
         return False
-
+    if is_docker():
+        args_in_use = args_wrapper(['kill', pid], node)
+        process = subprocess.Popen(args_in_use[0], stdout=subprocess.PIPE, stderr=devnull)
+        process.wait()
+        output = process.stdout.read()
+        if not output:
+            return True
+        return False
     pr = psutil.Process(int(pid))
     pr.terminate()
     result = pr.wait(timeout=2)
@@ -143,7 +165,8 @@ def StartNode(node, node_1_log):
 
 def addValidatorWalletAccounts(node):
     args = ['olclient', 'show_node_id']
-    process = subprocess.Popen(args, cwd=node, stdout=subprocess.PIPE)
+    args_in_use = args_wrapper(args, node)
+    process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE, stderr=devnull)
     process.wait()
     output = process.stdout.readlines()
     time.sleep(1)
@@ -152,13 +175,15 @@ def addValidatorWalletAccounts(node):
     contents = json.loads(f.read())
     privKey = contents['priv_key']['value']
     args = ['olclient', 'account', 'add', '--privkey', privKey, '--pubkey', pubKey, "--password", '1234']
-    process = subprocess.Popen(args, cwd=node, stdout=subprocess.PIPE)
+    args_in_use = args_wrapper(args, node)
+    process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE, stderr=devnull)
     process.wait()
     output = process.stdout.readlines()
 
     if "exists" in output[0]:
         args = ['olclient', 'list']
-        process = subprocess.Popen(args, cwd=node, stdout=subprocess.PIPE)
+        args_in_use = args_wrapper(args, node)
+        process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE, stderr=devnull)
         process.wait()
         output = process.stdout.readlines()
         return output[2].split(" ")[1].strip()[3:]
@@ -172,13 +197,15 @@ def addOwnerAccount(node):
     privKey = contents['priv_key']['value']
     pubKey = contents['pub_key']['value']
     args = ['olclient', 'account', 'add', '--privkey', privKey, '--pubkey', pubKey, "--password", '1234']
-    process = subprocess.Popen(args, cwd=node, stdout=subprocess.PIPE)
+    args_in_use = args_wrapper(args, node)
+    process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
     process.wait()
     output = process.stdout.readlines()
 
     if "exists" in output[0]:
         args = ['olclient', 'list']
-        process = subprocess.Popen(args, cwd=node, stdout=subprocess.PIPE)
+        args_in_use = args_wrapper(args, node)
+        process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
         process.wait()
         output = process.stdout.readlines()
         return output[2].split(" ")[1].strip()[3:]
@@ -188,7 +215,8 @@ def addOwnerAccount(node):
 
 def addNewAccount(node):
     args = ['olclient', 'account', 'add', "--password", '1234']
-    process = subprocess.Popen(args, cwd=node, stdout=subprocess.PIPE)
+    args_in_use = args_wrapper(args, node)
+    process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
     process.wait()
     output = process.stdout.readlines()
     return output[1].split(":")[1].strip()[3:]
@@ -197,7 +225,8 @@ def addNewAccount(node):
 def sendFunds(party, counterparty, amount, password, node):
     args = ['olclient', 'send', "--password", password, "--party", party, "--counterparty", counterparty, "--amount",
             amount, "--fee", "0.001"]
-    process = subprocess.Popen(args, cwd=node, stdout=subprocess.PIPE)
+    args_in_use = args_wrapper(args, node)
+    process = subprocess.Popen(args_in_use[0], cwd=args_in_use[1], stdout=subprocess.PIPE)
     process.wait()
     output = process.stdout.readlines()
     return output

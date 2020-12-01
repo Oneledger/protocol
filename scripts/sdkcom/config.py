@@ -1,4 +1,5 @@
 import os
+from common import *
 
 url_tmTx = "http://127.0.0.1:26600/tx"
 url_0 = "http://127.0.0.1:26602/jsonrpc"
@@ -13,6 +14,8 @@ oltest = os.getenv('OLTEST')
 oldata = os.environ['OLDATA']
 devnet = os.path.join(oldata, "devnet")
 loadtest = os.path.join(oldata, "loadtest")
+if is_docker():
+    devnet = get_volume_info()
 
 node_0 = os.path.join(devnet, "0-Node")
 node_1 = os.path.join(devnet, "1-Node")
