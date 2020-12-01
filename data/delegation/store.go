@@ -2,6 +2,7 @@ package delegation
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 
@@ -168,6 +169,11 @@ func (st *DelegationStore) GetMatureAmounts(version int64) (mature *MatureBlock,
 }
 
 func (st *DelegationStore) SetMatureAmounts(version int64, mature *MatureBlock) (err error) {
+	// sort by validator addresses
+	sort.Slice(mature.Data, func(i, j int) bool {
+		return mature.Data[i].Address.Humanize() < mature.Data[j].Address.Humanize()
+	})
+
 	key := st.getMatureKey(version)
 	dat, err := st.szlr.Serialize(mature)
 	if err != nil {
