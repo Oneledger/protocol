@@ -868,7 +868,7 @@ func deployethcdcontract(conn string, nodeList []node, ethprivKey string) (*ethc
 	//if err != nil {
 	//	return nil, errors.Wrap(err, "Deployement ERC LockRedeem")
 	//}
-
+	address = common.HexToAddress("0x3C940fcAc7161969CE4791cA06b756cBb110EC32")
 	fmt.Printf("LockRedeemContractAddr = \"%v\"\n", address.Hex())
 	fmt.Printf("TestTokenContractAddr = \"%v\"\n", tokenAddress.Hex())
 	fmt.Printf("LockRedeemERC20ContractAddr = \"%v\"\n", ercAddress.Hex())
