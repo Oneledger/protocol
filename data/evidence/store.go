@@ -10,6 +10,7 @@ import (
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
+	"github.com/pkg/errors"
 )
 
 type EvidenceStore struct {
@@ -263,6 +264,65 @@ func (es *EvidenceStore) Vote(requestID string, voteAddress keys.Address, choice
 	err = es.SetAllegationRequest(ar)
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+//-----------------------------Dump/Load chain state
+//
+type EvidenceState struct {
+	Allegations          []*AllegationRequest    `json:"allegations"`
+	SuspiciousValidators []*LastValidatorHistory `json:"suspiciousValidators"`
+}
+
+func NewEvidenceState() *EvidenceState {
+	return &EvidenceState{
+		Allegations:          []*AllegationRequest{},
+		SuspiciousValidators: []*LastValidatorHistory{},
+	}
+}
+
+func (es *EvidenceStore) dumpState() (state *EvidenceState, err error) {
+	state = NewEvidenceState()
+
+	// dump allegations
+	es.IterateRequests(func(ar *AllegationRequest) bool {
+		state.Allegations = append(state.Allegations, ar)
+		return false
+	})
+
+	// dump suspicious validators
+	es.IterateSuspiciousValidators(func(lvh *LastValidatorHistory) bool {
+		state.SuspiciousValidators = append(state.SuspiciousValidators, lvh)
+		return false
+	})
+	return
+}
+
+func (es *EvidenceStore) loadState(state *EvidenceState) (err error) {
+	// load allegations and initialize tracker
+	at, err := es.GetAllegationTracker()
+	if err != nil {
+		return
+	}
+	for _, ar := range state.Allegations {
+		err = es.SetAllegationRequest(ar)
+		if err != nil {
+			return errors.Wrap(err, "failed to load initial allegation request")
+		}
+		at.Requests[ar.ID] = true
+	}
+	err = es.SetAllegationTracker(at)
+	if err != nil {
+		return
+	}
+
+	// load suspicious validators
+	for _, lvh := range state.SuspiciousValidators {
+		err = es.UpdateSuspiciousValidator(lvh)
+		if err != nil {
+			return errors.Wrap(err, "failed to load initial suspicious validator")
+		}
 	}
 	return nil
 }
