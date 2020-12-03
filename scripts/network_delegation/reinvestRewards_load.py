@@ -1,7 +1,7 @@
 from sdk import *
 
 cfg_dev = TestConfig(fullnode_dev, 1010000, 100)
-cfg_prod = TestConfig(fullnode_prod, 1010000, 10000)
+cfg_prod = TestConfig(fullnode_prod, 3010000, 10000)
 
 class ReinvestRewardsTxLoad(TxLoad):
     def __init__(self, cfg, tid):
@@ -11,7 +11,7 @@ class ReinvestRewardsTxLoad(TxLoad):
     def setup(self, interval):
         new_run = super(ReinvestRewardsTxLoad, self).setup(interval, False)
         if new_run:
-            self.tx_deleg = NetWorkDelegate(self.test_account, '1000000' + '0' * 18, self.key_path)
+            self.tx_deleg = NetWorkDelegate(self.test_account, '3000000' + '0' * 18, self.key_path)
             self.tx_deleg.send_network_Delegate(mode=TxAsync)
         self.tx_invest = ReinvestRewards(self.test_account, self.key_path)
 

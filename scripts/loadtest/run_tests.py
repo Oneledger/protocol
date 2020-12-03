@@ -20,10 +20,10 @@ def add_threads_dev(threads):
 # for devnet
 def add_threads_prod(threads):
     # Delegate, 2 threads
-    threads.add_threads(DelegateTxLoad.prod(2))
+    #threads.add_threads(DelegateTxLoad.prod(2))
 
     # UnDelegate, 2 threads
-    threads.add_threads(UnDelegateTxLoad.prod(2))
+    #threads.add_threads(UnDelegateTxLoad.prod(2))
 
     # WithdrawRewards, 2 threads
     threads.add_threads(WithdrawRewardsTxLoad.prod(2))
