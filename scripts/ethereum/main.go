@@ -92,7 +92,7 @@ func createValue(str string) *big.Int {
 func init() {
 	privKey := "6c24a44424c8182c1e3e995ad3ccfb2797e3f7ca845b99bea8dead7fc9dccd09"
 	if strings.Contains(cfg.Connection, "rinkeby") {
-		privKey = "02038529C9AB706E9F4136F4A4EB51E866DBFE22D5E102FD3A22C14236E1C2EA"
+		privKey = ""
 	}
 	UserprivKey, _ = crypto.HexToECDSA(privKey)
 	//UserprivKey, _ = crypto.HexToECDSA("02038529C9AB706E9F4136F4A4EB51E866DBFE22D5E102FD3A22C14236E1C2EA")
@@ -141,12 +141,12 @@ func init() {
 //InsufficientFunds(50% Validators) + Panic (50 % Validators): Refund
 func main() {
 	getstatus(lock())
-	time.Sleep(time.Second * 5)
-	getstatus(redeem())
-	//sendTrasactions(12)
-	//erc20lock()
-	///time.Sleep(10 * time.Second)
-	//erc20Redeem()
+	//time.Sleep(time.Second * 5)
+	//getstatus(redeem())
+	////sendTrasactions(12)
+	////erc20lock()
+	/////time.Sleep(10 * time.Second)
+	////erc20Redeem()
 	//takeValidatorFunds(4)
 }
 
