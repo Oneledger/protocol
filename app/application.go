@@ -199,7 +199,12 @@ func (app *App) setupState(stateBytes []byte) error {
 			return errors.Wrap(err, "failed to set balance")
 		}
 	}
-
+	for _, stake := range initial.Witness {
+		err = app.Context.witnesses.WithState(app.Context.deliver).AddWitness(chain.ETHEREUM, identity.Stake(stake))
+		if err != nil {
+			return errors.Wrap(err, "failed to add initial ethereum witness")
+		}
+	}
 	for _, stake := range initial.Staking {
 		err := app.Context.delegators.WithState(app.Context.deliver).Stake(stake.ValidatorAddress, stake.StakeAddress, identity.Stake(stake).Amount)
 		if err != nil {
@@ -208,10 +213,6 @@ func (app *App) setupState(stateBytes []byte) error {
 		err = app.Context.validators.WithState(app.Context.deliver).HandleStake(identity.Stake(stake), false, 0)
 		if err != nil {
 			return errors.Wrap(err, "failed to handle initial staking")
-		}
-		err = app.Context.witnesses.WithState(app.Context.deliver).AddWitness(chain.ETHEREUM, identity.Stake(stake))
-		if err != nil {
-			return errors.Wrap(err, "failed to add initial ethereum witness")
 		}
 	}
 
