@@ -14,8 +14,6 @@ olfullnode init devnet --dir $OLDATA/devnet --nonvalidators 5 \
   --funding_deadline 10 \
   --voting_deadline 12 \
   --timeout_commit 1000 \
-  --eth_rpc https://rinkeby.infura.io/v3 \
-  --deploy_smart_contracts \
 #  --db_type cleveldb
 #  --deploy_smart_contracts \
 #  -eth_rpc https://rinkeby.infura.io/v3
