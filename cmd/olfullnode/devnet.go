@@ -729,6 +729,7 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 		Currencies: currencies,
 		Balances:   balances,
 		Staking:    staking,
+		Witness:    staking,
 		Rewards:    rewards,
 		Domains:    domains,
 		Fees:       fees_db,
