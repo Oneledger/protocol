@@ -51,7 +51,7 @@ var (
 	TestTokenABI     = contract.ERC20BasicABI
 	LockRedeemERCABI = contract.LockRedeemERCABI
 	// LockRedeemERC20ABI = contract.ContextABI
-	LockRedeemContractAddr      = "0x7045516396f00EEDD7DbF932e9c0f24dCc3A8D31"
+	LockRedeemContractAddr      = ""
 	TestTokenContractAddr       = "0x0000000000000000000000000000000000000000"
 	LockRedeemERC20ContractAddr = "0x0000000000000000000000000000000000000000"
 	readDir                     = ""
@@ -92,7 +92,7 @@ func createValue(str string) *big.Int {
 func init() {
 	privKey := "6c24a44424c8182c1e3e995ad3ccfb2797e3f7ca845b99bea8dead7fc9dccd09"
 	if strings.Contains(cfg.Connection, "rinkeby") {
-		privKey = "777f23ac00cd74c023f80deca01b92a6f8c538d3ed9b50334ef6b97865f570e3"
+		privKey = ""
 	}
 	UserprivKey, _ = crypto.HexToECDSA(privKey)
 	//UserprivKey, _ = crypto.HexToECDSA("02038529C9AB706E9F4136F4A4EB51E866DBFE22D5E102FD3A22C14236E1C2EA")
@@ -140,9 +140,9 @@ func init() {
 //Insufficient Funds    :Refund   ok
 //InsufficientFunds(50% Validators) + Panic (50 % Validators): Refund
 func main() {
-	//getstatus(lock())
+	getstatus(lock())
 	//time.Sleep(time.Second * 5)
-	getstatus(redeem())
+	//getstatus(redeem())
 	////sendTrasactions(12)
 	////erc20lock()
 	/////time.Sleep(10 * time.Second)

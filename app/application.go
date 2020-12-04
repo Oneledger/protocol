@@ -1,7 +1,6 @@
 package app
 
 import (
-	"fmt"
 	"net/url"
 	"os"
 
@@ -200,16 +199,14 @@ func (app *App) setupState(stateBytes []byte) error {
 			return errors.Wrap(err, "failed to set balance")
 		}
 	}
-	fmt.Println("----------------------------------------------")
-	fmt.Println(len(initial.Witness))
+
 	for _, stake := range initial.Witness {
 		err = app.Context.witnesses.WithState(app.Context.deliver).AddWitness(chain.ETHEREUM, identity.Stake(stake))
 		if err != nil {
 			return errors.Wrap(err, "failed to add initial ethereum witness")
 		}
 	}
-	fmt.Println(len(initial.Staking))
-	fmt.Println("----------------------------------------------")
+
 	for _, stake := range initial.Staking {
 		err := app.Context.delegators.WithState(app.Context.deliver).Stake(stake.ValidatorAddress, stake.StakeAddress, identity.Stake(stake).Amount)
 		if err != nil {
