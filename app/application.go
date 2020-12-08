@@ -293,6 +293,12 @@ func (app *App) setupState(stateBytes []byte) error {
 		return errors.Wrap(err, "error setting up network delegation reward data")
 	}
 
+	//Setup Evidences
+	err = app.Context.evidenceStore.WithState(app.Context.deliver).LoadState(&initial.Evidences)
+	if err != nil {
+		return errors.Wrap(err, "error setting up evidence data")
+	}
+
 	app.Context.deliver.Write()
 	return nil
 }

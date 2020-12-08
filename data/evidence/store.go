@@ -282,7 +282,7 @@ func NewEvidenceState() *EvidenceState {
 	}
 }
 
-func (es *EvidenceStore) dumpState() (state *EvidenceState, err error) {
+func (es *EvidenceStore) DumpState() (state *EvidenceState, succeed bool) {
 	state = NewEvidenceState()
 
 	// dump allegations
@@ -296,10 +296,12 @@ func (es *EvidenceStore) dumpState() (state *EvidenceState, err error) {
 		state.SuspiciousValidators = append(state.SuspiciousValidators, lvh)
 		return false
 	})
+
+	succeed = true
 	return
 }
 
-func (es *EvidenceStore) loadState(state *EvidenceState) (err error) {
+func (es *EvidenceStore) LoadState(state *EvidenceState) (err error) {
 	// load allegations and initialize tracker
 	at, err := es.GetAllegationTracker()
 	if err != nil {
