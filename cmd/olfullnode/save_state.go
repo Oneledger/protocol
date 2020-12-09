@@ -245,7 +245,7 @@ func writeListWithTag(ctx app.StorageCtx, writer io.Writer, tag string) bool {
 		DumpBalanceToFile(ctx.Balances, writer, writeStruct)
 	case "staking":
 		DumpStakingToFile(ctx.Validators, writer, writeStruct)
-	case "penalty":
+	case "penalties":
 		DumpPenaltyToFile(ctx.Validators, writer, writeStruct)
 	case "domains":
 		DumpDomainToFile(ctx.Domains, ctx.Version, writer, writeStruct)
@@ -360,7 +360,7 @@ func SaveChainState(application *app.App, filename string, directory string) err
 	writeStructWithTag(writer, appState.Chain, "state")
 	writeListWithTag(ctx, writer, "balances")
 	writeListWithTag(ctx, writer, "staking")
-	writeListWithTag(ctx, writer, "penalty")
+	writeListWithTag(ctx, writer, "penalties")
 	writeStoreWithTag(ctx, writer, "delegation")
 	writeStoreWithTag(ctx, writer, "rewards")
 	writeListWithTag(ctx, writer, "domains")

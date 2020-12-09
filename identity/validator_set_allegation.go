@@ -345,7 +345,7 @@ func (vs *ValidatorStore) IteratePenalties(fn func(penalty *Penalty) bool) (stop
 			penalty := &Penalty{}
 			err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(dat, &penalty.Unstake)
 			if err != nil {
-				logger.Error("failed to deserialize postponed unstake")
+				logger.Error("failed to deserialize postponed penalty")
 				return true
 			}
 			// key in format "heightAddress"
@@ -396,4 +396,19 @@ func (vs *ValidatorStore) createAllegationEvent(ar *evidence.AllegationRequest) 
 		},
 	)
 	vs.PushEvent("allegation_tracker", tags)
+}
+
+func (vs *ValidatorStore) LoadPenalties(penalties []Penalty) error {
+	for _, penalty := range penalties {
+		key := vs.getDelayUnstakeKey(penalty.Height, penalty.Unstake.Address)
+		value, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(penalty.Unstake)
+		if err != nil {
+			return errors.Wrap(err, "failed to serialize unstake")
+		}
+		err = vs.store.Set(key, value)
+		if err != nil {
+			return errors.Wrap(err, "failed to set unstake")
+		}
+	}
+	return nil
 }

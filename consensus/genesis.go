@@ -77,7 +77,6 @@ type ChainState struct {
 }
 
 type Stake identity.Stake
-type Penalty identity.Penalty
 
 type AppState struct {
 	Currencies    balance.Currencies             `json:"currencies"`
@@ -85,7 +84,8 @@ type AppState struct {
 	Chain         ChainState                     `json:"state"`
 	Balances      []BalanceState                 `json:"balances"`
 	Staking       []Stake                        `json:"staking"`
-	Penalties     []Penalty                      `json:"penalties"`
+	Penalties     []identity.Penalty             `json:"penalties"`
+	Witness       []Stake                        `json:"witness"`
 	Delegation    delegation.DelegationState     `json:"delegation"`
 	Rewards       rewards.RewardMasterState      `json:"rewards"`
 	Domains       []DomainState                  `json:"domains"`
@@ -100,6 +100,8 @@ type AppState struct {
 func NewAppState(currencies balance.Currencies,
 	balances []BalanceState,
 	staking []Stake,
+	penalties []identity.Penalty,
+	witness []Stake,
 	delegation delegation.DelegationState,
 	rewards rewards.RewardMasterState,
 	domains []DomainState,
@@ -110,6 +112,8 @@ func NewAppState(currencies balance.Currencies,
 		Currencies: currencies,
 		Balances:   balances,
 		Staking:    staking,
+		Penalties:  penalties,
+		Witness:    witness,
 		Delegation: delegation,
 		Rewards:    rewards,
 		Domains:    domains,

@@ -23,6 +23,7 @@ import (
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/network_delegation"
 	"github.com/Oneledger/protocol/data/rewards"
+	"github.com/Oneledger/protocol/identity"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -577,6 +578,7 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 	}
 	balances := make([]consensus.BalanceState, 0, len(nodeList))
 	staking := make([]consensus.Stake, 0, len(nodeList))
+	penalities := make([]identity.Penalty, 0)
 	rewards := rewards.RewardMasterState{
 		RewardState: rewards.NewRewardState(),
 		CumuState:   rewards.NewRewardCumuState(),
@@ -729,6 +731,8 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 		Currencies: currencies,
 		Balances:   balances,
 		Staking:    staking,
+		Penalties:  penalities,
+		Witness:    staking,
 		Rewards:    rewards,
 		Domains:    domains,
 		Fees:       fees_db,

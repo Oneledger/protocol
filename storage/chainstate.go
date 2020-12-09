@@ -211,7 +211,15 @@ func (state *ChainState) Commit() ([]byte, int64) {
 }
 
 func (state *ChainState) LoadVersion(version int64) (int64, error) {
-	return state.Delivered.LoadVersion(version)
+	latestVersion, err := state.Delivered.LoadVersion(version)
+	if err != nil {
+		return latestVersion, err
+	}
+	// Essentially, the last commited value...
+	state.Hash = state.Delivered.Hash()
+	state.Version = state.Delivered.Version()
+	state.TreeHeight = state.Delivered.Height()
+	return latestVersion, err
 }
 
 // Reset the chain state from persistence
