@@ -345,6 +345,7 @@ type StorageCtx struct {
 	RewardMaster    *rewards.RewardMasterStore
 	ProposalMaster  *governance.ProposalMasterStore
 	NetwkDelegators *network_delegation.MasterStore
+	Evidences       *evidence.EvidenceStore
 	FeePool         *fees.Store
 	Govern          *governance.Store
 	Trackers        *ethereum.TrackerStore //TODO: Create struct to contain all tracker types including Bitcoin.
@@ -368,6 +369,7 @@ func (ctx *context) Storage() StorageCtx {
 		RewardMaster:    ctx.rewardMaster,
 		ProposalMaster:  ctx.proposalMaster,
 		NetwkDelegators: ctx.netwkDelegators,
+		Evidences:       ctx.evidenceStore,
 		FeePool:         ctx.feePool,
 		Govern:          ctx.govern,
 		Currencies:      ctx.currencies,

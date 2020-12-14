@@ -216,6 +216,12 @@ func (app *App) setupState(stateBytes []byte) error {
 		}
 	}
 
+	// load penalties history
+	err = app.Context.validators.WithState(app.Context.deliver).LoadPenalties(initial.Penalties)
+	if err != nil {
+		return errors.Wrap(err, "failed to handle initial penalties")
+	}
+
 	if !app.Context.delegators.WithState(app.Context.deliver).LoadState(initial.Delegation) {
 		return errors.Wrap(err, "failed to setup initial delegation")
 	}
@@ -292,6 +298,12 @@ func (app *App) setupState(stateBytes []byte) error {
 	err = app.Context.netwkDelegators.Rewards.WithState(app.Context.deliver).LoadState(&initial.DelegatorRew)
 	if err != nil {
 		return errors.Wrap(err, "error setting up network delegation reward data")
+	}
+
+	//Setup Evidences
+	err = app.Context.evidenceStore.WithState(app.Context.deliver).LoadState(&initial.Evidences)
+	if err != nil {
+		return errors.Wrap(err, "error setting up evidence data")
 	}
 
 	app.Context.deliver.Write()
