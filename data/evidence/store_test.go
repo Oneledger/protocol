@@ -108,8 +108,14 @@ func TestRewardsCumulativeStore_DumpLoadState(t *testing.T) {
 	store.state.Commit()
 	state, succeed := store.DumpState()
 	assert.True(t, succeed)
-	assert.EqualValues(t, allegations, state.Allegations)
-	assert.EqualValues(t, suspicious, state.SuspiciousValidators)
+	//Assert Allegations
+	for i, allegation := range allegations {
+		assert.EqualValues(t, allegation, state.Allegations[i])
+	}
+	//Assert Suspicious Validators
+	for i, validator := range suspicious {
+		assert.EqualValues(t, validator, state.SuspiciousValidators[i])
+	}
 
 	// create Genesis file
 	dir, _ := os.Getwd()
