@@ -110,11 +110,11 @@ func TestRewardsCumulativeStore_DumpLoadState(t *testing.T) {
 	assert.True(t, succeed)
 	//Assert Allegations
 	for i, allegation := range allegations {
-		assert.EqualValues(t, allegation, state.Allegations[i])
+		assert.Equal(t, allegation, state.Allegations[i])
 	}
 	//Assert Suspicious Validators
 	for i, validator := range suspicious {
-		assert.EqualValues(t, validator, state.SuspiciousValidators[i])
+		assert.Equal(t, validator, state.SuspiciousValidators[i])
 	}
 
 	// create Genesis file
