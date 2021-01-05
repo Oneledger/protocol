@@ -34,8 +34,8 @@ def expired_votes():
     check_proposal_state(encoded_pid, ProposalOutcomeInProgress, ProposalStatusVoting)
 
 
-def completed_votes():
-    _prop = Proposal(_pid, "general", "proposal for vote", "proposal headline", _proposer, _initial_funding)
+def expire_funding():
+    _prop = Proposal(_pid, "general", "proposal for insufficient funds", "proposal headline", _proposer, _initial_funding)
 
     # create proposal
     _prop.send_create()
@@ -44,26 +44,6 @@ def completed_votes():
 
     # 1st fund
     fund_proposal(encoded_pid, _each_funding, addr_list[0])
-
-    # 2nd fund
-    fund_proposal(encoded_pid, _each_funding, addr_list[1])
-    check_proposal_state(encoded_pid, ProposalOutcomeInProgress, ProposalStatusVoting)
-
-    # 1st vote --> 25%
-    vote_proposal(encoded_pid, OPIN_POSITIVE, url_0, addr_list[0])
-    check_proposal_state(encoded_pid, ProposalOutcomeInProgress, ProposalStatusVoting)
-
-    # 2nd vote --> 25%
-    vote_proposal(encoded_pid, OPIN_NEGATIVE, url_1, addr_list[1])
-    check_proposal_state(encoded_pid, ProposalOutcomeInProgress, ProposalStatusVoting)
-
-    # 3rd vote --> 50%
-    vote_proposal(encoded_pid, OPIN_POSITIVE, url_2, addr_list[2])
-    check_proposal_state(encoded_pid, ProposalOutcomeInProgress, ProposalStatusVoting)
-
-    # 4th vote --> 75%
-    vote_proposal(encoded_pid, OPIN_POSITIVE, url_3, addr_list[2])
-    check_proposal_state(encoded_pid, ProposalOutcomeCompletedYes, ProposalStatusCompleted)
 
 
 def show_proposals():
@@ -82,7 +62,7 @@ def show_proposals():
 
 if __name__ == "__main__":
 
-    completed_votes()
+    expire_funding()
     show_proposals()
 
     expired_votes()
