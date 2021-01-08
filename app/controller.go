@@ -163,9 +163,6 @@ func (app *App) blockBeginner() blockBeginner {
 
 		//update the header to current block
 		app.header = req.Header
-		//Adds proposals that meet the requirements to either Expired or Finalizing Keys from transaction store
-		//Transaction store is not part of chainstate ,it just maintains a list of proposals from BlockBeginner to BlockEnder .Gets cleared at each Block Ender
-		AddInternalTX(app.Context.proposalMaster, app.Context.node.ValidatorAddress(), app.header.Height, app.Context.transaction, app.logger)
 		functionList, err := app.Context.extFunctions.Iterate(common.BlockBeginner)
 		functionParam := common.ExtParam{
 			InternalTxStore: app.Context.transaction,

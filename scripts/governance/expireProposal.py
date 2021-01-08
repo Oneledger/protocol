@@ -10,6 +10,12 @@ _funding_goal = (int("10") * 10 ** 9)
 _each_funding = (int("5") * 10 ** 9)
 
 
+def withdraw_fund(pid, funder, amount, beneficiary):
+    fund_withdraw = ProposalFundsWithdraw(pid, funder, amount, beneficiary)
+    fund_withdraw.withdraw_fund(funder)
+    time.sleep(2)
+
+
 def expired_votes():
     _prop = Proposal(_pid1, "general", "proposal for vote expired", "proposal headline", _proposer, _initial_funding)
 
@@ -44,6 +50,7 @@ def expire_funding():
 
     # 1st fund
     fund_proposal(encoded_pid, _each_funding, addr_list[0])
+    return encoded_pid, _each_funding
 
 
 def show_proposals():
@@ -62,9 +69,14 @@ def show_proposals():
 
 if __name__ == "__main__":
 
-    expire_funding()
+    pid, funds = expire_funding()
     show_proposals()
 
     expired_votes()
     time.sleep(31)
+
+    print "#### WITHDRAWING: ####"
+    withdraw_fund(pid, _proposer, funds, _proposer)
+    time.sleep(5)
+
     show_proposals()
