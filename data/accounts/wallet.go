@@ -17,6 +17,8 @@ type Wallet interface {
 	//returns the account that the wallet holds
 	Accounts() []Account
 
+	AccountsWithKey() []Account
+
 	Add(Account) error
 
 	Delete(Account) error
@@ -57,11 +59,23 @@ func (ws WalletStore) Accounts() []Account {
 			continue
 		}
 		//for safety reason, don't pass the private key
-		account.PrivateKey = nil
+		//account.PrivateKey = nil
 		accounts[i] = account
 	}
 	return accounts
+}
 
+func (ws WalletStore) AccountsWithKey() []Account {
+	accounts := make([]Account, len(ws.accounts))
+	for i, key := range ws.accounts {
+		account, err := ws.GetAccountWithKey(key.Bytes())
+		if err != nil {
+			logger.Error(ErrGetAccountByAddress.Error())
+			continue
+		}
+		accounts[i] = account
+	}
+	return accounts
 }
 
 func (ws *WalletStore) Add(account Account) error {
@@ -143,6 +157,14 @@ func (ws WalletStore) GetAccount(address keys.Address) (Account, error) {
 	}
 	//for safety reason, don't pass the private key
 	account.PrivateKey = nil
+	return account, nil
+}
+
+func (ws WalletStore) GetAccountWithKey(address keys.Address) (Account, error) {
+	account, err := ws.getAccount(address)
+	if err != nil {
+		return Account{}, err
+	}
 	return account, nil
 }
 
