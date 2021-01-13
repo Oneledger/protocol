@@ -22,7 +22,7 @@ import (
 )
 
 var RootCmd = &cobra.Command{
-	Use:   "olclient",
+	Use:   "olmerge",
 	Short: "OneLedger client",
 	Long:  "Client access to the OneLedger chain",
 }
