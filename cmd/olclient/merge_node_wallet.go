@@ -51,40 +51,40 @@ func MergeNodeWallet(cmd *cobra.Command, args []string) {
 	config.Node.DB = merge.dbType
 	oldWallet := accounts.NewWallet(config, merge.oldDBDir)
 	oldAccountList := oldWallet.AccountsWithKey()
+	oldCount := 0
+	newCount := 0
 
 	fmt.Println("Accounts in old wallet:")
 	for _, a := range oldAccountList {
-		fmt.Print("Privkey: ", a.PrivateKey, "    ")
-		fmt.Print("Pubkey: ", a.PublicKey, "    ")
 		fmt.Println("Address: ", a.Address())
+		oldCount++
 	}
+	fmt.Println("Totally ", oldCount, " accounts in old wallet")
 
 	newWallet := accounts.NewWallet(config, merge.currentDBDir)
 	newAccountList := newWallet.AccountsWithKey()
 
 	fmt.Println("Accounts in new wallet before merging:")
 	for _, a := range newAccountList {
-		fmt.Print("Privkey: ", a.PrivateKey, "    ")
-		fmt.Print("Pubkey: ", a.PublicKey, "    ")
 		fmt.Println("Address: ", a.Address())
+		newCount++
 	}
+	fmt.Println("Totally ", newCount, " accounts in new wallet before merging")
+	newCount = 0
 
 	//merge
 	for _, a := range oldAccountList {
 		err := newWallet.Add(a)
 		if err != nil {
 			fmt.Println(err)
-			return
 		}
 	}
 
 	newAccountListAfterMerge := newWallet.AccountsWithKey()
 	fmt.Println("Accounts in new wallet after merging:")
 	for _, a := range newAccountListAfterMerge {
-		fmt.Print("Privkey: ", a.PrivateKey, "    ")
-		fmt.Print("Pubkey: ", a.PublicKey, "    ")
 		fmt.Println("Address: ", a.Address())
+		newCount++
 	}
-
-
+	fmt.Println("Totally ", newCount, " accounts in new wallet after merging")
 }
