@@ -10,6 +10,12 @@ _funding_goal = (int("10") * 10 ** 9)
 _each_funding = (int("5") * 10 ** 9)
 
 
+def withdraw_fund(pid, funder, amount, beneficiary):
+    fund_withdraw = ProposalFundsWithdraw(pid, funder, amount, beneficiary)
+    fund_withdraw.withdraw_fund(funder)
+    time.sleep(2)
+
+
 def expired_votes():
     _prop = Proposal(_pid1, "general", "proposal for vote expired", "proposal headline", _proposer, _initial_funding)
 
@@ -34,8 +40,8 @@ def expired_votes():
     check_proposal_state(encoded_pid, ProposalOutcomeInProgress, ProposalStatusVoting)
 
 
-def completed_votes():
-    _prop = Proposal(_pid, "general", "proposal for vote", "proposal headline", _proposer, _initial_funding)
+def expire_funding():
+    _prop = Proposal(_pid, "general", "proposal for insufficient funds", "proposal headline", _proposer, _initial_funding)
 
     # create proposal
     _prop.send_create()
@@ -44,26 +50,7 @@ def completed_votes():
 
     # 1st fund
     fund_proposal(encoded_pid, _each_funding, addr_list[0])
-
-    # 2nd fund
-    fund_proposal(encoded_pid, _each_funding, addr_list[1])
-    check_proposal_state(encoded_pid, ProposalOutcomeInProgress, ProposalStatusVoting)
-
-    # 1st vote --> 25%
-    vote_proposal(encoded_pid, OPIN_POSITIVE, url_0, addr_list[0])
-    check_proposal_state(encoded_pid, ProposalOutcomeInProgress, ProposalStatusVoting)
-
-    # 2nd vote --> 25%
-    vote_proposal(encoded_pid, OPIN_NEGATIVE, url_1, addr_list[1])
-    check_proposal_state(encoded_pid, ProposalOutcomeInProgress, ProposalStatusVoting)
-
-    # 3rd vote --> 50%
-    vote_proposal(encoded_pid, OPIN_POSITIVE, url_2, addr_list[2])
-    check_proposal_state(encoded_pid, ProposalOutcomeInProgress, ProposalStatusVoting)
-
-    # 4th vote --> 75%
-    vote_proposal(encoded_pid, OPIN_POSITIVE, url_3, addr_list[2])
-    check_proposal_state(encoded_pid, ProposalOutcomeCompletedYes, ProposalStatusCompleted)
+    return encoded_pid, _each_funding
 
 
 def show_proposals():
@@ -82,9 +69,14 @@ def show_proposals():
 
 if __name__ == "__main__":
 
-    completed_votes()
+    pid, funds = expire_funding()
     show_proposals()
 
     expired_votes()
     time.sleep(31)
+
+    print "#### WITHDRAWING: ####"
+    withdraw_fund(pid, _proposer, funds, _proposer)
+    time.sleep(5)
+
     show_proposals()

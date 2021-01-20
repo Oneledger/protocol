@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/network_delegation"
 	"github.com/Oneledger/protocol/external_apps/common"
 	"github.com/tendermint/tendermint/libs/kv"
@@ -162,9 +163,6 @@ func (app *App) blockBeginner() blockBeginner {
 
 		//update the header to current block
 		app.header = req.Header
-		//Adds proposals that meet the requirements to either Expired or Finalizing Keys from transaction store
-		//Transaction store is not part of chainstate ,it just maintains a list of proposals from BlockBeginner to BlockEnder .Gets cleared at each Block Ender
-		AddInternalTX(app.Context.proposalMaster, app.Context.node.ValidatorAddress(), app.header.Height, app.Context.transaction, app.logger)
 		functionList, err := app.Context.extFunctions.Iterate(common.BlockBeginner)
 		functionParam := common.ExtParam{
 			InternalTxStore: app.Context.transaction,
@@ -320,12 +318,10 @@ func (app *App) blockEnder() blockEnder {
 		ethTrackerlog := log.NewLoggerWithPrefix(app.Context.logWriter, "ethtracker").WithLevel(log.Level(app.Context.cfg.Node.LogLevel))
 		doTransitions(app.Context.jobStore, app.Context.btcTrackers.WithState(app.Context.deliver), app.Context.validators)
 		doEthTransitions(app.Context.jobStore, app.Context.ethTrackers, app.Context.node.ValidatorAddress(), ethTrackerlog, app.Context.witnesses, app.Context.deliver)
-		// Proposals currently in store are cleared if deliver is successful
-		// If Expire or Finalize TX returns false,they will added to the proposals queue in the next block
-		// Errors are logged at the function level
-		// These functions iterate the transactions store
-		ExpireProposals(&app.header, &app.Context, app.logger)
-		FinalizeProposals(&app.header, &app.Context, app.logger)
+
+		//Trigger internal transactions to Expire or Finalize Proposals if necessary
+		updateProposals(app.Context.proposalMaster, app.Context.jobStore, app.Context.deliver)
+
 		functionList, err := app.Context.extFunctions.Iterate(common.BlockEnder)
 		functionParam := common.ExtParam{
 			InternalTxStore: app.Context.transaction,
@@ -838,6 +834,66 @@ func matureDelegationRewards(appCtx *context, req *RequestBeginBlock, kvMap map[
 		kvMap[rewardsKey] = kv.Pair{
 			Key:   []byte(rewardsKey),
 			Value: []byte(coin.String()),
+		}
+		return false
+	})
+}
+
+func updateProposals(proposalMaster *governance.ProposalMasterStore, jobStore *jobs.JobStore, deliver *storage.State) {
+	//Iterate through all active proposals
+	proposals := proposalMaster.Proposal.WithState(deliver)
+	activeProposals := proposals.WithPrefixType(governance.ProposalStateActive)
+
+	activeProposals.Iterate(func(id governance.ProposalID, proposal *governance.Proposal) bool {
+		height := deliver.Version()
+		//If the proposal is in Voting state and voting period expired, trigger internal tx to handle expiry
+		if proposal.Status == governance.ProposalStatusVoting && proposal.VotingDeadline < height {
+
+			//Create New Job to Expire the votes for current proposal
+			checkVotesJob := event.NewGovCheckVotesJob(proposal.ProposalID, proposal.Status)
+
+			//Check if the Job already exists
+			exists, _ := jobStore.WithChain(chain.ONELEDGER).JobExists(checkVotesJob.JobID)
+			if !exists {
+
+				//Save Job to OneLedger Job Store
+				err := jobStore.WithChain(chain.ONELEDGER).SaveJob(checkVotesJob)
+				if err != nil {
+					return true
+				}
+			}
+		}
+
+		return false
+	})
+
+	passedProposals := proposals.WithPrefixType(governance.ProposalStatePassed)
+	passedProposals.Iterate(func(id governance.ProposalID, proposal *governance.Proposal) bool {
+		if proposal.Status == governance.ProposalStatusCompleted && proposal.Outcome == governance.ProposalOutcomeCompletedYes {
+			finalizeJob := event.NewGovFinalizeProposalJob(proposal.ProposalID, proposal.Status)
+
+			exists, _ := jobStore.WithChain(chain.ONELEDGER).JobExists(finalizeJob.JobID)
+			if !exists {
+				err := jobStore.WithChain(chain.ONELEDGER).SaveJob(finalizeJob)
+				if err != nil {
+					return true
+				}
+			}
+		}
+		return false
+	})
+	failedProposals := proposals.WithPrefixType(governance.ProposalStateFailed)
+	failedProposals.Iterate(func(id governance.ProposalID, proposal *governance.Proposal) bool {
+		if proposal.Status == governance.ProposalStatusCompleted && proposal.Outcome == governance.ProposalOutcomeCompletedNo {
+			finalizeJob := event.NewGovFinalizeProposalJob(proposal.ProposalID, proposal.Status)
+
+			exists, _ := jobStore.WithChain(chain.ONELEDGER).JobExists(finalizeJob.JobID)
+			if !exists {
+				err := jobStore.WithChain(chain.ONELEDGER).SaveJob(finalizeJob)
+				if err != nil {
+					return true
+				}
+			}
 		}
 		return false
 	})
