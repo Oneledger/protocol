@@ -1,22 +1,34 @@
 pipeline {
-    agent any
-
-    environment {
-        GO111MODULE="on"
-        GOPATH="${WORKSPACE}/go"
-        OLDATA="${GOPATH}/data"
-        PATH="${GOPATH}/bin:${PATH}"
-        OLTEST="1"
+    agent {
+      kubernetes {
+        label 'slave'
+        yaml """
+  apiVersion: v1
+  kind: Pod
+  metadata:
+    label:
+      jenkins: slave
+  spec:
+    containers:
+    - name: oneledger
+      image: oneledgertech/olprotocol:latest
+      command:
+      tty: true
+  """
+      }
     }
-    stages{       
-      
-        stage ('build binary'){
-            steps{
-                sh 'make install_c'
-            }
-        }
+    stages {
+      stage('build binary') {
+        steps {
+          container('oneledger') {
+            sh 'make install_c'
+          }
+        } 
+    }
+    
         stage('unit test') {
             steps {
+              container('oneledger') {
                 script {
                     try {
                         sh 'make utest'
@@ -27,9 +39,12 @@ pipeline {
                 }
             }
         }
+     }
+
 
         stage('coverage test') {
             steps {
+              container('oneledger') {
                 script {
                     try {
                         sh 'make coverage'
@@ -40,9 +55,11 @@ pipeline {
                 }
             }
         }
-        
-       stage('ons test') {
+     }
+
+        stage('ons test') {
             steps {
+              container('oneledger') {
                 script {
                     try {
                         sh 'make onstest'
@@ -53,9 +70,11 @@ pipeline {
                 }
             }
         }
-        
+     }
+
         stage('reward test') {
             steps {
+              container('oneledger') {
                 script {
                     try {
                         sh 'make rewardtest'
@@ -66,9 +85,11 @@ pipeline {
                 }
             }
         }
-         
-       stage('governance test') {
+     }
+  
+        stage('governance test') {
             steps {
+              container('oneledger') {
                 script {
                     try {
                         sh 'make govtest'
@@ -79,9 +100,11 @@ pipeline {
                 }
             }
         }
-        
+     }
+
         stage('staking test') {
             steps {
+              container('oneledger') {
                 script {
                     try {
                         sh 'make stakingtest'
@@ -92,8 +115,11 @@ pipeline {
                 }
             }
         }
+     }
+
         stage('all test') {
             steps {
+              container('oneledger') {
                 script {
                     try {
                         sh 'make alltest'
@@ -104,9 +130,11 @@ pipeline {
                 }
             }
         }
-        
+     }
+
         stage('rpcAuth test') {
             steps {
+              container('oneledger') {
                 script {
                     try {
                         sh 'make rpcAuthtest'
@@ -117,9 +145,11 @@ pipeline {
                 }
             }
         }
-        
+     }
+
         stage('Delegation test') {
             steps {
+              container('oneledger') {
                 script {
                     try {
                         sh 'make delegationtest'
@@ -130,40 +160,22 @@ pipeline {
                 }
             }
         }
-         
-        stage('Results') {
-          steps {
-             publishHTML([allowMissing: false,
-             alwaysLinkToLastBuild: true,
-             keepAll: true,
-             reportDir: 
-                          '.',
-             reportFiles: 'cover.html',
-             reportName: 'Coverage report Dashboard'
-])
+     }
 
-             } 
-           }
-        
-         stage('clean up') {
-           steps {
-                sh 'ls'
-            }
-        }
-
-}
-    post {
-        cleanup {
-            /* clean up our workspace */
-            deleteDir()
-            /* clean up tmp directory */
-            dir("${workspace}@tmp") {
-                deleteDir()
-            }
-            /* clean up script directory */
-            dir("${workspace}@script") {
-                deleteDir()
-            }
-        }
+      stage('Result') {
+        steps {
+          container('oneledger') {
+            publishHTML([allowMissing: false,
+            alwaysLinkToLastBuild: true,
+            keepAll: true,
+            reportDir: 
+                        '.',
+            reportFiles: 'cover.html',
+            reportName: 'Coverage report Dashboard'
+   ])
+          }
+        } 
+      }
     }
-}
+  } 
+
