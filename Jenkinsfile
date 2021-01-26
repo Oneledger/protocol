@@ -1,5 +1,6 @@
 pipeline {
     agent {
+   //kubernetes jenkins agent
       kubernetes {
         label 'slave'
         yaml """
@@ -17,6 +18,8 @@ pipeline {
   """
       }
     }
+    
+    //testing stages
     stages {
       stage('build binary') {
         steps {
