@@ -1,11 +1,14 @@
 package rewards
 
 import (
+	"fmt"
+	"github.com/Oneledger/protocol/serialize"
+	"github.com/Oneledger/protocol/storage"
 	"math/big"
+	"strconv"
 	"time"
 
 	"github.com/Oneledger/protocol/data/balance"
-	tmstore "github.com/tendermint/tendermint/store"
 )
 
 type RewardYear struct {
@@ -42,22 +45,31 @@ func (cache *RewardCached) available() bool {
 }
 
 type RewardCalculator struct {
-	height      int64
-	cached      RewardCached
-	rewardYears RewardYears
-	blockStore  *tmstore.BlockStore
-	options     *Options
+	state  *storage.State
+	szlr   serialize.Serializer
+	prefix []byte
+
+	height           int64
+	cached           RewardCached
+	rewardYears      RewardYears
+	genesisTime      time.Time
+	currentBlockTime time.Time
+	options          *Options
 }
 
-func NewRewardCalculator() *RewardCalculator {
+func NewRewardCalculator(state *storage.State, prefix string) *RewardCalculator {
 	return &RewardCalculator{
+		state:  state,
+		prefix: storage.Prefix(prefix),
+		szlr:   serialize.GetSerializer(serialize.PERSISTENT),
 		height: 0,
 		cached: NewRewardCached(),
 	}
 }
 
-func (calc *RewardCalculator) Reset(height int64, rewardYears RewardYears) {
+func (calc *RewardCalculator) Reset(height int64, currentTime time.Time, rewardYears RewardYears) {
 	calc.height = height
+	calc.currentBlockTime = currentTime
 	calc.rewardYears = rewardYears
 }
 
@@ -100,7 +112,8 @@ func (calc *RewardCalculator) Calculate() (amt *balance.Amount, err error) {
 		logger.Errorf("Year rewards burned out unexpectedly, year= %v", year+1)
 		return
 	}
-
+	fmt.Println("yearleft: ", yearLeft)
+	fmt.Println("numofMoreBlocks: ", numofMoreBlocks)
 	// calculate rewards per block
 	amt = balance.NewAmountFromBigInt(big.NewInt(0).Div(yearLeft.BigInt(), big.NewInt(numofMoreBlocks)))
 	calc.cacheResult(year, cycleNo, amt, false)
@@ -108,17 +121,36 @@ func (calc *RewardCalculator) Calculate() (amt *balance.Amount, err error) {
 }
 
 func (calc *RewardCalculator) secondsPerCycleLatest() (int64, time.Time) {
-	tEnd := calc.blockStore.LoadBlockMeta(1).Header.Time.UTC()
+	tEnd := calc.genesisTime.UTC()
 	secsPerCycle := calc.options.EstimatedSecondsPerCycle
 	if calc.height > calc.options.BlockSpeedCalculateCycle {
 		// get speed calculation [begin, end] height
 		cycle := calc.options.BlockSpeedCalculateCycle
-		cycleEndHeight := (calc.height-1)/cycle*cycle + 1
+		cycleEndHeight := calc.height
 		cycleBeginHeight := cycleEndHeight - cycle
-
+		fmt.Println("cycleBeginHeight: ", cycleBeginHeight)
+		fmt.Println("calc.height: ", calc.height)
+		fmt.Println("BlockSpeedCalculateCycle: ", cycle)
 		// duration of the cycle, in secs
-		tBegin := calc.blockStore.LoadBlockMeta(cycleBeginHeight).Header.Time.UTC()
-		tEnd = calc.blockStore.LoadBlockMeta(cycleEndHeight).Header.Time.UTC()
+		timestamp, err := calc.GetTimeStamp(cycleBeginHeight)
+		if err != nil {
+			fmt.Println("ERROR READING TIMESTAMP: ", err.Error())
+			return 0, time.Time{}
+		}
+
+		//Get Start and End timestamps for current cycle
+		tBegin := timestamp.UTC()
+		tEnd = calc.currentBlockTime.UTC()
+
+		fmt.Println("begin: ", tBegin)
+		fmt.Println("end: ", tEnd)
+
+		//Save Current block timestamp as Beginning of new cycle
+		err = calc.SaveTimeStamp(calc.height, &calc.currentBlockTime)
+		if err != nil {
+			return 0, time.Time{}
+		}
+
 		secsPerCycle = int64(tEnd.Sub(tBegin).Seconds())
 	}
 	return secsPerCycle, tEnd
@@ -127,6 +159,7 @@ func (calc *RewardCalculator) secondsPerCycleLatest() (int64, time.Time) {
 // return 0 blocks if all rewards years burned out
 func (calc *RewardCalculator) numofMoreBlocksBeforeYearClose() (int64, int) {
 	secsPerCycle, tCycleEnd := calc.secondsPerCycleLatest()
+	fmt.Println("secondsPerCycleLatest: ", secsPerCycle)
 
 	numofMoreBlocks := int64(0)
 	yearIndex := -1
@@ -166,6 +199,48 @@ func (rws *RewardCalculator) SetOptions(options *Options) {
 	rws.options = options
 }
 
-func (calc *RewardCalculator) Init(blockStore *tmstore.BlockStore) {
-	calc.blockStore = blockStore
+func (calc *RewardCalculator) Init(genesisTime time.Time) {
+	calc.genesisTime = genesisTime
+	_ = calc.SaveTimeStamp(int64(1), &genesisTime)
+}
+
+//-------------------------------------------- Calculator DB Functions --------------------------------------------
+
+// Set cumulative amount(s) by key
+func (calc *RewardCalculator) set(key storage.StoreKey, obj interface{}) error {
+	dat, err := calc.szlr.Serialize(obj)
+	fmt.Println("saveTimestamp Key: ", key)
+	if err != nil {
+		return err
+	}
+	err = calc.state.Set(key, dat)
+	return err
+}
+
+// Get Timestamp by key
+func (calc *RewardCalculator) getTimestamp(key storage.StoreKey) (timestamp *time.Time, err error) {
+	timestamp = &time.Time{}
+	fmt.Println("getTimestamp Key: ", key)
+	dat, err := calc.state.Get(key)
+	if err != nil {
+		return
+	}
+	err = calc.szlr.Deserialize(dat, timestamp)
+	return
+}
+
+// Key for Cycle TimeStamps
+func (calc *RewardCalculator) getCycleTimeKey(height int64) []byte {
+	key := string(calc.prefix) + "cyclts" + storage.DB_PREFIX + strconv.FormatInt(height, 10)
+	return storage.StoreKey(key)
+}
+
+func (calc *RewardCalculator) SaveTimeStamp(height int64, timestamp *time.Time) error {
+	key := calc.getCycleTimeKey(height)
+	return calc.set(key, timestamp)
+}
+
+func (calc *RewardCalculator) GetTimeStamp(height int64) (*time.Time, error) {
+	key := calc.getCycleTimeKey(height)
+	return calc.getTimestamp(key)
 }

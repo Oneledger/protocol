@@ -456,7 +456,7 @@ func (app *App) Prepare() error {
 	app.Context.witnesses.Init(chain.ETHEREUM, app.Context.node.ValidatorAddress())
 
 	// Init reward cumulative store
-	app.Context.rewardMaster.RewardCm.Init(app.node.BlockStore())
+	app.Context.rewardMaster.RewardCm.Init(genesisDoc.GenesisTime)
 
 	// Initialize internal Services
 	app.Context.internalService = event.NewService(app.Context.node,
