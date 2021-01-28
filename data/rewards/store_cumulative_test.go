@@ -38,7 +38,7 @@ var (
 
 	estimatedSecondsPerBlock  = int64(17280)          // 0.2 day per block
 	estimatedSecondsPerCycle  = int64(3600 * 24 * 10) // 1 cycle == 10 days
-	blockSpeedCalculateCycle  = int64(5000)           // calculate speed every 50 blocks
+	blockSpeedCalculateCycle  = int64(50)             // calculate speed every 50 blocks
 	burnoutRate, _            = balance.NewAmountFromString("5", 10)
 	yearCloseWindow           = int64(3600 * 24 * 5) // 5 days
 	yearBlockRewardShare_1, _ = balance.NewAmountFromString("70000000", 10)
@@ -195,10 +195,10 @@ func TestRewardsCumulativeStore_PullRewards(t *testing.T) {
 	// check pulled reward amount for 5 years
 	for i := 1; i <= 9100; i++ {
 		height := int64(i)
-		amount, err := store.PullRewards(height, time.Now().UTC(), balance.NewAmount(0))
+		time := tStart.Add(time.Second * time.Duration(height*estimatedSecondsPerBlock))
+		amount, err := store.PullRewards(height, time, balance.NewAmount(0))
 		assert.Nil(t, err)
-		fmt.Println("Amount: ", amount)
-		//assert.True(t, zero.LessThan(*amount))
+		assert.True(t, zero.LessThan(*amount))
 
 		// consume only 80% of amount on an even height
 		if height%2 == 0 {
@@ -224,20 +224,23 @@ func TestRewardsCumulativeStore_PullRewards(t *testing.T) {
 
 	// test burnout, pool has nothing
 	height := int64(9101)
-	amount, err := store.PullRewards(height, time.Now().UTC(), balance.NewAmount(0))
+	timeCurr := tStart.Add(time.Second * time.Duration(height*estimatedSecondsPerBlock))
+	amount, err := store.PullRewards(height, timeCurr, balance.NewAmount(0))
 	assert.Nil(t, err)
 	assert.True(t, zero.Equals(*amount))
 
 	// test burnout, pool amount < burnout rate
 	height = int64(9102)
-	amount, err = store.PullRewards(height, time.Now().UTC(), balance.NewAmount(4))
+	timeCurr = tStart.Add(time.Second * time.Duration(height*estimatedSecondsPerBlock))
+	amount, err = store.PullRewards(height, timeCurr, balance.NewAmount(4))
 	assert.Nil(t, err)
 	assert.True(t, amount.Equals(*balance.NewAmount(4)))
 	assert.True(t, store.calculator.Burnedout())
 
 	// test burnout, pool amount >= burnout rate
 	height = int64(9103)
-	amount, err = store.PullRewards(height, time.Now().UTC(), balance.NewAmount(6))
+	timeCurr = tStart.Add(time.Second * time.Duration(height*estimatedSecondsPerBlock))
+	amount, err = store.PullRewards(height, timeCurr, balance.NewAmount(6))
 	assert.Nil(t, err)
 	assert.True(t, amount.Equals(*burnoutRate))
 
@@ -349,7 +352,8 @@ func TestRewardsCumulativeStore_DumpLoadState(t *testing.T) {
 	// pull 1800 blocks' rewards
 	for i := 1; i <= 1800; i++ {
 		height := int64(i)
-		amount, _ := store.PullRewards(height, time.Now().UTC(), balance.NewAmount(0))
+		time := tStart.Add(time.Second * time.Duration(height*estimatedSecondsPerBlock))
+		amount, _ := store.PullRewards(height, time, balance.NewAmount(0))
 		// consume only 80% of amount on an even height
 		if height%2 == 0 {
 			numerator := big.NewInt(0).Mul(amount.BigInt(), big.NewInt(4))
