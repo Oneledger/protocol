@@ -1,11 +1,6 @@
 package rewards
 
-/*
-import "time"
-
-
 import (
-	"fmt"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/stretchr/testify/assert"
 	db "github.com/tendermint/tm-db"
@@ -43,22 +38,21 @@ func init() {
 }
 
 func TestRewardCalculator_secondsPerCycleLatest(t *testing.T) {
-	for i := 0; i < 20; i++ {
-		time := time.Now()
-		calculator.Reset(int64(i+1), time, rewardYears)
-		height, endtime := calculator.secondsPerCycleLatest()
-		fmt.Println("height: ", height, "endtime: ", endtime)
-	}
+	//for i := 0; i < 20; i++ {
+	//	time := time.Now()
+	//	calculator.Reset(int64(i+1), time, rewardYears)
+	//	height, endtime := calculator.secondsPerCycleLatest()
+	//	fmt.Println("height: ", height, "endtime: ", endtime)
+	//}
 
 }
 
 func TestRewardCalculator_SaveTimeStamp(t *testing.T) {
-	timestamp := time.Now()
-	err := calculator.SaveTimeStamp(100, timestamp)
+	timestamp := time.Now().UTC()
+	err := calculator.SaveTimeStamp(100, &timestamp)
 	assert.Equal(t, nil, err)
 
 	query, err := calculator.GetTimeStamp(100)
 	assert.Equal(t, nil, err)
-	assert.Equal(t, timestamp, query)
+	assert.EqualValues(t, &timestamp, query)
 }
-*/
