@@ -14,6 +14,7 @@ const (
 
 var (
 	calculator                   *RewardCalculator
+	estimatedSecondsPerBlockCalc = int64(17280)
 	estimatedsecondspercycleCalc = int64(1728)
 	blockspeedcalculatecycleCalc = int64(4)
 	options                      *Options
@@ -35,16 +36,6 @@ func init() {
 	calculator = NewRewardCalculator(cs, prefix)
 	calculator.SetOptions(options)
 	calculator.Init(genesisTime)
-}
-
-func TestRewardCalculator_secondsPerCycleLatest(t *testing.T) {
-	//for i := 0; i < 20; i++ {
-	//	time := time.Now()
-	//	calculator.Reset(int64(i+1), time, rewardYears)
-	//	height, endtime := calculator.secondsPerCycleLatest()
-	//	fmt.Println("height: ", height, "endtime: ", endtime)
-	//}
-
 }
 
 func TestRewardCalculator_SaveTimeStamp(t *testing.T) {

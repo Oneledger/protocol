@@ -112,8 +112,7 @@ func (calc *RewardCalculator) Calculate() (amt *balance.Amount, err error) {
 		logger.Errorf("Year rewards burned out unexpectedly, year= %v", year+1)
 		return
 	}
-	//fmt.Println("yearleft: ", yearLeft)
-	//fmt.Println("numofMoreBlocks: ", numofMoreBlocks)
+
 	// calculate rewards per block
 	amt = balance.NewAmountFromBigInt(big.NewInt(0).Div(yearLeft.BigInt(), big.NewInt(numofMoreBlocks)))
 	calc.cacheResult(year, cycleNo, amt, false)
@@ -128,22 +127,15 @@ func (calc *RewardCalculator) secondsPerCycleLatest() (int64, time.Time) {
 		cycle := calc.options.BlockSpeedCalculateCycle
 		cycleEndHeight := calc.height
 		cycleBeginHeight := cycleEndHeight - cycle
-		//fmt.Println("cycleBeginHeight: ", cycleBeginHeight)
-		//fmt.Println("calc.height: ", calc.height)
-		//fmt.Println("BlockSpeedCalculateCycle: ", cycle)
-		// duration of the cycle, in secs
+
 		timestamp, err := calc.GetTimeStamp(cycleBeginHeight)
 		if err != nil {
 			fmt.Println("ERROR READING TIMESTAMP: ", err.Error())
 			return 0, time.Time{}
 		}
-
 		//Get Start and End timestamps for current cycle
 		tBegin := timestamp.UTC()
 		tEnd = calc.currentBlockTime.UTC()
-
-		//fmt.Println("begin: ", tBegin)
-		//fmt.Println("end: ", tEnd)
 
 		//Save Current block timestamp as Beginning of new cycle
 		err = calc.SaveTimeStamp(calc.height, &calc.currentBlockTime)
@@ -209,7 +201,6 @@ func (calc *RewardCalculator) Init(genesisTime time.Time) {
 // Set cumulative amount(s) by key
 func (calc *RewardCalculator) set(key storage.StoreKey, obj interface{}) error {
 	dat, err := calc.szlr.Serialize(obj)
-	//fmt.Println("saveTimestamp Key: ", key)
 	if err != nil {
 		return err
 	}
@@ -220,7 +211,6 @@ func (calc *RewardCalculator) set(key storage.StoreKey, obj interface{}) error {
 // Get Timestamp by key
 func (calc *RewardCalculator) getTimestamp(key storage.StoreKey) (timestamp *time.Time, err error) {
 	timestamp = &time.Time{}
-	//fmt.Println("getTimestamp Key: ", key)
 	dat, err := calc.state.Get(key)
 	if err != nil {
 		return
