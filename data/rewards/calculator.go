@@ -151,7 +151,6 @@ func (calc *RewardCalculator) secondsPerCycleLatest() (int64, time.Time) {
 // return 0 blocks if all rewards years burned out
 func (calc *RewardCalculator) numofMoreBlocksBeforeYearClose() (int64, int) {
 	secsPerCycle, tCycleEnd := calc.secondsPerCycleLatest()
-	fmt.Println("secondsPerCycleLatest: ", secsPerCycle)
 
 	numofMoreBlocks := int64(0)
 	yearIndex := -1
