@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"math/big"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -49,6 +50,9 @@ type genesisArgument struct {
 	deploySmartcontracts bool
 	cloud                bool
 	loglevel             int
+
+	// super admins
+	superAdmins []string
 }
 
 var genesisCmdArgs = &genesisArgument{}
@@ -69,10 +73,12 @@ type mainetContext struct {
 }
 
 func init() {
+	mainNetDir := path.Join(os.Getenv("OLDATA"), "mainnet")
+
 	initCmd.AddCommand(genesisCmd)
-	genesisCmd.Flags().StringVarP(&genesisCmdArgs.pvkey_Dir, "pv_dir", "p", "$OLDATA/mainnet/", "Directory which contains Genesis File and NodeList")
-	genesisCmd.Flags().StringVarP(&genesisCmdArgs.reserved_domains, "reserved_domains", "r", "$OLDATA/mainnet/", "Path to the file which contains the domainlist")
-	genesisCmd.Flags().StringVarP(&genesisCmdArgs.outputDir, "dir", "o", "$OLDATA/mainnet/", "Directory to store initialization files for the ")
+	genesisCmd.Flags().StringVarP(&genesisCmdArgs.pvkey_Dir, "pv_dir", "p", mainNetDir, "Directory which contains Genesis File and NodeList")
+	genesisCmd.Flags().StringVarP(&genesisCmdArgs.reserved_domains, "reserved_domains", "r", mainNetDir, "Path to the file which contains the domainlist")
+	genesisCmd.Flags().StringVarP(&genesisCmdArgs.outputDir, "dir", "o", mainNetDir, "Directory to store initialization files for the ")
 	//genesisCmd.Flags().BoolVar(&genesisCmdArgs.allowSwap, "enable_swaps", false, "Allow swaps")
 	genesisCmd.Flags().IntVar(&genesisCmdArgs.numValidators, "validators", 4, "Number of validators to initialize mainnetnet with")
 	genesisCmd.Flags().IntVar(&genesisCmdArgs.numNonValidators, "nonvalidators", 1, "Number of fullnodes to initialize mainnetnet with")
@@ -85,6 +91,9 @@ func init() {
 	genesisCmd.Flags().Int64Var(&genesisCmdArgs.totalFunds, "total_funds", 400000000, "The total amount of tokens in circulation")
 	genesisCmd.Flags().StringSliceVar(&genesisCmdArgs.initialTokenHolders, "initial_token_holders", []string{}, "Initial list of addresses that hold an equal share of Total funds")
 	genesisCmd.Flags().BoolVar(&genesisCmdArgs.deploySmartcontracts, "deploy_smart_contracts", false, "deploy eth contracts")
+
+	// super admins
+	genesisCmd.Flags().StringSliceVar(&genesisCmdArgs.superAdmins, "super_admins", []string{}, "Initial super admin addresses that hold tokens")
 }
 
 func newMainetContext(args *genesisArgument) (*mainetContext, error) {
@@ -227,16 +236,16 @@ func runGenesis(_ *cobra.Command, _ []string) error {
 		}
 	}
 
-	//if err != nil {
-	//	return err
-	//}
-	//cdo := ethchain.ChainDriverOption{}
-	//err = json.Unmarshal(cdoBytes, &cdo)
-	//if err != nil {
-	//	return err
-	//}
-	//os.Remove(filepath.Join(genesisCmdArgs.pvkey_Dir, "cdOpts.json"))
-	states := getInitialState(args, nodeList, *cdo, *onsOp, btccdo, reserveDomains, initialAddrs)
+	// super admins
+	var superAdmins []keys.Address
+	if len(testnetArgs.superAdmins) > 0 {
+		superAdmins, err = getInitialAddress(superAdmins, genesisCmdArgs.superAdmins)
+		if err != nil {
+			return err
+		}
+	}
+
+	states := getInitialState(args, nodeList, *cdo, *onsOp, btccdo, reserveDomains, initialAddrs, superAdmins)
 
 	genesisDoc, err := consensus.NewGenesisDoc(getChainID(), states)
 	if err != nil {
@@ -348,7 +357,7 @@ func getOnsOpt() *ons.Options {
 }
 
 func getInitialState(args *genesisArgument, nodeList []node, option ethchain.ChainDriverOption, onsOption ons.Options,
-	btcOption bitcoin.ChainDriverOption, reservedDomains []reservedDomain, initialAddrs []keys.Address) consensus.AppState {
+	btcOption bitcoin.ChainDriverOption, reservedDomains []reservedDomain, initialAddrs []keys.Address, superAdmins []keys.Address) consensus.AppState {
 	olt := balance.Currency{Id: 0, Name: "OLT", Chain: chain.ONELEDGER, Decimal: 18, Unit: "nue"}
 	vt := balance.Currency{Id: 1, Name: "VT", Chain: chain.ONELEDGER, Unit: "vt"}
 	obtc := balance.Currency{Id: 2, Name: "BTC", Chain: chain.BITCOIN, Decimal: 8, Unit: "satoshi"}
@@ -457,6 +466,17 @@ func getInitialState(args *genesisArgument, nodeList []node, option ethchain.Cha
 					SalePrice:        nil,
 				})
 			}
+		}
+	}
+
+	// super admins -- TODO: add to super admin stores
+	if len(args.superAdmins) > 0 {
+		for _, addr := range superAdmins {
+			balances = append(balances, consensus.BalanceState{
+				Address:  addr,
+				Currency: vt.Name,
+				Amount:   *vt.NewCoinFromInt(1).Amount,
+			})
 		}
 	}
 

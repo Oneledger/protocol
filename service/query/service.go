@@ -1,7 +1,6 @@
 package query
 
 import (
-	"encoding/hex"
 	"strings"
 
 	"github.com/Oneledger/protocol/action"
@@ -9,10 +8,10 @@ import (
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/ons"
+	"github.com/Oneledger/protocol/data/passport"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
 	codes "github.com/Oneledger/protocol/status_codes"
-	"github.com/Oneledger/protocol/utils"
 )
 
 type Service struct {
@@ -20,6 +19,8 @@ type Service struct {
 	ext        client.ExtServiceContext
 	balances   *balance.Store
 	currencies *balance.CurrencySet
+	Tests      *passport.TestInfoStore
+	authTokens *passport.AuthTokenStore
 	validators *identity.ValidatorStore
 	witnesses  *identity.WitnessStore
 	ons        *ons.DomainStore
@@ -32,13 +33,17 @@ func Name() string {
 	return "query"
 }
 
-func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencies *balance.CurrencySet, validators *identity.ValidatorStore, witnesses *identity.WitnessStore,
-	domains *ons.DomainStore, feePool *fees.Store, logger *log.Logger, txTypes *[]action.TxTypeDescribe) *Service {
+func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencies *balance.CurrencySet, Tests *passport.TestInfoStore,
+	authTokens *passport.AuthTokenStore, validators *identity.ValidatorStore, witnesses *identity.WitnessStore, domains *ons.DomainStore,
+	feePool *fees.Store, logger *log.Logger,
+	txTypes *[]action.TxTypeDescribe) *Service {
 	return &Service{
 		name:       "query",
 		ext:        ctx,
 		currencies: currencies,
 		balances:   balances,
+		Tests:      Tests,
+		authTokens: authTokens,
 		validators: validators,
 		witnesses:  witnesses,
 		ons:        domains,
@@ -46,6 +51,42 @@ func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencie
 		logger:     logger,
 		txTypes:    txTypes,
 	}
+}
+
+// ListValidator returns a list of all validator
+func (svc *Service) ListValidators(_ client.ListValidatorsRequest, reply *client.ListValidatorsReply) error {
+	validators, err := svc.validators.GetValidatorSet()
+	if err != nil {
+		svc.logger.Error("error listing validators")
+		return codes.ErrListValidators
+	}
+
+	*reply = client.ListValidatorsReply{
+		Validators: validators,
+		Height:     svc.balances.State.Version(),
+	}
+	return nil
+}
+
+func (svc *Service) ListTxTypes(_ client.ListTxTypesRequest, reply *client.ListTxTypesReply) error {
+	var txTypes []action.TxTypeDescribe
+	//find all const types that less than EOF marker
+	//and not "UNKNOWN"(this also prevents the potential future const that not be the type: "Type"
+	//from showing up)
+	for i := 0; i < int(action.EOF); i++ {
+		if strings.Compare(action.Type(i).String(), "UNKNOWN") != 0 {
+			txTypeDescribe := action.TxTypeDescribe{
+				TxTypeNum:    action.Type(i),
+				TxTypeString: action.Type(i).String(),
+			}
+			txTypes = append(txTypes, txTypeDescribe)
+		}
+	}
+
+	*reply = client.ListTxTypesReply{
+		TxTypes: txTypes,
+	}
+	return nil
 }
 
 func (svc *Service) Balance(req client.BalanceRequest, resp *client.BalanceReply) error {
@@ -69,20 +110,12 @@ func (svc *Service) Balance(req client.BalanceRequest, resp *client.BalanceReply
 	return nil
 }
 
-// ListValidator returns a list of all validator
-func (svc *Service) ListValidators(_ client.ListValidatorsRequest, reply *client.ListValidatorsReply) error {
-	validators, err := svc.validators.GetValidatorSet()
-	if err != nil {
-		svc.logger.Error("error listing validators")
-		return codes.ErrListValidators
-	}
-
-	*reply = client.ListValidatorsReply{
-		Validators: validators,
-		Height:     svc.balances.State.Version(),
-	}
+func (svc *Service) ListCurrencies(_ client.ListCurrenciesRequest, reply *client.ListCurrenciesReply) error {
+	reply.Currencies = svc.currencies.GetCurrencies()
 	return nil
 }
+
+/* Witnesses are not being used for Health Passport
 
 // ListWitnesses returns a list of all witness
 func (svc *Service) ListWitnesses(req client.ListWitnessesRequest, reply *client.ListWitnessesReply) error {
@@ -96,11 +129,6 @@ func (svc *Service) ListWitnesses(req client.ListWitnessesRequest, reply *client
 		Witnesses: witnesses,
 		Height:    svc.balances.State.Version(),
 	}
-	return nil
-}
-
-func (svc *Service) ListCurrencies(_ client.ListCurrenciesRequest, reply *client.ListCurrenciesReply) error {
-	reply.Currencies = svc.currencies.GetCurrencies()
 	return nil
 }
 
@@ -139,27 +167,9 @@ func (svc *Service) FeeOptions(_ struct{}, reply *client.FeeOptionsReply) error 
 	}
 	return nil
 }
+*/
 
-func (svc *Service) ListTxTypes(_ client.ListTxTypesRequest, reply *client.ListTxTypesReply) error {
-	var txTypes []action.TxTypeDescribe
-	//find all const types that less than EOF marker
-	//and not "UNKNOWN"(this also prevents the potential future const that not be the type: "Type"
-	//from showing up)
-	for i := 0; i < int(action.EOF); i++ {
-		if strings.Compare(action.Type(i).String(), "UNKNOWN") != 0 {
-			txTypeDescribe := action.TxTypeDescribe{
-				TxTypeNum:    action.Type(i),
-				TxTypeString: action.Type(i).String(),
-			}
-			txTypes = append(txTypes, txTypeDescribe)
-		}
-	}
-
-	*reply = client.ListTxTypesReply{
-		TxTypes: txTypes,
-	}
-	return nil
-}
+/* External Transactions are disabled for Health Passport
 
 func (svc *Service) Tx(req client.TxRequest, reply *client.TxResponse) error {
 	hash, err := hex.DecodeString(utils.TrimHex(req.Hash))
@@ -174,3 +184,4 @@ func (svc *Service) Tx(req client.TxRequest, reply *client.TxResponse) error {
 
 	return nil
 }
+*/

@@ -238,8 +238,7 @@ func DefaultNodeConfig() *NodeConfig {
 			Cycles: 10,
 		},
 
-		//"btc" service temporarily disabled
-		Services: []string{"broadcast", "node", "owner", "query", "tx", "eth"},
+		Services: []string{"broadcast", "node", "owner", "query", "tx"},
 	}
 }
 

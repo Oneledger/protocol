@@ -66,12 +66,12 @@ func (args *SendArguments) ClientRequest(currencies *balance.CurrencySet) (clien
 	if !ok {
 		return client.SendTxRequest{}, errors.New("currency not support:" + args.Currency)
 	}
-	padZero := func(s string) string {
+	padZero := func(s string, decimal int64) string {
 		ss := strings.Split(s, ".")
 		if len(ss) == 2 {
-			ss = []string{strings.TrimLeft(ss[0], "0"), strings.TrimLeft(ss[1], "0"), strings.Repeat("0", 18-len(ss[1]))}
+			ss = []string{strings.TrimLeft(ss[0], "0"), strings.TrimLeft(ss[1], "0"), strings.Repeat("0", int(decimal)-len(ss[1]))}
 		} else {
-			ss = []string{strings.TrimLeft(ss[0], "0"), strings.Repeat("0", 18)}
+			ss = []string{strings.TrimLeft(ss[0], "0"), strings.Repeat("0", int(decimal))}
 		}
 		s = strings.Join(ss, "")
 		return s
@@ -80,7 +80,10 @@ func (args *SendArguments) ClientRequest(currencies *balance.CurrencySet) (clien
 	if err != nil {
 		return client.SendTxRequest{}, err
 	}
-	amt := c.NewCoinFromString(padZero(args.Amount)).Amount
+
+	var amt *balance.Amount
+
+	amt = c.NewCoinFromString(padZero(args.Amount, c.Decimal)).Amount
 
 	olt, _ := currencies.GetCurrencyByName("OLT")
 
@@ -88,7 +91,7 @@ func (args *SendArguments) ClientRequest(currencies *balance.CurrencySet) (clien
 	if err != nil {
 		return client.SendTxRequest{}, err
 	}
-	feeAmt := olt.NewCoinFromString(padZero(args.Fee)).Amount
+	feeAmt := olt.NewCoinFromString(padZero(args.Fee, olt.Decimal)).Amount
 
 	return client.SendTxRequest{
 		From:     args.Party,

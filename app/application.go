@@ -9,7 +9,6 @@ import (
 	"github.com/tendermint/tendermint/libs/service"
 
 	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/action/eth"
 	"github.com/Oneledger/protocol/app/node"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/consensus"
@@ -160,6 +159,13 @@ func (app *App) setupState(stateBytes []byte) error {
 		err = balanceCtx.Store().WithState(app.Context.deliver).AddToAddress([]byte(key), coin)
 		if err != nil {
 			return errors.Wrap(err, "failed to set balance")
+		}
+	}
+
+	for _, token := range initial.AuthTokens {
+		err := app.Context.authTokens.WithState(app.Context.deliver).CreateAuthToken(&token)
+		if err != nil {
+			return errors.Wrap(err, "failed to handle initial auth tokens")
 		}
 	}
 
@@ -363,15 +369,8 @@ func (app *App) Prepare() error {
 		return errors.Wrap(err, "failed to create new consensus.Node")
 	}
 
-	// Init witness store after genesis witnesses loaded in above NewNode
-	app.Context.witnesses.Init(chain.ETHEREUM, app.Context.node.ValidatorAddress())
 	// Adding internal Router
 	internalRouter := action.NewRouter("internal")
-	err = eth.EnableInternalETH(internalRouter)
-	if err != nil {
-		app.logger.Error("failed to register eth internal transaction")
-		return err
-	}
 	app.Context.internalService = event.NewService(app.Context.node,
 		log.NewLoggerWithPrefix(app.Context.logWriter, "internal_service"), internalRouter, app.node)
 

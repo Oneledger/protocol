@@ -14,6 +14,7 @@ import (
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/data/ons"
+	"github.com/Oneledger/protocol/data/passport"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/serialize"
 )
@@ -83,18 +84,20 @@ type ChainState struct {
 type Stake identity.Stake
 
 type AppState struct {
-	Currencies balance.Currencies `json:"currencies"`
-	Governance GovernanceState    `json:"governance"`
-	Chain      ChainState         `json:"state"`
-	Balances   []BalanceState     `json:"balances"`
-	Staking    []Stake            `json:"staking"`
-	Domains    []DomainState      `json:"domains"`
-	Trackers   []Tracker          `json:"trackers"`
-	Fees       []BalanceState     `json:"fees"`
+	Currencies balance.Currencies   `json:"currencies"`
+	Governance GovernanceState      `json:"governance"`
+	Chain      ChainState           `json:"state"`
+	Balances   []BalanceState       `json:"balances"`
+	AuthTokens []passport.AuthToken `json:"authTokens"`
+	Staking    []Stake              `json:"staking"`
+	Domains    []DomainState        `json:"domains"`
+	Trackers   []Tracker            `json:"trackers"`
+	Fees       []BalanceState       `json:"fees"`
 }
 
 func NewAppState(currencies balance.Currencies,
 	balances []BalanceState,
+	authTokens []passport.AuthToken,
 	staking []Stake,
 	domains []DomainState,
 	fees []BalanceState,
@@ -103,6 +106,7 @@ func NewAppState(currencies balance.Currencies,
 	return &AppState{
 		Currencies: currencies,
 		Balances:   balances,
+		AuthTokens: authTokens,
 		Staking:    staking,
 		Domains:    domains,
 		Fees:       fees,

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
@@ -33,6 +34,7 @@ import (
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/ons"
+	"github.com/Oneledger/protocol/data/passport"
 
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/keys"
@@ -68,6 +70,9 @@ type testnetConfig struct {
 	cloud                bool
 	loglevel             int
 	reserved_domains     string
+
+	// super admins
+	superAdmins []string
 }
 
 var ethBlockConfirmation = int64(12)
@@ -99,6 +104,8 @@ func init() {
 	testnetCmd.Flags().IntVar(&testnetArgs.loglevel, "loglevel", 3, "Specify the log level for olfullnode. 0: Fatal, 1: Error, 2: Warning, 3: Info, 4: Debug, 5: Detail")
 	testnetCmd.Flags().StringVar(&testnetArgs.reserved_domains, "reserved_domains", "", "Directory which contains Reserved domains list")
 
+	// super admins
+	testnetCmd.Flags().StringSliceVar(&testnetArgs.superAdmins, "super_admins", []string{}, "Initial super admin addresses that hold tokens")
 }
 
 func randStr(size int) string {
@@ -382,7 +389,16 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		btcBlockConfirmation,
 	}
 
-	states := initialState(args, nodeList, *cdo, *onsOp, btccdo, reserveDomains, initialAddrs)
+	// super admins
+	var superAdmins []keys.Address
+	if len(testnetArgs.superAdmins) > 0 {
+		superAdmins, err = getInitialAddress(superAdmins, testnetArgs.superAdmins)
+		if err != nil {
+			return err
+		}
+	}
+
+	states := initialState(args, nodeList, *cdo, *onsOp, btccdo, reserveDomains, initialAddrs, superAdmins)
 
 	genesisDoc, err := consensus.NewGenesisDoc(chainID, states)
 	if err != nil {
@@ -416,7 +432,8 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 }
 
 func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDriverOption, onsOption ons.Options,
-	btcOption bitcoin.ChainDriverOption, reservedDomains []reservedDomain, initialAddrs []keys.Address) consensus.AppState {
+	btcOption bitcoin.ChainDriverOption, reservedDomains []reservedDomain, initialAddrs []keys.Address,
+	superAdmins []keys.Address) consensus.AppState {
 	olt := balance.Currency{Id: 0, Name: "OLT", Chain: chain.ONELEDGER, Decimal: 18, Unit: "nue"}
 	vt := balance.Currency{Id: 1, Name: "VT", Chain: chain.ONELEDGER, Unit: "vt"}
 	obtc := balance.Currency{Id: 2, Name: "BTC", Chain: chain.BITCOIN, Decimal: 8, Unit: "satoshi"}
@@ -428,22 +445,12 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 		MinFeeDecimal: 9,
 	}
 	balances := make([]consensus.BalanceState, 0, len(nodeList))
+	tokens := make([]passport.AuthToken, 0, len(superAdmins))
 	staking := make([]consensus.Stake, 0, len(nodeList))
 	domains := make([]consensus.DomainState, 0, len(nodeList))
 	fees_db := make([]consensus.BalanceState, 0, len(nodeList))
 	total := olt.NewCoinFromInt(args.totalFunds)
-
-	//var initialAddrs []keys.Address
 	initAddrIndex := 0
-	//for _, addr := range args.initialTokenHolders {
-	//	tmpAddr := keys.Address{}
-	//	err := tmpAddr.UnmarshalText([]byte(addr))
-	//	if err != nil {
-	//		fmt.Println("Error adding initial address:", addr)
-	//		continue
-	//	}
-	//	initialAddrs = append(initialAddrs, tmpAddr)
-	//}
 
 	for _, node := range nodeList {
 		if !node.isValidator {
@@ -536,9 +543,36 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 			}
 		}
 	}
+
+	// super admins
+	if len(args.superAdmins) > 0 {
+		now := time.Now().UTC().Format(time.RFC3339)
+		for i, addr := range superAdmins {
+			balances = append(balances, consensus.BalanceState{
+				Address:  addr,
+				Currency: vt.Name,
+				Amount:   *vt.NewCoinFromInt(1).Amount,
+			})
+			sum := sha256.Sum256([]byte(addr.Humanize()))
+			userID := fmt.Sprintf("%x", sum)
+			tokens = append(tokens, passport.AuthToken{
+				TokId:        passport.TokenID(fmt.Sprintf("SuperAdminToken%v", i+1)),
+				TokType:      passport.TokenType(passport.TokenSuperAdmin),
+				TokSubType:   passport.ScreenerInvalid,
+				TokTypeId:    passport.TypeIDSuperAdmin,
+				TokRole:      passport.RoleSuperAdmin,
+				TokPermit:    passport.PermitSuper,
+				OwnerId:      passport.UserID(userID),
+				OwnerAddress: addr,
+				CreatedAt:    now,
+			})
+		}
+	}
+
 	return consensus.AppState{
 		Currencies: currencies,
 		Balances:   balances,
+		AuthTokens: tokens,
 		Staking:    staking,
 		Domains:    domains,
 		Fees:       fees_db,

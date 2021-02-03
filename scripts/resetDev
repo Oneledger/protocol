@@ -8,6 +8,7 @@ olfullnode init devnet --dir $OLDATA/devnet --nonvalidators 1 \
 --empty_blocks \
 --loglevel 4 \
 --eth_rpc HTTP://127.0.0.1:7545 \
+--super_admins "0lt5e18ca7b173e672e3cc6aca9790965af82e9c0ac,0lt9e6891c2cc3de5fea4147f8f3ea813e8a19a5bf6,0lt6c850a34f35318ba0f71a8c48788d9ce0c000af0,0lt5fbdc9c5864b5d03e3a70807dc652cc6cbcfff0f,0lt52901e9603f9d504049c9d79132e3e9c2820b6a4" \
 #--total_funds 1000000000 \
 #--deploy_smart_contracts \
 #--initial_token_holders "0lt017548f8774f9602b4e25743050d3a8ab37f1341,0ltd97c69531169bf142ef40279ff2a00a0802e5df2" \
@@ -27,3 +28,4 @@ olfullnode init devnet --dir $OLDATA/devnet --nonvalidators 1 \
 #--initial_token_holders "0x416e9cc0abc4ea98b4066823a62bfa6515180582,0xd72c6a5b12dcc13a542acfef023b9f86ca0c3928" \
 #--reserved_domains $OLDATA/reserved_domains.dat \
 
+#--super_admins "0lt1a7cd2a637fe31d2b502bf6c7de3e539ea4731d1,0lt1e89ba80f39cefe4bb30094ee4aa98b54fe06132,0lt6f01f8b98aa5e472b916115e3421e183fba1c13f,0ltf1ab78d25bc1e2af1c11e2b2e26d1a5175eb5271" \

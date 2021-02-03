@@ -10,6 +10,7 @@ import (
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/jobs"
 	"github.com/Oneledger/protocol/data/ons"
+	"github.com/Oneledger/protocol/data/passport"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/storage"
@@ -25,6 +26,8 @@ type Context struct {
 	FeePool         *fees.Store
 	Currencies      *balance.CurrencySet
 	FeeOpt          *fees.FeeOption
+	Tests           *passport.TestInfoStore
+	AuthTokens      *passport.AuthTokenStore
 	Validators      *identity.ValidatorStore
 	Witnesses       *identity.WitnessStore
 	BTCTrackers     *bitcoin.TrackerStore
@@ -37,6 +40,7 @@ type Context struct {
 func NewContext(r Router, header *abci.Header, state *storage.State,
 	wallet accounts.Wallet, balances *balance.Store,
 	currencies *balance.CurrencySet, feePool *fees.Store,
+	tests *passport.TestInfoStore, authTokens *passport.AuthTokenStore,
 	validators *identity.ValidatorStore, witnesses *identity.WitnessStore,
 	domains *ons.DomainStore, btcTrackers *bitcoin.TrackerStore,
 	ethTrackers *ethereum.TrackerStore, jobStore *jobs.JobStore,
@@ -51,6 +55,8 @@ func NewContext(r Router, header *abci.Header, state *storage.State,
 		Domains:         domains,
 		FeePool:         feePool,
 		Currencies:      currencies,
+		Tests:           tests,
+		AuthTokens:      authTokens,
 		Validators:      validators,
 		Witnesses:       witnesses,
 		BTCTrackers:     btcTrackers,

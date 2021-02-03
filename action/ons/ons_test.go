@@ -1,5 +1,6 @@
 package ons
 
+/*
 import (
 	"encoding/hex"
 	"encoding/json"
@@ -279,3 +280,4 @@ func TestUpdate(t *testing.T) {
 	fmt.Println("height", hex.EncodeToString(ctx.State.RootHash()), ctx.State.Version())
 
 }
+*/

@@ -7,8 +7,8 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
+	"github.com/pkg/errors"
 	"io"
 	"io/ioutil"
 	"os"
@@ -132,6 +132,12 @@ func (ks *KeyStore) decrypt(data []byte, passphrase string) ([]byte, error) {
 }
 
 func (ks *KeyStore) SaveKeyData(path string, address Address, data []byte, passphrase string) error {
+	//Check if keyfile already exists
+	existingFile, _ := GetFileName(path, address)
+	if len(existingFile) > 0 {
+		return errors.New("key file already exists")
+	}
+
 	filename, _ := filepath.Abs(path + buildFileName(address))
 	f, _ := os.Create(filename)
 
@@ -172,10 +178,9 @@ func (ks *KeyStore) GetKeyData(path string, address Address, passphrase string) 
 	if err != nil {
 		return nil, err
 	}
-
 	err = json.Unmarshal(data, accData)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Parallel reads not permitted on keystore file")
 	}
 
 	cipherData, err := hex.DecodeString(accData.CipherText)
@@ -283,7 +288,7 @@ func GetFileName(path string, address Address) (string, error) {
 	}
 
 	if len(matches) != 1 {
-		return "", errors.New("invalid address")
+		return "", errors.New("invalid address - path: " + path + " address: " + address.String())
 	}
 
 	return matches[0], nil

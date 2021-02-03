@@ -41,8 +41,12 @@ const (
 	ERC20_LOCK               Type = 0x94
 	ERC20_REDEEM             Type = 0x95
 
-	//Domain Changes block height constant
-	DOMAIN_CHANGE_BLOCK_HEIGHT = 200000
+	//Passport Actions
+	PASSPORT_HOSP_ADMIN  Type = 0x61
+	PASSPORT_SCR_ADMIN   Type = 0x62
+	PASSPORT_UPLOAD_TEST Type = 0x63
+	PASSPORT_READ_TEST   Type = 0x64
+	PASSPORT_UPDATE_TEST Type = 0x65
 
 	//EOF here Only used as a marker to mark the end of Type list
 	//So that the query for Types can return all Types dynamically
@@ -82,31 +86,12 @@ func (t Type) String() string {
 	case DOMAIN_RENEW:
 		return "DOMAIN_RENEW"
 
-	case BTC_LOCK:
-		return "BTC_LOCK"
-	case BTC_ADD_SIGNATURE:
-		return "BTC_ADD_SIGNATURE"
-	case BTC_BROADCAST_SUCCESS:
-		return "BTC_BROADCAST_SUCCESS"
-	case BTC_REPORT_FINALITY_MINT:
-		return "BTC_REPORT_FINALITY_MINT"
-	case BTC_EXT_MINT:
-		return "BTC_EXT_MINT"
-	case BTC_REDEEM:
-		return "BTC_REDEEM"
-	case BTC_FAILED_BROADCAST_RESET:
-		return "BTC_FAILED_BROADCAST_RESET"
-
-	case ETH_LOCK:
-		return "ETH_LOCK"
-	case ETH_REPORT_FINALITY_MINT:
-		return "ETH_REPORT_FINALITY_MINT"
-	case ETH_REDEEM:
-		return "ETH_REDEEM"
-	case ERC20_LOCK:
-		return "ERC20_LOCK"
-	case ERC20_REDEEM:
-		return "ERC20_REDEEM"
+	case PASSPORT_HOSP_ADMIN:
+		return "PASSPORT_HOSP_ADMIN"
+	case PASSPORT_UPLOAD_TEST:
+		return "PASSPORT_UPLOAD_TEST"
+	case PASSPORT_UPDATE_TEST:
+		return "PASSPORT_UPDATE_TEST"
 
 	default:
 		return "UNKNOWN"

@@ -6,14 +6,14 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/Oneledger/protocol/action/staking"
+	"github.com/Oneledger/protocol/action/transfer"
+
 	"github.com/pkg/errors"
 	db "github.com/tendermint/tm-db"
 
 	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/action/eth"
-	action_ons "github.com/Oneledger/protocol/action/ons"
-	"github.com/Oneledger/protocol/action/staking"
-	"github.com/Oneledger/protocol/action/transfer"
+	actPassport "github.com/Oneledger/protocol/action/passport"
 	"github.com/Oneledger/protocol/app/node"
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/config"
@@ -25,6 +25,7 @@ import (
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/jobs"
 	"github.com/Oneledger/protocol/data/ons"
+	"github.com/Oneledger/protocol/data/passport"
 	"github.com/Oneledger/protocol/event"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
@@ -50,6 +51,8 @@ type context struct {
 
 	balances    *balance.Store
 	domains     *ons.DomainStore
+	tests       *passport.TestInfoStore
+	authTokens  *passport.AuthTokenStore
 	validators  *identity.ValidatorStore // Set of validators currently active
 	witnesses   *identity.WitnessStore   // Set of witnesses currently active
 	feePool     *fees.Store
@@ -92,6 +95,8 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.deliver = storage.NewState(ctx.chainstate)
 	ctx.check = storage.NewState(ctx.chainstate)
 
+	ctx.tests = passport.NewTestInfoStore("testinfo", "org", "read", storage.NewState(ctx.chainstate))
+	ctx.authTokens = passport.NewAuthTokenStore("token", storage.NewState(ctx.chainstate))
 	ctx.validators = identity.NewValidatorStore("v", storage.NewState(ctx.chainstate))
 	ctx.witnesses = identity.NewWitnessStore("w", storage.NewState(ctx.chainstate))
 	ctx.balances = balance.NewStore("b", storage.NewState(ctx.chainstate))
@@ -124,13 +129,9 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 		BtcInterval: btime,
 		EthInterval: ttime,
 	}, ctx.jobStore)
-
-	_ = transfer.EnableSend(ctx.actionRouter)
 	_ = staking.EnableApplyValidator(ctx.actionRouter)
-	_ = action_ons.EnableONS(ctx.actionRouter)
-	//"btc" service temporarily disabled
-	//_ = btc.EnableBTC(ctx.actionRouter)
-	_ = eth.EnableETH(ctx.actionRouter)
+	_ = transfer.EnableSend(ctx.actionRouter)
+	_ = actPassport.EnablePassport(ctx.actionRouter)
 
 	return ctx, nil
 }
@@ -149,6 +150,8 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.balances.WithState(state),
 		ctx.currencies,
 		ctx.feePool.WithState(state),
+		ctx.tests.WithState(state),
+		ctx.authTokens.WithState(state),
 		ctx.validators.WithState(state),
 		ctx.witnesses.WithState(state),
 		ctx.domains.WithState(state),
@@ -201,6 +204,9 @@ func (ctx *context) Services() (service.Map, error) {
 	ons := ons.NewDomainStore("d", storage.NewState(ctx.chainstate))
 	ons.SetOptions(ctx.domains.GetOptions())
 
+	authTokens := passport.NewAuthTokenStore("token", storage.NewState(ctx.chainstate))
+	tests := passport.NewTestInfoStore("testinfo", "org", "read", storage.NewState(ctx.chainstate))
+
 	svcCtx := &service.Context{
 		Balances:     balance.NewStore("b", storage.NewState(ctx.chainstate)),
 		Accounts:     ctx.accounts,
@@ -216,6 +222,8 @@ func (ctx *context) Services() (service.Map, error) {
 		Services:     extSvcs,
 		EthTrackers:  ethTracker,
 		Trackers:     btcTrackers,
+		AuthTokens:   authTokens,
+		Tests:        tests,
 	}
 
 	return service.NewMap(svcCtx)

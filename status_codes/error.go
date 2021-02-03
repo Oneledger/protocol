@@ -4,7 +4,10 @@
 
 package status_codes
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 /*
 	Protocol Error definition
@@ -25,6 +28,18 @@ func (se ProtocolError) ErrorMsg() string {
 func (se ProtocolError) Wrap(err error) *ProtocolError {
 	return &ProtocolError{se.Code,
 		se.Msg + ": " + err.Error()}
+}
+
+func (se ProtocolError) Marshal() string {
+	errInByte, _ := json.Marshal(se)
+	return string(errInByte)
+}
+
+func UnMarshalError(str string) (ProtocolError, error) {
+	errByte := []byte(str)
+	errObj := ProtocolError{}
+	err := json.Unmarshal(errByte, &errObj)
+	return errObj, err
 }
 
 func WrapError(err error, code int, msg string) *ProtocolError {
@@ -61,7 +76,7 @@ var (
 	ErrBadAddress      = ProtocolError{IncorrectAddress, "address incorrect"}
 	ErrGettingBalance  = ProtocolError{InternalErrorGettingBalance, "error  getting balance"}
 	ErrListValidators  = ProtocolError{InternalErrorListValidators, "error getting list of validators"}
-	ErrListWitnesses  = ProtocolError{InternalErrorListWitnesses, "error getting list of witnesses"}
+	ErrListWitnesses   = ProtocolError{InternalErrorListWitnesses, "error getting list of witnesses"}
 	ErrFindingCurrency = ProtocolError{CurrencyNotFound, "error finding currency"}
 	ErrGetTx           = ProtocolError{TxNotFound, "error get tx from tendermint"}
 

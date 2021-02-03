@@ -165,7 +165,7 @@ func runUpdate(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 			}
 		}
 		d.URI = update.Uri
-	} else if ctx.State.Version() >= action.DOMAIN_CHANGE_BLOCK_HEIGHT && strings.Compare(update.Uri, "") == 0 {
+	} else if strings.Compare(update.Uri, "") == 0 {
 		// reset uri
 		d.URI = ""
 	}

@@ -27,6 +27,7 @@ require (
 	github.com/mattn/go-isatty v0.0.10 // indirect
 	github.com/mattn/go-runewidth v0.0.5 // indirect
 	github.com/olekukonko/tablewriter v0.0.1 // indirect
+	github.com/otiai10/copy v1.2.0
 	github.com/pkg/errors v0.9.1
 	github.com/powerman/rpc-codec v1.1.2
 	github.com/prometheus/tsdb v0.10.0 // indirect

@@ -5,6 +5,7 @@
 package status_codes
 
 const (
+	GeneralErr          = 999 // all errors without error code
 	InvalidParams       = 1001
 	IncorrectAddress    = 100101
 	DomainMissing       = 100102
@@ -85,4 +86,30 @@ const (
 	GovErrVoteUpdateVote        = 700101
 	GovErrVoteDeleteVoteRecords = 700102
 	GovErrVoteCheckVoteResult   = 700103
+
+	Passport
+	PsptErr                       = 8001
+	PsptErrInvalidIdentifier      = 800100
+	PsptErrIdentifierDuplicate    = 800101
+	PsptErrPermissionRequired     = 800102
+	PsptErrAuthTokenNotFound      = 800103
+	PsptErrSuperUserNotFound      = 800104
+	PsptErrAuthTokenAlreadyExists = 800105
+	PsptErrOwnerAddressExists     = 800106
+	PsptErrAddressIsSuperUser     = 800107
+	PsptErrSerialization          = 800108
+	PsptErrErrorCreatingToken     = 800109
+	PsptErrTokenTypeIsSuperUser   = 800110
+
+	PsptErrInvalidTestType     = 800111
+	PsptErrInvalidTestResult   = 800112
+	PsptErrInvalidTimeStamp    = 800113
+	PsptErrInvalidTokenType    = 800114
+	PsptErrUploadTestFailure   = 800115
+	PsptErrReadTestFailure     = 800116
+	PsptErrInvalidTestSubType  = 800117
+	PsptErrInvalidManufacturer = 800118
+	PsptErrUpdateTestFailure   = 800119
+	PsptErrInvalidTestID       = 800120
+	PsptErrInitialResult       = 800121
 )

@@ -1,11 +1,11 @@
 package tx
 
 import (
+	"github.com/Oneledger/protocol/action/transfer"
 	"github.com/google/uuid"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/staking"
-	"github.com/Oneledger/protocol/action/transfer"
 	"github.com/Oneledger/protocol/app/node"
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/data/accounts"
@@ -46,91 +46,6 @@ func NewService(
 		feeOpt:      feeOpt,
 		logger:      logger,
 	}
-}
-
-// SendTx exists for maintaining backwards compatibility with existing olclient implementations. It returns
-// a signed transaction
-// TODO: deprecate this
-func (svc *Service) SendTx(args client.SendTxRequest, reply *client.CreateTxReply) error {
-	send := transfer.Send{
-		From:   keys.Address(args.From),
-		To:     keys.Address(args.To),
-		Amount: args.Amount,
-	}
-	data, err := send.Marshal()
-	if err != nil {
-		svc.logger.Error("error in serializing send object", err)
-		return codes.ErrSerialization
-	}
-
-	uuidNew, _ := uuid.NewUUID()
-	fee := action.Fee{args.GasPrice, args.Gas}
-	tx := action.RawTx{
-		Type: action.SEND,
-		Data: data,
-		Fee:  fee,
-		Memo: uuidNew.String(),
-	}
-
-	if _, err := svc.accounts.GetAccount(args.From); err != nil {
-		return accounts.ErrGetAccountByAddress
-	}
-
-	pubKey, signed, err := svc.accounts.SignWithAddress(tx.RawBytes(), send.From)
-	if err != nil {
-		return err
-	}
-	signatures := []action.Signature{{pubKey, signed}}
-	signedTx := &action.SignedTx{
-		RawTx:      tx,
-		Signatures: signatures,
-	}
-
-	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(signedTx)
-	if err != nil {
-		return codes.ErrSerialization
-	}
-
-	*reply = client.CreateTxReply{
-		RawTx: packet,
-	}
-
-	return nil
-}
-
-func (svc *Service) CreateRawSend(args client.SendTxRequest, reply *client.CreateTxReply) error {
-	send := transfer.Send{
-		From:   args.From,
-		To:     args.To,
-		Amount: args.Amount,
-	}
-	data, err := send.Marshal()
-	if err != nil {
-		svc.logger.Error("error in serializing send object", err)
-		return codes.ErrSerialization
-	}
-
-	uuidNew, err := uuid.NewUUID()
-
-	fee := action.Fee{args.GasPrice, args.Gas}
-	tx := &action.RawTx{
-		Type: action.SEND,
-		Data: data,
-		Fee:  fee,
-		Memo: uuidNew.String(),
-	}
-
-	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
-	if err != nil {
-		svc.logger.Error("error in serializing send transaction", err)
-		return codes.ErrSerialization
-	}
-
-	*reply = client.CreateTxReply{
-		RawTx: packet,
-	}
-
-	return nil
 }
 
 func (svc *Service) ApplyValidator(args client.ApplyValidatorRequest, reply *client.ApplyValidatorReply) error {
@@ -211,40 +126,6 @@ func (svc *Service) ApplyValidator(args client.ApplyValidatorRequest, reply *cli
 	return nil
 }
 
-func (svc *Service) WithdrawReward(args client.WithdrawRewardRequest, reply *client.WithdrawRewardReply) error {
-
-	if len(args.To) < 1 {
-		args.To = args.From
-	}
-
-	withdraw := staking.Withdraw{
-		From: args.From,
-		To:   args.To,
-	}
-
-	data, err := withdraw.Marshal()
-	if err != nil {
-		return codes.ErrSerialization
-	}
-
-	uuidNew, _ := uuid.NewUUID()
-
-	tx := action.RawTx{
-		Type: action.WITHDRAW,
-		Data: data,
-		Fee: action.Fee{
-			Price: args.GasPrice,
-			Gas:   args.Gas,
-		},
-		Memo: uuidNew.String(),
-	}
-
-	packet := tx.RawBytes()
-
-	*reply = client.WithdrawRewardReply{RawTx: packet}
-	return nil
-}
-
 func (svc Service) PurgeValidator(req client.PurgeValidatorRequest, reply *client.PurgeValidatorReply) error {
 
 	if req.Validator.Err() != nil || req.Admin.Err() != nil {
@@ -278,3 +159,126 @@ func (svc Service) PurgeValidator(req client.PurgeValidatorRequest, reply *clien
 	}
 	return nil
 }
+
+// SendTx exists for maintaining backwards compatibility with existing olclient implementations. It returns
+// a signed transaction
+// TODO: deprecate this
+func (svc *Service) SendTx(args client.SendTxRequest, reply *client.CreateTxReply) error {
+	send := transfer.Send{
+		From:   keys.Address(args.From),
+		To:     keys.Address(args.To),
+		Amount: args.Amount,
+	}
+	data, err := send.Marshal()
+	if err != nil {
+		svc.logger.Error("error in serializing send object", err)
+		return codes.ErrSerialization
+	}
+
+	uuidNew, _ := uuid.NewUUID()
+	fee := action.Fee{args.GasPrice, args.Gas}
+	tx := action.RawTx{
+		Type: action.SEND,
+		Data: data,
+		Fee:  fee,
+		Memo: uuidNew.String(),
+	}
+
+	if _, err := svc.accounts.GetAccount(args.From); err != nil {
+		return accounts.ErrGetAccountByAddress
+	}
+
+	pubKey, signed, err := svc.accounts.SignWithAddress(tx.RawBytes(), send.From)
+	if err != nil {
+		return err
+	}
+	signatures := []action.Signature{{pubKey, signed}}
+	signedTx := &action.SignedTx{
+		RawTx:      tx,
+		Signatures: signatures,
+	}
+
+	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(signedTx)
+	if err != nil {
+		return codes.ErrSerialization
+	}
+
+	*reply = client.CreateTxReply{
+		RawTx: packet,
+	}
+
+	return nil
+}
+
+/*
+func (svc *Service) CreateRawSend(args client.SendTxRequest, reply *client.CreateTxReply) error {
+	send := transfer.Send{
+		From:   args.From,
+		To:     args.To,
+		Amount: args.Amount,
+	}
+	data, err := send.Marshal()
+	if err != nil {
+		svc.logger.Error("error in serializing send object", err)
+		return codes.ErrSerialization
+	}
+
+	uuidNew, err := uuid.NewUUID()
+
+	fee := action.Fee{args.GasPrice, args.Gas}
+	tx := &action.RawTx{
+		Type: action.SEND,
+		Data: data,
+		Fee:  fee,
+		Memo: uuidNew.String(),
+	}
+
+	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(tx)
+	if err != nil {
+		svc.logger.Error("error in serializing send transaction", err)
+		return codes.ErrSerialization
+	}
+
+	*reply = client.CreateTxReply{
+		RawTx: packet,
+	}
+
+	return nil
+}
+
+
+
+func (svc *Service) WithdrawReward(args client.WithdrawRewardRequest, reply *client.WithdrawRewardReply) error {
+
+	if len(args.To) < 1 {
+		args.To = args.From
+	}
+
+	withdraw := staking.Withdraw{
+		From: args.From,
+		To:   args.To,
+	}
+
+	data, err := withdraw.Marshal()
+	if err != nil {
+		return codes.ErrSerialization
+	}
+
+	uuidNew, _ := uuid.NewUUID()
+
+	tx := action.RawTx{
+		Type: action.WITHDRAW,
+		Data: data,
+		Fee: action.Fee{
+			Price: args.GasPrice,
+			Gas:   args.Gas,
+		},
+		Memo: uuidNew.String(),
+	}
+
+	packet := tx.RawBytes()
+
+	*reply = client.WithdrawRewardReply{RawTx: packet}
+	return nil
+}
+*/

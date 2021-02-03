@@ -161,3 +161,10 @@ save:
 	go install -i github.com/Oneledger/protocol/cmd/...
 	@./scripts/saveState
 	@./scripts/startDev
+
+
+testpassport: reset
+	python scripts/passport/testHospitalAdmin.py
+	python scripts/passport/testScreenerAdmin.py
+	make reset
+	python scripts/passport/testUploadRead.py

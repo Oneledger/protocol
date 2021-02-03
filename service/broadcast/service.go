@@ -2,6 +2,9 @@ package broadcast
 
 import (
 	"errors"
+
+	"github.com/Oneledger/protocol/data/passport"
+
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/data/balance"
@@ -20,12 +23,16 @@ type Service struct {
 	trackers   *bitcoin.TrackerStore
 	feePool    *fees.Store
 	domains    *ons.DomainStore
+
+	authTokens *passport.AuthTokenStore
+	Tests      *passport.TestInfoStore
 	ext        client.ExtServiceContext
 }
 
 func NewService(ctx client.ExtServiceContext, router action.Router, currencies *balance.CurrencySet,
 	feePool *fees.Store, domains *ons.DomainStore,
 	logger *log.Logger, trackers *bitcoin.TrackerStore,
+	authTokens *passport.AuthTokenStore,
 ) *Service {
 	return &Service{
 		ext:        ctx,
@@ -35,6 +42,7 @@ func NewService(ctx client.ExtServiceContext, router action.Router, currencies *
 		feePool:    feePool,
 		domains:    domains,
 		logger:     logger,
+		authTokens: authTokens,
 	}
 }
 
@@ -59,7 +67,7 @@ func (svc *Service) validateAndSignTx(req client.BroadcastRequest) ([]byte, erro
 
 	handler := svc.router.Handler(tx.Type)
 	ctx := action.NewContext(svc.router, nil, nil, nil, nil, svc.currencies,
-		svc.feePool, nil, nil, svc.domains, svc.trackers, nil, nil, nil,
+		svc.feePool, svc.Tests, svc.authTokens, nil, nil, svc.domains, svc.trackers, nil, nil, nil,
 		svc.logger)
 
 	_, err = handler.Validate(ctx, signedTx)

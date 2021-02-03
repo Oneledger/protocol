@@ -1,0 +1,38 @@
+#!/bin/bash
+
+nodes_dir="$OLDATA/devnet"
+project_dir=$(git rev-parse --show-toplevel)
+superadmins_dir="$project_dir/HP-SuperAdmins"
+number_validators=4
+number_nonvalidator=5
+total_nodes=$((number_validators+number_nonvalidator))
+echo "Nodes deployed to : " $nodes_dir
+echo "Superadmin keys used from :"$superadmins_dir
+
+CGO_ENABLED=1 CGO_LDFLAGS="-lsnappy" go install -tags "cleveldb" github.com/Oneledger/protocol/cmd/...
+
+pids=`pgrep -f "olfullnode node.*"`
+if ! [ -z "$pids" ]
+then
+	pkill -f "olfullnode node.*"
+	killed=true
+fi
+
+rm -rf $OLDATA/devnet/*
+
+olfullnode init devnet --dir $nodes_dir --nonvalidators $number_nonvalidator --validators $number_validators \
+--empty_blocks \
+--loglevel 4 \
+--super_admins "0lt40be5d74a60141a7975344ac2c478a145d27be0b,0lt5a5bdf2e3edcae52dcd4cdf620ca9cca2616e4eb,0ltf67fc3fa0eb82b28e2d1229f47712d515e3eb05b,0lt7f975b1e7485c4275e35f54079ae9625c8278c0a"
+
+
+for name in $(ls -l "$nodes_dir" | grep Node  | awk '(NR>0){print $9}')
+do
+    echo "Start Node: $name"
+    olfullnode node --root $nodes_dir/$name >> $nodes_dir/$name/olfullnode.log 2>&1  &
+    sleep 1
+done
+
+sleep 3
+
+hpclient loadtest --root $nodes_dir --threads 20 --interval 1 --max-tx 10000 --nodes $total_nodes --superadmins $superadmins_dir --noodvalidatornodes $number_validators

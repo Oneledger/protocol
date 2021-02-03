@@ -4,6 +4,10 @@
 
 package tx
 
+/*  Disabling All ONS transaction creation through RPC
+   	TODO: Delete file in future
+
+
 import (
 	"github.com/google/uuid"
 
@@ -269,3 +273,4 @@ func (s *Service) ONS_CreateRawDeleteSub(args client.ONSDeleteSubRequest, reply 
 	}
 	return nil
 }
+*/

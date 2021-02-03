@@ -13,11 +13,10 @@ import (
 	ethTracker "github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/ons"
+	"github.com/Oneledger/protocol/data/passport"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/service/broadcast"
-	"github.com/Oneledger/protocol/service/btc"
-	"github.com/Oneledger/protocol/service/ethereum"
 	nodesvc "github.com/Oneledger/protocol/service/node"
 	"github.com/Oneledger/protocol/service/owner"
 	"github.com/Oneledger/protocol/service/query"
@@ -31,6 +30,8 @@ type Context struct {
 	Balances     *balance.Store
 	Domains      *ons.DomainStore
 	FeePool      *fees.Store
+	AuthTokens   *passport.AuthTokenStore
+	Tests        *passport.TestInfoStore
 	ValidatorSet *identity.ValidatorStore
 	WitnessSet   *identity.WitnessStore
 	Trackers     *bitcoin.TrackerStore
@@ -54,13 +55,11 @@ type Map map[string]interface{}
 func NewMap(ctx *Context) (Map, error) {
 
 	defaultMap := Map{
-		broadcast.Name(): broadcast.NewService(ctx.Services, ctx.Router, ctx.Currencies, ctx.FeePool, ctx.Domains, ctx.Logger, ctx.Trackers),
+		broadcast.Name(): broadcast.NewService(ctx.Services, ctx.Router, ctx.Currencies, ctx.FeePool, ctx.Domains, ctx.Logger, ctx.Trackers, ctx.AuthTokens),
 		nodesvc.Name():   nodesvc.NewService(ctx.NodeContext, &ctx.Cfg, ctx.Logger),
 		owner.Name():     owner.NewService(ctx.Accounts, ctx.Logger),
-		query.Name():     query.NewService(ctx.Services, ctx.Balances, ctx.Currencies, ctx.ValidatorSet, ctx.WitnessSet, ctx.Domains, ctx.FeePool, ctx.Logger, ctx.TxTypes),
+		query.Name():     query.NewService(ctx.Services, ctx.Balances, ctx.Currencies, ctx.Tests, ctx.AuthTokens, ctx.ValidatorSet, ctx.WitnessSet, ctx.Domains, ctx.FeePool, ctx.Logger, ctx.TxTypes),
 		tx.Name():        tx.NewService(ctx.Balances, ctx.Router, ctx.Accounts, ctx.FeePool.GetOpt(), ctx.NodeContext, ctx.Logger),
-		btc.Name():       btc.NewService(ctx.Balances, ctx.Accounts, ctx.NodeContext, ctx.ValidatorSet, ctx.Trackers, ctx.Logger),
-		ethereum.Name():  ethereum.NewService(ctx.Cfg.EthChainDriver, ctx.Router, ctx.Accounts, ctx.NodeContext, ctx.ValidatorSet, ctx.EthTrackers, ctx.Logger),
 	}
 
 	serviceMap := Map{}

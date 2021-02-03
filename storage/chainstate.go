@@ -22,9 +22,10 @@ package storage
 
 import (
 	"encoding/hex"
-	"github.com/Oneledger/protocol/config"
 	"strconv"
 	"sync"
+
+	"github.com/Oneledger/protocol/config"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/iavl"

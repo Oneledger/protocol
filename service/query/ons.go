@@ -1,6 +1,10 @@
 package query
 
+/* 	Disabling file since domains will not be available through RPC
+	TODO: Delete file in the future
+
 import (
+
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/data/ons"
 	codes "github.com/Oneledger/protocol/status_codes"
@@ -169,3 +173,4 @@ func (svc *Service) ONS_GetOptions(_ struct{}, reply *client.ONSGetOptionsReply)
 	}
 	return nil
 }
+*/

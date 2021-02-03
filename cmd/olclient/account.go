@@ -111,7 +111,7 @@ func init() {
 }
 
 func Add(cmd *cobra.Command, args []string) error {
-	wallet, err := accounts.NewWalletKeyStore(keyStorePath)
+	wallet, err := accounts.NewWalletKeyStore(rootArgs.rootDir + keyStorePath)
 	if err != nil {
 		return err
 	}

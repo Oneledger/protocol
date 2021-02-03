@@ -109,7 +109,8 @@ type NodeIDRequest struct {
 	ShouldShowIP bool `json:"shouldShowIP,omitempty"`
 }
 type NodeIDReply struct {
-	Id string `json:"id"`
+	PublicKey string `json:"publicKey"`
+	Id        string `json:"id"`
 }
 
 type AddAccountRequest = accounts.Account
@@ -146,7 +147,7 @@ type ListValidatorsReply struct {
 	Height int64 `json:"height"`
 }
 
-type ListWitnessesRequest struct{
+type ListWitnessesRequest struct {
 	ChainType chain.Type `json:"chainType"`
 }
 type ListWitnessesReply struct {
@@ -201,6 +202,13 @@ type NewAccountRequest struct {
 }
 type NewAccountReply struct {
 	Account accounts.Account `json:"account"`
+}
+
+type SecureSignRawTxRequest struct {
+	RawTx    []byte         `json:"rawTx"`
+	Address  action.Address `json:"address"`
+	Password string         `json:"password"`
+	KeyPath  string         `json:"keyPath"`
 }
 
 type SignRawTxRequest struct {
