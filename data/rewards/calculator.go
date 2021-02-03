@@ -125,7 +125,7 @@ func (calc *RewardCalculator) secondsPerCycleLatest() (int64, time.Time) {
 	if calc.height > calc.options.BlockSpeedCalculateCycle {
 		// get speed calculation [begin, end] height
 		cycle := calc.options.BlockSpeedCalculateCycle
-		cycleEndHeight := calc.height
+		cycleEndHeight := (calc.height-1)/cycle*cycle + 1
 		cycleBeginHeight := cycleEndHeight - cycle
 
 		timestamp, err := calc.GetTimeStamp(cycleBeginHeight)
