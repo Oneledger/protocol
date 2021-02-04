@@ -40,10 +40,22 @@ func init() {
 
 func TestRewardCalculator_SaveTimeStamp(t *testing.T) {
 	timestamp := time.Now().UTC()
-	err := calculator.SaveTimeStamp(100, &timestamp)
+	err := calculator.SaveTimeStamp(100, timestamp)
 	assert.Equal(t, nil, err)
 
 	query, err := calculator.GetTimeStamp(100)
 	assert.Equal(t, nil, err)
 	assert.EqualValues(t, &timestamp, query)
+}
+
+func TestRewardCalculator_GetCycleTime(t *testing.T) {
+	timestamp := time.Now().UTC()
+	err := calculator.SaveTimeStamp(1, timestamp)
+	assert.Equal(t, nil, err)
+	timestamp2 := timestamp.Add(time.Duration(estimatedSecondsPerCycle) * time.Second)
+	err = calculator.SaveTimeStamp(2, timestamp2)
+	assert.Equal(t, nil, err)
+
+	seconds := calculator.GetCycleTime(2)
+	assert.Equal(t, estimatedSecondsPerCycle, seconds)
 }

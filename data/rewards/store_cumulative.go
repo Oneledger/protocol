@@ -31,6 +31,7 @@ func NewRewardCumulativeStore(prefix string, state *storage.State) *RewardCumula
 
 func (rws *RewardCumulativeStore) WithState(state *storage.State) *RewardCumulativeStore {
 	rws.state = state
+	rws.calculator.state = state
 	return rws
 }
 

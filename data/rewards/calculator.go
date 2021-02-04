@@ -80,6 +80,7 @@ func (calc *RewardCalculator) Burnedout() bool {
 func (calc *RewardCalculator) Calculate() (amt *balance.Amount, err error) {
 	// set cached amount if available
 	amt = balance.NewAmount(0)
+	calc.InitGenesis()
 	cycleNo, firstInCycle, _ := calc.getCycleNo()
 	if calc.cached.available() {
 		*amt = *calc.cached.amount
@@ -121,28 +122,33 @@ func (calc *RewardCalculator) Calculate() (amt *balance.Amount, err error) {
 
 func (calc *RewardCalculator) secondsPerCycleLatest() (int64, time.Time) {
 	tEnd := calc.genesisTime.UTC()
+	cycleNo, firstInCycle, _ := calc.getCycleNo()
 	secsPerCycle := calc.options.EstimatedSecondsPerCycle
 	if calc.height > calc.options.BlockSpeedCalculateCycle {
-		// get speed calculation [begin, end] height
-		cycle := calc.options.BlockSpeedCalculateCycle
-		cycleEndHeight := (calc.height-1)/cycle*cycle + 1
-		cycleBeginHeight := cycleEndHeight - cycle
-
-		timestamp, err := calc.GetTimeStamp(cycleBeginHeight)
+		//If node starts back up in the middle of a cycle
+		if !firstInCycle {
+			timestamp, err := calc.GetTimeStamp(cycleNo)
+			if err != nil || timestamp == nil {
+				return 0, time.Time{}
+			}
+			cycleTime := calc.GetCycleTime(cycleNo)
+			return cycleTime, *timestamp
+		}
+		//Get timestamp for previous cycle
+		timePrev, err := calc.GetTimeStamp(cycleNo - 1)
 		if err != nil {
-			fmt.Println("ERROR READING TIMESTAMP: ", err.Error())
+			fmt.Println("ERROR reading TIMESTAMP: ", err.Error())
 			return 0, time.Time{}
 		}
 		//Get Start and End timestamps for current cycle
-		tBegin := timestamp.UTC()
+		tBegin := timePrev.UTC()
 		tEnd = calc.currentBlockTime.UTC()
-
 		//Save Current block timestamp as Beginning of new cycle
-		err = calc.SaveTimeStamp(calc.height, &calc.currentBlockTime)
+		err = calc.SaveTimeStamp(cycleNo, calc.currentBlockTime)
 		if err != nil {
+			fmt.Println("ERROR Saving TIMESTAMP: ", err.Error())
 			return 0, time.Time{}
 		}
-
 		secsPerCycle = int64(tEnd.Sub(tBegin).Seconds())
 	}
 	return secsPerCycle, tEnd
@@ -192,7 +198,6 @@ func (rws *RewardCalculator) SetOptions(options *Options) {
 
 func (calc *RewardCalculator) Init(genesisTime time.Time) {
 	calc.genesisTime = genesisTime
-	_ = calc.SaveTimeStamp(int64(1), &genesisTime)
 }
 
 //-------------------------------------------- Calculator DB Functions --------------------------------------------
@@ -219,17 +224,39 @@ func (calc *RewardCalculator) getTimestamp(key storage.StoreKey) (timestamp *tim
 }
 
 // Key for Cycle TimeStamps
-func (calc *RewardCalculator) getCycleTimeKey(height int64) []byte {
-	key := string(calc.prefix) + "cyclts" + storage.DB_PREFIX + strconv.FormatInt(height, 10)
+func (calc *RewardCalculator) getCycleTimeKey(cycle int64) []byte {
+	key := string(calc.prefix) + "cyclts" + storage.DB_PREFIX + strconv.FormatInt(cycle, 10)
 	return storage.StoreKey(key)
 }
 
-func (calc *RewardCalculator) SaveTimeStamp(height int64, timestamp *time.Time) error {
-	key := calc.getCycleTimeKey(height)
-	return calc.set(key, timestamp)
+func (calc *RewardCalculator) SaveTimeStamp(cycle int64, timestamp time.Time) error {
+	key := calc.getCycleTimeKey(cycle)
+	return calc.set(key, &timestamp)
 }
 
-func (calc *RewardCalculator) GetTimeStamp(height int64) (*time.Time, error) {
-	key := calc.getCycleTimeKey(height)
+func (calc *RewardCalculator) GetTimeStamp(cycle int64) (*time.Time, error) {
+	key := calc.getCycleTimeKey(cycle)
 	return calc.getTimestamp(key)
+}
+
+func (calc *RewardCalculator) GetCycleTime(cycle int64) int64 {
+	if cycle <= 0 {
+		return 0
+	}
+	timeCurr, err := calc.GetTimeStamp(cycle)
+	if err != nil {
+		return 0
+	}
+	timePrev, err := calc.GetTimeStamp(cycle - 1)
+	if timePrev == nil || err != nil {
+		return 0
+	}
+	return int64(timeCurr.Sub(*timePrev).Seconds())
+}
+
+func (calc *RewardCalculator) InitGenesis() {
+	_, err := calc.GetTimeStamp(1)
+	if err != nil {
+		_ = calc.SaveTimeStamp(1, calc.genesisTime)
+	}
 }
