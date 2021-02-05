@@ -614,7 +614,7 @@ func handleBlockRewards(appCtx *context, block RequestBeginBlock, logger *log.Lo
 	if err != nil {
 		return abciTypes.Event{}
 	}
-	totalRewards, err := rewardMaster.RewardCm.PullRewards(lastHeight, rewardPoolCoin.Amount)
+	totalRewards, err := rewardMaster.RewardCm.PullRewards(lastHeight, block.Header.Time.UTC(), rewardPoolCoin.Amount)
 	if err != nil {
 		return abciTypes.Event{}
 	}
