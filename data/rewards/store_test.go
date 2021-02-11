@@ -316,7 +316,7 @@ func TestRewardStore_DumpLoadState(t *testing.T) {
 		Index:   2,
 		Amount:  balance.NewAmount(2 * rewardInterval),
 	})
-	expected.Intervals = append(expected.Intervals, Interval{LastIndex: 1, LastHeight: 2})
+	expected.Intervals = append(expected.Intervals, Interval{LastIndex: 0, LastHeight: 2})
 	expected.AddrList = append(expected.AddrList, validatorList[0])
 	expected.AddrList = append(expected.AddrList, validatorList[1])
 
