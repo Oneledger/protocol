@@ -33,20 +33,18 @@ func setupInitialWitness(ws *WitnessStore) []keys.Address {
 	addresses[2] = addr2
 	addresses[3] = addr3
 
-	stakes := make([]Stake, 2)
-	stakes[0] = Stake{
-		ValidatorAddress: addr0,
-		StakeAddress:     addr0,
-		Pubkey: keys.PublicKey{
+	stakes := make([]Witness, 2)
+	stakes[0] = Witness{
+		Address: addr0,
+		PubKey: keys.PublicKey{
 			KeyType: keys.ED25519,
 			Data:    nil,
 		},
 		Name: "test_node0",
 	}
-	stakes[1] = Stake{
-		ValidatorAddress: addr1,
-		StakeAddress:     addr1,
-		Pubkey: keys.PublicKey{
+	stakes[1] = Witness{
+		Address: addr1,
+		PubKey: keys.PublicKey{
 			KeyType: keys.ED25519,
 			Data:    nil,
 		},
@@ -139,10 +137,9 @@ func TestEthWitnessStore_IsETHWitnessAddress(t *testing.T) {
 func TestEthWitnessStore_AddWitness(t *testing.T) {
 	ws := setupEthWitnessStore()
 	addr, _ := hex.DecodeString("F2143AD5793BA10D9410225ADC68B38D5085E11C")
-	stake := Stake{
-		ValidatorAddress: addr,
-		StakeAddress:     addr,
-		Pubkey: keys.PublicKey{
+	stake := Witness{
+		Address: addr,
+		PubKey: keys.PublicKey{
 			KeyType: keys.ED25519,
 			Data:    nil,
 		},

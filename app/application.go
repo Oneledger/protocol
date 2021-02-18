@@ -199,8 +199,8 @@ func (app *App) setupState(stateBytes []byte) error {
 			return errors.Wrap(err, "failed to set balance")
 		}
 	}
-	for _, stake := range initial.Witness {
-		err = app.Context.witnesses.WithState(app.Context.deliver).AddWitness(chain.ETHEREUM, identity.Stake(stake))
+	for _, witness := range initial.Witness {
+		err = app.Context.witnesses.WithState(app.Context.deliver).AddWitness(chain.ETHEREUM, witness)
 		if err != nil {
 			return errors.Wrap(err, "failed to add initial ethereum witness")
 		}

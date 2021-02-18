@@ -578,6 +578,7 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 	}
 	balances := make([]consensus.BalanceState, 0, len(nodeList))
 	staking := make([]consensus.Stake, 0, len(nodeList))
+	witnesses := make([]identity.Witness, 0, len(nodeList))
 	penalities := make([]identity.Penalty, 0)
 	rewards := rewards.RewardMasterState{
 		RewardState: rewards.NewRewardState(),
@@ -667,7 +668,14 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 			Name:             node.validator.Name,
 			Amount:           *balance.NewAmountFromInt(node.validator.Power),
 		}
+		wt := identity.Witness{
+			Address:     node.validator.Address.Bytes(),
+			PubKey:      pubkey,
+			ECDSAPubKey: h.PubKey(),
+			Name:        node.validator.Name,
+		}
 		staking = append(staking, st)
+		witnesses = append(witnesses, wt)
 	}
 	if len(args.initialTokenHolders) > 0 {
 		for _, acct := range initialAddrs {
@@ -732,7 +740,7 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 		Balances:   balances,
 		Staking:    staking,
 		Penalties:  penalities,
-		Witness:    staking,
+		Witness:    witnesses,
 		Rewards:    rewards,
 		Domains:    domains,
 		Fees:       fees_db,

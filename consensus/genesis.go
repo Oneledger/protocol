@@ -85,7 +85,7 @@ type AppState struct {
 	Balances      []BalanceState                 `json:"balances"`
 	Staking       []Stake                        `json:"staking"`
 	Penalties     []identity.Penalty             `json:"penalties"`
-	Witness       []Stake                        `json:"witness"`
+	Witness       []identity.Witness             `json:"witness"`
 	Delegation    delegation.DelegationState     `json:"delegation"`
 	Rewards       rewards.RewardMasterState      `json:"rewards"`
 	Domains       []DomainState                  `json:"domains"`
@@ -101,7 +101,7 @@ func NewAppState(currencies balance.Currencies,
 	balances []BalanceState,
 	staking []Stake,
 	penalties []identity.Penalty,
-	witness []Stake,
+	witness []identity.Witness,
 	delegation delegation.DelegationState,
 	rewards rewards.RewardMasterState,
 	domains []DomainState,
