@@ -346,6 +346,7 @@ type StorageCtx struct {
 	Balances        *balance.Store
 	Domains         *ons.DomainStore
 	Validators      *identity.ValidatorStore // Set of validators currently active
+	Witnesses       *identity.WitnessStore
 	Delegators      *delegation.DelegationStore
 	RewardMaster    *rewards.RewardMasterStore
 	ProposalMaster  *governance.ProposalMasterStore
@@ -370,6 +371,7 @@ func (ctx *context) Storage() StorageCtx {
 		Balances:        ctx.balances,
 		Domains:         ctx.domains,
 		Validators:      ctx.validators,
+		Witnesses:       ctx.witnesses,
 		Delegators:      ctx.delegators,
 		RewardMaster:    ctx.rewardMaster,
 		ProposalMaster:  ctx.proposalMaster,

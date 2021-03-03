@@ -52,8 +52,8 @@ var (
 	}
 	yearBlockRewardDist_1, _ = balance.NewAmountFromString("68418125", 10)
 	yearBlockRewardDist_2, _ = balance.NewAmountFromString("69771125", 10)
-	yearBlockRewardDist_3, _ = balance.NewAmountFromString("39095550", 10)
-	yearBlockRewardDist_4, _ = balance.NewAmountFromString("39710750", 10)
+	yearBlockRewardDist_3, _ = balance.NewAmountFromString("40578450", 10)
+	yearBlockRewardDist_4, _ = balance.NewAmountFromString("39703550", 10)
 	yearBlockRewardDist_5, _ = balance.NewAmountFromString("30433875", 10)
 	yearBlockRewardDist      = []balance.Amount{
 		*yearBlockRewardDist_1,

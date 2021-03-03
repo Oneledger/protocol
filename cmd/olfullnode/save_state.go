@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/Oneledger/protocol/data/chain"
 	"io"
 	"os"
 	"path/filepath"
@@ -245,6 +246,8 @@ func writeListWithTag(ctx app.StorageCtx, writer io.Writer, tag string) bool {
 		DumpBalanceToFile(ctx.Balances, writer, writeStruct)
 	case "staking":
 		DumpStakingToFile(ctx.Validators, writer, writeStruct)
+	case "witness":
+		DumpWitnessesToFile(ctx.Witnesses, writer, writeStruct)
 	case "penalties":
 		DumpPenaltyToFile(ctx.Validators, writer, writeStruct)
 	case "domains":
@@ -360,6 +363,7 @@ func SaveChainState(application *app.App, filename string, directory string) err
 	writeStructWithTag(writer, appState.Chain, "state")
 	writeListWithTag(ctx, writer, "balances")
 	writeListWithTag(ctx, writer, "staking")
+	writeListWithTag(ctx, writer, "witness")
 	writeListWithTag(ctx, writer, "penalties")
 	writeStoreWithTag(ctx, writer, "delegation")
 	writeStoreWithTag(ctx, writer, "rewards")
@@ -426,6 +430,24 @@ func DumpStakingToFile(vs *identity.ValidatorStore, writer io.Writer, fn func(wr
 		//stake.Power = validator.Power
 
 		fn(writer, stake)
+		iterator++
+		return false
+	})
+
+	return
+}
+
+func DumpWitnessesToFile(ws *identity.WitnessStore, writer io.Writer, fn func(writer io.Writer, obj interface{}) bool) {
+	iterator := 0
+	delimiter := ","
+	ws.Iterate(chain.ETHEREUM, func(key keys.Address, witness *identity.Witness) bool {
+		if iterator != 0 {
+			_, err := writer.Write([]byte(delimiter))
+			if err != nil {
+				return true
+			}
+		}
+		fn(writer, witness)
 		iterator++
 		return false
 	})
