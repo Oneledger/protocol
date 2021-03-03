@@ -88,16 +88,9 @@ func (ws *WitnessStore) IsWitnessAddress(chain chain.Type, addr keys.Address) bo
 }
 
 // Add a witness to store
-func (ws *WitnessStore) AddWitness(chain chain.Type, apply Stake) error {
-	if ws.Exists(chain, apply.ValidatorAddress) {
+func (ws *WitnessStore) AddWitness(chain chain.Type, witness Witness) error {
+	if ws.Exists(chain, witness.Address) {
 		return nil
-	}
-
-	witness := &Witness{
-		Address:     apply.ValidatorAddress,
-		PubKey:      apply.Pubkey,
-		ECDSAPubKey: apply.ECDSAPubKey,
-		Name:        apply.Name,
 	}
 
 	value := witness.Bytes()
