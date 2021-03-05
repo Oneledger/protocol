@@ -2,7 +2,7 @@ package rewards
 
 import (
 	"github.com/pkg/errors"
-	tmstore "github.com/tendermint/tendermint/store"
+	"time"
 
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
@@ -16,7 +16,7 @@ type RewardCumulativeStore struct {
 	prefix []byte
 
 	calculator    *RewardCalculator
-	blockStore    *tmstore.BlockStore
+	genesisTime   time.Time
 	rewardOptions *Options
 }
 
@@ -25,17 +25,18 @@ func NewRewardCumulativeStore(prefix string, state *storage.State) *RewardCumula
 		state:      state,
 		prefix:     storage.Prefix(prefix),
 		szlr:       serialize.GetSerializer(serialize.PERSISTENT),
-		calculator: NewRewardCalculator(),
+		calculator: NewRewardCalculator(state, prefix),
 	}
 }
 
 func (rws *RewardCumulativeStore) WithState(state *storage.State) *RewardCumulativeStore {
 	rws.state = state
+	rws.calculator.state = state
 	return rws
 }
 
 // Pull a combined block rewards from total supply for all voting validators for given block height
-func (rws *RewardCumulativeStore) PullRewards(height int64, poolAmt *balance.Amount) (amount *balance.Amount, err error) {
+func (rws *RewardCumulativeStore) PullRewards(height int64, currentTime time.Time, poolAmt *balance.Amount) (amount *balance.Amount, err error) {
 	// get year distributed amount till now
 	rewardYears, err := rws.GetYearDistributedRewards()
 	if err != nil {
@@ -43,7 +44,7 @@ func (rws *RewardCumulativeStore) PullRewards(height int64, poolAmt *balance.Amo
 	}
 
 	// calculate reward for each block
-	rws.calculator.Reset(height, rewardYears)
+	rws.calculator.Reset(height, currentTime, rewardYears)
 	amount, err = rws.calculator.Calculate()
 	if err != nil {
 		return
@@ -175,9 +176,9 @@ func (rws *RewardCumulativeStore) GetOptions() *Options {
 	return rws.rewardOptions
 }
 
-func (rws *RewardCumulativeStore) Init(blockStore *tmstore.BlockStore) {
-	rws.blockStore = blockStore
-	rws.calculator.Init(blockStore)
+func (rws *RewardCumulativeStore) Init(genesisTime time.Time) {
+	rws.genesisTime = genesisTime
+	rws.calculator.Init(genesisTime)
 }
 
 //-----------------------------helper functions
@@ -251,7 +252,7 @@ func (rws *RewardCumulativeStore) getRewardYears(key storage.StoreKey) (rewards 
 
 // Initialize each reward year's information
 func (rws *RewardCumulativeStore) initRewardYears(key storage.StoreKey) (rewards RewardYears, err error) {
-	tStart := rws.blockStore.LoadBlockMeta(1).Header.Time.UTC()
+	tStart := rws.genesisTime.UTC()
 	numofYears := len(rws.rewardOptions.YearBlockRewardShares)
 
 	// calculate each year's start/close time

@@ -4,12 +4,14 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/Oneledger/protocol/data/network_delegation"
+	"github.com/Oneledger/protocol/data/chain"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/Oneledger/protocol/data/network_delegation"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -244,6 +246,10 @@ func writeListWithTag(ctx app.StorageCtx, writer io.Writer, tag string) bool {
 		DumpBalanceToFile(ctx.Balances, writer, writeStruct)
 	case "staking":
 		DumpStakingToFile(ctx.Validators, writer, writeStruct)
+	case "witness":
+		DumpWitnessesToFile(ctx.Witnesses, writer, writeStruct)
+	case "penalties":
+		DumpPenaltyToFile(ctx.Validators, writer, writeStruct)
 	case "domains":
 		DumpDomainToFile(ctx.Domains, ctx.Version, writer, writeStruct)
 	case "trackers":
@@ -277,6 +283,8 @@ func writeStoreWithTag(ctx app.StorageCtx, writer io.Writer, tag string) (state 
 		state, succeed = ctx.RewardMaster.DumpState()
 	case "delegator_rewards":
 		state, succeed = ctx.NetwkDelegators.Rewards.SaveState()
+	case "evidences":
+		state, succeed = ctx.Evidences.DumpState()
 	}
 	if !succeed {
 		return
@@ -355,6 +363,8 @@ func SaveChainState(application *app.App, filename string, directory string) err
 	writeStructWithTag(writer, appState.Chain, "state")
 	writeListWithTag(ctx, writer, "balances")
 	writeListWithTag(ctx, writer, "staking")
+	writeListWithTag(ctx, writer, "witness")
+	writeListWithTag(ctx, writer, "penalties")
 	writeStoreWithTag(ctx, writer, "delegation")
 	writeStoreWithTag(ctx, writer, "rewards")
 	writeListWithTag(ctx, writer, "domains")
@@ -362,6 +372,7 @@ func SaveChainState(application *app.App, filename string, directory string) err
 	writeListWithTag(ctx, writer, "proposals")
 	writeCustomStructWithTag(ctx, writer, "net_delegators")
 	writeStoreWithTag(ctx, writer, "delegator_rewards")
+	writeStoreWithTag(ctx, writer, "evidences")
 	writeListWithTag(ctx, writer, "fees")
 	endBlock(writer)
 
@@ -419,6 +430,44 @@ func DumpStakingToFile(vs *identity.ValidatorStore, writer io.Writer, fn func(wr
 		//stake.Power = validator.Power
 
 		fn(writer, stake)
+		iterator++
+		return false
+	})
+
+	return
+}
+
+func DumpWitnessesToFile(ws *identity.WitnessStore, writer io.Writer, fn func(writer io.Writer, obj interface{}) bool) {
+	iterator := 0
+	delimiter := ","
+	ws.Iterate(chain.ETHEREUM, func(key keys.Address, witness *identity.Witness) bool {
+		if iterator != 0 {
+			_, err := writer.Write([]byte(delimiter))
+			if err != nil {
+				return true
+			}
+		}
+		fn(writer, witness)
+		iterator++
+		return false
+	})
+
+	return
+}
+
+func DumpPenaltyToFile(vs *identity.ValidatorStore, writer io.Writer, fn func(writer io.Writer, obj interface{}) bool) {
+	iterator := 0
+	delimiter := ","
+	vs.IteratePenalties(func(penalty *identity.Penalty) bool {
+		if iterator != 0 {
+			_, err := writer.Write([]byte(delimiter))
+			if err != nil {
+				return true
+			}
+		}
+		// Adjusts height of penalty for genesis deployment
+		penalty.Height -= vs.Version()
+		fn(writer, penalty)
 		iterator++
 		return false
 	})

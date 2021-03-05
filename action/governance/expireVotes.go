@@ -43,7 +43,7 @@ func (e ExpireVotes) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, a
 }
 
 func (e ExpireVotes) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	ctx.Logger.Detail("Processing ExpireVotes Transaction for DeliverTx", tx)
+	ctx.Logger.Debug("Processing ExpireVotes Transaction for DeliverTx", tx)
 	return runExpireVotes(ctx, tx)
 }
 

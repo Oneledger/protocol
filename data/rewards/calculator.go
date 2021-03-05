@@ -1,11 +1,14 @@
 package rewards
 
 import (
+	"fmt"
+	"github.com/Oneledger/protocol/serialize"
+	"github.com/Oneledger/protocol/storage"
 	"math/big"
+	"strconv"
 	"time"
 
 	"github.com/Oneledger/protocol/data/balance"
-	tmstore "github.com/tendermint/tendermint/store"
 )
 
 type RewardYear struct {
@@ -42,22 +45,31 @@ func (cache *RewardCached) available() bool {
 }
 
 type RewardCalculator struct {
-	height      int64
-	cached      RewardCached
-	rewardYears RewardYears
-	blockStore  *tmstore.BlockStore
-	options     *Options
+	state  *storage.State
+	szlr   serialize.Serializer
+	prefix []byte
+
+	height           int64
+	cached           RewardCached
+	rewardYears      RewardYears
+	genesisTime      time.Time
+	currentBlockTime time.Time
+	options          *Options
 }
 
-func NewRewardCalculator() *RewardCalculator {
+func NewRewardCalculator(state *storage.State, prefix string) *RewardCalculator {
 	return &RewardCalculator{
+		state:  state,
+		prefix: storage.Prefix(prefix),
+		szlr:   serialize.GetSerializer(serialize.PERSISTENT),
 		height: 0,
 		cached: NewRewardCached(),
 	}
 }
 
-func (calc *RewardCalculator) Reset(height int64, rewardYears RewardYears) {
+func (calc *RewardCalculator) Reset(height int64, currentTime time.Time, rewardYears RewardYears) {
 	calc.height = height
+	calc.currentBlockTime = currentTime
 	calc.rewardYears = rewardYears
 }
 
@@ -68,6 +80,7 @@ func (calc *RewardCalculator) Burnedout() bool {
 func (calc *RewardCalculator) Calculate() (amt *balance.Amount, err error) {
 	// set cached amount if available
 	amt = balance.NewAmount(0)
+	calc.InitGenesis()
 	cycleNo, firstInCycle, _ := calc.getCycleNo()
 	if calc.cached.available() {
 		*amt = *calc.cached.amount
@@ -108,17 +121,34 @@ func (calc *RewardCalculator) Calculate() (amt *balance.Amount, err error) {
 }
 
 func (calc *RewardCalculator) secondsPerCycleLatest() (int64, time.Time) {
-	tEnd := calc.blockStore.LoadBlockMeta(1).Header.Time.UTC()
+	tEnd := calc.genesisTime.UTC()
+	cycleNo, firstInCycle, _ := calc.getCycleNo()
 	secsPerCycle := calc.options.EstimatedSecondsPerCycle
 	if calc.height > calc.options.BlockSpeedCalculateCycle {
-		// get speed calculation [begin, end] height
-		cycle := calc.options.BlockSpeedCalculateCycle
-		cycleEndHeight := (calc.height-1)/cycle*cycle + 1
-		cycleBeginHeight := cycleEndHeight - cycle
-
-		// duration of the cycle, in secs
-		tBegin := calc.blockStore.LoadBlockMeta(cycleBeginHeight).Header.Time.UTC()
-		tEnd = calc.blockStore.LoadBlockMeta(cycleEndHeight).Header.Time.UTC()
+		//If node starts back up in the middle of a cycle
+		if !firstInCycle {
+			timestamp, err := calc.GetTimeStamp(cycleNo)
+			if err != nil || timestamp == nil {
+				return 0, time.Time{}
+			}
+			cycleTime := calc.GetCycleTime(cycleNo)
+			return cycleTime, *timestamp
+		}
+		//Get timestamp for previous cycle
+		timePrev, err := calc.GetTimeStamp(cycleNo - 1)
+		if err != nil {
+			fmt.Println("ERROR reading TIMESTAMP: ", err.Error())
+			return 0, time.Time{}
+		}
+		//Get Start and End timestamps for current cycle
+		tBegin := timePrev.UTC()
+		tEnd = calc.currentBlockTime.UTC()
+		//Save Current block timestamp as Beginning of new cycle
+		err = calc.SaveTimeStamp(cycleNo, calc.currentBlockTime)
+		if err != nil {
+			fmt.Println("ERROR Saving TIMESTAMP: ", err.Error())
+			return 0, time.Time{}
+		}
 		secsPerCycle = int64(tEnd.Sub(tBegin).Seconds())
 	}
 	return secsPerCycle, tEnd
@@ -166,6 +196,67 @@ func (rws *RewardCalculator) SetOptions(options *Options) {
 	rws.options = options
 }
 
-func (calc *RewardCalculator) Init(blockStore *tmstore.BlockStore) {
-	calc.blockStore = blockStore
+func (calc *RewardCalculator) Init(genesisTime time.Time) {
+	calc.genesisTime = genesisTime
+}
+
+//-------------------------------------------- Calculator DB Functions --------------------------------------------
+
+// Set cumulative amount(s) by key
+func (calc *RewardCalculator) set(key storage.StoreKey, obj interface{}) error {
+	dat, err := calc.szlr.Serialize(obj)
+	if err != nil {
+		return err
+	}
+	err = calc.state.Set(key, dat)
+	return err
+}
+
+// Get Timestamp by key
+func (calc *RewardCalculator) getTimestamp(key storage.StoreKey) (timestamp *time.Time, err error) {
+	timestamp = &time.Time{}
+	dat, err := calc.state.Get(key)
+	if err != nil {
+		return
+	}
+	err = calc.szlr.Deserialize(dat, timestamp)
+	return
+}
+
+// Key for Cycle TimeStamps
+func (calc *RewardCalculator) getCycleTimeKey(cycle int64) []byte {
+	key := string(calc.prefix) + "cyclts" + storage.DB_PREFIX + strconv.FormatInt(cycle, 10)
+	return storage.StoreKey(key)
+}
+
+func (calc *RewardCalculator) SaveTimeStamp(cycle int64, timestamp time.Time) error {
+	key := calc.getCycleTimeKey(cycle)
+	return calc.set(key, &timestamp)
+}
+
+func (calc *RewardCalculator) GetTimeStamp(cycle int64) (*time.Time, error) {
+	key := calc.getCycleTimeKey(cycle)
+	return calc.getTimestamp(key)
+}
+
+func (calc *RewardCalculator) GetCycleTime(cycle int64) int64 {
+	if cycle <= 0 {
+		return 0
+	}
+	timeCurr, err := calc.GetTimeStamp(cycle)
+	if err != nil {
+		return 0
+	}
+	timePrev, err := calc.GetTimeStamp(cycle - 1)
+	if timePrev == nil || err != nil {
+		return 0
+	}
+	return int64(timeCurr.Sub(*timePrev).Seconds())
+}
+
+func (calc *RewardCalculator) InitGenesis() {
+	_, err := calc.GetTimeStamp(1)
+	if err != nil {
+		_ = calc.SaveTimeStamp(1, calc.genesisTime)
+	}
 }

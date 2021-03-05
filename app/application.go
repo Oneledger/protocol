@@ -199,8 +199,8 @@ func (app *App) setupState(stateBytes []byte) error {
 			return errors.Wrap(err, "failed to set balance")
 		}
 	}
-	for _, stake := range initial.Witness {
-		err = app.Context.witnesses.WithState(app.Context.deliver).AddWitness(chain.ETHEREUM, identity.Stake(stake))
+	for _, witness := range initial.Witness {
+		err = app.Context.witnesses.WithState(app.Context.deliver).AddWitness(chain.ETHEREUM, witness)
 		if err != nil {
 			return errors.Wrap(err, "failed to add initial ethereum witness")
 		}
@@ -214,6 +214,12 @@ func (app *App) setupState(stateBytes []byte) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to handle initial staking")
 		}
+	}
+
+	// load penalties history
+	err = app.Context.validators.WithState(app.Context.deliver).LoadPenalties(initial.Penalties)
+	if err != nil {
+		return errors.Wrap(err, "failed to handle initial penalties")
 	}
 
 	if !app.Context.delegators.WithState(app.Context.deliver).LoadState(initial.Delegation) {
@@ -292,6 +298,12 @@ func (app *App) setupState(stateBytes []byte) error {
 	err = app.Context.netwkDelegators.Rewards.WithState(app.Context.deliver).LoadState(&initial.DelegatorRew)
 	if err != nil {
 		return errors.Wrap(err, "error setting up network delegation reward data")
+	}
+
+	//Setup Evidences
+	err = app.Context.evidenceStore.WithState(app.Context.deliver).LoadState(&initial.Evidences)
+	if err != nil {
+		return errors.Wrap(err, "error setting up evidence data")
 	}
 
 	app.Context.deliver.Write()
@@ -444,7 +456,7 @@ func (app *App) Prepare() error {
 	app.Context.witnesses.Init(chain.ETHEREUM, app.Context.node.ValidatorAddress())
 
 	// Init reward cumulative store
-	app.Context.rewardMaster.RewardCm.Init(app.node.BlockStore())
+	app.Context.rewardMaster.RewardCm.Init(genesisDoc.GenesisTime.UTC())
 
 	// Initialize internal Services
 	app.Context.internalService = event.NewService(app.Context.node,

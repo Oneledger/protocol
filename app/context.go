@@ -130,10 +130,15 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.evidenceStore = evidence.NewEvidenceStore("es", storage.NewState(ctx.chainstate))
 	ctx.rewardMaster = NewRewardMasterStore(ctx.chainstate)
 	ctx.btcTrackers = bitcoin.NewTrackerStore("btct", storage.NewState(ctx.chainstate))
-	//Separate DB and chainstate
-	newDB := tmdb.NewDB("internaltxdb", tmdb.MemDBBackend, "")
-	cs := storage.NewState(storage.NewChainState("chainstateTX", newDB))
-	ctx.transaction = transactions.NewTransactionStore("intx", cs)
+	//Separate DB and chainstate - Only used by external Apps
+	{
+		newDB, err := storage.GetDatabase("internaltx", ctx.dbDir(), ctx.cfg.Node.DB)
+		if err != nil {
+			return ctx, errors.Wrap(err, "initial db failed")
+		}
+		cs := storage.NewState(storage.NewChainState("chainstateTX", newDB))
+		ctx.transaction = transactions.NewTransactionStore("intx", cs)
+	}
 
 	ctx.ethTrackers = ethereum.NewTrackerStore("etht", "ethfailed", "ethsuccess", storage.NewState(ctx.chainstate))
 	ctx.accounts = accounts.NewWallet(cfg, ctx.dbDir())
@@ -341,10 +346,12 @@ type StorageCtx struct {
 	Balances        *balance.Store
 	Domains         *ons.DomainStore
 	Validators      *identity.ValidatorStore // Set of validators currently active
+	Witnesses       *identity.WitnessStore
 	Delegators      *delegation.DelegationStore
 	RewardMaster    *rewards.RewardMasterStore
 	ProposalMaster  *governance.ProposalMasterStore
 	NetwkDelegators *network_delegation.MasterStore
+	Evidences       *evidence.EvidenceStore
 	FeePool         *fees.Store
 	Govern          *governance.Store
 	Trackers        *ethereum.TrackerStore //TODO: Create struct to contain all tracker types including Bitcoin.
@@ -364,10 +371,12 @@ func (ctx *context) Storage() StorageCtx {
 		Balances:        ctx.balances,
 		Domains:         ctx.domains,
 		Validators:      ctx.validators,
+		Witnesses:       ctx.witnesses,
 		Delegators:      ctx.delegators,
 		RewardMaster:    ctx.rewardMaster,
 		ProposalMaster:  ctx.proposalMaster,
 		NetwkDelegators: ctx.netwkDelegators,
+		Evidences:       ctx.evidenceStore,
 		FeePool:         ctx.feePool,
 		Govern:          ctx.govern,
 		Currencies:      ctx.currencies,

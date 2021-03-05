@@ -2,19 +2,27 @@ package identity
 
 import (
 	"fmt"
+	"math"
+	"math/big"
+	"strconv"
+
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/evidence"
 	govern "github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
+	"github.com/Oneledger/protocol/storage"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
-	"math"
-	"math/big"
 )
 
 // TODO: Reduce power in allegation tracker for GUILTY
 // TODO: Add staking recalculation
+
+type Penalty struct {
+	Height  int64
+	Unstake Unstake
+}
 
 // CheckMaliciousValidators that not pass criterias and will be marked as malicious
 func (vs *ValidatorStore) CheckMaliciousValidators(es *evidence.EvidenceStore, govern *govern.Store) error {
@@ -326,6 +334,36 @@ func (vs *ValidatorStore) fetchPostponedUnstakes() error {
 	return nil
 }
 
+func (vs *ValidatorStore) IteratePenalties(fn func(penalty *Penalty) bool) (stopped bool) {
+	key := append(vs.prefixPurge, []byte("unstake_")...)
+	prefix := storage.StoreKey(key)
+	return vs.store.IterateRange(
+		prefix,
+		storage.Rangefix(string(prefix)),
+		true,
+		func(key, dat []byte) bool {
+			penalty := &Penalty{}
+			err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(dat, &penalty.Unstake)
+			if err != nil {
+				logger.Error("failed to deserialize postponed penalty")
+				return true
+			}
+			// key in format "heightAddress"
+			keyBytes := key[len(prefix):]
+			addrLength := len([]byte(penalty.Unstake.Address))
+			heightLength := len(keyBytes) - addrLength
+
+			// parse height and address
+			penalty.Height, err = strconv.ParseInt(string(keyBytes[:heightLength]), 10, 64)
+			if err != nil {
+				logger.Error("failed to deserialize penalty height")
+				return true
+			}
+			return fn(penalty)
+		},
+	)
+}
+
 func (vs *ValidatorStore) delayHandleUnstake(addr keys.Address, amt balance.Amount) error {
 	apply := &Unstake{
 		Address: addr,
@@ -358,4 +396,19 @@ func (vs *ValidatorStore) createAllegationEvent(ar *evidence.AllegationRequest) 
 		},
 	)
 	vs.PushEvent("allegation_tracker", tags)
+}
+
+func (vs *ValidatorStore) LoadPenalties(penalties []Penalty) error {
+	for _, penalty := range penalties {
+		key := vs.getDelayUnstakeKey(penalty.Height, penalty.Unstake.Address)
+		value, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(penalty.Unstake)
+		if err != nil {
+			return errors.Wrap(err, "failed to serialize unstake")
+		}
+		err = vs.store.Set(key, value)
+		if err != nil {
+			return errors.Wrap(err, "failed to set unstake")
+		}
+	}
+	return nil
 }

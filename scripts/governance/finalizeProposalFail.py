@@ -42,3 +42,13 @@ if __name__ == "__main__":
     if len(pList) == 0:
         print "Exiting Proposal was not finalized"
         sys.exit(1)
+
+    print "PassedProposals ###############"
+    print query_proposals(ProposalStatePassed)
+
+    print "FailedProposals ################"
+    print query_proposals(ProposalStateFailed)
+
+    print "FinalizedProposlals ################"
+    pList = query_proposals(ProposalStateFinalized)
+    print pList

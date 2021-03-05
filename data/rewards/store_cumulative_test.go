@@ -5,14 +5,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/big"
-	"math/rand"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
-
-	tmstore "github.com/tendermint/tendermint/store"
-	"github.com/tendermint/tendermint/types"
 
 	"github.com/stretchr/testify/assert"
 	db "github.com/tendermint/tm-db"
@@ -54,11 +50,11 @@ var (
 		*yearBlockRewardShare_4,
 		*yearBlockRewardShare_5,
 	}
-	yearBlockRewardDist_1, _ = balance.NewAmountFromString("68441850", 10)
-	yearBlockRewardDist_2, _ = balance.NewAmountFromString("70058400", 10)
-	yearBlockRewardDist_3, _ = balance.NewAmountFromString("39384025", 10)
-	yearBlockRewardDist_4, _ = balance.NewAmountFromString("39967950", 10)
-	yearBlockRewardDist_5, _ = balance.NewAmountFromString("29421575", 10)
+	yearBlockRewardDist_1, _ = balance.NewAmountFromString("68418125", 10)
+	yearBlockRewardDist_2, _ = balance.NewAmountFromString("69771125", 10)
+	yearBlockRewardDist_3, _ = balance.NewAmountFromString("40578450", 10)
+	yearBlockRewardDist_4, _ = balance.NewAmountFromString("39703550", 10)
+	yearBlockRewardDist_5, _ = balance.NewAmountFromString("30433875", 10)
 	yearBlockRewardDist      = []balance.Amount{
 		*yearBlockRewardDist_1,
 		*yearBlockRewardDist_2,
@@ -76,36 +72,6 @@ var (
 		BurnoutRate:              *burnoutRate,
 	}
 )
-
-func makeFakeBlock(blockStore *tmstore.BlockStore, height int64, bftTime time.Time) *types.Block {
-	header := types.Header{Height: height, Time: bftTime}
-	block := &types.Block{Header: header, LastCommit: &types.Commit{}}
-	blockStore.SaveBlock(block, &types.PartSet{}, &types.Commit{})
-	return block
-}
-
-func setupBlockStore(years int) time.Time {
-	blockStore := tmstore.NewBlockStore(memDb)
-
-	// seed
-	tNow := time.Now()
-	tStart := tNow
-	rand.Seed(1)
-
-	// simulates randomly generating at approximately 0.2day(4.3~5.3hours) per block
-	secsPerBlock := int64(estimatedSecondsPerBlock)
-	numofBlocks := 2000 * years
-	for i := 0; i < numofBlocks; i++ { // generate enough blocks for 5 years
-		secs := int64(0)
-		if i > 0 {
-			secs = secsPerBlock + rand.Int63n(3600) - 1800
-			tNow = tNow.Add(time.Second * time.Duration(secs))
-		}
-		makeFakeBlock(blockStore, int64(i+1), tNow)
-	}
-	store.Init(blockStore)
-	return tStart
-}
 
 func setupRewardYears(tStart time.Time) RewardYears {
 	numofYears := len(store.rewardOptions.YearBlockRewardShares)
@@ -133,6 +99,7 @@ func setup() {
 
 	store = NewRewardCumulativeStore("rwcum", cs)
 	store.SetOptions(rewzOpt)
+	store.Init(time.Now().UTC())
 	generateAddresses()
 }
 
@@ -168,11 +135,11 @@ func TestNewRewardsCumulativeStore(t *testing.T) {
 
 func TestRewardsCumulativeStore_RewardYears(t *testing.T) {
 	setup()
-	tStart := setupBlockStore(1).UTC()
+	tStart := store.genesisTime.UTC()
 	years := setupRewardYears(tStart)
 
 	// check pulled reward amount
-	amount, err := store.PullRewards(1, balance.NewAmount(0))
+	amount, err := store.PullRewards(1, time.Now(), balance.NewAmount(0))
 	assert.Nil(t, err)
 	assert.True(t, zero.LessThan(*amount))
 
@@ -189,13 +156,14 @@ func TestRewardsCumulativeStore_RewardYears(t *testing.T) {
 
 func TestRewardsCumulativeStore_PullRewards(t *testing.T) {
 	setup()
-	tStart := setupBlockStore(5).UTC()
+	tStart := store.genesisTime.UTC()
 	years := setupRewardYears(tStart)
 
 	// check pulled reward amount for 5 years
-	for i := 1; i <= 9100; i++ {
+	for i := 1; i <= 9150; i++ {
 		height := int64(i)
-		amount, err := store.PullRewards(height, balance.NewAmount(0))
+		time := tStart.Add(time.Second * time.Duration(height*estimatedSecondsPerBlock))
+		amount, err := store.PullRewards(height, time, balance.NewAmount(0))
 		assert.Nil(t, err)
 		assert.True(t, zero.LessThan(*amount))
 
@@ -222,21 +190,25 @@ func TestRewardsCumulativeStore_PullRewards(t *testing.T) {
 	}
 
 	// test burnout, pool has nothing
-	height := int64(9101)
-	amount, err := store.PullRewards(height, balance.NewAmount(0))
+	height := int64(9151)
+	timeCurr := tStart.Add(time.Second * time.Duration(height*estimatedSecondsPerBlock))
+	amount, err := store.PullRewards(height, timeCurr, balance.NewAmount(0))
 	assert.Nil(t, err)
+	fmt.Println("Amount height 9101: ", amount)
 	assert.True(t, zero.Equals(*amount))
 
 	// test burnout, pool amount < burnout rate
-	height = int64(9102)
-	amount, err = store.PullRewards(height, balance.NewAmount(4))
+	height = int64(9152)
+	timeCurr = tStart.Add(time.Second * time.Duration(height*estimatedSecondsPerBlock))
+	amount, err = store.PullRewards(height, timeCurr, balance.NewAmount(4))
 	assert.Nil(t, err)
 	assert.True(t, amount.Equals(*balance.NewAmount(4)))
 	assert.True(t, store.calculator.Burnedout())
 
 	// test burnout, pool amount >= burnout rate
-	height = int64(9103)
-	amount, err = store.PullRewards(height, balance.NewAmount(6))
+	height = int64(9153)
+	timeCurr = tStart.Add(time.Second * time.Duration(height*estimatedSecondsPerBlock))
+	amount, err = store.PullRewards(height, timeCurr, balance.NewAmount(6))
 	assert.Nil(t, err)
 	assert.True(t, amount.Equals(*burnoutRate))
 
@@ -342,13 +314,14 @@ func TestRewardsCumulativeStore_OverWithdraw(t *testing.T) {
 
 func TestRewardsCumulativeStore_DumpLoadState(t *testing.T) {
 	setup()
-	tStart := setupBlockStore(5).UTC()
+	tStart := store.genesisTime.UTC()
 	setupRewardYears(tStart)
 
 	// pull 1800 blocks' rewards
 	for i := 1; i <= 1800; i++ {
 		height := int64(i)
-		amount, _ := store.PullRewards(height, balance.NewAmount(0))
+		time := tStart.Add(time.Second * time.Duration(height*estimatedSecondsPerBlock))
+		amount, _ := store.PullRewards(height, time, balance.NewAmount(0))
 		// consume only 80% of amount on an even height
 		if height%2 == 0 {
 			numerator := big.NewInt(0).Mul(amount.BigInt(), big.NewInt(4))
