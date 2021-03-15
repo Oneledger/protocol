@@ -1,21 +1,12 @@
-package storage
+package evm
 
 import (
 	"fmt"
 
 	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/ethereum/go-ethereum/common"
 )
-
-// stateEntry represents a single key value pair from the StateDB's stateObject mappindg.
-// This is to prevent non determinism at genesis initialization or export.
-type stateEntry struct {
-	// address key of the state object
-	address     common.Address
-	stateObject *storage.State
-}
 
 type CommitStateDB struct {
 	// TODO: We need to store the context as part of the structure itself opposed
@@ -51,16 +42,16 @@ type CommitStateDB struct {
 func (s *CommitStateDB) CreateAccount(addr common.Address) {
 	newObj, prev := s.createObject(addr)
 	if prev != nil {
-		newObj.setBalance(prev.data.Balance)
+		newObj.SetBalance(prev.account.Balance("OLT"))
 	}
 }
 
 // createObject creates a new state object. If there is an existing account with
 // the given address, it is overwritten and returned as the second return value.
-func (s *CommitStateDB) createObject(addr common.Address) (newObj, prevObj *stateEntry) {
+func (s *CommitStateDB) createObject(addr common.Address) (newObj, prevObj *stateObject) {
 	prevObj = s.getStateObject(addr)
 
-	acc, _ := s.ctx.Accounts.GetAccount(keys.Address(addr.Bytes()))
+	acc, _ := s.ctx.Accounts.GetAccount(addr.Bytes())
 
 	newObj = newStateObject(s, acc)
 	newObj.setNonce(0) // sets the object to dirty
@@ -71,9 +62,9 @@ func (s *CommitStateDB) createObject(addr common.Address) (newObj, prevObj *stat
 
 // getStateObject attempts to retrieve a state object given by the address.
 // Returns nil and sets an error if not found.
-func (s *CommitStateDB) getStateObject(addr common.Address) (stateObject *stateEntry) {
+func (s *CommitStateDB) getStateObject(addr common.Address) (stateObject *stateObject) {
 	// otherwise, attempt to fetch the account from the account mapper
-	acc, _ := s.ctx.Accounts.GetAccount(keys.Address(addr.Bytes()))
+	acc, _ := s.ctx.Accounts.GetAccount(addr.Bytes())
 	if &acc == nil {
 		s.setError(fmt.Errorf("no account found for address: %s", addr.String()))
 		return nil
@@ -84,6 +75,23 @@ func (s *CommitStateDB) getStateObject(addr common.Address) (stateObject *stateE
 	s.setStateObject(so)
 
 	return so
+}
+
+func (csdb *CommitStateDB) setStateObject(so *stateObject) {
+	if idx, found := csdb.addressToObjectIndex[so.Address()]; found {
+		// update the existing object
+		csdb.stateObjects[idx].stateObject = so
+		return
+	}
+
+	// append the new state object to the stateObjects slice
+	se := stateEntry{
+		address:     so.Address(),
+		stateObject: so,
+	}
+
+	csdb.stateObjects = append(csdb.stateObjects, se)
+	csdb.addressToObjectIndex[se.address] = len(csdb.stateObjects) - 1
 }
 
 // setError remembers the first non-nil error it is called with.

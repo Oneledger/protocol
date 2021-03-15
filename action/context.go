@@ -3,6 +3,7 @@ package action
 import (
 	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/data/rewards"
+	"github.com/Oneledger/protocol/evm"
 
 	abci "github.com/tendermint/tendermint/abci/types"
 
@@ -47,6 +48,7 @@ type Context struct {
 	GovernanceStore     *governance.Store
 	ExtStores           data.Router
 	GovUpdate           *GovernaceUpdateAndValidate
+	Contracts           *evm.ContractStore
 }
 
 func NewContext(r Router, header *abci.Header, state *storage.State,
@@ -56,7 +58,7 @@ func NewContext(r Router, header *abci.Header, state *storage.State,
 	domains *ons.DomainStore, delegators *delegation.DelegationStore, netwkDelegators *netwkDeleg.MasterStore, evidenceStore *evidence.EvidenceStore,
 	btcTrackers *bitcoin.TrackerStore, ethTrackers *ethereum.TrackerStore, jobStore *jobs.JobStore,
 	lockScriptStore *bitcoin.LockScriptStore, logger *log.Logger, proposalmaster *governance.ProposalMasterStore,
-	rewardmaster *rewards.RewardMasterStore, govern *governance.Store, extStores data.Router, govUpdate *GovernaceUpdateAndValidate) *Context {
+	rewardmaster *rewards.RewardMasterStore, govern *governance.Store, extStores data.Router, govUpdate *GovernaceUpdateAndValidate, contracts *evm.ContractStore) *Context {
 
 	return &Context{
 		Router:              r,
@@ -82,5 +84,6 @@ func NewContext(r Router, header *abci.Header, state *storage.State,
 		GovernanceStore:     govern,
 		ExtStores:           extStores,
 		GovUpdate:           govUpdate,
+		Contracts:           contracts,
 	}
 }
