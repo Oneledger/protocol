@@ -113,3 +113,7 @@ func NewSessionedDirectStorage(flavor, name string) SessionedDirectStorage {
 	}
 	return nil
 }
+
+// Storage represents the account Storage map as a slice of single key value
+// State pairs. This is to prevent non determinism at genesis initialization or export.
+type Storage []State

@@ -7,8 +7,11 @@ import (
 	"fmt"
 	"strings"
 
+	ethcmn "github.com/ethereum/go-ethereum/common"
+	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
 
+	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/utils"
 )
 
@@ -70,4 +73,45 @@ func (a *Address) UnmarshalText(text []byte) error {
 	*a = addrRaw
 
 	return nil
+}
+
+// EthAccount implements the keys.Account interface and embeds with code hash for
+// the contract
+type EthAccount struct {
+	Address  Address
+	CodeHash []byte
+	Coins    map[string]balance.Coin
+	Sequence uint64
+}
+
+func NewEthAccount(addr Address) *EthAccount {
+	return &EthAccount{
+		Address:  addr,
+		CodeHash: ethcrypto.Keccak256(nil),
+		Coins:    make(map[string]balance.Coin),
+	}
+}
+
+// EthAddress returns the account address ethereum format.
+func (acc EthAccount) EthAddress() ethcmn.Address {
+	return ethcmn.BytesToAddress(acc.Address.Bytes())
+}
+
+func (acc EthAccount) Balance(currency balance.Currency) *balance.Amount {
+	return acc.Coins[currency.Name].Amount
+}
+
+func (acc *EthAccount) AddBalance(coin balance.Coin) {
+	balance := acc.Coins[coin.Currency.Name]
+	acc.Coins[coin.Currency.Name] = balance.Plus(coin)
+}
+
+func (acc *EthAccount) SubBalance(coin balance.Coin) {
+	balance := acc.Coins[coin.Currency.Name]
+	newCoin, _ := balance.Minus(coin)
+	acc.Coins[coin.Currency.Name] = newCoin
+}
+
+func (acc *EthAccount) SetBalance(coin balance.Coin) {
+	acc.Coins[coin.Currency.Name] = coin
 }

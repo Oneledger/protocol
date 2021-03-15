@@ -46,6 +46,14 @@ func (coin Coin) IsCurrency(currencies ...string) bool {
 	return found
 }
 
+// chec if zero amount in coin
+func (coin Coin) IsZero() bool {
+	if coin.Amount.BigInt().Cmp(big.NewInt(0)) == 0 {
+		return true
+	}
+	return false
+}
+
 // LessThan, for coins...
 func (coin Coin) LessThanCoin(value Coin) bool {
 	if coin.Amount == nil || value.Amount == nil {
