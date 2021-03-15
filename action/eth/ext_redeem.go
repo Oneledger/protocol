@@ -189,7 +189,7 @@ func runRedeem(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 }
 
 // ProcessFee process the transaction Fee in OLT
-func (ethRedeemTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (ethRedeemTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas, gasUsed action.Gas) (bool, action.Response) {
 	ctx.State.ConsumeUpfront(250400)
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }

@@ -3,16 +3,19 @@ package app
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/Oneledger/protocol/data/network_delegation"
-	"github.com/Oneledger/protocol/external_apps/common"
-	"github.com/tendermint/tendermint/libs/kv"
 	"math"
 	"math/big"
 	"runtime/debug"
 	"strconv"
 
+	"github.com/tendermint/tendermint/libs/kv"
+
+	"github.com/Oneledger/protocol/data/network_delegation"
+	"github.com/Oneledger/protocol/external_apps/common"
+
 	"github.com/Oneledger/protocol/data/balance"
 
+	ethcmn "github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 
 	abciTypes "github.com/tendermint/tendermint/abci/types"
@@ -115,11 +118,34 @@ func (app *App) chainInitializer() chainInitializer {
 	}
 }
 
+func (app *App) commitVMChanges() {
+	// Update account balances before committing other parts of state
+	app.Context.stateDB.WithState(app.Context.deliver).UpdateAccounts()
+	app.logger.Debugf("Accounts updated\n")
+
+	// Commit state objects to store
+	root, err := app.Context.stateDB.WithState(app.Context.deliver).Commit(false)
+	if err != nil {
+		panic(err)
+	}
+	app.logger.Debugf("Results commited\n")
+
+	// reset all cache after account data has been committed, that make sure node state consistent
+	if err = app.Context.stateDB.WithState(app.Context.deliver).Reset(root); err != nil {
+		panic(err)
+	}
+	app.logger.Debugf("State reseted\n")
+}
+
 func (app *App) blockBeginner() blockBeginner {
 	return func(req RequestBeginBlock) ResponseBeginBlock {
 		defer app.handlePanic()
 		gc := getGasCalculator(app.genesisDoc.ConsensusParams)
 		app.Context.deliver = storage.NewState(app.Context.chainstate).WithGas(gc)
+
+		// Update last block height
+		app.Context.stateDB.WithState(app.Context.deliver).SetHeightHash(uint64(req.Header.GetHeight()), ethcmn.BytesToHash(req.Hash))
+		app.Context.stateDB.WithState(app.Context.deliver).SetBlockHash(ethcmn.BytesToHash(req.Hash))
 
 		feeOpt, err := app.Context.govern.GetFeeOption()
 		if err != nil {
@@ -219,8 +245,15 @@ func (app *App) txChecker() txChecker {
 				Log:  err.Error(),
 			}
 		}
+
+		// setup transaction hash
+		app.Context.stateDB.WithState(app.Context.deliver).Prepare(ethcmn.BytesToHash(app.GetTransactionHash(msg.Tx)))
+
 		ok, response := handler.ProcessCheck(txCtx, tx.RawTx)
-		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, storage.Gas(len(msg.Tx)))
+
+		app.logger.Debug("Response used gas: ", response.GasUsed)
+
+		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, storage.Gas(len(msg.Tx)), storage.Gas(response.GasUsed))
 
 		logString := marshalLog(ok, response, feeResponse)
 
@@ -275,9 +308,14 @@ func (app *App) txDeliverer() txDeliverer {
 
 		gas := txCtx.State.ConsumedGas()
 
+		// setup transaction hash
+		app.Context.stateDB.WithState(app.Context.deliver).Prepare(ethcmn.BytesToHash(app.GetTransactionHash(msg.Tx)))
+
 		ok, response := handler.ProcessDeliver(txCtx, tx.RawTx)
 
-		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, storage.Gas(len(msg.Tx)))
+		app.logger.Debug("Response used gas: ", response.GasUsed)
+
+		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, storage.Gas(len(msg.Tx)), storage.Gas(response.GasUsed))
 
 		logString := marshalLog(ok, response, feeResponse)
 
@@ -316,6 +354,9 @@ func (app *App) blockEnder() blockEnder {
 		app.logger.Detailf("Sending events with nodes to tendermint: %+v\n", events)
 
 		app.Context.validators.WithState(app.Context.deliver).ClearEvents()
+
+		// commit changes before the next execution
+		app.commitVMChanges()
 
 		ethTrackerlog := log.NewLoggerWithPrefix(app.Context.logWriter, "ethtracker").WithLevel(log.Level(app.Context.cfg.Node.LogLevel))
 		doTransitions(app.Context.jobStore, app.Context.btcTrackers.WithState(app.Context.deliver), app.Context.validators)
@@ -712,8 +753,12 @@ func handleBlockRewards(appCtx *context, block RequestBeginBlock, logger *log.Lo
 }
 
 func (app *App) VerifyCache(tx []byte) bool {
-	hash := utils.SHA2(tx)
+	hash := app.GetTransactionHash(tx)
 	return app.Context.internalService.ExistTx(hash)
+}
+
+func (app App) GetTransactionHash(tx []byte) []byte {
+	return utils.SHA2(tx)
 }
 
 func marshalLog(ok bool, response action.Response, feeResponse action.Response) string {

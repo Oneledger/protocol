@@ -97,7 +97,7 @@ func (delegReinvestRewardsTx) ProcessDeliver(ctx *action.Context, tx action.RawT
 	return runReinvest(ctx, tx)
 }
 
-func (delegReinvestRewardsTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (delegReinvestRewardsTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas, gasUsed action.Gas) (bool, action.Response) {
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
 

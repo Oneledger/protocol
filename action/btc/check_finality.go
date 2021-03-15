@@ -7,6 +7,7 @@ package btc
 import (
 	"bytes"
 	"encoding/json"
+
 	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
@@ -140,7 +141,7 @@ func (reportFinalityMintTx) ProcessDeliver(ctx *action.Context, tx action.RawTx)
 	return runReportFinalityMint(ctx, tx)
 }
 
-func (reportFinalityMintTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (reportFinalityMintTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas, gasUsed action.Gas) (bool, action.Response) {
 	// return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 
 	return true, action.Response{}

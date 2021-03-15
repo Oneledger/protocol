@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/Oneledger/protocol/data/evm"
 	"github.com/Oneledger/protocol/external_apps"
 	"github.com/Oneledger/protocol/external_apps/common"
 
@@ -26,6 +27,7 @@ import (
 	action_netwkdeleg "github.com/Oneledger/protocol/action/network_delegation"
 	action_ons "github.com/Oneledger/protocol/action/ons"
 	action_rewards "github.com/Oneledger/protocol/action/rewards"
+	action_sc "github.com/Oneledger/protocol/action/smart_contract"
 	"github.com/Oneledger/protocol/action/staking"
 	"github.com/Oneledger/protocol/action/transfer"
 	"github.com/Oneledger/protocol/app/node"
@@ -93,6 +95,11 @@ type context struct {
 	extStores       data.StorageRouter
 	extServiceMap   common.ExtServiceMap
 	extFunctions    common.ControllerRouter
+
+	// evm integration
+	contracts     *evm.ContractStore
+	accountKeeper balance.AccountKeeper
+	stateDB       *action.CommitStateDB
 }
 
 func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (context, error) {
@@ -148,6 +155,17 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.extStores = data.NewStorageRouter()
 	ctx.extServiceMap = common.NewExtServiceMap()
 	ctx.extFunctions = common.NewFunctionRouter()
+
+	// evm
+	ctx.contracts = evm.NewContractStore(storage.NewState(ctx.chainstate))
+	ctx.accountKeeper = balance.NewNesterAccountKeeper(
+		storage.NewState(ctx.chainstate),
+		ctx.balances,
+		ctx.currencies,
+	)
+	logger := log.NewLoggerWithPrefix(ctx.logWriter, "stateDB").WithLevel(log.Level(ctx.cfg.Node.LogLevel))
+	ctx.stateDB = action.NewCommitStateDB(ctx.contracts, ctx.accountKeeper, logger)
+
 	err = external_apps.RegisterExtApp(ctx.chainstate, ctx.actionRouter, ctx.extStores, ctx.extServiceMap, ctx.extFunctions)
 	if err != nil {
 		return ctx, errors.Wrap(err, "error in registering external apps")
@@ -169,6 +187,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	}, ctx.jobStore)
 
 	_ = transfer.EnableSend(ctx.actionRouter)
+	_ = action_sc.EnableSmartContract(ctx.actionRouter)
 	_ = action_ons.EnableONS(ctx.actionRouter)
 
 	//"btc" service temporarily disabled
@@ -229,6 +248,7 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.govern.WithState(state),
 		ctx.extStores.WithState(state),
 		ctx.govupdate,
+		ctx.stateDB.WithState(state),
 	)
 
 	return actionCtx
@@ -308,6 +328,9 @@ func (ctx *context) Services() (service.Map, error) {
 		Trackers:        btcTrackers,
 		Govern:          governance.NewStore("g", storage.NewState(ctx.chainstate)),
 		GovUpdate:       ctx.govupdate,
+		Contracts:       ctx.contracts,
+		AccountKeeper:   ctx.accountKeeper,
+		StateDB:         ctx.stateDB,
 	}
 
 	return service.NewMap(svcCtx)
@@ -332,7 +355,10 @@ func (ctx *context) Restful() (service.RestfulRouter, error) {
 		Logger:         log.NewLoggerWithPrefix(ctx.logWriter, "restful").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
 		Services:       extSvcs,
 
-		Trackers: ctx.btcTrackers,
+		Trackers:      ctx.btcTrackers,
+		Contracts:     ctx.contracts,
+		AccountKeeper: ctx.accountKeeper,
+		StateDB:       ctx.stateDB,
 	}
 	return service.NewRestfulService(svcCtx).Router(), nil
 }
