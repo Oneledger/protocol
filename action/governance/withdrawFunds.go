@@ -80,7 +80,7 @@ func (wp WithdrawFunds) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bo
 	return runWithdraw(ctx, tx)
 }
 
-func (wp WithdrawFunds) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (wp WithdrawFunds) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas, gasUsed action.Gas) (bool, action.Response) {
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
 

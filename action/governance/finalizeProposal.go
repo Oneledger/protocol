@@ -82,7 +82,7 @@ func (FinalizeProposal) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bo
 	return runFinalizeProposal(ctx, tx)
 }
 
-func (FinalizeProposal) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (FinalizeProposal) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas, gasUsed action.Gas) (bool, action.Response) {
 	ctx.State.ConsumeVerifySigGas(1)
 	ctx.State.ConsumeStorageGas(size)
 
