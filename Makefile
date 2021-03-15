@@ -51,6 +51,8 @@ utest:
 		github.com/Oneledger/protocol/data/network_delegation \
 		github.com/Oneledger/protocol/data/evidence \
 		github.com/Oneledger/protocol/action/transfer \
+		github.com/Oneledger/protocol/action/smart_contract \
+		github.com/Oneledger/protocol/action \
 		github.com/Oneledger/protocol/serialize \
 		github.com/Oneledger/protocol/utils \
 		github.com/Oneledger/protocol/rpc \

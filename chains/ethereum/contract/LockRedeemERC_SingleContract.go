@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	ethmath "github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/event"
 )
@@ -20,7 +21,7 @@ var (
 	_ = big.NewInt
 	_ = strings.NewReader
 	_ = ethereum.NotFound
-	_ = abi.U256
+	_ = ethmath.U256
 	_ = bind.Bind
 	_ = common.Big1
 	_ = types.BloomLookup
@@ -169,7 +170,9 @@ func bindERC20Basic(address common.Address, caller bind.ContractCaller, transact
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
 func (_ERC20Basic *ERC20BasicRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
-	return _ERC20Basic.Contract.ERC20BasicCaller.contract.Call(opts, result, method, params...)
+	results := make([]interface{}, 1)
+	results[0] = result
+	return _ERC20Basic.Contract.ERC20BasicCaller.contract.Call(opts, &results, method, params...)
 }
 
 // Transfer initiates a plain transaction to move funds to the contract, calling
@@ -188,7 +191,9 @@ func (_ERC20Basic *ERC20BasicRaw) Transact(opts *bind.TransactOpts, method strin
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
 func (_ERC20Basic *ERC20BasicCallerRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
-	return _ERC20Basic.Contract.contract.Call(opts, result, method, params...)
+	results := make([]interface{}, 1)
+	results[0] = result
+	return _ERC20Basic.Contract.contract.Call(opts, &results, method, params...)
 }
 
 // Transfer initiates a plain transaction to move funds to the contract, calling
@@ -210,7 +215,9 @@ func (_ERC20Basic *ERC20BasicCaller) Allowance(opts *bind.CallOpts, owner common
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _ERC20Basic.contract.Call(opts, out, "allowance", owner, delegate)
+	results := make([]interface{}, 1)
+	results[0] = out
+	err := _ERC20Basic.contract.Call(opts, &results, "allowance", owner, delegate)
 	return *ret0, err
 }
 
@@ -236,7 +243,9 @@ func (_ERC20Basic *ERC20BasicCaller) BalanceOf(opts *bind.CallOpts, tokenOwner c
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _ERC20Basic.contract.Call(opts, out, "balanceOf", tokenOwner)
+	results := make([]interface{}, 1)
+	results[0] = out
+	err := _ERC20Basic.contract.Call(opts, &results, "balanceOf", tokenOwner)
 	return *ret0, err
 }
 
@@ -262,7 +271,9 @@ func (_ERC20Basic *ERC20BasicCaller) Decimals(opts *bind.CallOpts) (uint8, error
 		ret0 = new(uint8)
 	)
 	out := ret0
-	err := _ERC20Basic.contract.Call(opts, out, "decimals")
+	results := make([]interface{}, 1)
+	results[0] = out
+	err := _ERC20Basic.contract.Call(opts, &results, "decimals")
 	return *ret0, err
 }
 
@@ -288,7 +299,9 @@ func (_ERC20Basic *ERC20BasicCaller) Name(opts *bind.CallOpts) (string, error) {
 		ret0 = new(string)
 	)
 	out := ret0
-	err := _ERC20Basic.contract.Call(opts, out, "name")
+	results := make([]interface{}, 1)
+	results[0] = out
+	err := _ERC20Basic.contract.Call(opts, &results, "name")
 	return *ret0, err
 }
 
@@ -314,7 +327,9 @@ func (_ERC20Basic *ERC20BasicCaller) Symbol(opts *bind.CallOpts) (string, error)
 		ret0 = new(string)
 	)
 	out := ret0
-	err := _ERC20Basic.contract.Call(opts, out, "symbol")
+	results := make([]interface{}, 1)
+	results[0] = out
+	err := _ERC20Basic.contract.Call(opts, &results, "symbol")
 	return *ret0, err
 }
 
@@ -340,7 +355,9 @@ func (_ERC20Basic *ERC20BasicCaller) TotalSupply(opts *bind.CallOpts) (*big.Int,
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _ERC20Basic.contract.Call(opts, out, "totalSupply")
+	results := make([]interface{}, 1)
+	results[0] = out
+	err := _ERC20Basic.contract.Call(opts, &results, "totalSupply")
 	return *ret0, err
 }
 
@@ -849,7 +866,9 @@ func bindIERC20(address common.Address, caller bind.ContractCaller, transactor b
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
 func (_IERC20 *IERC20Raw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
-	return _IERC20.Contract.IERC20Caller.contract.Call(opts, result, method, params...)
+	results := make([]interface{}, 1)
+	results[0] = result
+	return _IERC20.Contract.IERC20Caller.contract.Call(opts, &results, method, params...)
 }
 
 // Transfer initiates a plain transaction to move funds to the contract, calling
@@ -868,7 +887,9 @@ func (_IERC20 *IERC20Raw) Transact(opts *bind.TransactOpts, method string, param
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
 func (_IERC20 *IERC20CallerRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
-	return _IERC20.Contract.contract.Call(opts, result, method, params...)
+	results := make([]interface{}, 1)
+	results[0] = result
+	return _IERC20.Contract.contract.Call(opts, &results, method, params...)
 }
 
 // Transfer initiates a plain transaction to move funds to the contract, calling
@@ -890,7 +911,9 @@ func (_IERC20 *IERC20Caller) Allowance(opts *bind.CallOpts, owner common.Address
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _IERC20.contract.Call(opts, out, "allowance", owner, spender)
+	results := make([]interface{}, 1)
+	results[0] = out
+	err := _IERC20.contract.Call(opts, &results, "allowance", owner, spender)
 	return *ret0, err
 }
 
@@ -916,7 +939,9 @@ func (_IERC20 *IERC20Caller) BalanceOf(opts *bind.CallOpts, account common.Addre
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _IERC20.contract.Call(opts, out, "balanceOf", account)
+	results := make([]interface{}, 1)
+	results[0] = out
+	err := _IERC20.contract.Call(opts, &results, "balanceOf", account)
 	return *ret0, err
 }
 
@@ -942,7 +967,9 @@ func (_IERC20 *IERC20Caller) TotalSupply(opts *bind.CallOpts) (*big.Int, error) 
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _IERC20.contract.Call(opts, out, "totalSupply")
+	results := make([]interface{}, 1)
+	results[0] = out
+	err := _IERC20.contract.Call(opts, &results, "totalSupply")
 	return *ret0, err
 }
 
@@ -1480,7 +1507,9 @@ func bindLockRedeemERC(address common.Address, caller bind.ContractCaller, trans
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
 func (_LockRedeemERC *LockRedeemERCRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
-	return _LockRedeemERC.Contract.LockRedeemERCCaller.contract.Call(opts, result, method, params...)
+	results := make([]interface{}, 1)
+	results[0] = result
+	return _LockRedeemERC.Contract.LockRedeemERCCaller.contract.Call(opts, &results, method, params...)
 }
 
 // Transfer initiates a plain transaction to move funds to the contract, calling
@@ -1499,7 +1528,9 @@ func (_LockRedeemERC *LockRedeemERCRaw) Transact(opts *bind.TransactOpts, method
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
 func (_LockRedeemERC *LockRedeemERCCallerRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
-	return _LockRedeemERC.Contract.contract.Call(opts, result, method, params...)
+	results := make([]interface{}, 1)
+	results[0] = result
+	return _LockRedeemERC.Contract.contract.Call(opts, &results, method, params...)
 }
 
 // Transfer initiates a plain transaction to move funds to the contract, calling
@@ -1521,7 +1552,9 @@ func (_LockRedeemERC *LockRedeemERCCaller) AddValidatorProposals(opts *bind.Call
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _LockRedeemERC.contract.Call(opts, out, "addValidatorProposals", arg0)
+	results := make([]interface{}, 1)
+	results[0] = out
+	err := _LockRedeemERC.contract.Call(opts, &results, "addValidatorProposals", arg0)
 	return *ret0, err
 }
 
@@ -1547,7 +1580,9 @@ func (_LockRedeemERC *LockRedeemERCCaller) EpochBlockHeight(opts *bind.CallOpts)
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _LockRedeemERC.contract.Call(opts, out, "epochBlockHeight")
+	results := make([]interface{}, 1)
+	results[0] = out
+	err := _LockRedeemERC.contract.Call(opts, &results, "epochBlockHeight")
 	return *ret0, err
 }
 
@@ -1573,7 +1608,9 @@ func (_LockRedeemERC *LockRedeemERCCaller) GetOLTErcAddress(opts *bind.CallOpts)
 		ret0 = new(common.Address)
 	)
 	out := ret0
-	err := _LockRedeemERC.contract.Call(opts, out, "getOLTErcAddress")
+	results := make([]interface{}, 1)
+	results[0] = out
+	err := _LockRedeemERC.contract.Call(opts, &results, "getOLTErcAddress")
 	return *ret0, err
 }
 
@@ -1599,7 +1636,9 @@ func (_LockRedeemERC *LockRedeemERCCaller) GetTotalErcBalance(opts *bind.CallOpt
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _LockRedeemERC.contract.Call(opts, out, "getTotalErcBalance", tokenAddress_)
+	results := make([]interface{}, 1)
+	results[0] = out
+	err := _LockRedeemERC.contract.Call(opts, &results, "getTotalErcBalance", tokenAddress_)
 	return *ret0, err
 }
 
@@ -1625,7 +1664,9 @@ func (_LockRedeemERC *LockRedeemERCCaller) HasValidatorSigned(opts *bind.CallOpt
 		ret0 = new(bool)
 	)
 	out := ret0
-	err := _LockRedeemERC.contract.Call(opts, out, "hasValidatorSigned", recipient_)
+	results := make([]interface{}, 1)
+	results[0] = out
+	err := _LockRedeemERC.contract.Call(opts, &results, "hasValidatorSigned", recipient_)
 	return *ret0, err
 }
 
@@ -1651,7 +1692,9 @@ func (_LockRedeemERC *LockRedeemERCCaller) IsValidator(opts *bind.CallOpts, addr
 		ret0 = new(bool)
 	)
 	out := ret0
-	err := _LockRedeemERC.contract.Call(opts, out, "isValidator", addr)
+	results := make([]interface{}, 1)
+	results[0] = out
+	err := _LockRedeemERC.contract.Call(opts, &results, "isValidator", addr)
 	return *ret0, err
 }
 
@@ -1677,7 +1720,9 @@ func (_LockRedeemERC *LockRedeemERCCaller) NewThresholdProposals(opts *bind.Call
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _LockRedeemERC.contract.Call(opts, out, "newThresholdProposals", arg0)
+	results := make([]interface{}, 1)
+	results[0] = out
+	err := _LockRedeemERC.contract.Call(opts, &results, "newThresholdProposals", arg0)
 	return *ret0, err
 }
 
@@ -1703,7 +1748,9 @@ func (_LockRedeemERC *LockRedeemERCCaller) NumValidators(opts *bind.CallOpts) (*
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _LockRedeemERC.contract.Call(opts, out, "numValidators")
+	results := make([]interface{}, 1)
+	results[0] = out
+	err := _LockRedeemERC.contract.Call(opts, &results, "numValidators")
 	return *ret0, err
 }
 
@@ -1753,7 +1800,9 @@ func (_LockRedeemERC *LockRedeemERCCaller) RemoveValidatorProposals(opts *bind.C
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _LockRedeemERC.contract.Call(opts, out, "removeValidatorProposals", arg0)
+	results := make([]interface{}, 1)
+	results[0] = out
+	err := _LockRedeemERC.contract.Call(opts, &results, "removeValidatorProposals", arg0)
 	return *ret0, err
 }
 
@@ -1779,7 +1828,9 @@ func (_LockRedeemERC *LockRedeemERCCaller) Validators(opts *bind.CallOpts, arg0 
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _LockRedeemERC.contract.Call(opts, out, "validators", arg0)
+	results := make([]interface{}, 1)
+	results[0] = out
+	err := _LockRedeemERC.contract.Call(opts, &results, "validators", arg0)
 	return *ret0, err
 }
 
@@ -1805,7 +1856,9 @@ func (_LockRedeemERC *LockRedeemERCCaller) VerifyRedeem(opts *bind.CallOpts, rec
 		ret0 = new(bool)
 	)
 	out := ret0
-	err := _LockRedeemERC.contract.Call(opts, out, "verifyRedeem", recipient_)
+	results := make([]interface{}, 1)
+	results[0] = out
+	err := _LockRedeemERC.contract.Call(opts, &results, "verifyRedeem", recipient_)
 	return *ret0, err
 }
 
@@ -1831,7 +1884,9 @@ func (_LockRedeemERC *LockRedeemERCCaller) VotingThreshold(opts *bind.CallOpts) 
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _LockRedeemERC.contract.Call(opts, out, "votingThreshold")
+	results := make([]interface{}, 1)
+	results[0] = out
+	err := _LockRedeemERC.contract.Call(opts, &results, "votingThreshold")
 	return *ret0, err
 }
 
@@ -3070,7 +3125,9 @@ func bindSafeMath(address common.Address, caller bind.ContractCaller, transactor
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
 func (_SafeMath *SafeMathRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
-	return _SafeMath.Contract.SafeMathCaller.contract.Call(opts, result, method, params...)
+	results := make([]interface{}, 1)
+	results[0] = result
+	return _SafeMath.Contract.SafeMathCaller.contract.Call(opts, &results, method, params...)
 }
 
 // Transfer initiates a plain transaction to move funds to the contract, calling
@@ -3089,7 +3146,9 @@ func (_SafeMath *SafeMathRaw) Transact(opts *bind.TransactOpts, method string, p
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
 func (_SafeMath *SafeMathCallerRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
-	return _SafeMath.Contract.contract.Call(opts, result, method, params...)
+	results := make([]interface{}, 1)
+	results[0] = result
+	return _SafeMath.Contract.contract.Call(opts, &results, method, params...)
 }
 
 // Transfer initiates a plain transaction to move funds to the contract, calling

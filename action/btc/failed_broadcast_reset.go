@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+
 	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/Oneledger/protocol/action"
@@ -123,7 +124,7 @@ func (btcBroadcastFailureReset) ProcessDeliver(ctx *action.Context, tx action.Ra
 	return runBroadcastFailureReset(ctx, tx)
 }
 
-func (btcBroadcastFailureReset) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (btcBroadcastFailureReset) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas, gasUsed action.Gas) (bool, action.Response) {
 	return true, action.Response{}
 }
 

@@ -204,7 +204,7 @@ func runCheckFinality(ctx *action.Context, tx action.RawTx) (bool, action.Respon
 	return true, action.Response{Log: "vote success, not ready to mint: " + strconv.Itoa(yes) + "," + strconv.Itoa(no)}
 }
 
-func (reportFinalityMintTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (reportFinalityMintTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas, gasUsed action.Gas) (bool, action.Response) {
 	ctx.State.ConsumeVerifySigGas(1)
 	ctx.State.ConsumeStorageGas(size)
 	// check the used gas for the tx

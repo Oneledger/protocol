@@ -101,7 +101,7 @@ func (s sendTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (ok bool, r
 	return
 }
 
-func (sendTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (sendTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas, gasUsed action.Gas) (bool, action.Response) {
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
 

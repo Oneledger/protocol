@@ -2,6 +2,7 @@ package bid_action
 
 import (
 	"encoding/json"
+
 	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/Oneledger/protocol/external_apps/bid/bid_data"
 
@@ -65,7 +66,7 @@ func (e ExpireBidTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool,
 	return runExpireBid(ctx, tx)
 }
 
-func (e ExpireBidTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (e ExpireBidTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas, gasUsed action.Gas) (bool, action.Response) {
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
 

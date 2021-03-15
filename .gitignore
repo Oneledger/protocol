@@ -16,3 +16,4 @@ data/bitcoin/tmp
 keystore/
 python-venv/
 .vscode/
+*.code-workspace

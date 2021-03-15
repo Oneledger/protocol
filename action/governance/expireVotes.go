@@ -47,7 +47,7 @@ func (e ExpireVotes) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool,
 	return runExpireVotes(ctx, tx)
 }
 
-func (e ExpireVotes) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (e ExpireVotes) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas, gasUsed action.Gas) (bool, action.Response) {
 	ctx.State.ConsumeVerifySigGas(1)
 	ctx.State.ConsumeStorageGas(size)
 

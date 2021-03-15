@@ -90,7 +90,7 @@ func (rtx releaseTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (ok bo
 	return
 }
 
-func (rtx releaseTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (rtx releaseTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas, gasUsed action.Gas) (bool, action.Response) {
 	ctx.Logger.Debug("Processing 'release' Transaction for ProcessFee", signedTx)
 	r := &Release{}
 	err := r.Unmarshal(signedTx.Data)

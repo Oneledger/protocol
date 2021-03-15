@@ -1,6 +1,6 @@
 package storage
 
-type Gas int64
+type Gas int
 
 const (
 	STOREBYTES Gas = 20
@@ -13,6 +13,7 @@ const (
 	CHECKEXIST Gas = 20
 	DELETE     Gas = 50
 	FLAT       Gas = 1
+	CONTRACT   Gas = 1
 )
 
 // Calculate the gas used for each action, will be embedded with GasStore.

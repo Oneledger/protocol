@@ -2,9 +2,11 @@ package query
 
 import (
 	"encoding/hex"
+	"strings"
+
+	"github.com/Oneledger/protocol/data/evm"
 	netwkDeleg "github.com/Oneledger/protocol/data/network_delegation"
 	"github.com/Oneledger/protocol/data/rewards"
-	"strings"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
@@ -38,6 +40,8 @@ type Service struct {
 	governance      *governance.Store
 	logger          *log.Logger
 	txTypes         *[]action.TxTypeDescribe
+	contracts       *evm.ContractStore
+	accountKeeper   balance.AccountKeeper
 }
 
 func Name() string {
@@ -45,8 +49,10 @@ func Name() string {
 }
 
 func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencies *balance.CurrencySet, validators *identity.ValidatorStore, witnesses *identity.WitnessStore,
-	domains *ons.DomainStore, delegators *delegation.DelegationStore, netwkDelegators *netwkDeleg.MasterStore, evidenceStore *evidence.EvidenceStore, govern *governance.Store, feePool *fees.Store, proposalMaster *governance.ProposalMasterStore, rewardMaster *rewards.RewardMasterStore, logger *log.Logger, txTypes *[]action.TxTypeDescribe) *Service {
-	return &Service{
+	domains *ons.DomainStore, delegators *delegation.DelegationStore, netwkDelegators *netwkDeleg.MasterStore, evidenceStore *evidence.EvidenceStore, govern *governance.Store, feePool *fees.Store, proposalMaster *governance.ProposalMasterStore, rewardMaster *rewards.RewardMasterStore, logger *log.Logger, txTypes *[]action.TxTypeDescribe,
+	contracts *evm.ContractStore, accountKeeper balance.AccountKeeper,
+) *Service {
+	service := &Service{
 		name:            "query",
 		ext:             ctx,
 		currencies:      currencies,
@@ -64,7 +70,10 @@ func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencie
 		logger:          logger,
 		txTypes:         txTypes,
 		governance:      govern,
+		contracts:       contracts,
+		accountKeeper:   accountKeeper,
 	}
+	return service
 }
 
 func (svc *Service) Balance(req client.BalanceRequest, resp *client.BalanceReply) error {

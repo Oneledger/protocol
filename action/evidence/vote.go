@@ -103,7 +103,7 @@ func (atx allegationVoteTx) ProcessDeliver(ctx *action.Context, tx action.RawTx)
 	return
 }
 
-func (atx allegationVoteTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (atx allegationVoteTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas, gasUsed action.Gas) (bool, action.Response) {
 	ctx.Logger.Detail("Processing 'allegation_vote' Transaction for ProcessFee", signedTx)
 	r := &AllegationVote{}
 	err := r.Unmarshal(signedTx.Data)

@@ -103,7 +103,6 @@ func ValidateBasic(data []byte, signerAddr []Address, signatures []Signature) er
 
 func ValidateFee(feeOpt *fees.FeeOption, fee Fee) error {
 	if fee.Price.Currency != feeOpt.FeeCurrency.Name {
-
 		return ErrInvalidFeeCurrency
 	}
 	minFee := feeOpt.MinFee()
@@ -148,6 +147,36 @@ func StakingPayerFeeHandling(ctx *Context, feePayer keys.Address, signedTx Signe
 	if err != nil {
 		return false, Response{Log: err.Error()}
 	}
+	return true, Response{GasWanted: signedTx.Fee.Gas, GasUsed: used}
+}
+
+func ContractFeeHandling(ctx *Context, signedTx SignedTx, gasUsed Gas) (bool, Response) {
+	ctx.State.ConsumeContractGas(gasUsed)
+	used := int64(ctx.Balances.State.ConsumedGas())
+	ctx.Logger.Debugf("gas used: %d, gas limit: %d", used, signedTx.Fee.Gas)
+
+	// only charge the first signer for now
+	signer := signedTx.Signatures[0].Signer
+	ctx.Logger.Debugf("Getting handler\n")
+	h, err := signer.GetHandler()
+	if err != nil {
+		return false, Response{Log: err.Error()}
+	}
+	addr := h.Address()
+
+	charge := signedTx.Fee.Price.ToCoin(ctx.Currencies).MultiplyInt64(int64(used))
+	ctx.Logger.Debugf("Perform minus balance '%s' with charge: %s\n", addr, charge)
+	err = ctx.Balances.MinusFromAddress(addr, charge)
+	if err != nil {
+		return false, Response{Log: errors.Wrap(err, "charge fee").Error()}
+	}
+	ctx.Logger.Debugf("Add to pool %s\n", charge)
+	err = ctx.FeePool.AddToPool(charge)
+	if err != nil {
+		return false, Response{Log: err.Error()}
+	}
+
+	// NOTE: For the smart contract we need to eat used gas to prevent redundant vm execution of attacker
 	return true, Response{GasWanted: signedTx.Fee.Gas, GasUsed: used}
 }
 

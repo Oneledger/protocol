@@ -122,7 +122,7 @@ func (r RenewDomainTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (boo
 	return runRenew(ctx, tx)
 }
 
-func (r RenewDomainTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (r RenewDomainTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas, gasUsed action.Gas) (bool, action.Response) {
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
 

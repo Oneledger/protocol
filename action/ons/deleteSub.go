@@ -100,7 +100,7 @@ func (d deleteSubTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool,
 	return runDeleteSub(ctx, tx)
 }
 
-func (d deleteSubTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (d deleteSubTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas, gasUsed action.Gas) (bool, action.Response) {
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
 

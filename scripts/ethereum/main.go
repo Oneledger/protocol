@@ -297,7 +297,7 @@ func lock() []byte {
 	}
 	ts := types.Transactions{signedTx}
 
-	rawTxBytes := ts.GetRlp(0)
+	rawTxBytes, _ := rlp.EncodeToBytes(ts[0])
 	txNew := &types.Transaction{}
 	err = rlp.DecodeBytes(rawTxBytes, txNew)
 
@@ -427,7 +427,7 @@ func redeem() []byte {
 
 	ts2 := types.Transactions{signedTx2}
 
-	rawTxBytes2 := ts2.GetRlp(0)
+	rawTxBytes2, _ := rlp.EncodeToBytes(ts2[0])
 	txNew2 := &types.Transaction{}
 	err = rlp.DecodeBytes(rawTxBytes2, txNew2)
 
@@ -551,7 +551,7 @@ func erc20lock() {
 		log.Fatal(err)
 	}
 	ts := types.Transactions{signedTx}
-	rawTxBytes := ts.GetRlp(0)
+	rawTxBytes, _ := rlp.EncodeToBytes(ts[0])
 	txNew := &types.Transaction{}
 	err = rlp.DecodeBytes(rawTxBytes, txNew)
 
@@ -672,7 +672,7 @@ func erc20Redeem() {
 
 	ts2 := types.Transactions{signedTx2}
 
-	rawTxBytes2 := ts2.GetRlp(0)
+	rawTxBytes2, _ := rlp.EncodeToBytes(ts2[0])
 	txNew2 := &types.Transaction{}
 	err = rlp.DecodeBytes(rawTxBytes2, txNew2)
 
@@ -792,7 +792,7 @@ func sendTrasactions(txCount int) {
 
 		ts2 := types.Transactions{signedTx2}
 
-		rawTxBytes2 := ts2.GetRlp(0)
+		rawTxBytes2, _ := rlp.EncodeToBytes(ts2[0])
 		txNew2 := &types.Transaction{}
 		err = rlp.DecodeBytes(rawTxBytes2, txNew2)
 

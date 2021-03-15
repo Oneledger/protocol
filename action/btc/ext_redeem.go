@@ -138,7 +138,7 @@ func (btcRedeemTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, a
 	return runExtRedeem(ctx, tx)
 }
 
-func (btcRedeemTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (btcRedeemTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas, gasUsed action.Gas) (bool, action.Response) {
 	ctx.State.ConsumeUpfront(701660)
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }

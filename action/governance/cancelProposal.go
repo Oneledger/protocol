@@ -101,7 +101,7 @@ func (c cancelProposalTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bo
 	return runCancel(ctx, tx)
 }
 
-func (c cancelProposalTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (c cancelProposalTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas, gasUsed action.Gas) (bool, action.Response) {
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
 

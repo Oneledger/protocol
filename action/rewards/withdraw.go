@@ -91,7 +91,7 @@ func (withdrawTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, ac
 	return runWithdraw(ctx, tx)
 }
 
-func (withdrawTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (withdrawTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas, gasUsed action.Gas) (bool, action.Response) {
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
 

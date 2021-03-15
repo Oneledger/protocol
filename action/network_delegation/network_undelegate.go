@@ -92,7 +92,7 @@ func (u undelegateTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, 
 	return runUndelegate(ctx, tx)
 }
 
-func (u undelegateTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (u undelegateTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas, gasUsed action.Gas) (bool, action.Response) {
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
 

@@ -14,7 +14,7 @@ type Tx interface {
 	ProcessDeliver(ctx *Context, tx RawTx) (bool, Response)
 
 	//process the charge of fees
-	ProcessFee(ctx *Context, signedTx SignedTx, start Gas, size Gas) (bool, Response)
+	ProcessFee(ctx *Context, signedTx SignedTx, start Gas, size Gas, gasUsed Gas) (bool, Response)
 }
 
 //used for unknow transaction in router or not registered ones
@@ -33,6 +33,6 @@ func (unknownTx) ProcessDeliver(ctx *Context, tx RawTx) (bool, Response) {
 	return false, Response{}
 }
 
-func (unknownTx) ProcessFee(ctx *Context, signedTx SignedTx, start Gas, size Gas) (bool, Response) {
+func (unknownTx) ProcessFee(ctx *Context, signedTx SignedTx, start Gas, size Gas, gasUsed Gas) (bool, Response) {
 	return false, Response{}
 }

@@ -45,6 +45,26 @@ func (c *ServiceClient) DelegationStatus(request DelegationStatusRequest) (out D
 	return
 }
 
+func (c *ServiceClient) EVMCall(request SendTxRequest) (out EVMCallReply, err error) {
+	err = c.Call("query.EVMCall", &request, &out)
+	return
+}
+
+func (c *ServiceClient) EVMAccount(request EVMAccountRequest) (out EVMAccountReply, err error) {
+	err = c.Call("query.EVMAccount", &request, &out)
+	return
+}
+
+func (c *ServiceClient) EVMEstimateGas(request SendTxRequest) (out EVMEstimateGasReply, err error) {
+	err = c.Call("query.EVMEstimateGas", &request, &out)
+	return
+}
+
+func (c *ServiceClient) EVMTransactionLogs(request EVMTransactionLogsRequest) (out EVMLogsReply, err error) {
+	err = c.Call("query.EVMTransactionLogs", &request, &out)
+	return
+}
+
 func (c *ServiceClient) CurrBalance(addr keys.Address, currency string) (out CurrencyBalanceReply, err error) {
 	/*if len(request) <= 20 {
 		return out, errors.New("address has insufficient length")
@@ -256,4 +276,3 @@ func (c *ServiceClient) ListDelegation(delegationAddresses []keys.Address) (repl
 
 	return
 }
-

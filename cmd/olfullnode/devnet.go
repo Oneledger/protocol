@@ -918,7 +918,7 @@ func activateContract(validatorAddress common.Address, KratosSmartContractAddres
 	}
 	ts2 := types.Transactions{signedTx2}
 
-	rawTxBytes2 := ts2.GetRlp(0)
+	rawTxBytes2, _ := rlp.EncodeToBytes(ts2[0])
 	txNew2 := &types.Transaction{}
 	err = rlp.DecodeBytes(rawTxBytes2, txNew2)
 

@@ -87,7 +87,7 @@ func (n addNetworkDelegationTx) ProcessDeliver(ctx *action.Context, tx action.Ra
 	return runNetworkDelegate(ctx, tx)
 }
 
-func (n addNetworkDelegationTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (n addNetworkDelegationTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas, gasUsed action.Gas) (bool, action.Response) {
 	ctx.Logger.Detail("Processing Delegate Transaction for ProcessFee", signedTx)
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
