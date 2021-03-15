@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	ethmath "github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/event"
 )
@@ -20,7 +21,7 @@ var (
 	_ = big.NewInt
 	_ = strings.NewReader
 	_ = ethereum.NotFound
-	_ = abi.U256
+	_ = ethmath.U256
 	_ = bind.Bind
 	_ = common.Big1
 	_ = types.BloomLookup
@@ -179,7 +180,9 @@ func bindLockRedeem(address common.Address, caller bind.ContractCaller, transact
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
 func (_LockRedeem *LockRedeemRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
-	return _LockRedeem.Contract.LockRedeemCaller.contract.Call(opts, result, method, params...)
+	results := make([]interface{}, 1)
+	results[0] = result
+	return _LockRedeem.Contract.LockRedeemCaller.contract.Call(opts, &results, method, params...)
 }
 
 // Transfer initiates a plain transaction to move funds to the contract, calling
@@ -198,7 +201,9 @@ func (_LockRedeem *LockRedeemRaw) Transact(opts *bind.TransactOpts, method strin
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
 func (_LockRedeem *LockRedeemCallerRaw) Call(opts *bind.CallOpts, result interface{}, method string, params ...interface{}) error {
-	return _LockRedeem.Contract.contract.Call(opts, result, method, params...)
+	results := make([]interface{}, 1)
+	results[0] = result
+	return _LockRedeem.Contract.contract.Call(opts, &results, method, params...)
 }
 
 // Transfer initiates a plain transaction to move funds to the contract, calling
@@ -220,7 +225,9 @@ func (_LockRedeem *LockRedeemCaller) ActiveStatus(opts *bind.CallOpts) (bool, er
 		ret0 = new(bool)
 	)
 	out := ret0
-	err := _LockRedeem.contract.Call(opts, out, "ActiveStatus")
+	results := make([]interface{}, 1)
+	results[0] = out
+	err := _LockRedeem.contract.Call(opts, &results, "ActiveStatus")
 	return *ret0, err
 }
 
@@ -246,7 +253,9 @@ func (_LockRedeem *LockRedeemCaller) GetOLTEthAddress(opts *bind.CallOpts) (comm
 		ret0 = new(common.Address)
 	)
 	out := ret0
-	err := _LockRedeem.contract.Call(opts, out, "getOLTEthAddress")
+	results := make([]interface{}, 1)
+	results[0] = out
+	err := _LockRedeem.contract.Call(opts, &results, "getOLTEthAddress")
 	return *ret0, err
 }
 
@@ -272,7 +281,9 @@ func (_LockRedeem *LockRedeemCaller) GetRedeemBalance(opts *bind.CallOpts, recip
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _LockRedeem.contract.Call(opts, out, "getRedeemBalance", recipient_)
+	results := make([]interface{}, 1)
+	results[0] = out
+	err := _LockRedeem.contract.Call(opts, &results, "getRedeemBalance", recipient_)
 	return *ret0, err
 }
 
@@ -298,7 +309,9 @@ func (_LockRedeem *LockRedeemCaller) GetSignatureCount(opts *bind.CallOpts, reci
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _LockRedeem.contract.Call(opts, out, "getSignatureCount", recipient_)
+	results := make([]interface{}, 1)
+	results[0] = out
+	err := _LockRedeem.contract.Call(opts, &results, "getSignatureCount", recipient_)
 	return *ret0, err
 }
 
@@ -324,7 +337,9 @@ func (_LockRedeem *LockRedeemCaller) GetTotalEthBalance(opts *bind.CallOpts) (*b
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _LockRedeem.contract.Call(opts, out, "getTotalEthBalance")
+	results := make([]interface{}, 1)
+	results[0] = out
+	err := _LockRedeem.contract.Call(opts, &results, "getTotalEthBalance")
 	return *ret0, err
 }
 
@@ -350,7 +365,9 @@ func (_LockRedeem *LockRedeemCaller) HasValidatorSigned(opts *bind.CallOpts, rec
 		ret0 = new(bool)
 	)
 	out := ret0
-	err := _LockRedeem.contract.Call(opts, out, "hasValidatorSigned", recipient_)
+	results := make([]interface{}, 1)
+	results[0] = out
+	err := _LockRedeem.contract.Call(opts, &results, "hasValidatorSigned", recipient_)
 	return *ret0, err
 }
 
@@ -376,7 +393,9 @@ func (_LockRedeem *LockRedeemCaller) IsValidator(opts *bind.CallOpts, addr commo
 		ret0 = new(bool)
 	)
 	out := ret0
-	err := _LockRedeem.contract.Call(opts, out, "isValidator", addr)
+	results := make([]interface{}, 1)
+	results[0] = out
+	err := _LockRedeem.contract.Call(opts, &results, "isValidator", addr)
 	return *ret0, err
 }
 
@@ -402,7 +421,9 @@ func (_LockRedeem *LockRedeemCaller) IsredeemAvailable(opts *bind.CallOpts, rece
 		ret0 = new(bool)
 	)
 	out := ret0
-	err := _LockRedeem.contract.Call(opts, out, "isredeemAvailable", recepient_)
+	results := make([]interface{}, 1)
+	results[0] = out
+	err := _LockRedeem.contract.Call(opts, &results, "isredeemAvailable", recepient_)
 	return *ret0, err
 }
 
@@ -428,7 +449,9 @@ func (_LockRedeem *LockRedeemCaller) MigrationSignatures(opts *bind.CallOpts) (*
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _LockRedeem.contract.Call(opts, out, "migrationSignatures")
+	results := make([]interface{}, 1)
+	results[0] = out
+	err := _LockRedeem.contract.Call(opts, &results, "migrationSignatures")
 	return *ret0, err
 }
 
@@ -454,7 +477,9 @@ func (_LockRedeem *LockRedeemCaller) MigrationSigners(opts *bind.CallOpts, arg0 
 		ret0 = new(bool)
 	)
 	out := ret0
-	err := _LockRedeem.contract.Call(opts, out, "migrationSigners", arg0)
+	results := make([]interface{}, 1)
+	results[0] = out
+	err := _LockRedeem.contract.Call(opts, &results, "migrationSigners", arg0)
 	return *ret0, err
 }
 
@@ -480,7 +505,9 @@ func (_LockRedeem *LockRedeemCaller) NumValidators(opts *bind.CallOpts) (*big.In
 		ret0 = new(*big.Int)
 	)
 	out := ret0
-	err := _LockRedeem.contract.Call(opts, out, "numValidators")
+	results := make([]interface{}, 1)
+	results[0] = out
+	err := _LockRedeem.contract.Call(opts, &results, "numValidators")
 	return *ret0, err
 }
 
@@ -506,7 +533,9 @@ func (_LockRedeem *LockRedeemCaller) Validators(opts *bind.CallOpts, arg0 common
 		ret0 = new(uint8)
 	)
 	out := ret0
-	err := _LockRedeem.contract.Call(opts, out, "validators", arg0)
+	results := make([]interface{}, 1)
+	results[0] = out
+	err := _LockRedeem.contract.Call(opts, &results, "validators", arg0)
 	return *ret0, err
 }
 
@@ -532,7 +561,9 @@ func (_LockRedeem *LockRedeemCaller) VerifyRedeem(opts *bind.CallOpts, recipient
 		ret0 = new(int8)
 	)
 	out := ret0
-	err := _LockRedeem.contract.Call(opts, out, "verifyRedeem", recipient_)
+	results := make([]interface{}, 1)
+	results[0] = out
+	err := _LockRedeem.contract.Call(opts, &results, "verifyRedeem", recipient_)
 	return *ret0, err
 }
 

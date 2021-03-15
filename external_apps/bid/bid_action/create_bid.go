@@ -2,10 +2,11 @@ package bid_action
 
 import (
 	"encoding/json"
-	"github.com/Oneledger/protocol/action/helpers"
-	"github.com/Oneledger/protocol/external_apps/bid/bid_data"
 	"strconv"
 	"time"
+
+	"github.com/Oneledger/protocol/action/helpers"
+	"github.com/Oneledger/protocol/external_apps/bid/bid_data"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
@@ -88,7 +89,7 @@ func (c CreateBidTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool,
 	return runCreateBid(ctx, tx)
 }
 
-func (c CreateBidTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (c CreateBidTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas, gasUsed action.Gas) (bool, action.Response) {
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
 

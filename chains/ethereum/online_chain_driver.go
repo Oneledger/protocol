@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/chains/ethereum/contract"
@@ -174,7 +175,7 @@ func (acc *ETHChainDriver) PrepareUnsignedETHLock(addr common.Address, lockAmoun
 	toAddress := acc.ContractAddress
 	tx := types.NewTransaction(nonce, toAddress, lockAmount, gasLimit, gasPrice, bytesData)
 	ts := types.Transactions{tx}
-	rawTxBytes := ts.GetRlp(0)
+	rawTxBytes, _ := rlp.EncodeToBytes(ts[0])
 	return rawTxBytes, nil
 }
 

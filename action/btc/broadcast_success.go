@@ -7,6 +7,7 @@ package btc
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/tendermint/tendermint/libs/kv"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -103,7 +104,7 @@ func (b *btcBroadcastSuccessTx) ProcessDeliver(ctx *action.Context, tx action.Ra
 	return b.process(ctx, tx)
 }
 
-func (b *btcBroadcastSuccessTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (b *btcBroadcastSuccessTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas, gasUsed action.Gas) (bool, action.Response) {
 	return true, action.Response{}
 }
 

@@ -122,7 +122,7 @@ func CreateUnsignedERCLock() ([]byte, error) {
 		return nil, err
 	}
 	ts := types.Transactions{signedTx}
-	rawTxBytes := ts.GetRlp(0)
+	rawTxBytes, _ := rlp.EncodeToBytes(ts[0])
 	txNew := &types.Transaction{}
 	err = rlp.DecodeBytes(rawTxBytes, txNew)
 	return rawTxBytes, nil
@@ -159,7 +159,7 @@ func CreateERC20Redeem() ([]byte, error) {
 		return nil, err
 	}
 	ts := types.Transactions{signedTx}
-	rawTxBytes := ts.GetRlp(0)
+	rawTxBytes, _ := rlp.EncodeToBytes(ts[0])
 	txNew := &types.Transaction{}
 	err = rlp.DecodeBytes(rawTxBytes, txNew)
 	return rawTxBytes, nil
