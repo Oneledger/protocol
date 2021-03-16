@@ -2,11 +2,25 @@ package evm
 
 import (
 	"fmt"
+	"math/big"
+	"sort"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/ethereum/go-ethereum/common"
+	ethcmn "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	ethvm "github.com/ethereum/go-ethereum/core/vm"
+	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 )
+
+var _ ethvm.StateDB = (*CommitStateDB)(nil)
+
+type revision struct {
+	id           int
+	journalIndex int
+}
 
 type CommitStateDB struct {
 	// TODO: We need to store the context as part of the structure itself opposed
@@ -16,10 +30,23 @@ type CommitStateDB struct {
 
 	storeKey storage.StoreKey
 
+	// The refund counter, also used by state transitioning.
+	refund uint64
+
+	thash, bhash ethcmn.Hash
+	txIndex      int
+	logs         map[ethcmn.Hash][]*ethtypes.Log
+	logSize      uint
+
+	preimages map[common.Hash][]byte
+
 	// array that hold 'live' objects, which will get modified while processing a
 	// state transition
 	stateObjects         []stateEntry
 	addressToObjectIndex map[common.Address]int // map from address to the index of the state objects slice
+
+	// Per-transaction access list
+	accessList *accessList
 
 	// DB error.
 	// State objects are used by the consensus core and VM which are
@@ -27,6 +54,12 @@ type CommitStateDB struct {
 	// during a database read is memo-ized here and will eventually be returned
 	// by StateDB.Commit.
 	dbErr error
+
+	// Journal of state modifications. This is the backbone of
+	// Snapshot and RevertToSnapshot.
+	// journal        *journal
+	validRevisions []revision
+	nextRevisionID int
 }
 
 // CreateAccount explicitly creates a state object. If a state object with the address
@@ -42,109 +75,300 @@ type CommitStateDB struct {
 func (s *CommitStateDB) CreateAccount(addr common.Address) {
 	newObj, prev := s.createObject(addr)
 	if prev != nil {
-		newObj.SetBalance(prev.account.Balance("OLT"))
+		newObj.SetBalance(prev.account.Balance())
 	}
 }
 
-// createObject creates a new state object. If there is an existing account with
-// the given address, it is overwritten and returned as the second return value.
-func (s *CommitStateDB) createObject(addr common.Address) (newObj, prevObj *stateObject) {
-	prevObj = s.getStateObject(addr)
-
-	acc, _ := s.ctx.Accounts.GetAccount(addr.Bytes())
-
-	newObj = newStateObject(s, acc)
-	newObj.setNonce(0) // sets the object to dirty
-
-	s.setStateObject(newObj)
-	return newObj, prevObj
-}
-
-// getStateObject attempts to retrieve a state object given by the address.
-// Returns nil and sets an error if not found.
-func (s *CommitStateDB) getStateObject(addr common.Address) (stateObject *stateObject) {
-	// otherwise, attempt to fetch the account from the account mapper
-	acc, _ := s.ctx.Accounts.GetAccount(addr.Bytes())
-	if &acc == nil {
-		s.setError(fmt.Errorf("no account found for address: %s", addr.String()))
-		return nil
-	}
-
-	// insert the state object into the live set
-	so := newStateObject(s, acc)
-	s.setStateObject(so)
-
-	return so
-}
-
-func (csdb *CommitStateDB) setStateObject(so *stateObject) {
-	if idx, found := csdb.addressToObjectIndex[so.Address()]; found {
-		// update the existing object
-		csdb.stateObjects[idx].stateObject = so
-		return
-	}
-
-	// append the new state object to the stateObjects slice
-	se := stateEntry{
-		address:     so.Address(),
-		stateObject: so,
-	}
-
-	csdb.stateObjects = append(csdb.stateObjects, se)
-	csdb.addressToObjectIndex[se.address] = len(csdb.stateObjects) - 1
-}
-
-// setError remembers the first non-nil error it is called with.
-func (s *CommitStateDB) setError(err error) {
-	if s.dbErr == nil {
-		s.dbErr = err
+// SubBalance subtracts amount from the account associated with addr.
+func (s *CommitStateDB) SubBalance(addr ethcmn.Address, amount *big.Int) {
+	so := s.GetOrNewStateObject(addr)
+	if so != nil {
+		so.SubBalance(amount)
 	}
 }
 
-// SubBalance(common.Address, *big.Int)
-// AddBalance(common.Address, *big.Int)
-// GetBalance(common.Address) *big.Int
+// AddBalance adds amount to the account associated with addr.
+func (s *CommitStateDB) AddBalance(addr ethcmn.Address, amount *big.Int) {
+	so := s.GetOrNewStateObject(addr)
+	if so != nil {
+		so.AddBalance(amount)
+	}
+}
 
-// GetNonce(common.Address) uint64
-// SetNonce(common.Address, uint64)
+// GetBalance retrieves the balance from the given address or 0 if object not
+// found.
+func (s *CommitStateDB) GetBalance(addr ethcmn.Address) *big.Int {
+	so := s.getStateObject(addr)
+	if so != nil {
+		return so.Balance()
+	}
+	return big.NewInt(0)
+}
 
-// GetCodeHash(common.Address) common.Hash
-// GetCode(common.Address) []byte
-// SetCode(common.Address, []byte)
-// GetCodeSize(common.Address) int
+// GetNonce returns the nonce (sequence number) for a given account.
+func (s *CommitStateDB) GetNonce(addr ethcmn.Address) uint64 {
+	so := s.getStateObject(addr)
+	if so != nil {
+		return so.Nonce()
+	}
+	return 0
+}
 
-// AddRefund(uint64)
-// SubRefund(uint64)
-// GetRefund() uint64
+// SetNonce sets the nonce (sequence number) of an account.
+func (s *CommitStateDB) SetNonce(addr ethcmn.Address, nonce uint64) {
+	so := s.GetOrNewStateObject(addr)
+	if so != nil {
+		so.SetNonce(nonce)
+	}
+}
 
-// GetCommittedState(common.Address, common.Hash) common.Hash
-// GetState(common.Address, common.Hash) common.Hash
-// SetState(common.Address, common.Hash, common.Hash)
+// GetCodeHash returns the code hash for a given account.
+func (s *CommitStateDB) GetCodeHash(addr ethcmn.Address) ethcmn.Hash {
+	so := s.getStateObject(addr)
+	if so == nil {
+		return ethcmn.Hash{}
+	}
+	return ethcmn.BytesToHash(so.CodeHash())
+}
 
-// Suicide(common.Address) bool
-// HasSuicided(common.Address) bool
+// GetCode returns the code for a given account.
+func (s *CommitStateDB) GetCode(addr ethcmn.Address) []byte {
+	so := s.getStateObject(addr)
+	if so != nil {
+		return so.Code(nil)
+	}
+	return nil
+}
 
-// // Exist reports whether the given account exists in state.
-// // Notably this should also return true for suicided accounts.
-// Exist(common.Address) bool
-// // Empty returns whether the given account is empty. Empty
-// // is defined according to EIP161 (balance = nonce = code = 0).
-// Empty(common.Address) bool
+// SetCode sets the code for a given account.
+func (s *CommitStateDB) SetCode(addr ethcmn.Address, code []byte) {
+	so := s.GetOrNewStateObject(addr)
+	if so != nil {
+		so.SetCode(ethcrypto.Keccak256Hash(code), code)
+	}
+}
 
-// PrepareAccessList(sender common.Address, dest *common.Address, precompiles []common.Address, txAccesses types.AccessList)
-// AddressInAccessList(addr common.Address) bool
-// SlotInAccessList(addr common.Address, slot common.Hash) (addressOk bool, slotOk bool)
-// // AddAddressToAccessList adds the given address to the access list. This operation is safe to perform
-// // even if the feature/fork is not active yet
-// AddAddressToAccessList(addr common.Address)
-// // AddSlotToAccessList adds the given (address,slot) to the access list. This operation is safe to perform
-// // even if the feature/fork is not active yet
-// AddSlotToAccessList(addr common.Address, slot common.Hash)
+// GetCodeSize returns the code size for a given account.
+func (s *CommitStateDB) GetCodeSize(addr ethcmn.Address) int {
+	so := s.getStateObject(addr)
+	if so == nil {
+		return 0
+	}
+	if so.code != nil {
+		return len(so.code)
+	}
+	return len(so.Code(nil))
+}
 
-// RevertToSnapshot(int)
-// Snapshot() int
+// AddRefund adds gas to the refund counter.
+func (s *CommitStateDB) AddRefund(gas uint64) {
+	// TODO: Add journal
+	s.refund += gas
+}
 
-// AddLog(*types.Log)
-// AddPreimage(common.Hash, []byte)
+// SubRefund removes gas from the refund counter. It will panic if the refund
+// counter goes below zero.
+func (s *CommitStateDB) SubRefund(gas uint64) {
+	// TODO: Add journal
+	if gas > s.refund {
+		panic("refund counter below zero")
+	}
+	s.refund -= gas
+}
 
-// ForEachStorage(common.Address, func(common.Hash, common.Hash) bool) error
+// GetRefund returns the current value of the refund counter.
+func (s *CommitStateDB) GetRefund() uint64 {
+	return s.refund
+}
+
+// GetCommittedState retrieves a value from the given account's committed
+// storage.
+func (s *CommitStateDB) GetCommittedState(addr ethcmn.Address, hash ethcmn.Hash) ethcmn.Hash {
+	so := s.getStateObject(addr)
+	if so != nil {
+		return so.GetCommittedState(nil, hash)
+	}
+	return ethcmn.Hash{}
+}
+
+// GetState retrieves a value from the given account's storage store.
+func (s *CommitStateDB) GetState(addr ethcmn.Address, hash ethcmn.Hash) ethcmn.Hash {
+	so := s.getStateObject(addr)
+	if so != nil {
+		return so.GetState(nil, hash)
+	}
+	return ethcmn.Hash{}
+}
+
+// SetState sets the storage state with a key, value pair for an account.
+func (s *CommitStateDB) SetState(addr ethcmn.Address, key, value ethcmn.Hash) {
+	so := s.GetOrNewStateObject(addr)
+	if so != nil {
+		so.SetState(nil, key, value)
+	}
+}
+
+// Suicide marks the given account as suicided and clears the account balance.
+//
+// The account's state object is still available until the state is committed,
+// getStateObject will return a non-nil account after Suicide.
+func (s *CommitStateDB) Suicide(addr ethcmn.Address) bool {
+	so := s.getStateObject(addr)
+	if so == nil {
+		return false
+	}
+
+	// TODO: Add journal
+	so.markSuicided()
+	so.SetBalance(new(big.Int))
+
+	return true
+}
+
+// HasSuicided returns if the given account for the specified address has been
+// killed.
+func (s *CommitStateDB) HasSuicided(addr ethcmn.Address) bool {
+	so := s.getStateObject(addr)
+	if so != nil {
+		return so.suicided
+	}
+	return false
+}
+
+// Exist reports whether the given account address exists in the state. Notably,
+// this also returns true for suicided accounts.
+func (s *CommitStateDB) Exist(addr ethcmn.Address) bool {
+	return s.getStateObject(addr) != nil
+}
+
+// Empty returns whether the state object is either non-existent or empty
+// according to the EIP161 specification (balance = nonce = code = 0).
+func (s *CommitStateDB) Empty(addr ethcmn.Address) bool {
+	so := s.getStateObject(addr)
+	return so == nil || so.empty()
+}
+
+// PrepareAccessList handles the preparatory steps for executing a state transition with
+// regards to both EIP-2929 and EIP-2930:
+//
+// - Add sender to access list (2929)
+// - Add destination to access list (2929)
+// - Add precompiles to access list (2929)
+// - Add the contents of the optional tx access list (2930)
+//
+// This method should only be called if Yolov3/Berlin/2929+2930 is applicable at the current number.
+func (s *CommitStateDB) PrepareAccessList(sender common.Address, dst *common.Address, precompiles []common.Address, list types.AccessList) {
+	s.AddAddressToAccessList(sender)
+	if dst != nil {
+		s.AddAddressToAccessList(*dst)
+		// If it's a create-tx, the destination will be added inside evm.create
+	}
+	for _, addr := range precompiles {
+		s.AddAddressToAccessList(addr)
+	}
+	for _, el := range list {
+		s.AddAddressToAccessList(el.Address)
+		for _, key := range el.StorageKeys {
+			s.AddSlotToAccessList(el.Address, key)
+		}
+	}
+}
+
+// AddressInAccessList returns true if the given address is in the access list.
+func (s *CommitStateDB) AddressInAccessList(addr ethcmn.Address) bool {
+	return s.accessList.ContainsAddress(addr)
+}
+
+// SlotInAccessList returns true if the given (address, slot)-tuple is in the access list.
+func (s *CommitStateDB) SlotInAccessList(addr ethcmn.Address, slot ethcmn.Hash) (bool, bool) {
+	return s.accessList.Contains(addr, slot)
+}
+
+// AddAddressToAccessList adds the given address to the access list
+func (s *CommitStateDB) AddAddressToAccessList(addr ethcmn.Address) {
+	if s.accessList.AddAddress(addr) {
+		// TODO: Add journal
+	}
+}
+
+// AddSlotToAccessList adds the given (address, slot)-tuple to the access list
+func (s *CommitStateDB) AddSlotToAccessList(addr ethcmn.Address, slot ethcmn.Hash) {
+	addrMod, slotMod := s.accessList.AddSlot(addr, slot)
+	if addrMod {
+		// In practice, this should not happen, since there is no way to enter the
+		// scope of 'address' without having the 'address' become already added
+		// to the access list (via call-variant, create, etc).
+		// Better safe than sorry, though
+
+		// TODO: Add journal
+	}
+	if slotMod {
+		// TODO: Add journal
+	}
+}
+
+// RevertToSnapshot reverts all state changes made since the given revision.
+func (s *CommitStateDB) RevertToSnapshot(revID int) {
+	// find the snapshot in the stack of valid snapshots
+	idx := sort.Search(len(s.validRevisions), func(i int) bool {
+		return s.validRevisions[i].id >= revID
+	})
+
+	if idx == len(s.validRevisions) || s.validRevisions[idx].id != revID {
+		panic(fmt.Errorf("revision ID %v cannot be reverted", revID))
+	}
+
+	// snapshot := s.validRevisions[idx].journalIndex
+
+	// replay the journal to undo changes and remove invalidated snapshots
+	// csdb.journal.revert(csdb, snapshot)
+	// TODO: Add journal revert
+	s.validRevisions = s.validRevisions[:idx]
+}
+
+// Snapshot returns an identifier for the current revision of the state.
+func (s *CommitStateDB) Snapshot() int {
+	id := s.nextRevisionID
+	s.nextRevisionID++
+
+	s.validRevisions = append(
+		s.validRevisions,
+		revision{
+			id: id,
+			// TODO: Add journal
+			// journalIndex: csdb.journal.length(),
+		},
+	)
+	return id
+}
+
+// AddLog adds a new log to the state and sets the log metadata from the state.
+func (s *CommitStateDB) AddLog(log *ethtypes.Log) {
+	// TODO: Add journal
+	// s.journal.append(addLogChange{txhash: s.thash})
+
+	log.TxHash = s.thash
+	log.BlockHash = s.bhash
+	log.TxIndex = uint(s.txIndex)
+	log.Index = s.logSize
+	s.logs[s.thash] = append(s.logs[s.thash], log)
+	s.logSize++
+}
+
+// AddPreimage records a SHA3 preimage seen by the VM.
+func (s *CommitStateDB) AddPreimage(hash common.Hash, preimage []byte) {
+	if _, ok := s.preimages[hash]; !ok {
+		// TODO: Add journal
+		// s.journal.append(addPreimageChange{hash: hash})
+		pi := make([]byte, len(preimage))
+		copy(pi, preimage)
+		s.preimages[hash] = pi
+	}
+}
+
+// ForEachStorage iterates over each storage items, all invoke the provided
+// callback on each key, value pair.
+// Only used in tests https://github.com/ethereum/go-ethereum/search?q=ForEachStorage
+func (s *CommitStateDB) ForEachStorage(addr common.Address, cb func(key, value common.Hash) bool) error {
+	return nil
+}

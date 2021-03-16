@@ -6,7 +6,6 @@ import (
 	"math/big"
 
 	"github.com/Oneledger/protocol/data/accounts"
-	"github.com/Oneledger/protocol/data/balance"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 	ethstate "github.com/ethereum/go-ethereum/core/state"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
@@ -20,6 +19,14 @@ var (
 
 func IsEmptyHash(hash string) bool {
 	return bytes.Equal(ethcmn.HexToHash(hash).Bytes(), ethcmn.Hash{}.Bytes())
+}
+
+// chec if zero amount in coin
+func IsZeroAmount(amount *big.Int) bool {
+	if amount.Cmp(big.NewInt(0)) == 0 {
+		return true
+	}
+	return false
 }
 
 type State struct {
@@ -155,7 +162,7 @@ func (so *stateObject) GetCommittedState(_ ethstate.Database, key ethcmn.Hash) e
 	value := ethcmn.Hash{}
 
 	ctx := so.stateDB.ctx
-	rawValue := ctx.Contracts.Get(AddressStoragePrefix(so.Address()))
+	rawValue, _ := ctx.Contracts.Get(AddressStoragePrefix(so.Address()))
 
 	if len(rawValue) > 0 {
 		value.SetBytes(rawValue)
@@ -192,7 +199,7 @@ func (so *stateObject) Code(_ ethstate.Database) []byte {
 	}
 
 	ctx := so.stateDB.ctx
-	code := ctx.Contracts.Get(CodeStoragePrefix(so.CodeHash()))
+	code, _ := ctx.Contracts.Get(CodeStoragePrefix(so.CodeHash()))
 
 	if len(code) == 0 {
 		so.setError(fmt.Errorf("failed to get code hash %x for address %s", so.CodeHash(), so.Address().String()))
@@ -222,33 +229,36 @@ func (so *stateObject) CodeHash() []byte {
 
 // AddBalance adds an amount to a state object's balance. It is used to add
 // funds to the destination account of a transfer.
-func (so *stateObject) AddBalance(coin balance.Coin) {
+func (so *stateObject) AddBalance(amount *big.Int) {
 	// EIP158: We must check emptiness for the objects such that the account
 	// clearing (0,0,0 objects) can take effect.
-	if coin.IsZero() {
+	if IsZeroAmount(amount) {
+		if so.empty() {
+			so.touch()
+		}
 		return
 	}
-	so.AddBalance(coin)
+	so.AddBalance(amount)
 }
 
 // SubBalance removes an amount from the stateObject's balance. It is used to
 // remove funds from the origin account of a transfer.
-func (so *stateObject) SubBalance(coin balance.Coin) {
-	if coin.IsZero() {
+func (so *stateObject) SubBalance(amount *big.Int) {
+	if IsZeroAmount(amount) {
 		return
 	}
-	so.SubBalance(coin)
+	so.SubBalance(amount)
 }
 
 // SubBalance removes an amount from the stateObject's balance. It is used to
 // remove funds from the origin account of a transfer.
-func (so *stateObject) SetBalance(coin balance.Coin) {
-	so.SetBalance(coin)
+func (so *stateObject) SetBalance(amount *big.Int) {
+	so.SetBalance(amount)
 }
 
 // Balance returns the state object's current balance.
-func (so *stateObject) Balance() balance.Coin {
-	return so.account.Balance("OLT")
+func (so *stateObject) Balance() *big.Int {
+	return so.account.Balance()
 }
 
 // ReturnGas returns the gas back to the origin. Used by the Virtual machine or
@@ -347,6 +357,26 @@ func (so *stateObject) commitState() {
 func (so *stateObject) commitCode() {
 	ctx := so.stateDB.ctx
 	ctx.Contracts.Set(CodeStoragePrefix(so.CodeHash()), so.code)
+}
+
+// empty returns whether the account is considered empty.
+func (so *stateObject) empty() bool {
+	balance := so.account.Balance()
+	return so.account == nil ||
+		(so.account != nil &&
+			so.account.Sequence == 0 &&
+			(balance == nil || IsZeroAmount(balance)) &&
+			bytes.Equal(so.account.CodeHash, emptyCodeHash))
+}
+
+func (so *stateObject) touch() {
+	// TODO: Add journal
+
+	if so.address == ripemd {
+		// Explicitly put it in the dirty-cache, which is otherwise generated from
+		// flattened journals.
+		// TODO: Add journal
+	}
 }
 
 // stateEntry represents a single key value pair from the StateDB's stateObject mappindg.

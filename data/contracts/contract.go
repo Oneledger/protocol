@@ -1,4 +1,4 @@
-package evm
+package contracts
 
 import (
 	"github.com/Oneledger/protocol/storage"
@@ -41,6 +41,11 @@ func (cs *ContractStore) Set(key []byte, value []byte) error {
 	prefixKey := append(cs.prefix, key...)
 	err := cs.state.Set(storage.StoreKey(prefixKey), value)
 	return err
+}
+
+func (cs *ContractStore) Delete(key []byte) (bool, error) {
+	prefixed := append(cs.prefix, key...)
+	return cs.state.Delete(prefixed)
 }
 
 // AddressStoragePrefix returns a prefix to iterate over a given account storage.
