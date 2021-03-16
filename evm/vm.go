@@ -6,7 +6,6 @@ import (
 	"sort"
 
 	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/storage"
 	"github.com/ethereum/go-ethereum/common"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -26,9 +25,7 @@ type CommitStateDB struct {
 	// TODO: We need to store the context as part of the structure itself opposed
 	// to being passed as a parameter (as it should be) in order to implement the
 	// StateDB interface. Perhaps there is a better way.
-	ctx action.Context
-
-	storeKey storage.StoreKey
+	ctx *action.Context
 
 	// The refund counter, also used by state transitioning.
 	refund uint64
@@ -60,6 +57,39 @@ type CommitStateDB struct {
 	// journal        *journal
 	validRevisions []revision
 	nextRevisionID int
+}
+
+// NewCommitStateDB returns a reference to a newly initialized CommitStateDB
+// which implements Geth's state.StateDB interface.
+//
+// CONTRACT: Stores used for state must be cache-wrapped as the ordering of the
+// key/value space matters in determining the merkle root.
+func NewCommitStateDB(ctx *action.Context) *CommitStateDB {
+	return &CommitStateDB{
+		ctx:                  ctx,
+		stateObjects:         []stateEntry{},
+		logs:                 make(map[ethcmn.Hash][]*ethtypes.Log),
+		preimages:            make(map[common.Hash][]byte),
+		addressToObjectIndex: make(map[common.Address]int),
+		accessList:           newAccessList(),
+		validRevisions:       []revision{},
+	}
+}
+
+// WithContext returns a Database with an updated protocol context
+func (s *CommitStateDB) WithContext(ctx *action.Context) *CommitStateDB {
+	s.ctx = ctx
+	return s
+}
+
+// GetHeightHash returns the block header hash associated with a given block height and chain epoch number.
+func (s *CommitStateDB) GetHeightHash(height uint64) ethcmn.Hash {
+	ctx := s.ctx
+	bz, _ := ctx.Contracts.Get(HeightHashKey(height))
+	if len(bz) == 0 {
+		return ethcmn.Hash{}
+	}
+	return ethcmn.BytesToHash(bz)
 }
 
 // CreateAccount explicitly creates a state object. If a state object with the address

@@ -2,7 +2,6 @@ package config
 
 import (
 	"bytes"
-	"math/big"
 
 	//"crypto/ecdsa"
 	"io/ioutil"
@@ -15,8 +14,6 @@ import (
 	tmconfig "github.com/tendermint/tendermint/config"
 
 	"github.com/Oneledger/protocol/log"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/params"
 )
 
 const (
@@ -55,40 +52,6 @@ type Server struct {
 
 	chainID string
 	rootDir string
-}
-
-func (cfg *Server) EthereumConfig() (*params.ChainConfig, error) {
-	chainData := strings.Split(cfg.chainID, "-")
-	chainID := new(big.Int)
-	chainID, ok := chainID.SetString(chainData[1], 10)
-	if !ok {
-		return nil, errors.New("chainId is wrong")
-	}
-
-	// FIXME: Add non default values from the config, but not mandatory
-	return &params.ChainConfig{
-		ChainID:        chainID,
-		HomesteadBlock: big.NewInt(0),
-
-		DAOForkBlock:   big.NewInt(0),
-		DAOForkSupport: true,
-
-		EIP150Block: big.NewInt(0),
-		EIP150Hash:  common.Hash{},
-
-		EIP155Block: big.NewInt(0),
-		EIP158Block: big.NewInt(0),
-
-		ByzantiumBlock:      big.NewInt(0),
-		ConstantinopleBlock: big.NewInt(0),
-		PetersburgBlock:     big.NewInt(0),
-		IstanbulBlock:       big.NewInt(0),
-		MuirGlacierBlock:    big.NewInt(0),
-		BerlinBlock:         big.NewInt(0),
-
-		YoloV3Block: nil,
-		EWASMBlock:  nil,
-	}, nil
 }
 
 func (cfg *Server) RootDir() string {

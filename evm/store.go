@@ -1,13 +1,16 @@
 package evm
 
 import (
+	"encoding/binary"
+
 	"github.com/Oneledger/protocol/storage"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 )
 
 var (
-	KeyPrefixCode    = []byte{0x04}
-	KeyPrefixStorage = []byte{0x05}
+	KeyPrefixCode       = []byte{0x01}
+	KeyPrefixStorage    = []byte{0x02}
+	KeyPrefixHeightHash = []byte{0x03}
 )
 
 type ContractStore struct {
@@ -51,4 +54,15 @@ func AddressStoragePrefix(address ethcmn.Address) []byte {
 // CodeStoragePrefix returns a prefix to iterate over a given contract storage.
 func CodeStoragePrefix(code []byte) []byte {
 	return append(KeyPrefixCode, code...)
+}
+
+// HeightHashKey returns the key for the given chain epoch and height.
+// The key will be composed in the following order:
+//   key = prefix + bytes(height)
+// This ordering facilitates the iteration by height for the EVM GetHashFn
+// queries.
+func HeightHashKey(height uint64) []byte {
+	buf := make([]byte, 8)
+	binary.PutVarint(buf, int64(height))
+	return append(KeyPrefixHeightHash, buf...)
 }
