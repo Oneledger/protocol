@@ -6,6 +6,7 @@ import (
 	"sort"
 
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/data/contracts"
 	"github.com/ethereum/go-ethereum/common"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -89,7 +90,7 @@ func (s *CommitStateDB) WithContext(ctx *action.Context) *CommitStateDB {
 // GetHeightHash returns the block header hash associated with a given block height and chain epoch number.
 func (s *CommitStateDB) GetHeightHash(height uint64) ethcmn.Hash {
 	ctx := s.ctx
-	bz, _ := ctx.Contracts.Get(HeightHashKey(height))
+	bz, _ := ctx.Contracts.Get(contracts.HeightHashKey(height))
 	if len(bz) == 0 {
 		return ethcmn.Hash{}
 	}

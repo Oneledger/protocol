@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/Oneledger/protocol/data/contracts"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 	ethstate "github.com/ethereum/go-ethereum/core/state"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
@@ -159,7 +160,7 @@ func (so *stateObject) GetCommittedState(_ ethstate.Database, key ethcmn.Hash) e
 	value := ethcmn.Hash{}
 
 	ctx := so.stateDB.ctx
-	rawValue, _ := ctx.Contracts.Get(AddressStoragePrefix(so.Address()))
+	rawValue, _ := ctx.Contracts.Get(contracts.AddressStoragePrefix(so.Address()))
 
 	if len(rawValue) > 0 {
 		value.SetBytes(rawValue)
@@ -196,7 +197,7 @@ func (so *stateObject) Code(_ ethstate.Database) []byte {
 	}
 
 	ctx := so.stateDB.ctx
-	code, _ := ctx.Contracts.Get(CodeStoragePrefix(so.CodeHash()))
+	code, _ := ctx.Contracts.Get(contracts.CodeStoragePrefix(so.CodeHash()))
 
 	if len(code) == 0 {
 		so.setError(fmt.Errorf("failed to get code hash %x for address %s", so.CodeHash(), so.Address().String()))
@@ -323,7 +324,7 @@ func (so *stateObject) commitState() {
 
 		// delete empty values from the store
 		if IsEmptyHash(state.Value) {
-			ctx.Contracts.Delete(AddressStoragePrefix(ethcmn.BytesToAddress(key.Bytes())))
+			ctx.Contracts.Delete(contracts.AddressStoragePrefix(ethcmn.BytesToAddress(key.Bytes())))
 		}
 
 		delete(so.keyToDirtyStorageIndex, key)
@@ -344,7 +345,7 @@ func (so *stateObject) commitState() {
 		}
 
 		so.originStorage[idx].Value = state.Value
-		ctx.Contracts.Set(AddressStoragePrefix(ethcmn.BytesToAddress(key.Bytes())), value.Bytes())
+		ctx.Contracts.Set(contracts.AddressStoragePrefix(ethcmn.BytesToAddress(key.Bytes())), value.Bytes())
 	}
 	// clean storage as all entries are dirty
 	so.dirtyStorage = Storage{}
@@ -353,7 +354,7 @@ func (so *stateObject) commitState() {
 // commitCode persists the state object's code to the ContractStore.
 func (so *stateObject) commitCode() {
 	ctx := so.stateDB.ctx
-	ctx.Contracts.Set(CodeStoragePrefix(so.CodeHash()), so.code)
+	ctx.Contracts.Set(contracts.CodeStoragePrefix(so.CodeHash()), so.code)
 }
 
 // empty returns whether the account is considered empty.

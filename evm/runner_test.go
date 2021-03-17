@@ -13,6 +13,7 @@ import (
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/chain"
+	"github.com/Oneledger/protocol/data/contracts"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/rewards"
@@ -62,6 +63,8 @@ func assemblyCtxData(acc accounts.Account, currencyName string, currencyDecimal 
 		store = balance.NewStore("tb", cs)
 		ctx.Balances = store
 	}
+	contractState := storage.NewState(storage.NewChainState("contracts", db))
+	ctx.Contracts = contracts.NewContractStore(contractState)
 	// logger
 	if setLogger {
 		ctx.Logger = log.NewLoggerWithPrefix(os.Stdout, "Test-Logger")
@@ -155,6 +158,22 @@ func generateKeyPair() (crypto.Address, crypto.PubKey, ed25519.PrivKeyEd25519) {
 	return addr, pubkey, prikey
 }
 
+func assertExcError(t *testing.T, contractAddr ethcmn.Address, gas, leftOverGas, expected uint64) {
+	msg := fmt.Sprintf("Wrong calculation for contract '0x%s' (gas used %d, but expected %d)", ethcmn.Bytes2Hex(contractAddr.Bytes()), gas-leftOverGas, expected)
+	assert.Equal(t, uint64(expected), gas-leftOverGas, msg)
+}
+
+func getBool(res []byte) bool {
+	trimRes := ethcmn.TrimLeftZeroes(res)
+	if len(trimRes) == 1 {
+		pr := int(trimRes[0])
+		if pr == 1 {
+			return true
+		}
+	}
+	return false
+}
+
 func TestRunner(t *testing.T) {
 	// pragma solidity >=0.7.0 <0.8.0;
 
@@ -187,12 +206,34 @@ func TestRunner(t *testing.T) {
 		// deploy a contract
 		_, contractAddr, leftOverGas, err := evm.Create(accRef, code, gas, value)
 		assert.NoError(t, err, "Set contract failed")
-		assert.Equal(t, uint64(73123), gas-leftOverGas, fmt.Sprintf("Wrong calculation for contract %s", ethcmn.Bytes2Hex(contractAddr.Bytes())))
+		assertExcError(t, contractAddr, gas, leftOverGas, 73123)
 
-		// execute method
-		// input := ethcmn.FromHex("0x5f76f6ab0000000000000000000000000000000000000000000000000000000000000001") // "set" method with true arg
-		// _, leftOverGas, err = evm.Call(accRef, contractAddr, input, gas, value)
-		// assert.NoError(t, err, "Set contract failed")
-		// assert.Equal(t, uint64(21168), gas-leftOverGas, fmt.Sprintf("Wrong calculation for contract %s", ethcmn.Bytes2Hex(contractAddr.Bytes())))
+		// execute method with true
+		input := ethcmn.FromHex("0x5f76f6ab0000000000000000000000000000000000000000000000000000000000000001") // "set" method with true arg
+		_, leftOverGas, err = evm.Call(accRef, contractAddr, input, gas, value)
+		assert.NoError(t, err, "Execute contract failed")
+		assertExcError(t, contractAddr, gas, leftOverGas, 22468)
+
+		// get result true
+		input = ethcmn.FromHex("0x6d4ce63c") // "get" method and get result true
+		res, leftOverGas, err := evm.Call(accRef, contractAddr, input, gas, value)
+		assert.NoError(t, err, "Execute contract failed")
+		fmt.Printf("res: %+v\n", res)
+		assertExcError(t, contractAddr, gas, leftOverGas, 444)
+		assert.Equal(t, true, getBool(res), "Wrong data was stored")
+
+		// execute method with false
+		input = ethcmn.FromHex("0x5f76f6ab0000000000000000000000000000000000000000000000000000000000000000") // "set" method with false arg
+		_, leftOverGas, err = evm.Call(accRef, contractAddr, input, gas, value)
+		assert.NoError(t, err, "Execute contract failed")
+		assertExcError(t, contractAddr, gas, leftOverGas, 568)
+
+		// get result false
+		input = ethcmn.FromHex("0x6d4ce63c") // "get" method and get result false
+		res, leftOverGas, err = evm.Call(accRef, contractAddr, input, gas, value)
+		assert.NoError(t, err, "Execute contract failed")
+		fmt.Printf("res: %+v\n", res)
+		assertExcError(t, contractAddr, gas, leftOverGas, 444)
+		assert.Equal(t, false, getBool(res), "Wrong data was stored")
 	})
 }
