@@ -142,8 +142,8 @@ func NewEVMConfig(addr keys.Address, gasPrice *big.Int, gasLimit uint64, extraEI
 	}
 }
 
-func NewEVM(ctx *action.Context, ecfg *EVMConfig) *ethvm.EVM {
-	s := NewCommitStateDB(ctx)
+func NewEVM(ctx *action.Context, ak AccountKeeper, ecfg *EVMConfig) *ethvm.EVM {
+	s := NewCommitStateDB(ctx, ak)
 	blockCtx := ethvm.BlockContext{
 		CanTransfer: ethcore.CanTransfer,
 		Transfer:    ethcore.Transfer,

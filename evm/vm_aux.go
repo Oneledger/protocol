@@ -3,7 +3,7 @@ package evm
 import (
 	"fmt"
 
-	"github.com/Oneledger/protocol/data/accounts"
+	"github.com/Oneledger/protocol/data/keys"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 )
 
@@ -12,8 +12,7 @@ import (
 func (s *CommitStateDB) createObject(addr ethcmn.Address) (newObj, prevObj *stateObject) {
 	prevObj = s.getStateObject(addr)
 
-	acc, _ := s.ctx.Accounts.GetAccount(addr.Bytes())
-
+	acc := s.accountKeeper.NewAccountWithAddress(s.ctx, keys.Address(addr.Bytes()))
 	newObj = newStateObject(s, acc)
 	newObj.setNonce(0) // sets the object to dirty
 
@@ -24,9 +23,20 @@ func (s *CommitStateDB) createObject(addr ethcmn.Address) (newObj, prevObj *stat
 // getStateObject attempts to retrieve a state object given by the address.
 // Returns nil and sets an error if not found.
 func (s *CommitStateDB) getStateObject(addr ethcmn.Address) (stateObject *stateObject) {
+	if idx, found := s.addressToObjectIndex[addr]; found {
+		// prefer 'live' (cached) objects
+		if so := s.stateObjects[idx].stateObject; so != nil {
+			if so.deleted {
+				return nil
+			}
+
+			return so
+		}
+	}
+
 	// otherwise, attempt to fetch the account from the account mapper
-	acc, _ := s.ctx.Accounts.GetAccount(addr.Bytes())
-	if (accounts.Account{}) == acc {
+	acc := s.accountKeeper.GetAccount(s.ctx, keys.Address(addr.Bytes()))
+	if acc == nil {
 		s.setError(fmt.Errorf("no account found for address: %s", addr.String()))
 		return nil
 	}

@@ -30,6 +30,9 @@ type CommitStateDB struct {
 	// The refund counter, also used by state transitioning.
 	refund uint64
 
+	// keeper interface
+	accountKeeper AccountKeeper
+
 	thash, bhash ethcmn.Hash
 	txIndex      int
 	logs         map[ethcmn.Hash][]*ethtypes.Log
@@ -64,10 +67,11 @@ type CommitStateDB struct {
 //
 // CONTRACT: Stores used for state must be cache-wrapped as the ordering of the
 // key/value space matters in determining the merkle root.
-func NewCommitStateDB(ctx *action.Context) *CommitStateDB {
+func NewCommitStateDB(ctx *action.Context, ak AccountKeeper) *CommitStateDB {
 	return &CommitStateDB{
 		ctx:                  ctx,
 		stateObjects:         []stateEntry{},
+		accountKeeper:        ak,
 		logs:                 make(map[ethcmn.Hash][]*ethtypes.Log),
 		preimages:            make(map[common.Hash][]byte),
 		addressToObjectIndex: make(map[common.Address]int),

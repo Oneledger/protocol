@@ -6,8 +6,11 @@ import (
 	"math/big"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/config"
+	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/fees"
@@ -17,12 +20,39 @@ import (
 	"github.com/Oneledger/protocol/storage"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 	ethvm "github.com/ethereum/go-ethereum/core/vm"
+	"github.com/stretchr/testify/assert"
+	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	db "github.com/tendermint/tm-db"
 )
 
-func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, setLogger bool, setCoin bool, setCoinAddr crypto.Address) *action.Context {
+func setupServer() config.Server {
+	networkConfig := &config.NetworkConfig{
+		P2PAddress: "tcp://127.0.0.1:26601",
+		RPCAddress: "tcp://127.0.0.1:26600",
+		SDKAddress: "http://127.0.0.1:26603",
+	}
+	consensus := &config.ConsensusConfig{}
+	p2pConfig := &config.P2PConfig{}
+	mempool := &config.MempoolConfig{}
+	nodeConfig := &config.NodeConfig{
+		NodeName: "test_node",
+		FastSync: true,
+		DBDir:    "test_dbpath",
+		DB:       "goleveldb",
+	}
+	config := config.Server{
+		Node:      nodeConfig,
+		Network:   networkConfig,
+		Consensus: consensus,
+		P2P:       p2pConfig,
+		Mempool:   mempool,
+	}
+	return config
+}
+
+func assemblyCtxData(acc accounts.Account, currencyName string, currencyDecimal int, setStore bool, setLogger bool, setCoin bool, setCoinAddr crypto.Address) *action.Context {
 	ctx := &action.Context{}
 	db := db.NewDB("test", db.MemDBBackend, "")
 	cs := storage.NewState(storage.NewChainState("balance", db))
@@ -107,6 +137,12 @@ func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, se
 	ctx.GovernanceStore.WithHeight(0).SetProposalOptions(pOpt)
 	ctx.GovernanceStore.WithHeight(0).SetRewardOptions(rewardOptions)
 	ctx.GovernanceStore.WithHeight(0).SetAllLUH()
+
+	ctx.Header = &abci.Header{
+		Height:  1,
+		Time:    time.Now().AddDate(0, 0, 1),
+		ChainID: "test-1",
+	}
 	return ctx
 }
 
@@ -120,20 +156,43 @@ func generateKeyPair() (crypto.Address, crypto.PubKey, ed25519.PrivKeyEd25519) {
 }
 
 func TestRunner(t *testing.T) {
-	t.Run("test vm run", func(t *testing.T) {
-		sender, _, _ := generateKeyPair()
-		ctx := assemblyCtxData("OLT", 18, false, false, false, nil)
-		ecfg := NewEVMConfig(sender.Bytes(), big.NewInt(0), 1000000000, []int{})
+	// pragma solidity >=0.7.0 <0.8.0;
 
-		code := ethcmn.FromHex("0x608060405234801561001057600080fd5b5061016d806100206000396000f3fe6080604052600436106100295760003560e01c80635f76f6ab1461002e5780636d4ce63c1461005e575b600080fd5b61005c6004803603602081101561004457600080fd5b8101908080351515906020019092919050505061008b565b005b34801561006a57600080fd5b506100736100e4565b60405180821515815260200191505060405180910390f35b806000803373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060006101000a81548160ff02191690831515021790555050565b60008060003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060009054906101000a900460ff1690509056fea2646970667358221220b646cfd279b3a35294d7d579abe519839657f635491845f79a261e9d571a87df64736f6c63430007060033")
-		gas := uint64(200000)
-		value := big.NewInt(0)
+	// contract Test {
+	//     mapping(address => bool) private data;
 
-		evm := NewEVM(ctx, ecfg)
-		ret, contractAddr, leftOverGas, err := evm.Create(ethvm.AccountRef(ethcmn.BytesToAddress(sender)), code, gas, value)
-		fmt.Printf("ret: %b\n", ret)
-		fmt.Printf("contract: %s\n", ethcmn.Bytes2Hex(contractAddr.Bytes()))
-		fmt.Printf("leftOverGas: %d\n", leftOverGas)
-		fmt.Printf("err: %s\n", err)
+	//     function set(bool res) public payable {
+	//         data[msg.sender] = res;
+	//     }
+
+	//     function get() public view returns(bool) {
+	//         return data[msg.sender];
+	//     }
+	// }
+
+	// generating default data
+	acc, _ := accounts.GenerateNewAccount(1, "test")
+	ctx := assemblyCtxData(acc, "OLT", 18, false, false, false, nil)
+	ak := NewMemoryKeeper()
+	_ = ak.NewAccountWithAddress(ctx, acc.Address())
+	ecfg := NewEVMConfig(acc.Address(), big.NewInt(0), 1000000000, []int{})
+	code := ethcmn.FromHex("0x608060405234801561001057600080fd5b5061016d806100206000396000f3fe608060405234801561001057600080fd5b50600436106100365760003560e01c80635f76f6ab1461003b5780636d4ce63c1461006b575b600080fd5b6100696004803603602081101561005157600080fd5b8101908080351515906020019092919050505061008b565b005b6100736100e4565b60405180821515815260200191505060405180910390f35b806000803373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060006101000a81548160ff02191690831515021790555050565b60008060003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060009054906101000a900460ff1690509056fea26469706673582212209bac4bf916f5d28c34ab5b6f59e791ea87337bed7abf384250e80a832d134f6364736f6c63430007060033")
+	gas := uint64(3000000)
+	value := big.NewInt(0)
+
+	accRef := ethvm.AccountRef(ethcmn.BytesToAddress(acc.Address()))
+	evm := NewEVM(ctx, ak, ecfg)
+
+	t.Run("test contract store and it is OK", func(t *testing.T) {
+		// deploy a contract
+		_, contractAddr, leftOverGas, err := evm.Create(accRef, code, gas, value)
+		assert.NoError(t, err, "Set contract failed")
+		assert.Equal(t, uint64(73123), gas-leftOverGas, fmt.Sprintf("Wrong calculation for contract %s", ethcmn.Bytes2Hex(contractAddr.Bytes())))
+
+		// execute method
+		// input := ethcmn.FromHex("0x5f76f6ab0000000000000000000000000000000000000000000000000000000000000001") // "set" method with true arg
+		// _, leftOverGas, err = evm.Call(accRef, contractAddr, input, gas, value)
+		// assert.NoError(t, err, "Set contract failed")
+		// assert.Equal(t, uint64(21168), gas-leftOverGas, fmt.Sprintf("Wrong calculation for contract %s", ethcmn.Bytes2Hex(contractAddr.Bytes())))
 	})
 }

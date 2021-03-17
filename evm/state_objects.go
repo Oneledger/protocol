@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/Oneledger/protocol/data/accounts"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 	ethstate "github.com/ethereum/go-ethereum/core/state"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
@@ -100,13 +99,11 @@ type stateObject struct {
 	deleted   bool
 }
 
-func newStateObject(db *CommitStateDB, acc accounts.Account) *stateObject {
-	protocolAccount := NewEthAccount(acc.Address())
-
+func newStateObject(db *CommitStateDB, acc *EthAccount) *stateObject {
 	return &stateObject{
 		stateDB:                 db,
-		account:                 protocolAccount,
-		address:                 protocolAccount.EthAddress(),
+		account:                 acc,
+		address:                 acc.EthAddress(),
 		originStorage:           Storage{},
 		dirtyStorage:            Storage{},
 		keyToOriginStorageIndex: make(map[ethcmn.Hash]int),

@@ -8,10 +8,9 @@ import (
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 )
 
-// EthAccount implements the keys.Account interface and embeds with code hash for
-// the contract
 type EthAccount struct {
 	Address  keys.Address
+	Nonce    uint64
 	CodeHash []byte
 	Coins    *big.Int
 	Sequence uint64
@@ -20,6 +19,7 @@ type EthAccount struct {
 func NewEthAccount(addr keys.Address) *EthAccount {
 	return &EthAccount{
 		Address:  addr,
+		Nonce:    0,
 		CodeHash: ethcrypto.Keccak256(nil),
 		Coins:    big.NewInt(0),
 	}
