@@ -99,10 +99,11 @@ type DelegationStatusReply struct {
 
 type SendTxRequest struct {
 	From     keys.Address  `json:"from"`
-	To       keys.Address  `json:"to"`
+	To       keys.Address  `json:"to,omitempty"`
 	Amount   action.Amount `json:"amount"`
 	GasPrice action.Amount `json:"gasPrice"`
 	Gas      int64         `json:"gas"`
+	Data     []byte        `json:"data,omitempty"`
 }
 
 type SendPoolTxRequest struct {
@@ -386,4 +387,3 @@ type TxRequest struct {
 type TxResponse struct {
 	Result ctypes.ResultTx `json:"result"`
 }
-
