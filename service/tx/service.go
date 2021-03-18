@@ -2,8 +2,10 @@ package tx
 
 import (
 	"fmt"
+
 	"github.com/Oneledger/protocol/action"
 	ev "github.com/Oneledger/protocol/action/evidence"
+	action_sc "github.com/Oneledger/protocol/action/smart_contract"
 	"github.com/Oneledger/protocol/action/staking"
 	"github.com/Oneledger/protocol/action/transfer"
 	"github.com/Oneledger/protocol/app/node"
@@ -65,16 +67,44 @@ func NewService(
 	}
 }
 
+func getSendTxContext(args client.SendTxRequest) (data []byte, t action.Type, err error) {
+	if len(args.To) == 0 && len(args.Data) != 0 {
+		// means that we deploy a contract
+		msg := action_sc.Deploy{
+			From:   keys.Address(args.From),
+			Amount: args.Amount,
+			Data:   args.Data,
+		}
+		data, err = msg.Marshal()
+		t = action.SC_DEPLOY
+	} else if len(args.Data) != 0 {
+		// means that we execute a contract method
+		msg := action_sc.Execute{
+			From:   keys.Address(args.From),
+			To:     keys.Address(args.To),
+			Amount: args.Amount,
+			Data:   args.Data,
+		}
+		data, err = msg.Marshal()
+		t = action.SC_EXECUTE
+	} else {
+		// just a regular send
+		msg := transfer.Send{
+			From:   keys.Address(args.From),
+			To:     keys.Address(args.To),
+			Amount: args.Amount,
+		}
+		data, err = msg.Marshal()
+		t = action.SEND
+	}
+	return
+}
+
 // SendTx exists for maintaining backwards compatibility with existing olclient implementations. It returns
 // a signed transaction
 // TODO: deprecate this
 func (svc *Service) SendTx(args client.SendTxRequest, reply *client.CreateTxReply) error {
-	send := transfer.Send{
-		From:   keys.Address(args.From),
-		To:     keys.Address(args.To),
-		Amount: args.Amount,
-	}
-	data, err := send.Marshal()
+	data, t, err := getSendTxContext(args)
 	if err != nil {
 		svc.logger.Error("error in serializing send object", err)
 		return codes.ErrSerialization
@@ -83,7 +113,7 @@ func (svc *Service) SendTx(args client.SendTxRequest, reply *client.CreateTxRepl
 	uuidNew, _ := uuid.NewUUID()
 	fee := action.Fee{args.GasPrice, args.Gas}
 	tx := action.RawTx{
-		Type: action.SEND,
+		Type: t,
 		Data: data,
 		Fee:  fee,
 		Memo: uuidNew.String(),
@@ -93,7 +123,7 @@ func (svc *Service) SendTx(args client.SendTxRequest, reply *client.CreateTxRepl
 		return accounts.ErrGetAccountByAddress
 	}
 
-	pubKey, signed, err := svc.accounts.SignWithAddress(tx.RawBytes(), send.From)
+	pubKey, signed, err := svc.accounts.SignWithAddress(tx.RawBytes(), keys.Address(args.From))
 	if err != nil {
 		return err
 	}
@@ -116,12 +146,7 @@ func (svc *Service) SendTx(args client.SendTxRequest, reply *client.CreateTxRepl
 }
 
 func (svc *Service) CreateRawSend(args client.SendTxRequest, reply *client.CreateTxReply) error {
-	send := transfer.Send{
-		From:   args.From,
-		To:     args.To,
-		Amount: args.Amount,
-	}
-	data, err := send.Marshal()
+	data, t, err := getSendTxContext(args)
 	if err != nil {
 		svc.logger.Error("error in serializing send object", err)
 		return codes.ErrSerialization
@@ -134,7 +159,7 @@ func (svc *Service) CreateRawSend(args client.SendTxRequest, reply *client.Creat
 
 	fee := action.Fee{args.GasPrice, args.Gas}
 	tx := &action.RawTx{
-		Type: action.SEND,
+		Type: t,
 		Data: data,
 		Fee:  fee,
 		Memo: uuidNew.String(),
