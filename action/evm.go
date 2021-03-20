@@ -1,17 +1,15 @@
-package evm
+package action
 
 import (
 	"errors"
 	"math/big"
 	"strings"
 
-	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/ethereum/go-ethereum/common"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 	ethcore "github.com/ethereum/go-ethereum/core"
 	ethvm "github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/params"
 	ethparams "github.com/ethereum/go-ethereum/params"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmtypes "github.com/tendermint/tendermint/types"
@@ -53,7 +51,7 @@ func AbciHeaderToTendermint(header abci.Header) tmtypes.Header {
 
 // HashFromContext returns the Ethereum Header hash from the context's protocol
 // block header.
-func HashFromContext(ctx *action.Context) ethcmn.Hash {
+func HashFromContext(ctx *Context) ethcmn.Hash {
 	// cast the ABCI header to tendermint Header type
 	tmHeader := AbciHeaderToTendermint(*ctx.Header)
 
@@ -73,7 +71,7 @@ func HashFromContext(ctx *action.Context) ethcmn.Hash {
 //  1. The requested height matches the current height from context (and thus same epoch number)
 //  2. The requested height is from an previous height from the same chain epoch
 //  3. The requested height is from a height greater than the latest one
-func GetHashFn(ctx *action.Context, csdb *CommitStateDB) ethvm.GetHashFunc {
+func GetHashFn(ctx *Context, csdb *CommitStateDB) ethvm.GetHashFunc {
 	return func(height uint64) ethcmn.Hash {
 		switch {
 		case ctx.Header.GetHeight() == int64(height):
@@ -101,7 +99,7 @@ func EthereumConfig(chainID string) (*ethparams.ChainConfig, error) {
 		return nil, errors.New("chainId is wrong")
 	}
 
-	return &params.ChainConfig{
+	return &ethparams.ChainConfig{
 		ChainID:        id,
 		HomesteadBlock: big.NewInt(0),
 
@@ -142,14 +140,13 @@ func NewEVMConfig(addr keys.Address, gasPrice *big.Int, gasLimit uint64, extraEI
 	}
 }
 
-func NewEVM(ctx *action.Context, ak AccountKeeper, ecfg *EVMConfig) *ethvm.EVM {
-	s := NewCommitStateDB(ctx, ak)
+func NewEVM(ctx *Context, ecfg *EVMConfig) *ethvm.EVM {
 	blockCtx := ethvm.BlockContext{
 		CanTransfer: ethcore.CanTransfer,
 		Transfer:    ethcore.Transfer,
-		GetHash:     GetHashFn(ctx, s),
+		GetHash:     GetHashFn(ctx, ctx.CommitStateDB),
 		Coinbase:    ethcmn.Address{}, // there's no beneficiary since we're not mining
-		GasLimit:    ecfg.gasLimit,    // TODO: Set gas limit from the settings
+		GasLimit:    ecfg.gasLimit,
 		BlockNumber: big.NewInt(ctx.Header.GetHeight()),
 		Time:        big.NewInt(ctx.Header.Time.Unix()),
 		Difficulty:  big.NewInt(0), // unused. Only required in PoW context
@@ -165,5 +162,5 @@ func NewEVM(ctx *action.Context, ak AccountKeeper, ecfg *EVMConfig) *ethvm.EVM {
 	}
 
 	ethConfig, _ := EthereumConfig(ctx.Header.ChainID)
-	return ethvm.NewEVM(blockCtx, txCtx, s, ethConfig, vmConfig)
+	return ethvm.NewEVM(blockCtx, txCtx, ctx.CommitStateDB, ethConfig, vmConfig)
 }

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/Oneledger/protocol/data/evm"
 	"github.com/Oneledger/protocol/external_apps"
 	"github.com/Oneledger/protocol/external_apps/common"
 
@@ -94,6 +95,10 @@ type context struct {
 	extStores       data.StorageRouter
 	extServiceMap   common.ExtServiceMap
 	extFunctions    common.ControllerRouter
+
+	// evm integration
+	contracts     *evm.ContractStore
+	accountKeeper evm.AccountKeeper
 }
 
 func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (context, error) {
@@ -149,6 +154,10 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	ctx.extStores = data.NewStorageRouter()
 	ctx.extServiceMap = common.NewExtServiceMap()
 	ctx.extFunctions = common.NewFunctionRouter()
+
+	// evm
+	ctx.contracts = evm.NewContractStore(storage.NewState(ctx.chainstate))
+	ctx.accountKeeper = evm.NewKeeperStore(storage.NewState(ctx.chainstate))
 	err = external_apps.RegisterExtApp(ctx.chainstate, ctx.actionRouter, ctx.extStores, ctx.extServiceMap, ctx.extFunctions)
 	if err != nil {
 		return ctx, errors.Wrap(err, "error in registering external apps")
@@ -231,6 +240,8 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.govern.WithState(state),
 		ctx.extStores.WithState(state),
 		ctx.govupdate,
+		ctx.contracts,
+		ctx.accountKeeper,
 	)
 
 	return actionCtx

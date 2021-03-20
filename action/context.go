@@ -2,7 +2,7 @@ package action
 
 import (
 	"github.com/Oneledger/protocol/data"
-	"github.com/Oneledger/protocol/data/contracts"
+	"github.com/Oneledger/protocol/data/evm"
 	"github.com/Oneledger/protocol/data/rewards"
 
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -48,7 +48,11 @@ type Context struct {
 	GovernanceStore     *governance.Store
 	ExtStores           data.Router
 	GovUpdate           *GovernaceUpdateAndValidate
-	Contracts           *contracts.ContractStore
+
+	// evm
+	Contracts     *evm.ContractStore
+	AccountKeeper evm.AccountKeeper
+	CommitStateDB *CommitStateDB
 }
 
 func NewContext(r Router, header *abci.Header, state *storage.State,
@@ -58,9 +62,11 @@ func NewContext(r Router, header *abci.Header, state *storage.State,
 	domains *ons.DomainStore, delegators *delegation.DelegationStore, netwkDelegators *netwkDeleg.MasterStore, evidenceStore *evidence.EvidenceStore,
 	btcTrackers *bitcoin.TrackerStore, ethTrackers *ethereum.TrackerStore, jobStore *jobs.JobStore,
 	lockScriptStore *bitcoin.LockScriptStore, logger *log.Logger, proposalmaster *governance.ProposalMasterStore,
-	rewardmaster *rewards.RewardMasterStore, govern *governance.Store, extStores data.Router, govUpdate *GovernaceUpdateAndValidate, contracts *contracts.ContractStore) *Context {
+	rewardmaster *rewards.RewardMasterStore, govern *governance.Store, extStores data.Router, govUpdate *GovernaceUpdateAndValidate,
+	contracts *evm.ContractStore, accountKeeper evm.AccountKeeper,
+) *Context {
 
-	return &Context{
+	ctx := &Context{
 		Router:              r,
 		State:               state,
 		Header:              header,
@@ -85,5 +91,8 @@ func NewContext(r Router, header *abci.Header, state *storage.State,
 		ExtStores:           extStores,
 		GovUpdate:           govUpdate,
 		Contracts:           contracts,
+		AccountKeeper:       accountKeeper,
 	}
+	ctx.CommitStateDB = NewCommitStateDB(ctx, ctx.AccountKeeper)
+	return ctx
 }

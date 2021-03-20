@@ -1,12 +1,11 @@
-package evm
+package action
 
 import (
 	"fmt"
 	"math/big"
 	"sort"
 
-	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/data/contracts"
+	"github.com/Oneledger/protocol/data/evm"
 	"github.com/ethereum/go-ethereum/common"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -26,13 +25,13 @@ type CommitStateDB struct {
 	// TODO: We need to store the context as part of the structure itself opposed
 	// to being passed as a parameter (as it should be) in order to implement the
 	// StateDB interface. Perhaps there is a better way.
-	ctx *action.Context
+	ctx *Context
 
 	// The refund counter, also used by state transitioning.
 	refund uint64
 
 	// keeper interface
-	accountKeeper AccountKeeper
+	accountKeeper evm.AccountKeeper
 
 	thash, bhash ethcmn.Hash
 	txIndex      int
@@ -68,7 +67,7 @@ type CommitStateDB struct {
 //
 // CONTRACT: Stores used for state must be cache-wrapped as the ordering of the
 // key/value space matters in determining the merkle root.
-func NewCommitStateDB(ctx *action.Context, ak AccountKeeper) *CommitStateDB {
+func NewCommitStateDB(ctx *Context, ak evm.AccountKeeper) *CommitStateDB {
 	return &CommitStateDB{
 		ctx:                  ctx,
 		stateObjects:         []stateEntry{},
@@ -82,15 +81,107 @@ func NewCommitStateDB(ctx *action.Context, ak AccountKeeper) *CommitStateDB {
 }
 
 // WithContext returns a Database with an updated protocol context
-func (s *CommitStateDB) WithContext(ctx *action.Context) *CommitStateDB {
+func (s *CommitStateDB) WithContext(ctx *Context) *CommitStateDB {
 	s.ctx = ctx
 	return s
+}
+
+// Prepare sets the current transaction hash and index and block hash which is
+// used when the EVM emits new state logs.
+func (s *CommitStateDB) Prepare(thash, bhash common.Hash, ti int) {
+	s.thash = thash
+	s.bhash = bhash
+	s.txIndex = ti
+	s.accessList = newAccessList()
+}
+
+// Commit writes the state to the appropriate KVStores. For each state object
+// in the cache, it will either be removed, or have it's code set and/or it's
+// state (storage) updated. In addition, the state object (account) itself will
+// be written. Finally, the root hash (version) will be returned.
+func (s *CommitStateDB) Commit(deleteEmptyObjects bool) (ethcmn.Hash, error) {
+	// defer s.clearJournalAndRefund()
+
+	// remove dirty state object entries based on the journal
+	// for _, dirty := range csdb.journal.dirties {
+	// 	csdb.stateObjectsDirty[dirty.address] = struct{}{}
+	// }
+
+	// set the state objects
+	for _, stateEntry := range s.stateObjects {
+		// _, isDirty := csdb.stateObjectsDirty[stateEntry.address]
+
+		switch {
+		case stateEntry.stateObject.suicided || (deleteEmptyObjects && stateEntry.stateObject.empty()):
+			// If the state object has been removed, don't bother syncing it and just
+			// remove it from the store.
+			s.deleteStateObject(stateEntry.stateObject)
+
+			// case isDirty:
+			// 	// write any contract code associated with the state object
+			// 	if stateEntry.stateObject.code != nil && stateEntry.stateObject.dirtyCode {
+			// 		stateEntry.stateObject.commitCode()
+			// 		stateEntry.stateObject.dirtyCode = false
+			// 	}
+
+			// 	// update the object in the KVStore
+			// 	if err := csdb.updateStateObject(stateEntry.stateObject); err != nil {
+			// 		return ethcmn.Hash{}, err
+			// 	}
+		}
+
+		// delete(s.stateObjectsDirty, stateEntry.address)
+	}
+
+	// NOTE: Ethereum returns the trie merkle root here, but as commitment
+	// actually happens in the BaseApp at EndBlocker, we do not know the root at
+	// this time.
+	return ethcmn.Hash{}, nil
+}
+
+// Finalise finalizes the state objects (accounts) state by setting their state,
+// removing the csdb destructed objects and clearing the journal as well as the
+// refunds.
+func (s *CommitStateDB) Finalise(deleteEmptyObjects bool) error {
+	// for _, dirty := range s.journal.dirties {
+	// 	idx, exist := s.addressToObjectIndex[dirty.address]
+	// 	if !exist {
+	// 		// ripeMD is 'touched' at block 1714175, in tx:
+	// 		// 0x1237f737031e40bcde4a8b7e717b2d15e3ecadfe49bb1bbc71ee9deb09c6fcf2
+	// 		//
+	// 		// That tx goes out of gas, and although the notion of 'touched' does not
+	// 		// exist there, the touch-event will still be recorded in the journal.
+	// 		// Since ripeMD is a special snowflake, it will persist in the journal even
+	// 		// though the journal is reverted. In this special circumstance, it may
+	// 		// exist in journal.dirties but not in stateObjects. Thus, we can safely
+	// 		// ignore it here.
+	// 		continue
+	// 	}
+
+	// 	stateEntry := s.stateObjects[idx]
+	// 	if stateEntry.stateObject.suicided || (deleteEmptyObjects && stateEntry.stateObject.empty()) {
+	// 		s.deleteStateObject(stateEntry.stateObject)
+	// 	} else {
+	// 		// Set all the dirty state storage items for the state object in the
+	// 		// KVStore and finally set the account in the account mapper.
+	// 		stateEntry.stateObject.commitState()
+	// 		if err := s.updateStateObject(stateEntry.stateObject); err != nil {
+	// 			return err
+	// 		}
+	// 	}
+
+	// 	s.stateObjectsDirty[dirty.address] = struct{}{}
+	// }
+
+	// // invalidate journal because reverting across transactions is not allowed
+	// s.clearJournalAndRefund()
+	return nil
 }
 
 // GetHeightHash returns the block header hash associated with a given block height and chain epoch number.
 func (s *CommitStateDB) GetHeightHash(height uint64) ethcmn.Hash {
 	ctx := s.ctx
-	bz, _ := ctx.Contracts.Get(contracts.HeightHashKey(height))
+	bz, _ := ctx.Contracts.Get(evm.HeightHashKey(height))
 	if len(bz) == 0 {
 		return ethcmn.Hash{}
 	}

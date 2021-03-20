@@ -20,6 +20,7 @@ import (
 	"github.com/Oneledger/protocol/data/delegation"
 	ethTracker "github.com/Oneledger/protocol/data/ethereum"
 	"github.com/Oneledger/protocol/data/evidence"
+	"github.com/Oneledger/protocol/data/evm"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/identity"
@@ -64,6 +65,10 @@ type Context struct {
 	Logger   *log.Logger
 
 	TxTypes *[]action.TxTypeDescribe
+
+	// evm
+	Contracts     *evm.ContractStore
+	AccountKeeper evm.AccountKeeper
 }
 
 // Map of services, keyed by the name/prefix of the service
@@ -73,7 +78,7 @@ func NewMap(ctx *Context) (Map, error) {
 
 	defaultMap := Map{
 		broadcast.Name(): broadcast.NewService(ctx.Services, ctx.Router, ctx.Currencies, ctx.FeePool, ctx.Domains, ctx.Govern, ctx.Delegators, ctx.EvidenceStore, ctx.NetwkDelegators,
-			ctx.ValidatorSet, ctx.Logger, ctx.Trackers, ctx.ProposalMaster, ctx.RewardMaster, ctx.ExtStores, ctx.GovUpdate),
+			ctx.ValidatorSet, ctx.Logger, ctx.Trackers, ctx.ProposalMaster, ctx.RewardMaster, ctx.ExtStores, ctx.GovUpdate, ctx.Contracts, ctx.AccountKeeper),
 		nodesvc.Name(): nodesvc.NewService(ctx.NodeContext, &ctx.Cfg, ctx.Logger),
 		owner.Name():   owner.NewService(ctx.Accounts, ctx.Logger),
 		query.Name(): query.NewService(ctx.Services, ctx.Balances, ctx.Currencies, ctx.ValidatorSet, ctx.WitnessSet, ctx.Domains, ctx.Delegators, ctx.NetwkDelegators, ctx.EvidenceStore,

@@ -1,4 +1,4 @@
-package evm
+package action
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ import (
 func (s *CommitStateDB) createObject(addr ethcmn.Address) (newObj, prevObj *stateObject) {
 	prevObj = s.getStateObject(addr)
 
-	acc := s.accountKeeper.NewAccountWithAddress(s.ctx, keys.Address(addr.Bytes()))
+	acc := s.accountKeeper.NewAccountWithAddress(keys.Address(addr.Bytes()))
 	newObj = newStateObject(s, acc)
 	newObj.setNonce(0) // sets the object to dirty
 
@@ -35,7 +35,7 @@ func (s *CommitStateDB) getStateObject(addr ethcmn.Address) (stateObject *stateO
 	}
 
 	// otherwise, attempt to fetch the account from the account mapper
-	acc := s.accountKeeper.GetAccount(s.ctx, keys.Address(addr.Bytes()))
+	acc := s.accountKeeper.GetAccount(keys.Address(addr.Bytes()))
 	if acc == nil {
 		s.setError(fmt.Errorf("no account found for address: %s", addr.String()))
 		return nil
@@ -80,4 +80,10 @@ func (s *CommitStateDB) GetOrNewStateObject(addr ethcmn.Address) StateObject {
 		so, _ = s.createObject(addr)
 	}
 	return so
+}
+
+// deleteStateObject removes the given state object from the state store.
+func (s *CommitStateDB) deleteStateObject(so *stateObject) {
+	so.deleted = true
+	s.accountKeeper.RemoveAccount(*so.account)
 }

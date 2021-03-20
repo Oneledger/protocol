@@ -1,22 +1,28 @@
-package evm
+package keys
 
 import (
 	"math/big"
 
-	"github.com/Oneledger/protocol/data/keys"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 )
 
+// Code is account Code type alias
+type Code []byte
+
+func (c Code) String() string {
+	return string(c)
+}
+
 type EthAccount struct {
-	Address  keys.Address
+	Address  Address
 	Nonce    uint64
 	CodeHash []byte
 	Coins    *big.Int
 	Sequence uint64
 }
 
-func NewEthAccount(addr keys.Address) *EthAccount {
+func NewEthAccount(addr Address) *EthAccount {
 	return &EthAccount{
 		Address:  addr,
 		Nonce:    0,

@@ -1,11 +1,12 @@
-package evm
+package action
 
 import (
 	"bytes"
 	"fmt"
 	"math/big"
 
-	"github.com/Oneledger/protocol/data/contracts"
+	"github.com/Oneledger/protocol/data/evm"
+	"github.com/Oneledger/protocol/data/keys"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 	ethstate "github.com/ethereum/go-ethereum/core/state"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
@@ -73,7 +74,7 @@ type StateObject interface {
 // Account values can be accessed and modified through the object.
 // Finally, call CommitTrie to write the modified storage trie into a database.
 type stateObject struct {
-	code Code // contract bytecode, which gets set when code is loaded
+	code keys.Code // contract bytecode, which gets set when code is loaded
 	// State objects are used by the consensus core and VM which are
 	// unable to deal with database-level errors. Any error that occurs
 	// during a database read is memoized here and will eventually be returned
@@ -84,7 +85,7 @@ type stateObject struct {
 	// DB error
 	dbErr   error
 	stateDB *CommitStateDB
-	account *EthAccount
+	account *keys.EthAccount
 
 	keyToOriginStorageIndex map[ethcmn.Hash]int
 	keyToDirtyStorageIndex  map[ethcmn.Hash]int
@@ -100,7 +101,7 @@ type stateObject struct {
 	deleted   bool
 }
 
-func newStateObject(db *CommitStateDB, acc *EthAccount) *stateObject {
+func newStateObject(db *CommitStateDB, acc *keys.EthAccount) *stateObject {
 	return &stateObject{
 		stateDB:                 db,
 		account:                 acc,
@@ -160,7 +161,7 @@ func (so *stateObject) GetCommittedState(_ ethstate.Database, key ethcmn.Hash) e
 	value := ethcmn.Hash{}
 
 	ctx := so.stateDB.ctx
-	rawValue, _ := ctx.Contracts.Get(contracts.AddressStoragePrefix(so.Address()))
+	rawValue, _ := ctx.Contracts.Get(evm.AddressStoragePrefix(so.Address()))
 
 	if len(rawValue) > 0 {
 		value.SetBytes(rawValue)
@@ -197,7 +198,7 @@ func (so *stateObject) Code(_ ethstate.Database) []byte {
 	}
 
 	ctx := so.stateDB.ctx
-	code, _ := ctx.Contracts.Get(contracts.CodeStoragePrefix(so.CodeHash()))
+	code, _ := ctx.Contracts.Get(evm.CodeStoragePrefix(so.CodeHash()))
 
 	if len(code) == 0 {
 		so.setError(fmt.Errorf("failed to get code hash %x for address %s", so.CodeHash(), so.Address().String()))
@@ -324,7 +325,7 @@ func (so *stateObject) commitState() {
 
 		// delete empty values from the store
 		if IsEmptyHash(state.Value) {
-			ctx.Contracts.Delete(contracts.AddressStoragePrefix(ethcmn.BytesToAddress(key.Bytes())))
+			ctx.Contracts.Delete(evm.AddressStoragePrefix(ethcmn.BytesToAddress(key.Bytes())))
 		}
 
 		delete(so.keyToDirtyStorageIndex, key)
@@ -345,7 +346,7 @@ func (so *stateObject) commitState() {
 		}
 
 		so.originStorage[idx].Value = state.Value
-		ctx.Contracts.Set(contracts.AddressStoragePrefix(ethcmn.BytesToAddress(key.Bytes())), value.Bytes())
+		ctx.Contracts.Set(evm.AddressStoragePrefix(ethcmn.BytesToAddress(key.Bytes())), value.Bytes())
 	}
 	// clean storage as all entries are dirty
 	so.dirtyStorage = Storage{}
@@ -354,7 +355,7 @@ func (so *stateObject) commitState() {
 // commitCode persists the state object's code to the ContractStore.
 func (so *stateObject) commitCode() {
 	ctx := so.stateDB.ctx
-	ctx.Contracts.Set(contracts.CodeStoragePrefix(so.CodeHash()), so.code)
+	ctx.Contracts.Set(evm.CodeStoragePrefix(so.CodeHash()), so.code)
 }
 
 // empty returns whether the account is considered empty.
@@ -370,11 +371,11 @@ func (so *stateObject) empty() bool {
 func (so *stateObject) touch() {
 	// TODO: Add journal
 
-	if so.address == ripemd {
-		// Explicitly put it in the dirty-cache, which is otherwise generated from
-		// flattened journals.
-		// TODO: Add journal
-	}
+	// if so.address == ripemd {
+	// Explicitly put it in the dirty-cache, which is otherwise generated from
+	// flattened journals.
+	// TODO: Add journal
+	// }
 }
 
 // stateEntry represents a single key value pair from the StateDB's stateObject mappindg.

@@ -1,4 +1,4 @@
-package evm
+package action
 
 import (
 	"errors"
@@ -8,12 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/chain"
-	"github.com/Oneledger/protocol/data/contracts"
+	"github.com/Oneledger/protocol/data/evm"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/rewards"
@@ -53,8 +52,8 @@ func setupServer() config.Server {
 	return config
 }
 
-func assemblyCtxData(acc accounts.Account, currencyName string, currencyDecimal int, setStore bool, setLogger bool, setCoin bool, setCoinAddr crypto.Address) *action.Context {
-	ctx := &action.Context{}
+func assemblyCtxData(acc accounts.Account, currencyName string, currencyDecimal int, setStore bool, setLogger bool, setCoin bool, setCoinAddr crypto.Address) *Context {
+	ctx := &Context{}
 	db := db.NewDB("test", db.MemDBBackend, "")
 	cs := storage.NewState(storage.NewChainState("balance", db))
 	// store
@@ -63,8 +62,9 @@ func assemblyCtxData(acc accounts.Account, currencyName string, currencyDecimal 
 		store = balance.NewStore("tb", cs)
 		ctx.Balances = store
 	}
-	contractState := storage.NewState(storage.NewChainState("contracts", db))
-	ctx.Contracts = contracts.NewContractStore(contractState)
+	ctx.Contracts = evm.NewContractStore(storage.NewState(storage.NewChainState("contracts", db)))
+	ctx.AccountKeeper = evm.NewKeeperStore(storage.NewState(storage.NewChainState("keeper", db)))
+	ctx.CommitStateDB = NewCommitStateDB(ctx, ctx.AccountKeeper)
 	// logger
 	if setLogger {
 		ctx.Logger = log.NewLoggerWithPrefix(os.Stdout, "Test-Logger")
@@ -192,15 +192,14 @@ func TestRunner(t *testing.T) {
 	// generating default data
 	acc, _ := accounts.GenerateNewAccount(1, "test")
 	ctx := assemblyCtxData(acc, "OLT", 18, false, false, false, nil)
-	ak := NewMemoryKeeper()
-	_ = ak.NewAccountWithAddress(ctx, acc.Address())
+	_ = ctx.AccountKeeper.NewAccountWithAddress(acc.Address())
 	ecfg := NewEVMConfig(acc.Address(), big.NewInt(0), 1000000000, []int{})
 	code := ethcmn.FromHex("0x608060405234801561001057600080fd5b5061016d806100206000396000f3fe608060405234801561001057600080fd5b50600436106100365760003560e01c80635f76f6ab1461003b5780636d4ce63c1461006b575b600080fd5b6100696004803603602081101561005157600080fd5b8101908080351515906020019092919050505061008b565b005b6100736100e4565b60405180821515815260200191505060405180910390f35b806000803373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060006101000a81548160ff02191690831515021790555050565b60008060003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060009054906101000a900460ff1690509056fea26469706673582212209bac4bf916f5d28c34ab5b6f59e791ea87337bed7abf384250e80a832d134f6364736f6c63430007060033")
 	gas := uint64(3000000)
 	value := big.NewInt(0)
 
 	accRef := ethvm.AccountRef(ethcmn.BytesToAddress(acc.Address()))
-	evm := NewEVM(ctx, ak, ecfg)
+	evm := NewEVM(ctx, ecfg)
 
 	t.Run("test contract store and it is OK", func(t *testing.T) {
 		// deploy a contract

@@ -1,4 +1,4 @@
-package contracts
+package evm
 
 import (
 	"encoding/binary"

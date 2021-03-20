@@ -3,8 +3,13 @@ package smart_contract
 import (
 	"encoding/json"
 	"fmt"
+	"math/big"
 
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/action/helpers"
+	ethcmn "github.com/ethereum/go-ethereum/common"
+	ethcore "github.com/ethereum/go-ethereum/core"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
 )
@@ -100,21 +105,38 @@ func (s scDeployTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, st
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
 
+func execDeploy(ctx *action.Context, deploy *Deploy, tx action.RawTx) (*ethcore.ExecutionResult, error) {
+	ecfg := action.NewEVMConfig(deploy.From, tx.Fee.Price.Value.BigInt(), uint64(tx.Fee.Gas), []int{})
+	vmenv := action.NewEVM(ctx, ecfg)
+
+	ethFrom := ethcmn.BytesToAddress(deploy.From)
+	msg := ethtypes.NewMessage(ethFrom, nil, 0, deploy.Amount.Value.BigInt(), uint64(tx.Fee.Gas), tx.Fee.Price.Value.BigInt(), deploy.Data, make(ethtypes.AccessList, 0), false)
+
+	ctx.CommitStateDB.Prepare(ethcmn.Hash{}, ethcmn.Hash{}, 0)
+	er, err := ethcore.ApplyMessage(vmenv, msg, new(ethcore.GasPool).AddGas(uint64(uint64(tx.Fee.Gas))))
+	if err != nil {
+		return nil, fmt.Errorf("transaction failed: %v", err)
+	}
+
+	// Ensure any modifications are committed to the state
+	// Only delete empty objects if EIP158/161 (a.k.a Spurious Dragon) is in effect
+	ctx.CommitStateDB.Finalise(vmenv.ChainConfig().IsEIP158(big.NewInt(ctx.Header.Height)))
+	return er, nil
+}
+
 func runSCDeploy(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	deploy := &Deploy{}
 	err := deploy.Unmarshal(tx.Data)
 	if err != nil {
-		return false, action.Response{Log: err.Error()}
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrUnserializable, deploy.Tags(), err)
 	}
 
 	if !deploy.Amount.IsValid(ctx.Currencies) {
-		log := fmt.Sprint("amount is invalid", deploy.Amount, ctx.Currencies)
-		return false, action.Response{Log: log}
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrInvalidAmount, deploy.Tags(), errors.New(fmt.Sprint("amount is invalid", deploy.Amount, ctx.Currencies)))
 	}
 
-	// coin := deploy.Amount.ToCoin(ctx.Currencies)
-
-	// TODO: Add logic
-
-	return true, action.Response{Events: action.GetEvent(deploy.Tags(), "smart_contract_deploy")}
+	if _, err := execDeploy(ctx, deploy, tx); err != nil {
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrWrongTxType, deploy.Tags(), err)
+	}
+	return helpers.LogAndReturnTrue(ctx.Logger, deploy.Tags(), "smart_contract_deploy")
 }
