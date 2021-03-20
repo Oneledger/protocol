@@ -1,25 +1,26 @@
-package action
+package smart_contract
 
 import (
 	"errors"
 	"fmt"
 	"math/big"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/config"
-	"github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/chain"
 	"github.com/Oneledger/protocol/data/evm"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/governance"
+	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/data/rewards"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/storage"
 	ethcmn "github.com/ethereum/go-ethereum/common"
-	ethvm "github.com/ethereum/go-ethereum/core/vm"
 	"github.com/stretchr/testify/assert"
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto"
@@ -52,8 +53,8 @@ func setupServer() config.Server {
 	return config
 }
 
-func assemblyCtxData(acc accounts.Account, currencyName string, currencyDecimal int, setStore bool, setLogger bool, setCoin bool, setCoinAddr crypto.Address) *Context {
-	ctx := &Context{}
+func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, setLogger bool, setCoin bool, setCoinAddr crypto.Address) *action.Context {
+	ctx := &action.Context{}
 	db := db.NewDB("test", db.MemDBBackend, "")
 	cs := storage.NewState(storage.NewChainState("balance", db))
 	// store
@@ -64,7 +65,7 @@ func assemblyCtxData(acc accounts.Account, currencyName string, currencyDecimal 
 	}
 	ctx.Contracts = evm.NewContractStore(storage.NewState(storage.NewChainState("contracts", db)))
 	ctx.AccountKeeper = evm.NewKeeperStore(storage.NewState(storage.NewChainState("keeper", db)))
-	ctx.CommitStateDB = NewCommitStateDB(ctx, ctx.AccountKeeper)
+	ctx.CommitStateDB = action.NewCommitStateDB(ctx, ctx.AccountKeeper)
 	// logger
 	if setLogger {
 		ctx.Logger = log.NewLoggerWithPrefix(os.Stdout, "Test-Logger")
@@ -146,6 +147,7 @@ func assemblyCtxData(acc accounts.Account, currencyName string, currencyDecimal 
 		Time:    time.Now().AddDate(0, 0, 1),
 		ChainID: "test-1",
 	}
+	ctx.Logger = log.NewLoggerWithPrefix(os.Stdout, "Test-Logger")
 	return ctx
 }
 
@@ -158,11 +160,6 @@ func generateKeyPair() (crypto.Address, crypto.PubKey, ed25519.PrivKeyEd25519) {
 	return addr, pubkey, prikey
 }
 
-func assertExcError(t *testing.T, contractAddr ethcmn.Address, gas, leftOverGas, expected uint64) {
-	msg := fmt.Sprintf("Wrong calculation for contract '0x%s' (gas used %d, but expected %d)", ethcmn.Bytes2Hex(contractAddr.Bytes()), gas-leftOverGas, expected)
-	assert.Equal(t, uint64(expected), gas-leftOverGas, msg)
-}
-
 func getBool(res []byte) bool {
 	trimRes := ethcmn.TrimLeftZeroes(res)
 	if len(trimRes) == 1 {
@@ -172,6 +169,39 @@ func getBool(res []byte) bool {
 		}
 	}
 	return false
+}
+
+func assemblyExecuteData(from keys.Address, to *keys.Address, fromPubKey crypto.PubKey, fromPrikey ed25519.PrivKeyEd25519, code []byte, gas int64) action.SignedTx {
+	av := &Execute{
+		From:   from,
+		Amount: action.Amount{Currency: "OLT", Value: *balance.NewAmount(0)},
+		Data:   code,
+	}
+	if to != nil {
+		av.To = to
+	}
+	fee := action.Fee{
+		Price: action.Amount{"OLT", *balance.NewAmount(10000000000)},
+		Gas:   gas,
+	}
+	data, _ := av.Marshal()
+	tx := action.RawTx{
+		Type: av.Type(),
+		Data: data,
+		Fee:  fee,
+		Memo: "test_memo",
+	}
+	signature, _ := fromPrikey.Sign(tx.RawBytes())
+	signed := action.SignedTx{
+		RawTx: tx,
+		Signatures: []action.Signature{
+			{
+				Signer: keys.PublicKey{keys.ED25519, fromPubKey.Bytes()[5:]},
+				Signed: signature,
+			},
+		},
+	}
+	return signed
 }
 
 func TestRunner(t *testing.T) {
@@ -190,48 +220,59 @@ func TestRunner(t *testing.T) {
 	// }
 
 	// generating default data
-	acc, _ := accounts.GenerateNewAccount(1, "test")
-	ctx := assemblyCtxData(acc, "OLT", 18, false, false, false, nil)
-	_ = ctx.AccountKeeper.NewAccountWithAddress(acc.Address())
-	code := ethcmn.FromHex("0x608060405234801561001057600080fd5b5061016d806100206000396000f3fe608060405234801561001057600080fd5b50600436106100365760003560e01c80635f76f6ab1461003b5780636d4ce63c1461006b575b600080fd5b6100696004803603602081101561005157600080fd5b8101908080351515906020019092919050505061008b565b005b6100736100e4565b60405180821515815260200191505060405180910390f35b806000803373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060006101000a81548160ff02191690831515021790555050565b60008060003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060009054906101000a900460ff1690509056fea26469706673582212209bac4bf916f5d28c34ab5b6f59e791ea87337bed7abf384250e80a832d134f6364736f6c63430007060033")
-	gas := uint64(3000000)
-	value := big.NewInt(0)
+	ctx := assemblyCtxData("OLT", 18, false, false, false, nil)
+	// gas := uint64(3000000)
+	// value := big.NewInt(0)
 
-	accRef := ethvm.AccountRef(ethcmn.BytesToAddress(acc.Address()))
-	evm := NewEVMTransaction(ctx, acc.Address(), nil, value, code).NewEVM()
+	from, fromPubKey, fromPrikey := generateKeyPair()
+	to_, _, _ := generateKeyPair()
 
-	t.Run("test contract store and it is OK", func(t *testing.T) {
-		// deploy a contract
-		_, contractAddr, leftOverGas, err := evm.Create(accRef, code, gas, value)
-		assert.NoError(t, err, "Set contract failed")
-		assertExcError(t, contractAddr, gas, leftOverGas, 73123)
+	acc := &keys.EthAccount{
+		Address: from.Bytes(),
+		Coins:   big.NewInt(10000),
+	}
+	ctx.AccountKeeper.SetAccount(*acc)
 
-		// execute method with true
-		input := ethcmn.FromHex("0x5f76f6ab0000000000000000000000000000000000000000000000000000000000000001") // "set" method with true arg
-		_, leftOverGas, err = evm.Call(accRef, contractAddr, input, gas, value)
-		assert.NoError(t, err, "Execute contract failed")
-		assertExcError(t, contractAddr, gas, leftOverGas, 22468)
+	t.Run("test contract store through the transaction and it is OK", func(t *testing.T) {
+		stx := &scExecuteTx{}
+		code := ethcmn.FromHex("0x608060405234801561001057600080fd5b5061016d806100206000396000f3fe608060405234801561001057600080fd5b50600436106100365760003560e01c80635f76f6ab1461003b5780636d4ce63c1461006b575b600080fd5b6100696004803603602081101561005157600080fd5b8101908080351515906020019092919050505061008b565b005b6100736100e4565b60405180821515815260200191505060405180910390f35b806000803373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060006101000a81548160ff02191690831515021790555050565b60008060003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060009054906101000a900460ff1690509056fea26469706673582212209bac4bf916f5d28c34ab5b6f59e791ea87337bed7abf384250e80a832d134f6364736f6c63430007060033")
+		tx := assemblyExecuteData(from.Bytes(), nil, fromPubKey, fromPrikey, code, 100000)
 
-		// get result true
-		input = ethcmn.FromHex("0x6d4ce63c") // "get" method and get result true
-		res, leftOverGas, err := evm.Call(accRef, contractAddr, input, gas, value)
-		assert.NoError(t, err, "Execute contract failed")
-		fmt.Printf("res: %+v\n", res)
-		assertExcError(t, contractAddr, gas, leftOverGas, 444)
-		assert.Equal(t, true, getBool(res), "Wrong data was stored")
+		ok, err := stx.Validate(ctx, tx)
+		assert.NoError(t, err)
+		assert.True(t, ok)
 
-		// execute method with false
-		input = ethcmn.FromHex("0x5f76f6ab0000000000000000000000000000000000000000000000000000000000000000") // "set" method with false arg
-		_, leftOverGas, err = evm.Call(accRef, contractAddr, input, gas, value)
-		assert.NoError(t, err, "Execute contract failed")
-		assertExcError(t, contractAddr, gas, leftOverGas, 568)
+		ok, resp := stx.ProcessDeliver(ctx, tx.RawTx)
+		fmt.Printf("resp: %+v \n", resp)
+		assert.True(t, ok)
+	})
 
-		// get result false
-		input = ethcmn.FromHex("0x6d4ce63c") // "get" method and get result false
-		res, leftOverGas, err = evm.Call(accRef, contractAddr, input, gas, value)
-		assert.NoError(t, err, "Execute contract failed")
-		fmt.Printf("res: %+v\n", res)
-		assertExcError(t, contractAddr, gas, leftOverGas, 444)
-		assert.Equal(t, false, getBool(res), "Wrong data was stored")
+	t.Run("test contract store through the transaction with not enough gas and it is error", func(t *testing.T) {
+		stx := &scExecuteTx{}
+		code := ethcmn.FromHex("0x608060405234801561001057600080fd5b5061016d806100206000396000f3fe608060405234801561001057600080fd5b50600436106100365760003560e01c80635f76f6ab1461003b5780636d4ce63c1461006b575b600080fd5b6100696004803603602081101561005157600080fd5b8101908080351515906020019092919050505061008b565b005b6100736100e4565b60405180821515815260200191505060405180910390f35b806000803373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060006101000a81548160ff02191690831515021790555050565b60008060003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060009054906101000a900460ff1690509056fea26469706673582212209bac4bf916f5d28c34ab5b6f59e791ea87337bed7abf384250e80a832d134f6364736f6c63430007060033")
+		tx := assemblyExecuteData(from.Bytes(), nil, fromPubKey, fromPrikey, code, 100)
+
+		ok, err := stx.Validate(ctx, tx)
+		assert.NoError(t, err)
+		assert.True(t, ok)
+
+		ok, resp := stx.ProcessDeliver(ctx, tx.RawTx)
+		fmt.Printf("resp: %+v \n", resp)
+		assert.False(t, ok)
+		assert.True(t, strings.Contains(resp.Log, "300103")) // intrinsic gas too low code
+	})
+
+	t.Run("test contract func exec on missed address and it is ok", func(t *testing.T) {
+		stx := &scExecuteTx{}
+		to := keys.Address(to_.Bytes())
+		tx := assemblyExecuteData(from.Bytes(), &to, fromPubKey, fromPrikey, ethcmn.FromHex("0x5f76f6ab0000000000000000000000000000000000000000000000000000000000000001"), 100000)
+
+		ok, err := stx.Validate(ctx, tx)
+		assert.NoError(t, err)
+		assert.True(t, ok)
+
+		ok, resp := stx.ProcessDeliver(ctx, tx.RawTx)
+		fmt.Printf("resp: %+v \n", resp)
+		assert.True(t, ok)
 	})
 }

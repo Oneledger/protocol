@@ -68,22 +68,16 @@ func NewService(
 }
 
 func getSendTxContext(args client.SendTxRequest) (data []byte, t action.Type, err error) {
-	if len(args.To) == 0 && len(args.Data) != 0 {
-		// means that we deploy a contract
-		msg := action_sc.Deploy{
+	if len(args.Data) != 0 {
+		// means that we execute a contract method
+		msg := action_sc.Execute{
 			From:   keys.Address(args.From),
 			Amount: args.Amount,
 			Data:   args.Data,
 		}
-		data, err = msg.Marshal()
-		t = action.SC_DEPLOY
-	} else if len(args.Data) != 0 {
-		// means that we execute a contract method
-		msg := action_sc.Execute{
-			From:   keys.Address(args.From),
-			To:     keys.Address(args.To),
-			Amount: args.Amount,
-			Data:   args.Data,
+		if len(args.To.Bytes()) != 0 {
+			to := keys.Address(args.To)
+			msg.To = &to
 		}
 		data, err = msg.Marshal()
 		t = action.SC_EXECUTE

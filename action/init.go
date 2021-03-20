@@ -70,8 +70,7 @@ const (
 	WITHDRAW_REWARD Type = 0x41
 
 	//Smart Contract
-	SC_DEPLOY  Type = 0x71
-	SC_EXECUTE Type = 0x72
+	SC_EXECUTE Type = 0x71
 
 	//EOF here Only used as a marker to mark the end of Type list
 	//So that the query for Types can return all Types dynamically

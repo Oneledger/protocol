@@ -237,7 +237,7 @@ func (so *stateObject) AddBalance(amount *big.Int) {
 		}
 		return
 	}
-	so.AddBalance(amount)
+	so.account.AddBalance(amount)
 }
 
 // SubBalance removes an amount from the stateObject's balance. It is used to
@@ -246,13 +246,13 @@ func (so *stateObject) SubBalance(amount *big.Int) {
 	if IsZeroAmount(amount) {
 		return
 	}
-	so.SubBalance(amount)
+	so.account.SubBalance(amount)
 }
 
 // SubBalance removes an amount from the stateObject's balance. It is used to
 // remove funds from the origin account of a transfer.
 func (so *stateObject) SetBalance(amount *big.Int) {
-	so.SetBalance(amount)
+	so.account.SetBalance(amount)
 }
 
 // Balance returns the state object's current balance.

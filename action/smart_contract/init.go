@@ -9,18 +9,13 @@ import (
 
 func init() {
 
-	serialize.RegisterConcrete(new(Deploy), "smart_contract_deploy")
 	serialize.RegisterConcrete(new(Execute), "smart_contract_execute")
 
 }
 
 func EnableSmartContract(r action.Router) error {
 
-	err := r.AddHandler(action.SC_DEPLOY, scDeployTx{})
-	if err != nil {
-		return errors.Wrap(err, "scDeployTx")
-	}
-	err = r.AddHandler(action.SC_EXECUTE, scExecuteTx{})
+	err := r.AddHandler(action.SC_EXECUTE, scExecuteTx{})
 	if err != nil {
 		return errors.Wrap(err, "scExecuteTx")
 	}

@@ -5,15 +5,16 @@ import (
 	"fmt"
 
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
 )
 
 type Execute struct {
-	From   action.Address `json:"from"`
-	To     action.Address `json:"to"`
-	Amount action.Amount  `json:"amount"`
-	Data   []byte         `json:"data"`
+	From   action.Address  `json:"from"`
+	To     *action.Address `json:"to"`
+	Amount action.Amount   `json:"amount"`
+	Data   []byte          `json:"data"`
 }
 
 func (e Execute) Marshal() ([]byte, error) {
@@ -43,11 +44,13 @@ func (e Execute) Tags() kv.Pairs {
 		Key:   []byte("tx.origin"),
 		Value: e.From.Bytes(),
 	}
-	tag3 := kv.Pair{
-		Key:   []byte("tx.contract"),
-		Value: e.To.Bytes(),
+	tags = append(tags, tag, tag2)
+	if e.To != nil {
+		tags = append(tags, kv.Pair{
+			Key:   []byte("tx.contract"),
+			Value: e.To.Bytes(),
+		})
 	}
-	tags = append(tags, tag, tag2, tag3)
 	return tags
 }
 
@@ -79,7 +82,7 @@ func (s scExecuteTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, er
 		return false, errors.Wrap(action.ErrInvalidAmount, execute.Amount.String())
 	}
 
-	if execute.From.Err() != nil || execute.To.Err() != nil {
+	if execute.From.Err() != nil || execute.To != nil && execute.To.Err() != nil {
 		return false, action.ErrInvalidAddress
 	}
 
@@ -117,9 +120,13 @@ func runSCExecute(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		return false, action.Response{Log: log}
 	}
 
-	// coin := execute.Amount.ToCoin(ctx.Currencies)
-
-	// TODO: Add logic
-
-	return true, action.Response{Events: action.GetEvent(execute.Tags(), "smart_contract_execute")}
+	evmTx := action.NewEVMTransaction(ctx, execute.From, execute.To, execute.Amount.Value.BigInt(), execute.Data)
+	eresult, err := evmTx.Apply(tx)
+	if err != nil {
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrWrongTxType, execute.Tags(), err)
+	}
+	return true, action.Response{
+		Events:  action.GetEvent(execute.Tags(), "smart_contract_execute"),
+		GasUsed: int64(eresult.UsedGas),
+	}
 }

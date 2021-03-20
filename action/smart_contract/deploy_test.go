@@ -1,2 +1,0 @@
-package smart_contract
-

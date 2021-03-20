@@ -2,6 +2,7 @@ package action
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 	"strings"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 	ethcore "github.com/ethereum/go-ethereum/core"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	ethvm "github.com/ethereum/go-ethereum/core/vm"
 	ethparams "github.com/ethereum/go-ethereum/params"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -140,27 +142,91 @@ func NewEVMConfig(addr keys.Address, gasPrice *big.Int, gasLimit uint64, extraEI
 	}
 }
 
-func NewEVM(ctx *Context, ecfg *EVMConfig) *ethvm.EVM {
+type EVMTransaction struct {
+	ctx   *Context
+	from  keys.Address
+	to    *keys.Address
+	value *big.Int
+	data  []byte
+	ecfg  *EVMConfig
+}
+
+var (
+	DefaultGasLimit uint64   = 10_000_000
+	DefaultGasPrice *big.Int = big.NewInt(0)
+)
+
+func NewEVMTransaction(ctx *Context, from keys.Address, to *keys.Address, value *big.Int, data []byte) *EVMTransaction {
+	return &EVMTransaction{
+		ctx:   ctx,
+		from:  from,
+		to:    to,
+		value: value,
+		data:  data,
+		// NOTE: Decide what to do with the gas price as we have a fee system
+		ecfg: NewEVMConfig(from, DefaultGasPrice, DefaultGasLimit, make([]int, 0)),
+	}
+}
+
+func (etx *EVMTransaction) NewEVM() *ethvm.EVM {
 	blockCtx := ethvm.BlockContext{
 		CanTransfer: ethcore.CanTransfer,
 		Transfer:    ethcore.Transfer,
-		GetHash:     GetHashFn(ctx, ctx.CommitStateDB),
+		GetHash:     GetHashFn(etx.ctx, etx.ctx.CommitStateDB),
 		Coinbase:    ethcmn.Address{}, // there's no beneficiary since we're not mining
-		GasLimit:    ecfg.gasLimit,
-		BlockNumber: big.NewInt(ctx.Header.GetHeight()),
-		Time:        big.NewInt(ctx.Header.Time.Unix()),
+		GasLimit:    etx.ecfg.gasLimit,
+		BlockNumber: big.NewInt(etx.ctx.Header.GetHeight()),
+		Time:        big.NewInt(etx.ctx.Header.Time.Unix()),
 		Difficulty:  big.NewInt(0), // unused. Only required in PoW context
 	}
 
 	vmConfig := ethvm.Config{
-		ExtraEips: ecfg.extraEIPs,
+		ExtraEips: etx.ecfg.extraEIPs,
 	}
 
 	txCtx := ethvm.TxContext{
-		Origin:   ethcmn.BytesToAddress(ecfg.addr),
-		GasPrice: ecfg.gasPrice,
+		Origin:   etx.Origin(),
+		GasPrice: etx.ecfg.gasPrice,
 	}
 
-	ethConfig, _ := EthereumConfig(ctx.Header.ChainID)
-	return ethvm.NewEVM(blockCtx, txCtx, ctx.CommitStateDB, ethConfig, vmConfig)
+	ethConfig, _ := EthereumConfig(etx.ctx.Header.ChainID)
+	return ethvm.NewEVM(blockCtx, txCtx, etx.ctx.CommitStateDB, ethConfig, vmConfig)
+}
+
+func (etx *EVMTransaction) Origin() ethcmn.Address {
+	return ethcmn.BytesToAddress(etx.ecfg.addr)
+}
+
+func (etx *EVMTransaction) From() ethcmn.Address {
+	return ethcmn.BytesToAddress(etx.from)
+}
+
+func (etx *EVMTransaction) To() *ethcmn.Address {
+	if etx.to == nil {
+		return nil
+	}
+	ethTo := ethcmn.BytesToAddress(*etx.to)
+	return &ethTo
+}
+
+func (etx *EVMTransaction) GetNonce() uint64 {
+	return etx.ctx.CommitStateDB.GetNonce(etx.From())
+}
+
+func (etx *EVMTransaction) Apply(tx RawTx) (*ethcore.ExecutionResult, error) {
+	vmenv := etx.NewEVM()
+	fmt.Printf("etx.From(): %s", etx.From())
+	fmt.Printf("etx.To(): %s", etx.To())
+	msg := ethtypes.NewMessage(etx.From(), etx.To(), etx.GetNonce(), etx.value, uint64(tx.Fee.Gas), etx.ecfg.gasPrice, etx.data, make(ethtypes.AccessList, 0), true)
+
+	etx.ctx.CommitStateDB.Prepare(ethcmn.Hash{}, ethcmn.Hash{}, 0)
+	result, err := ethcore.ApplyMessage(vmenv, msg, new(ethcore.GasPool).AddGas(uint64(uint64(tx.Fee.Gas))))
+	if err != nil {
+		return nil, fmt.Errorf("transaction failed: %v", err)
+	}
+
+	// Ensure any modifications are committed to the state
+	// Only delete empty objects if EIP158/161 (a.k.a Spurious Dragon) is in effect
+	etx.ctx.CommitStateDB.Finalise(vmenv.ChainConfig().IsEIP158(big.NewInt(etx.ctx.Header.Height)))
+	return result, nil
 }
