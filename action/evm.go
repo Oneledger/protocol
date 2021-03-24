@@ -217,24 +217,32 @@ func (etx *EVMTransaction) To() *ethcmn.Address {
 	return &ethTo
 }
 
-func (etx *EVMTransaction) GetNonce() uint64 {
+func (etx *EVMTransaction) GetLastNonce() uint64 {
 	return etx.ctx.GetStateDB().GetNonce(etx.From())
 }
 
-func (etx *EVMTransaction) Apply(tx RawTx) (*ethcore.ExecutionResult, error) {
-	vmenv := etx.NewEVM()
-	fmt.Printf("etx.From(): %s", etx.From())
-	fmt.Printf("etx.To(): %s", etx.To())
-	msg := ethtypes.NewMessage(etx.From(), etx.To(), etx.GetNonce(), etx.value, uint64(tx.Fee.Gas), etx.ecfg.gasPrice, etx.data, make(ethtypes.AccessList, 0), true)
+func (etx *EVMTransaction) Apply(vmenv *ethvm.EVM, tx RawTx) (*ethcore.ExecutionResult, error) {
+	fmt.Printf("etx.From(): %s\n", etx.From())
+	fmt.Printf("etx.To(): %s\n", etx.To())
+	nonce := etx.GetLastNonce()
+	msg := ethtypes.NewMessage(etx.From(), etx.To(), nonce, etx.value, uint64(tx.Fee.Gas), etx.ecfg.gasPrice, etx.data, make(ethtypes.AccessList, 0), true)
 
-	etx.ctx.GetStateDB().Prepare(ethcmn.Hash{}, ethcmn.Hash{}, 0)
-	result, err := ethcore.ApplyMessage(vmenv, msg, new(ethcore.GasPool).AddGas(uint64(uint64(tx.Fee.Gas))))
+	statedb := etx.ctx.GetStateDB()
+	statedb.Prepare(ethcmn.Hash{}, ethcmn.Hash{}, 0)
+	msgResult, err := ethcore.ApplyMessage(vmenv, msg, new(ethcore.GasPool).AddGas(uint64(uint64(tx.Fee.Gas))))
 	if err != nil {
 		return nil, fmt.Errorf("transaction failed: %v", err)
 	}
-
+	fmt.Printf("msgResult: %v\n", msgResult)
 	// Ensure any modifications are committed to the state
 	// Only delete empty objects if EIP158/161 (a.k.a Spurious Dragon) is in effect
-	etx.ctx.GetStateDB().Finalise(vmenv.ChainConfig().IsEIP158(big.NewInt(etx.ctx.GetHeader().Height)))
-	return result, nil
+	deleteObjs := vmenv.ChainConfig().IsEIP158(big.NewInt(etx.ctx.GetHeader().Height))
+	if err := statedb.Finalise(deleteObjs); err != nil {
+		return nil, fmt.Errorf("failed to finalize: %v", err)
+	}
+	if _, err := statedb.Commit(deleteObjs); err != nil {
+		return nil, fmt.Errorf("failed to commit: %v", err)
+	}
+
+	return msgResult, nil
 }

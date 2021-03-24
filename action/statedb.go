@@ -511,3 +511,8 @@ func (s *CommitStateDB) GetOrNewStateObject(addr ethcmn.Address) StateObject {
 	}
 	return so
 }
+
+// TxIndex returns the current transaction index set by Prepare.
+func (s *CommitStateDB) TxIndex() int {
+	return s.txIndex
+}

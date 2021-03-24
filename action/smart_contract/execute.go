@@ -6,6 +6,8 @@ import (
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/helpers"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
 )
@@ -121,12 +123,32 @@ func runSCExecute(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 	}
 
 	evmTx := action.NewEVMTransaction(ctx, execute.From, execute.To, execute.Amount.Value.BigInt(), execute.Data)
-	eresult, err := evmTx.Apply(tx)
+	tags := execute.Tags()
+	vmenv := evmTx.NewEVM()
+	// FIXME: Take nonce from tx, not account
+	nonce := evmTx.GetLastNonce()
+	execResult, err := evmTx.Apply(vmenv, tx)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrWrongTxType, execute.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrWrongTxType, tags, err)
+	}
+	if execResult.Failed() {
+		tags = append(tags, action.UintTag("tx.status", ethtypes.ReceiptStatusFailed))
+		tags = append(tags, kv.Pair{
+			Key:   []byte("tx.error"),
+			Value: []byte(execResult.Err.Error()),
+		})
+	} else {
+		tags = append(tags, action.UintTag("tx.status", ethtypes.ReceiptStatusSuccessful))
+		if execute.To == nil {
+			contractAddress := ethcrypto.CreateAddress(vmenv.TxContext.Origin, nonce)
+			tags = append(tags, kv.Pair{
+				Key:   []byte("tx.contract"),
+				Value: []byte(contractAddress.Bytes()),
+			})
+		}
 	}
 	return true, action.Response{
-		Events:  action.GetEvent(execute.Tags(), "smart_contract_execute"),
-		GasUsed: int64(eresult.UsedGas),
+		Events:  action.GetEvent(tags, "smart_contract_execute"),
+		GasUsed: int64(execResult.UsedGas),
 	}
 }

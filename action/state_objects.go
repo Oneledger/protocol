@@ -227,6 +227,7 @@ func (so *stateObject) SetCode(codeHash ethcmn.Hash, code []byte) {
 
 func (so *stateObject) setCode(codeHash ethcmn.Hash, code []byte) {
 	so.code = code
+	fmt.Printf("setCode: %s\n", ethcmn.Bytes2Hex(so.code))
 	so.account.CodeHash = codeHash.Bytes()
 	so.dirtyCode = true
 }
@@ -375,6 +376,7 @@ func (so *stateObject) commitState() {
 
 // commitCode persists the state object's code to the ContractStore.
 func (so *stateObject) commitCode() {
+	fmt.Printf("commitCode: %s\n", ethcmn.Bytes2Hex(so.code))
 	so.stateDB.contractStore.Set(evm.KeyPrefixCode, so.CodeHash(), so.code)
 }
 

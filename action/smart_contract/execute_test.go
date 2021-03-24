@@ -1,6 +1,7 @@
 package smart_contract
 
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"math/big"
@@ -21,6 +22,7 @@ import (
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/storage"
 	ethcmn "github.com/ethereum/go-ethereum/common"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/assert"
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto"
@@ -205,6 +207,34 @@ func assemblyExecuteData(from keys.Address, to *keys.Address, fromPubKey crypto.
 	return signed
 }
 
+func getTxStatus(resp action.Response) (msgStatus uint64, msgError string) {
+	for i := range resp.Events {
+		evt := resp.Events[i]
+		for j := range evt.Attributes {
+			attr := evt.Attributes[j]
+			if string(attr.Key) == "tx.status" {
+				msgStatus = binary.LittleEndian.Uint64(attr.Value)
+			} else if string(attr.Key) == "tx.error" {
+				msgError = string(attr.Value)
+			}
+		}
+	}
+	return
+}
+
+func getContractAddress(resp action.Response) (contractAddress ethcmn.Address) {
+	for i := range resp.Events {
+		evt := resp.Events[i]
+		for j := range evt.Attributes {
+			attr := evt.Attributes[j]
+			if string(attr.Key) == "tx.contract" {
+				contractAddress = ethcmn.BytesToAddress(attr.Value)
+			}
+		}
+	}
+	return
+}
+
 func TestRunner(t *testing.T) {
 	// pragma solidity >=0.7.0 <0.8.0;
 
@@ -235,15 +265,26 @@ func TestRunner(t *testing.T) {
 	t.Run("test contract store through the transaction and it is OK", func(t *testing.T) {
 		stx := &scExecuteTx{}
 		code := ethcmn.FromHex("0x608060405234801561001057600080fd5b5061016d806100206000396000f3fe608060405234801561001057600080fd5b50600436106100365760003560e01c80635f76f6ab1461003b5780636d4ce63c1461006b575b600080fd5b6100696004803603602081101561005157600080fd5b8101908080351515906020019092919050505061008b565b005b6100736100e4565b60405180821515815260200191505060405180910390f35b806000803373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060006101000a81548160ff02191690831515021790555050565b60008060003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060009054906101000a900460ff1690509056fea26469706673582212209bac4bf916f5d28c34ab5b6f59e791ea87337bed7abf384250e80a832d134f6364736f6c63430007060033")
-		tx := assemblyExecuteData(from.Bytes(), nil, fromPubKey, fromPrikey, code, 100000)
+		fmt.Printf("code to deploy: %s\n", ethcmn.Bytes2Hex(code))
+		tx := assemblyExecuteData(from.Bytes(), nil, fromPubKey, fromPrikey, code, 132115)
 
 		ok, err := stx.Validate(ctx, tx)
 		assert.NoError(t, err)
 		assert.True(t, ok)
 
 		ok, resp := stx.ProcessDeliver(ctx, tx.RawTx)
-		fmt.Printf("resp: %+v \n", resp)
 		assert.True(t, ok)
+
+		status, errMsg := getTxStatus(resp)
+		contractAddress := getContractAddress(resp)
+		fmt.Printf("contractAddress: %s\n", contractAddress)
+		assert.True(t, status == ethtypes.ReceiptStatusSuccessful, fmt.Sprintf("Got error: %s", errMsg))
+
+		// storageCode := ctx.StateDB.GetCode(contractAddress)
+		// fmt.Printf("deployed: %s\n", ethcmn.Bytes2Hex(storageCode))
+		// res := bytes.Compare(code, storageCode)
+		// fmt.Printf("resp: %d\n", res)
+		// assert.True(t, res == 0, "Wrong code deployed")
 	})
 
 	t.Run("test contract store through the transaction with not enough gas and it is error", func(t *testing.T) {
@@ -259,6 +300,9 @@ func TestRunner(t *testing.T) {
 		fmt.Printf("resp: %+v \n", resp)
 		assert.False(t, ok)
 		assert.True(t, strings.Contains(resp.Log, "300103")) // intrinsic gas too low code
+
+		_, errMsg := getTxStatus(resp)
+		assert.True(t, len(errMsg) == 0)
 	})
 
 	t.Run("test contract func exec on missed address and it is ok", func(t *testing.T) {
@@ -273,5 +317,8 @@ func TestRunner(t *testing.T) {
 		ok, resp := stx.ProcessDeliver(ctx, tx.RawTx)
 		fmt.Printf("resp: %+v \n", resp)
 		assert.True(t, ok)
+
+		_, errMsg := getTxStatus(resp)
+		assert.True(t, len(errMsg) == 0)
 	})
 }
