@@ -2,9 +2,11 @@ package query
 
 import (
 	"encoding/hex"
+	"strings"
+
+	"github.com/Oneledger/protocol/data/evm"
 	netwkDeleg "github.com/Oneledger/protocol/data/network_delegation"
 	"github.com/Oneledger/protocol/data/rewards"
-	"strings"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
@@ -19,6 +21,8 @@ import (
 	codes "github.com/Oneledger/protocol/status_codes"
 	"github.com/Oneledger/protocol/utils"
 )
+
+// var _ action.EVMContext = (*Service)(nil)
 
 type Service struct {
 	name            string
@@ -38,15 +42,45 @@ type Service struct {
 	governance      *governance.Store
 	logger          *log.Logger
 	txTypes         *[]action.TxTypeDescribe
+	contracts       *evm.ContractStore
+	accountKeeper   evm.AccountKeeper
+	commitStateDB   *action.CommitStateDB
 }
+
+// func (s *Service) GetHeader() *abci.Header {
+// 	return s.Header
+// }
+
+// func (s *Service) GetContractStore() *evm.ContractStore {
+// 	if s.Contracts == nil {
+// 		panic("Contract store not set")
+// 	}
+// 	return s.Contracts
+// }
+
+// func (s *Service) GetAccountKeeperStore() evm.AccountKeeper {
+// 	if s.Contracts == nil {
+// 		panic("Account keeper store not set")
+// 	}
+// 	return s.AccountKeeper
+// }
+
+// func (s *Service) GetStateDB() *action.CommitStateDB {
+// 	if s.CommitStateDB == nil {
+// 		panic("Commit state db not set")
+// 	}
+// 	return s.CommitStateDB
+// }
 
 func Name() string {
 	return "query"
 }
 
 func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencies *balance.CurrencySet, validators *identity.ValidatorStore, witnesses *identity.WitnessStore,
-	domains *ons.DomainStore, delegators *delegation.DelegationStore, netwkDelegators *netwkDeleg.MasterStore, evidenceStore *evidence.EvidenceStore, govern *governance.Store, feePool *fees.Store, proposalMaster *governance.ProposalMasterStore, rewardMaster *rewards.RewardMasterStore, logger *log.Logger, txTypes *[]action.TxTypeDescribe) *Service {
-	return &Service{
+	domains *ons.DomainStore, delegators *delegation.DelegationStore, netwkDelegators *netwkDeleg.MasterStore, evidenceStore *evidence.EvidenceStore, govern *governance.Store, feePool *fees.Store, proposalMaster *governance.ProposalMasterStore, rewardMaster *rewards.RewardMasterStore, logger *log.Logger, txTypes *[]action.TxTypeDescribe,
+	contracts *evm.ContractStore, accountKeeper evm.AccountKeeper,
+) *Service {
+	service := &Service{
 		name:            "query",
 		ext:             ctx,
 		currencies:      currencies,
@@ -64,7 +98,10 @@ func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencie
 		logger:          logger,
 		txTypes:         txTypes,
 		governance:      govern,
+		contracts:       contracts,
+		accountKeeper:   accountKeeper,
 	}
+	return service
 }
 
 func (svc *Service) Balance(req client.BalanceRequest, resp *client.BalanceReply) error {

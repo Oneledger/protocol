@@ -23,6 +23,8 @@ import (
 	"github.com/Oneledger/protocol/storage"
 )
 
+var _ EVMContext = (*Context)(nil)
+
 type Context struct {
 	Router              Router
 	State               *storage.State
@@ -50,9 +52,18 @@ type Context struct {
 	GovUpdate           *GovernaceUpdateAndValidate
 
 	// evm
-	Contracts     *evm.ContractStore
-	AccountKeeper evm.AccountKeeper
-	CommitStateDB *CommitStateDB
+	StateDB *CommitStateDB
+}
+
+func (ctx *Context) GetHeader() *abci.Header {
+	return ctx.Header
+}
+
+func (ctx *Context) GetStateDB() *CommitStateDB {
+	if ctx.StateDB == nil {
+		panic("Commit state db not set")
+	}
+	return ctx.StateDB
 }
 
 func NewContext(r Router, header *abci.Header, state *storage.State,
@@ -65,8 +76,7 @@ func NewContext(r Router, header *abci.Header, state *storage.State,
 	rewardmaster *rewards.RewardMasterStore, govern *governance.Store, extStores data.Router, govUpdate *GovernaceUpdateAndValidate,
 	contracts *evm.ContractStore, accountKeeper evm.AccountKeeper,
 ) *Context {
-
-	ctx := &Context{
+	return &Context{
 		Router:              r,
 		State:               state,
 		Header:              header,
@@ -90,9 +100,6 @@ func NewContext(r Router, header *abci.Header, state *storage.State,
 		GovernanceStore:     govern,
 		ExtStores:           extStores,
 		GovUpdate:           govUpdate,
-		Contracts:           contracts,
-		AccountKeeper:       accountKeeper,
+		StateDB:             NewCommitStateDB(contracts, accountKeeper),
 	}
-	ctx.CommitStateDB = NewCommitStateDB(ctx, ctx.AccountKeeper)
-	return ctx
 }

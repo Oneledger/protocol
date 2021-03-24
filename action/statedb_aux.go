@@ -16,6 +16,12 @@ func (s *CommitStateDB) createObject(addr ethcmn.Address) (newObj, prevObj *stat
 	newObj = newStateObject(s, acc)
 	newObj.setNonce(0) // sets the object to dirty
 
+	if prevObj == nil {
+		s.journal.append(createObjectChange{account: &addr})
+	} else {
+		s.journal.append(resetObjectChange{prev: prevObj})
+	}
+
 	s.setStateObject(newObj)
 	return newObj, prevObj
 }
@@ -65,6 +71,12 @@ func (s *CommitStateDB) setStateObject(so *stateObject) {
 	s.addressToObjectIndex[se.address] = len(s.stateObjects) - 1
 }
 
+// updateStateObject writes the given state object to the store.
+func (s *CommitStateDB) updateStateObject(so *stateObject) error {
+	s.accountKeeper.SetAccount(*so.account)
+	return nil
+}
+
 // setError remembers the first non-nil error it is called with.
 func (s *CommitStateDB) setError(err error) {
 	if s.dbErr == nil {
@@ -72,14 +84,10 @@ func (s *CommitStateDB) setError(err error) {
 	}
 }
 
-// GetOrNewStateObject retrieves a state object or create a new state object if
-// nil.
-func (s *CommitStateDB) GetOrNewStateObject(addr ethcmn.Address) StateObject {
-	so := s.getStateObject(addr)
-	if so == nil || so.deleted {
-		so, _ = s.createObject(addr)
-	}
-	return so
+func (s *CommitStateDB) clearJournalAndRefund() {
+	s.journal = newJournal()
+	s.validRevisions = s.validRevisions[:0]
+	s.refund = 0
 }
 
 // deleteStateObject removes the given state object from the state store.

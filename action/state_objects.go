@@ -140,6 +140,13 @@ func (so *stateObject) SetState(db ethstate.Database, key, value ethcmn.Hash) {
 	}
 
 	prefixKey := so.GetStorageByAddressKey(key.Bytes())
+
+	// since the new value is different, update and journal the change
+	so.stateDB.journal.append(storageChange{
+		account:   &so.address,
+		key:       prefixKey,
+		prevValue: prev,
+	})
 	so.setState(prefixKey, value)
 }
 
@@ -160,8 +167,7 @@ func (so *stateObject) GetCommittedState(_ ethstate.Database, key ethcmn.Hash) e
 	state := NewState(prefixKey, ethcmn.Hash{})
 	value := ethcmn.Hash{}
 
-	ctx := so.stateDB.ctx
-	rawValue, _ := ctx.Contracts.Get(evm.AddressStoragePrefix(so.Address()))
+	rawValue, _ := so.stateDB.contractStore.Get(evm.KeyPrefixStorage, prefixKey.Bytes())
 
 	if len(rawValue) > 0 {
 		value.SetBytes(rawValue)
@@ -197,8 +203,7 @@ func (so *stateObject) Code(_ ethstate.Database) []byte {
 		return nil
 	}
 
-	ctx := so.stateDB.ctx
-	code, _ := ctx.Contracts.Get(evm.CodeStoragePrefix(so.CodeHash()))
+	code, _ := so.stateDB.contractStore.Get(evm.KeyPrefixCode, so.CodeHash())
 
 	if len(code) == 0 {
 		so.setError(fmt.Errorf("failed to get code hash %x for address %s", so.CodeHash(), so.Address().String()))
@@ -209,6 +214,14 @@ func (so *stateObject) Code(_ ethstate.Database) []byte {
 
 // SetCode sets the state object's code.
 func (so *stateObject) SetCode(codeHash ethcmn.Hash, code []byte) {
+	prevCode := so.Code(nil)
+
+	so.stateDB.journal.append(codeChange{
+		account:  &so.address,
+		prevHash: so.CodeHash(),
+		prevCode: prevCode,
+	})
+
 	so.setCode(codeHash, code)
 }
 
@@ -252,6 +265,10 @@ func (so *stateObject) SubBalance(amount *big.Int) {
 // SubBalance removes an amount from the stateObject's balance. It is used to
 // remove funds from the origin account of a transfer.
 func (so *stateObject) SetBalance(amount *big.Int) {
+	so.stateDB.journal.append(balanceChange{
+		account: &so.address,
+		prev:    *so.account.Balance(),
+	})
 	so.account.SetBalance(amount)
 }
 
@@ -271,6 +288,10 @@ func (so stateObject) Address() ethcmn.Address {
 
 // SetNonce sets the state object's nonce (i.e sequence number of the account).
 func (so *stateObject) SetNonce(nonce uint64) {
+	so.stateDB.journal.append(nonceChange{
+		account: &so.address,
+		prev:    so.account.Sequence,
+	})
 	so.setNonce(nonce)
 }
 
@@ -315,7 +336,7 @@ func (so *stateObject) markSuicided() {
 // commitState commits all dirty storage to a ContractStore and resets
 // the dirty storage slice to the empty state.
 func (so *stateObject) commitState() {
-	ctx := so.stateDB.ctx
+	prefixStore := evm.AddressStoragePrefix(so.Address())
 
 	for _, state := range so.dirtyStorage {
 		// NOTE: key is already prefixed from GetStorageByAddressKey
@@ -325,7 +346,7 @@ func (so *stateObject) commitState() {
 
 		// delete empty values from the store
 		if IsEmptyHash(state.Value) {
-			ctx.Contracts.Delete(evm.AddressStoragePrefix(ethcmn.BytesToAddress(key.Bytes())))
+			so.stateDB.contractStore.Delete(prefixStore, key.Bytes())
 		}
 
 		delete(so.keyToDirtyStorageIndex, key)
@@ -346,7 +367,7 @@ func (so *stateObject) commitState() {
 		}
 
 		so.originStorage[idx].Value = state.Value
-		ctx.Contracts.Set(evm.AddressStoragePrefix(ethcmn.BytesToAddress(key.Bytes())), value.Bytes())
+		so.stateDB.contractStore.Set(prefixStore, key.Bytes(), value.Bytes())
 	}
 	// clean storage as all entries are dirty
 	so.dirtyStorage = Storage{}
@@ -354,8 +375,7 @@ func (so *stateObject) commitState() {
 
 // commitCode persists the state object's code to the ContractStore.
 func (so *stateObject) commitCode() {
-	ctx := so.stateDB.ctx
-	ctx.Contracts.Set(evm.CodeStoragePrefix(so.CodeHash()), so.code)
+	so.stateDB.contractStore.Set(evm.KeyPrefixCode, so.CodeHash(), so.code)
 }
 
 // empty returns whether the account is considered empty.
@@ -369,13 +389,15 @@ func (so *stateObject) empty() bool {
 }
 
 func (so *stateObject) touch() {
-	// TODO: Add journal
+	so.stateDB.journal.append(touchChange{
+		account: &so.address,
+	})
 
-	// if so.address == ripemd {
-	// Explicitly put it in the dirty-cache, which is otherwise generated from
-	// flattened journals.
-	// TODO: Add journal
-	// }
+	if so.address == ripemd {
+		// Explicitly put it in the dirty-cache, which is otherwise generated from
+		// flattened journals.
+		so.stateDB.journal.dirty(so.address)
+	}
 }
 
 // stateEntry represents a single key value pair from the StateDB's stateObject mappindg.

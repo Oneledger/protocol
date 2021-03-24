@@ -6,9 +6,7 @@ import (
 	"sort"
 
 	"github.com/Oneledger/protocol/data/evm"
-	"github.com/ethereum/go-ethereum/common"
 	ethcmn "github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	ethvm "github.com/ethereum/go-ethereum/core/vm"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
@@ -16,34 +14,25 @@ import (
 
 var _ ethvm.StateDB = (*CommitStateDB)(nil)
 
-type revision struct {
-	id           int
-	journalIndex int
-}
-
 type CommitStateDB struct {
-	// TODO: We need to store the context as part of the structure itself opposed
-	// to being passed as a parameter (as it should be) in order to implement the
-	// StateDB interface. Perhaps there is a better way.
-	ctx *Context
-
+	contractStore *evm.ContractStore
+	accountKeeper evm.AccountKeeper
 	// The refund counter, also used by state transitioning.
 	refund uint64
-
-	// keeper interface
-	accountKeeper evm.AccountKeeper
 
 	thash, bhash ethcmn.Hash
 	txIndex      int
 	logs         map[ethcmn.Hash][]*ethtypes.Log
 	logSize      uint
 
-	preimages map[common.Hash][]byte
+	preimages           []preimageEntry
+	hashToPreimageIndex map[ethcmn.Hash]int // map from hash to the index of the preimages slice
 
 	// array that hold 'live' objects, which will get modified while processing a
 	// state transition
 	stateObjects         []stateEntry
-	addressToObjectIndex map[common.Address]int // map from address to the index of the state objects slice
+	addressToObjectIndex map[ethcmn.Address]int // map from address to the index of the state objects slice
+	stateObjectsDirty    map[ethcmn.Address]struct{}
 
 	// Per-transaction access list
 	accessList *accessList
@@ -57,7 +46,7 @@ type CommitStateDB struct {
 
 	// Journal of state modifications. This is the backbone of
 	// Snapshot and RevertToSnapshot.
-	// journal        *journal
+	journal        *journal
 	validRevisions []revision
 	nextRevisionID int
 }
@@ -67,28 +56,29 @@ type CommitStateDB struct {
 //
 // CONTRACT: Stores used for state must be cache-wrapped as the ordering of the
 // key/value space matters in determining the merkle root.
-func NewCommitStateDB(ctx *Context, ak evm.AccountKeeper) *CommitStateDB {
+func NewCommitStateDB(cs *evm.ContractStore, ak evm.AccountKeeper) *CommitStateDB {
 	return &CommitStateDB{
-		ctx:                  ctx,
-		stateObjects:         []stateEntry{},
+		contractStore:        cs,
 		accountKeeper:        ak,
+		stateObjects:         []stateEntry{},
+		preimages:            []preimageEntry{},
+		hashToPreimageIndex:  make(map[ethcmn.Hash]int),
+		addressToObjectIndex: make(map[ethcmn.Address]int),
 		logs:                 make(map[ethcmn.Hash][]*ethtypes.Log),
-		preimages:            make(map[common.Hash][]byte),
-		addressToObjectIndex: make(map[common.Address]int),
+		stateObjectsDirty:    make(map[ethcmn.Address]struct{}),
 		accessList:           newAccessList(),
+		journal:              newJournal(),
 		validRevisions:       []revision{},
 	}
 }
 
-// WithContext returns a Database with an updated protocol context
-func (s *CommitStateDB) WithContext(ctx *Context) *CommitStateDB {
-	s.ctx = ctx
-	return s
+func (s *CommitStateDB) GetAccountKeeper() evm.AccountKeeper {
+	return s.accountKeeper
 }
 
 // Prepare sets the current transaction hash and index and block hash which is
 // used when the EVM emits new state logs.
-func (s *CommitStateDB) Prepare(thash, bhash common.Hash, ti int) {
+func (s *CommitStateDB) Prepare(thash, bhash ethcmn.Hash, ti int) {
 	s.thash = thash
 	s.bhash = bhash
 	s.txIndex = ti
@@ -100,37 +90,37 @@ func (s *CommitStateDB) Prepare(thash, bhash common.Hash, ti int) {
 // state (storage) updated. In addition, the state object (account) itself will
 // be written. Finally, the root hash (version) will be returned.
 func (s *CommitStateDB) Commit(deleteEmptyObjects bool) (ethcmn.Hash, error) {
-	// defer s.clearJournalAndRefund()
+	defer s.clearJournalAndRefund()
 
 	// remove dirty state object entries based on the journal
-	// for _, dirty := range csdb.journal.dirties {
-	// 	csdb.stateObjectsDirty[dirty.address] = struct{}{}
-	// }
+	for _, dirty := range s.journal.dirties {
+		s.stateObjectsDirty[dirty.address] = struct{}{}
+	}
 
 	// set the state objects
 	for _, stateEntry := range s.stateObjects {
-		// _, isDirty := csdb.stateObjectsDirty[stateEntry.address]
+		_, isDirty := s.stateObjectsDirty[stateEntry.address]
 
 		switch {
-		case stateEntry.stateObject.suicided || (deleteEmptyObjects && stateEntry.stateObject.empty()):
+		case stateEntry.stateObject.suicided || (isDirty && deleteEmptyObjects && stateEntry.stateObject.empty()):
 			// If the state object has been removed, don't bother syncing it and just
 			// remove it from the store.
 			s.deleteStateObject(stateEntry.stateObject)
 
-			// case isDirty:
-			// 	// write any contract code associated with the state object
-			// 	if stateEntry.stateObject.code != nil && stateEntry.stateObject.dirtyCode {
-			// 		stateEntry.stateObject.commitCode()
-			// 		stateEntry.stateObject.dirtyCode = false
-			// 	}
+		case isDirty:
+			// write any contract code associated with the state object
+			if stateEntry.stateObject.code != nil && stateEntry.stateObject.dirtyCode {
+				stateEntry.stateObject.commitCode()
+				stateEntry.stateObject.dirtyCode = false
+			}
 
-			// 	// update the object in the KVStore
-			// 	if err := csdb.updateStateObject(stateEntry.stateObject); err != nil {
-			// 		return ethcmn.Hash{}, err
-			// 	}
+			// update the object in the KVStore
+			if err := s.updateStateObject(stateEntry.stateObject); err != nil {
+				return ethcmn.Hash{}, err
+			}
 		}
 
-		// delete(s.stateObjectsDirty, stateEntry.address)
+		delete(s.stateObjectsDirty, stateEntry.address)
 	}
 
 	// NOTE: Ethereum returns the trie merkle root here, but as commitment
@@ -143,45 +133,44 @@ func (s *CommitStateDB) Commit(deleteEmptyObjects bool) (ethcmn.Hash, error) {
 // removing the csdb destructed objects and clearing the journal as well as the
 // refunds.
 func (s *CommitStateDB) Finalise(deleteEmptyObjects bool) error {
-	// for _, dirty := range s.journal.dirties {
-	// 	idx, exist := s.addressToObjectIndex[dirty.address]
-	// 	if !exist {
-	// 		// ripeMD is 'touched' at block 1714175, in tx:
-	// 		// 0x1237f737031e40bcde4a8b7e717b2d15e3ecadfe49bb1bbc71ee9deb09c6fcf2
-	// 		//
-	// 		// That tx goes out of gas, and although the notion of 'touched' does not
-	// 		// exist there, the touch-event will still be recorded in the journal.
-	// 		// Since ripeMD is a special snowflake, it will persist in the journal even
-	// 		// though the journal is reverted. In this special circumstance, it may
-	// 		// exist in journal.dirties but not in stateObjects. Thus, we can safely
-	// 		// ignore it here.
-	// 		continue
-	// 	}
+	for _, dirty := range s.journal.dirties {
+		idx, exist := s.addressToObjectIndex[dirty.address]
+		if !exist {
+			// ripeMD is 'touched' at block 1714175, in tx:
+			// 0x1237f737031e40bcde4a8b7e717b2d15e3ecadfe49bb1bbc71ee9deb09c6fcf2
+			//
+			// That tx goes out of gas, and although the notion of 'touched' does not
+			// exist there, the touch-event will still be recorded in the journal.
+			// Since ripeMD is a special snowflake, it will persist in the journal even
+			// though the journal is reverted. In this special circumstance, it may
+			// exist in journal.dirties but not in stateObjects. Thus, we can safely
+			// ignore it here.
+			continue
+		}
 
-	// 	stateEntry := s.stateObjects[idx]
-	// 	if stateEntry.stateObject.suicided || (deleteEmptyObjects && stateEntry.stateObject.empty()) {
-	// 		s.deleteStateObject(stateEntry.stateObject)
-	// 	} else {
-	// 		// Set all the dirty state storage items for the state object in the
-	// 		// KVStore and finally set the account in the account mapper.
-	// 		stateEntry.stateObject.commitState()
-	// 		if err := s.updateStateObject(stateEntry.stateObject); err != nil {
-	// 			return err
-	// 		}
-	// 	}
+		stateEntry := s.stateObjects[idx]
+		if stateEntry.stateObject.suicided || (deleteEmptyObjects && stateEntry.stateObject.empty()) {
+			s.deleteStateObject(stateEntry.stateObject)
+		} else {
+			// Set all the dirty state storage items for the state object in the
+			// KVStore and finally set the account in the account mapper.
+			stateEntry.stateObject.commitState()
+			if err := s.updateStateObject(stateEntry.stateObject); err != nil {
+				return err
+			}
+		}
 
-	// 	s.stateObjectsDirty[dirty.address] = struct{}{}
-	// }
+		s.stateObjectsDirty[dirty.address] = struct{}{}
+	}
 
-	// // invalidate journal because reverting across transactions is not allowed
-	// s.clearJournalAndRefund()
+	// invalidate journal because reverting across transactions is not allowed
+	s.clearJournalAndRefund()
 	return nil
 }
 
 // GetHeightHash returns the block header hash associated with a given block height and chain epoch number.
 func (s *CommitStateDB) GetHeightHash(height uint64) ethcmn.Hash {
-	ctx := s.ctx
-	bz, _ := ctx.Contracts.Get(evm.HeightHashKey(height))
+	bz, _ := s.contractStore.Get(evm.KeyPrefixHeightHash, evm.HeightHashKey(height))
 	if len(bz) == 0 {
 		return ethcmn.Hash{}
 	}
@@ -198,7 +187,7 @@ func (s *CommitStateDB) GetHeightHash(height uint64) ethcmn.Hash {
 //   2. tx_create(sha(account ++ nonce)) (note that this gets the address of 1)
 //
 // Carrying over the balance ensures that Ether doesn't disappear.
-func (s *CommitStateDB) CreateAccount(addr common.Address) {
+func (s *CommitStateDB) CreateAccount(addr ethcmn.Address) {
 	newObj, prev := s.createObject(addr)
 	if prev != nil {
 		newObj.SetBalance(prev.account.Balance())
@@ -288,14 +277,14 @@ func (s *CommitStateDB) GetCodeSize(addr ethcmn.Address) int {
 
 // AddRefund adds gas to the refund counter.
 func (s *CommitStateDB) AddRefund(gas uint64) {
-	// TODO: Add journal
+	s.journal.append(refundChange{prev: s.refund})
 	s.refund += gas
 }
 
 // SubRefund removes gas from the refund counter. It will panic if the refund
 // counter goes below zero.
 func (s *CommitStateDB) SubRefund(gas uint64) {
-	// TODO: Add journal
+	s.journal.append(refundChange{prev: s.refund})
 	if gas > s.refund {
 		panic("refund counter below zero")
 	}
@@ -344,7 +333,12 @@ func (s *CommitStateDB) Suicide(addr ethcmn.Address) bool {
 		return false
 	}
 
-	// TODO: Add journal
+	s.journal.append(suicideChange{
+		account:     &addr,
+		prev:        so.suicided,
+		prevBalance: *so.Balance(),
+	})
+
 	so.markSuicided()
 	so.SetBalance(new(big.Int))
 
@@ -383,7 +377,7 @@ func (s *CommitStateDB) Empty(addr ethcmn.Address) bool {
 // - Add the contents of the optional tx access list (2930)
 //
 // This method should only be called if Yolov3/Berlin/2929+2930 is applicable at the current number.
-func (s *CommitStateDB) PrepareAccessList(sender common.Address, dst *common.Address, precompiles []common.Address, list types.AccessList) {
+func (s *CommitStateDB) PrepareAccessList(sender ethcmn.Address, dst *ethcmn.Address, precompiles []ethcmn.Address, list ethtypes.AccessList) {
 	s.AddAddressToAccessList(sender)
 	if dst != nil {
 		s.AddAddressToAccessList(*dst)
@@ -413,7 +407,7 @@ func (s *CommitStateDB) SlotInAccessList(addr ethcmn.Address, slot ethcmn.Hash) 
 // AddAddressToAccessList adds the given address to the access list
 func (s *CommitStateDB) AddAddressToAccessList(addr ethcmn.Address) {
 	if s.accessList.AddAddress(addr) {
-		// TODO: Add journal
+		s.journal.append(accessListAddAccountChange{&addr})
 	}
 }
 
@@ -425,11 +419,13 @@ func (s *CommitStateDB) AddSlotToAccessList(addr ethcmn.Address, slot ethcmn.Has
 		// scope of 'address' without having the 'address' become already added
 		// to the access list (via call-variant, create, etc).
 		// Better safe than sorry, though
-
-		// TODO: Add journal
+		s.journal.append(accessListAddAccountChange{&addr})
 	}
 	if slotMod {
-		// TODO: Add journal
+		s.journal.append(accessListAddSlotChange{
+			address: &addr,
+			slot:    &slot,
+		})
 	}
 }
 
@@ -444,11 +440,10 @@ func (s *CommitStateDB) RevertToSnapshot(revID int) {
 		panic(fmt.Errorf("revision ID %v cannot be reverted", revID))
 	}
 
-	// snapshot := s.validRevisions[idx].journalIndex
+	snapshot := s.validRevisions[idx].journalIndex
 
 	// replay the journal to undo changes and remove invalidated snapshots
-	// csdb.journal.revert(csdb, snapshot)
-	// TODO: Add journal revert
+	s.journal.revert(s, snapshot)
 	s.validRevisions = s.validRevisions[:idx]
 }
 
@@ -460,41 +455,59 @@ func (s *CommitStateDB) Snapshot() int {
 	s.validRevisions = append(
 		s.validRevisions,
 		revision{
-			id: id,
-			// TODO: Add journal
-			// journalIndex: csdb.journal.length(),
+			id:           id,
+			journalIndex: s.journal.length(),
 		},
 	)
 	return id
 }
 
-// AddLog adds a new log to the state and sets the log metadata from the state.
-func (s *CommitStateDB) AddLog(log *ethtypes.Log) {
-	// TODO: Add journal
-	// s.journal.append(addLogChange{txhash: s.thash})
-
-	log.TxHash = s.thash
-	log.BlockHash = s.bhash
-	log.TxIndex = uint(s.txIndex)
-	log.Index = s.logSize
-	s.logs[s.thash] = append(s.logs[s.thash], log)
-	s.logSize++
-}
-
 // AddPreimage records a SHA3 preimage seen by the VM.
-func (s *CommitStateDB) AddPreimage(hash common.Hash, preimage []byte) {
-	if _, ok := s.preimages[hash]; !ok {
-		// TODO: Add journal
-		// s.journal.append(addPreimageChange{hash: hash})
+func (s *CommitStateDB) AddPreimage(hash ethcmn.Hash, preimage []byte) {
+	if _, ok := s.hashToPreimageIndex[hash]; !ok {
+		s.journal.append(addPreimageChange{hash: hash})
+
 		pi := make([]byte, len(preimage))
 		copy(pi, preimage)
-		s.preimages[hash] = pi
+
+		s.preimages = append(s.preimages, preimageEntry{hash: hash, preimage: pi})
+		s.hashToPreimageIndex[hash] = len(s.preimages) - 1
 	}
 }
 
 // ForEachStorage iterates over each storage items, all invoke the provided
 // callback on each key, value pair.
 // Only used in tests https://github.com/ethereum/go-ethereum/search?q=ForEachStorage
-func (s *CommitStateDB) ForEachStorage(addr common.Address, cb func(key, value common.Hash) bool) error {
+func (s *CommitStateDB) ForEachStorage(addr ethcmn.Address, cb func(key, value ethcmn.Hash) bool) error {
+	so := s.getStateObject(addr)
+	if so == nil {
+		return nil
+	}
+
+	prefixStore := evm.AddressStoragePrefix(so.Address())
+	s.contractStore.Iterate(prefixStore, func(keyD []byte, valueD []byte) bool {
+		key := ethcmn.BytesToHash(keyD)
+		value := ethcmn.BytesToHash(valueD)
+
+		if idx, dirty := so.keyToDirtyStorageIndex[key]; dirty {
+			// check if iteration stops
+			if cb(key, ethcmn.HexToHash(so.dirtyStorage[idx].Value)) {
+				return true
+			}
+		} else if cb(key, value) {
+			return true
+		}
+		return false
+	})
 	return nil
+}
+
+// GetOrNewStateObject retrieves a state object or create a new state object if
+// nil.
+func (s *CommitStateDB) GetOrNewStateObject(addr ethcmn.Address) StateObject {
+	so := s.getStateObject(addr)
+	if so == nil || so.deleted {
+		so, _ = s.createObject(addr)
+	}
+	return so
 }

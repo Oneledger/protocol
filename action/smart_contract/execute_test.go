@@ -63,9 +63,10 @@ func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, se
 		store = balance.NewStore("tb", cs)
 		ctx.Balances = store
 	}
-	ctx.Contracts = evm.NewContractStore(storage.NewState(storage.NewChainState("contracts", db)))
-	ctx.AccountKeeper = evm.NewKeeperStore(storage.NewState(storage.NewChainState("keeper", db)))
-	ctx.CommitStateDB = action.NewCommitStateDB(ctx, ctx.AccountKeeper)
+	ctx.StateDB = action.NewCommitStateDB(
+		evm.NewContractStore(storage.NewState(storage.NewChainState("contracts", db))),
+		evm.NewKeeperStore(storage.NewState(storage.NewChainState("keeper", db))),
+	)
 	// logger
 	if setLogger {
 		ctx.Logger = log.NewLoggerWithPrefix(os.Stdout, "Test-Logger")
@@ -221,8 +222,6 @@ func TestRunner(t *testing.T) {
 
 	// generating default data
 	ctx := assemblyCtxData("OLT", 18, false, false, false, nil)
-	// gas := uint64(3000000)
-	// value := big.NewInt(0)
 
 	from, fromPubKey, fromPrikey := generateKeyPair()
 	to_, _, _ := generateKeyPair()
@@ -231,7 +230,7 @@ func TestRunner(t *testing.T) {
 		Address: from.Bytes(),
 		Coins:   big.NewInt(10000),
 	}
-	ctx.AccountKeeper.SetAccount(*acc)
+	ctx.StateDB.GetAccountKeeper().SetAccount(*acc)
 
 	t.Run("test contract store through the transaction and it is OK", func(t *testing.T) {
 		stx := &scExecuteTx{}
