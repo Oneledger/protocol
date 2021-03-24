@@ -97,17 +97,8 @@ type DelegationStatusReply struct {
 
 /* Tx Service */
 
-type CallRequest struct {
-	From     keys.Address  `json:"from"`
-	To       keys.Address  `json:"to,omitempty"`
-	Amount   action.Amount `json:"amount"`
-	GasPrice action.Amount `json:"gasPrice"`
-	Gas      int64         `json:"gas"`
-	Data     []byte        `json:"data,omitempty"`
-}
-
-type CallResponse struct {
-	Data []byte `json:"data"`
+type EVMCallReply struct {
+	Result []byte `json:"result"`
 }
 
 type SendTxRequest struct {

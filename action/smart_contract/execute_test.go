@@ -280,6 +280,7 @@ func TestRunner(t *testing.T) {
 		fmt.Printf("contractAddress: %s\n", contractAddress)
 		assert.True(t, status == ethtypes.ReceiptStatusSuccessful, fmt.Sprintf("Got error: %s", errMsg))
 
+		// TODO: Add some check of deployed code
 		// storageCode := ctx.StateDB.GetCode(contractAddress)
 		// fmt.Printf("deployed: %s\n", ethcmn.Bytes2Hex(storageCode))
 		// res := bytes.Compare(code, storageCode)

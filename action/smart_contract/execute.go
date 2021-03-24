@@ -122,7 +122,7 @@ func runSCExecute(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		return false, action.Response{Log: log}
 	}
 
-	evmTx := action.NewEVMTransaction(ctx, execute.From, execute.To, execute.Amount.Value.BigInt(), execute.Data)
+	evmTx := action.NewEVMTransaction(ctx.StateDB, ctx.Header, execute.From, execute.To, execute.Amount.Value.BigInt(), execute.Data)
 	tags := execute.Tags()
 	vmenv := evmTx.NewEVM()
 	// FIXME: Take nonce from tx, not account

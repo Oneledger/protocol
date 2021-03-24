@@ -18,14 +18,6 @@ import (
 	"github.com/tendermint/tendermint/version"
 )
 
-type EVMContext interface {
-	// get header info
-	GetHeader() *abci.Header
-
-	// get state db
-	GetStateDB() *CommitStateDB
-}
-
 // AbciHeaderToTendermint is a util function to parse a tendermint ABCI Header to
 // tendermint types Header.
 func AbciHeaderToTendermint(header *abci.Header) tmtypes.Header {
@@ -61,9 +53,9 @@ func AbciHeaderToTendermint(header *abci.Header) tmtypes.Header {
 
 // HashFromContext returns the Ethereum Header hash from the context's protocol
 // block header.
-func HashFromContext(ctx EVMContext) ethcmn.Hash {
+func HashFromHeader(header *abci.Header) ethcmn.Hash {
 	// cast the ABCI header to tendermint Header type
-	tmHeader := AbciHeaderToTendermint(ctx.GetHeader())
+	tmHeader := AbciHeaderToTendermint(header)
 
 	// get the Tendermint block hash from the current header
 	tmBlockHash := tmHeader.Hash()
@@ -81,15 +73,15 @@ func HashFromContext(ctx EVMContext) ethcmn.Hash {
 //  1. The requested height matches the current height from context (and thus same epoch number)
 //  2. The requested height is from an previous height from the same chain epoch
 //  3. The requested height is from a height greater than the latest one
-func GetHashFn(ctx EVMContext, csdb *CommitStateDB) ethvm.GetHashFunc {
+func GetHashFn(header *abci.Header, csdb *CommitStateDB) ethvm.GetHashFunc {
 	return func(height uint64) ethcmn.Hash {
 		switch {
-		case ctx.GetHeader().GetHeight() == int64(height):
+		case header.GetHeight() == int64(height):
 			// Case 1: The requested height matches the one from the context so we can retrieve the header
 			// hash directly from the context.
-			return HashFromContext(ctx)
+			return HashFromHeader(header)
 
-		case ctx.GetHeader().Time.Unix() > int64(height):
+		case header.Time.Unix() > int64(height):
 			// Case 2: if the chain is not the current height we need to retrieve the hash from the store for the
 			// current chain epoch. This only applies if the current height is greater than the requested height.
 			return csdb.GetHeightHash(height)
@@ -151,12 +143,13 @@ func NewEVMConfig(addr keys.Address, gasPrice *big.Int, gasLimit uint64, extraEI
 }
 
 type EVMTransaction struct {
-	ctx   EVMContext
-	from  keys.Address
-	to    *keys.Address
-	value *big.Int
-	data  []byte
-	ecfg  *EVMConfig
+	stateDB *CommitStateDB
+	header  *abci.Header
+	from    keys.Address
+	to      *keys.Address
+	value   *big.Int
+	data    []byte
+	ecfg    *EVMConfig
 }
 
 var (
@@ -164,13 +157,14 @@ var (
 	DefaultGasPrice *big.Int = big.NewInt(0)
 )
 
-func NewEVMTransaction(ctx EVMContext, from keys.Address, to *keys.Address, value *big.Int, data []byte) *EVMTransaction {
+func NewEVMTransaction(stateDB *CommitStateDB, header *abci.Header, from keys.Address, to *keys.Address, value *big.Int, data []byte) *EVMTransaction {
 	return &EVMTransaction{
-		ctx:   ctx,
-		from:  from,
-		to:    to,
-		value: value,
-		data:  data,
+		stateDB: stateDB,
+		header:  header,
+		from:    from,
+		to:      to,
+		value:   value,
+		data:    data,
 		// NOTE: Decide what to do with the gas price as we have a fee system
 		ecfg: NewEVMConfig(from, DefaultGasPrice, DefaultGasLimit, make([]int, 0)),
 	}
@@ -180,11 +174,11 @@ func (etx *EVMTransaction) NewEVM() *ethvm.EVM {
 	blockCtx := ethvm.BlockContext{
 		CanTransfer: ethcore.CanTransfer,
 		Transfer:    ethcore.Transfer,
-		GetHash:     GetHashFn(etx.ctx, etx.ctx.GetStateDB()),
+		GetHash:     GetHashFn(etx.header, etx.stateDB),
 		Coinbase:    ethcmn.Address{}, // there's no beneficiary since we're not mining
 		GasLimit:    etx.ecfg.gasLimit,
-		BlockNumber: big.NewInt(etx.ctx.GetHeader().GetHeight()),
-		Time:        big.NewInt(etx.ctx.GetHeader().Time.Unix()),
+		BlockNumber: big.NewInt(etx.header.GetHeight()),
+		Time:        big.NewInt(etx.header.Time.Unix()),
 		Difficulty:  big.NewInt(0), // unused. Only required in PoW context
 	}
 
@@ -197,8 +191,8 @@ func (etx *EVMTransaction) NewEVM() *ethvm.EVM {
 		GasPrice: etx.ecfg.gasPrice,
 	}
 
-	ethConfig, _ := EthereumConfig(etx.ctx.GetHeader().ChainID)
-	return ethvm.NewEVM(blockCtx, txCtx, etx.ctx.GetStateDB(), ethConfig, vmConfig)
+	ethConfig, _ := EthereumConfig(etx.header.ChainID)
+	return ethvm.NewEVM(blockCtx, txCtx, etx.stateDB, ethConfig, vmConfig)
 }
 
 func (etx *EVMTransaction) Origin() ethcmn.Address {
@@ -218,7 +212,7 @@ func (etx *EVMTransaction) To() *ethcmn.Address {
 }
 
 func (etx *EVMTransaction) GetLastNonce() uint64 {
-	return etx.ctx.GetStateDB().GetNonce(etx.From())
+	return etx.stateDB.GetNonce(etx.From())
 }
 
 func (etx *EVMTransaction) Apply(vmenv *ethvm.EVM, tx RawTx) (*ethcore.ExecutionResult, error) {
@@ -227,7 +221,7 @@ func (etx *EVMTransaction) Apply(vmenv *ethvm.EVM, tx RawTx) (*ethcore.Execution
 	nonce := etx.GetLastNonce()
 	msg := ethtypes.NewMessage(etx.From(), etx.To(), nonce, etx.value, uint64(tx.Fee.Gas), etx.ecfg.gasPrice, etx.data, make(ethtypes.AccessList, 0), true)
 
-	statedb := etx.ctx.GetStateDB()
+	statedb := etx.stateDB
 	statedb.Prepare(ethcmn.Hash{}, ethcmn.Hash{}, 0)
 	msgResult, err := ethcore.ApplyMessage(vmenv, msg, new(ethcore.GasPool).AddGas(uint64(uint64(tx.Fee.Gas))))
 	if err != nil {
@@ -236,7 +230,7 @@ func (etx *EVMTransaction) Apply(vmenv *ethvm.EVM, tx RawTx) (*ethcore.Execution
 	fmt.Printf("msgResult: %v\n", msgResult)
 	// Ensure any modifications are committed to the state
 	// Only delete empty objects if EIP158/161 (a.k.a Spurious Dragon) is in effect
-	deleteObjs := vmenv.ChainConfig().IsEIP158(big.NewInt(etx.ctx.GetHeader().Height))
+	deleteObjs := vmenv.ChainConfig().IsEIP158(big.NewInt(etx.header.Height))
 	if err := statedb.Finalise(deleteObjs); err != nil {
 		return nil, fmt.Errorf("failed to finalize: %v", err)
 	}

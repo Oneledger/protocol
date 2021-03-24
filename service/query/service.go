@@ -22,8 +22,6 @@ import (
 	"github.com/Oneledger/protocol/utils"
 )
 
-// var _ action.EVMContext = (*Service)(nil)
-
 type Service struct {
 	name            string
 	ext             client.ExtServiceContext
@@ -46,31 +44,6 @@ type Service struct {
 	accountKeeper   evm.AccountKeeper
 	commitStateDB   *action.CommitStateDB
 }
-
-// func (s *Service) GetHeader() *abci.Header {
-// 	return s.Header
-// }
-
-// func (s *Service) GetContractStore() *evm.ContractStore {
-// 	if s.Contracts == nil {
-// 		panic("Contract store not set")
-// 	}
-// 	return s.Contracts
-// }
-
-// func (s *Service) GetAccountKeeperStore() evm.AccountKeeper {
-// 	if s.Contracts == nil {
-// 		panic("Account keeper store not set")
-// 	}
-// 	return s.AccountKeeper
-// }
-
-// func (s *Service) GetStateDB() *action.CommitStateDB {
-// 	if s.CommitStateDB == nil {
-// 		panic("Commit state db not set")
-// 	}
-// 	return s.CommitStateDB
-// }
 
 func Name() string {
 	return "query"

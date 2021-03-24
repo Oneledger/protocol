@@ -16,13 +16,14 @@ package main
 
 import (
 	"fmt"
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
-	"golang.org/x/crypto/ssh/terminal"
 	"os"
 	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
+
+	ctypes "github.com/tendermint/tendermint/rpc/core/types"
+	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/spf13/cobra"
 
@@ -67,6 +68,12 @@ func NewContext() *Context {
 
 	Ctx.clCtx = &clientContext
 	return Ctx
+}
+
+var EVMCmd = &cobra.Command{
+	Use:   "evm",
+	Short: "OneLedger evm",
+	Long:  "EVM module for OneLedger chain to execute smart contracts",
 }
 
 var DelegationCmd = &cobra.Command{
