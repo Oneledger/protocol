@@ -199,7 +199,7 @@ func TestRunner(t *testing.T) {
 	value := big.NewInt(0)
 
 	accRef := ethvm.AccountRef(ethcmn.BytesToAddress(acc.Address()))
-	evm := NewEVMTransaction(ctx, acc.Address(), nil, value, code).NewEVM()
+	evm := NewEVMTransaction(ctx.StateDB, ctx.Header, acc.Address(), nil, value, code).NewEVM()
 
 	t.Run("test contract store and it is OK", func(t *testing.T) {
 		// deploy a contract

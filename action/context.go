@@ -23,8 +23,6 @@ import (
 	"github.com/Oneledger/protocol/storage"
 )
 
-var _ EVMContext = (*Context)(nil)
-
 type Context struct {
 	Router              Router
 	State               *storage.State
@@ -53,17 +51,6 @@ type Context struct {
 
 	// evm
 	StateDB *CommitStateDB
-}
-
-func (ctx *Context) GetHeader() *abci.Header {
-	return ctx.Header
-}
-
-func (ctx *Context) GetStateDB() *CommitStateDB {
-	if ctx.StateDB == nil {
-		panic("Commit state db not set")
-	}
-	return ctx.StateDB
 }
 
 func NewContext(r Router, header *abci.Header, state *storage.State,
