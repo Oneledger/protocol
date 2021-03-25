@@ -42,7 +42,6 @@ type Service struct {
 	txTypes         *[]action.TxTypeDescribe
 	contracts       *evm.ContractStore
 	accountKeeper   evm.AccountKeeper
-	commitStateDB   *action.CommitStateDB
 }
 
 func Name() string {

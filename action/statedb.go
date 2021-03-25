@@ -6,6 +6,7 @@ import (
 	"sort"
 
 	"github.com/Oneledger/protocol/data/evm"
+	"github.com/Oneledger/protocol/data/keys"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	ethvm "github.com/ethereum/go-ethereum/core/vm"
@@ -136,6 +137,7 @@ func (s *CommitStateDB) Finalise(deleteEmptyObjects bool) error {
 	for _, dirty := range s.journal.dirties {
 		idx, exist := s.addressToObjectIndex[dirty.address]
 		if !exist {
+			// TODO: Maybe do not need this on tendermint
 			// ripeMD is 'touched' at block 1714175, in tx:
 			// 0x1237f737031e40bcde4a8b7e717b2d15e3ecadfe49bb1bbc71ee9deb09c6fcf2
 			//
@@ -153,7 +155,7 @@ func (s *CommitStateDB) Finalise(deleteEmptyObjects bool) error {
 			s.deleteStateObject(stateEntry.stateObject)
 		} else {
 			// Set all the dirty state storage items for the state object in the
-			// KVStore and finally set the account in the account mapper.
+			// protocol and finally set the account in the account mapper.
 			stateEntry.stateObject.commitState()
 			if err := s.updateStateObject(stateEntry.stateObject); err != nil {
 				return err
@@ -175,6 +177,48 @@ func (s *CommitStateDB) GetHeightHash(height uint64) ethcmn.Hash {
 		return ethcmn.Hash{}
 	}
 	return ethcmn.BytesToHash(bz)
+}
+
+// SetHeightHash sets the block header hash associated with a given height.
+func (s *CommitStateDB) SetHeightHash(height uint64, hash ethcmn.Hash) {
+	s.contractStore.Set(evm.KeyPrefixHeightHash, evm.HeightHashKey(height), hash.Bytes())
+}
+
+// SetBlockHash set hash of the block
+func (s *CommitStateDB) SetBlockHash(hash ethcmn.Hash) {
+	s.bhash = hash
+}
+
+// UpdateAccounts updates the nonce and coin balances of accounts
+func (s *CommitStateDB) UpdateAccounts() {
+	for _, stateEntry := range s.stateObjects {
+		acc := s.accountKeeper.GetAccount(keys.Address(stateEntry.address.Bytes()))
+		balance := acc.Balance()
+
+		if stateEntry.stateObject.Balance() != balance ||
+			stateEntry.stateObject.Nonce() != acc.Sequence {
+			stateEntry.stateObject.account = acc
+		}
+	}
+}
+
+// Reset clears out all ephemeral state objects from the state db, but keeps
+// the underlying account mapper and store keys to avoid reloading data for the
+// next operations.
+func (s *CommitStateDB) Reset(_ ethcmn.Hash) error {
+	s.stateObjects = []stateEntry{}
+	s.addressToObjectIndex = make(map[ethcmn.Address]int)
+	s.stateObjectsDirty = make(map[ethcmn.Address]struct{})
+	s.thash = ethcmn.Hash{}
+	s.bhash = ethcmn.Hash{}
+	s.txIndex = 0
+	s.logSize = 0
+	s.preimages = []preimageEntry{}
+	s.hashToPreimageIndex = make(map[ethcmn.Hash]int)
+	s.accessList = newAccessList()
+
+	s.clearJournalAndRefund()
+	return nil
 }
 
 // CreateAccount explicitly creates a state object. If a state object with the address

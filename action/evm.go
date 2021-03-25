@@ -73,7 +73,7 @@ func HashFromHeader(header *abci.Header) ethcmn.Hash {
 //  1. The requested height matches the current height from context (and thus same epoch number)
 //  2. The requested height is from an previous height from the same chain epoch
 //  3. The requested height is from a height greater than the latest one
-func GetHashFn(header *abci.Header, csdb *CommitStateDB) ethvm.GetHashFunc {
+func GetHashFn(header *abci.Header, s *CommitStateDB) ethvm.GetHashFunc {
 	return func(height uint64) ethcmn.Hash {
 		switch {
 		case header.GetHeight() == int64(height):
@@ -81,10 +81,10 @@ func GetHashFn(header *abci.Header, csdb *CommitStateDB) ethvm.GetHashFunc {
 			// hash directly from the context.
 			return HashFromHeader(header)
 
-		case header.Time.Unix() > int64(height):
+		case header.GetHeight() > int64(height):
 			// Case 2: if the chain is not the current height we need to retrieve the hash from the store for the
 			// current chain epoch. This only applies if the current height is greater than the requested height.
-			return csdb.GetHeightHash(height)
+			return s.GetHeightHash(height)
 
 		default:
 			// Case 3: heights greater than the current one returns an empty hash.
@@ -230,13 +230,8 @@ func (etx *EVMTransaction) Apply(vmenv *ethvm.EVM, tx RawTx) (*ethcore.Execution
 	fmt.Printf("msgResult: %v\n", msgResult)
 	// Ensure any modifications are committed to the state
 	// Only delete empty objects if EIP158/161 (a.k.a Spurious Dragon) is in effect
-	deleteObjs := vmenv.ChainConfig().IsEIP158(big.NewInt(etx.header.Height))
-	if err := statedb.Finalise(deleteObjs); err != nil {
+	if err := statedb.Finalise(vmenv.ChainConfig().IsEIP158(big.NewInt(etx.header.Height))); err != nil {
 		return nil, fmt.Errorf("failed to finalize: %v", err)
 	}
-	if _, err := statedb.Commit(deleteObjs); err != nil {
-		return nil, fmt.Errorf("failed to commit: %v", err)
-	}
-
 	return msgResult, nil
 }

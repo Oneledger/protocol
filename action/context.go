@@ -2,7 +2,6 @@ package action
 
 import (
 	"github.com/Oneledger/protocol/data"
-	"github.com/Oneledger/protocol/data/evm"
 	"github.com/Oneledger/protocol/data/rewards"
 
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -61,7 +60,7 @@ func NewContext(r Router, header *abci.Header, state *storage.State,
 	btcTrackers *bitcoin.TrackerStore, ethTrackers *ethereum.TrackerStore, jobStore *jobs.JobStore,
 	lockScriptStore *bitcoin.LockScriptStore, logger *log.Logger, proposalmaster *governance.ProposalMasterStore,
 	rewardmaster *rewards.RewardMasterStore, govern *governance.Store, extStores data.Router, govUpdate *GovernaceUpdateAndValidate,
-	contracts *evm.ContractStore, accountKeeper evm.AccountKeeper,
+	stateDB *CommitStateDB,
 ) *Context {
 	return &Context{
 		Router:              r,
@@ -87,6 +86,6 @@ func NewContext(r Router, header *abci.Header, state *storage.State,
 		GovernanceStore:     govern,
 		ExtStores:           extStores,
 		GovUpdate:           govUpdate,
-		StateDB:             NewCommitStateDB(contracts, accountKeeper),
+		StateDB:             stateDB,
 	}
 }

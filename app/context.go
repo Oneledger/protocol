@@ -99,6 +99,7 @@ type context struct {
 	// evm integration
 	contracts     *evm.ContractStore
 	accountKeeper evm.AccountKeeper
+	stateDB       *action.CommitStateDB
 }
 
 func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (context, error) {
@@ -158,6 +159,8 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	// evm
 	ctx.contracts = evm.NewContractStore(storage.NewState(ctx.chainstate))
 	ctx.accountKeeper = evm.NewKeeperStore(storage.NewState(ctx.chainstate))
+	ctx.stateDB = action.NewCommitStateDB(ctx.contracts, ctx.accountKeeper)
+
 	err = external_apps.RegisterExtApp(ctx.chainstate, ctx.actionRouter, ctx.extStores, ctx.extServiceMap, ctx.extFunctions)
 	if err != nil {
 		return ctx, errors.Wrap(err, "error in registering external apps")
@@ -240,8 +243,7 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.govern.WithState(state),
 		ctx.extStores.WithState(state),
 		ctx.govupdate,
-		ctx.contracts,
-		ctx.accountKeeper,
+		ctx.stateDB,
 	)
 
 	return actionCtx

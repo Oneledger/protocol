@@ -16,6 +16,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	ethcmn "github.com/ethereum/go-ethereum/common"
+
 	abciTypes "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/types"
 
@@ -121,6 +123,13 @@ func (app *App) blockBeginner() blockBeginner {
 		defer app.handlePanic()
 		gc := getGasCalculator(app.genesisDoc.ConsensusParams)
 		app.Context.deliver = storage.NewState(app.Context.chainstate).WithGas(gc)
+
+		// Set the hash -> height and height -> hash mapping.
+		currentHash := req.Hash
+		height := req.Header.GetHeight()
+
+		app.Context.stateDB.SetHeightHash(uint64(height), ethcmn.BytesToHash(currentHash))
+		app.Context.stateDB.SetBlockHash(ethcmn.BytesToHash(currentHash))
 
 		feeOpt, err := app.Context.govern.GetFeeOption()
 		if err != nil {
@@ -326,6 +335,20 @@ func (app *App) blockEnder() blockEnder {
 		app.logger.Detailf("Sending events with nodes to tendermint: %+v\n", events)
 
 		app.Context.validators.WithState(app.Context.deliver).ClearEvents()
+
+		// Update account balances before committing other parts of state
+		app.Context.stateDB.UpdateAccounts()
+
+		// Commit state objects to store
+		root, err := app.Context.stateDB.Commit(true)
+		if err != nil {
+			panic(err)
+		}
+
+		// reset all cache after account data has been committed, that make sure node state consistent
+		if err = app.Context.stateDB.Reset(root); err != nil {
+			panic(err)
+		}
 
 		ethTrackerlog := log.NewLoggerWithPrefix(app.Context.logWriter, "ethtracker").WithLevel(log.Level(app.Context.cfg.Node.LogLevel))
 		doTransitions(app.Context.jobStore, app.Context.btcTrackers.WithState(app.Context.deliver), app.Context.validators)
