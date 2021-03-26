@@ -68,7 +68,7 @@ type Context struct {
 
 	// evm
 	Contracts     *evm.ContractStore
-	AccountKeeper evm.AccountKeeper
+	AccountKeeper balance.AccountKeeper
 	StateDB       *action.CommitStateDB
 }
 

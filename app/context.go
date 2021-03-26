@@ -98,7 +98,7 @@ type context struct {
 
 	// evm integration
 	contracts     *evm.ContractStore
-	accountKeeper evm.AccountKeeper
+	accountKeeper balance.AccountKeeper
 	stateDB       *action.CommitStateDB
 }
 
@@ -158,7 +158,11 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 
 	// evm
 	ctx.contracts = evm.NewContractStore(storage.NewState(ctx.chainstate))
-	ctx.accountKeeper = evm.NewKeeperStore(storage.NewState(ctx.chainstate))
+	ctx.accountKeeper = balance.NewNesterAccountKeeper(
+		storage.NewState(ctx.chainstate),
+		ctx.balances,
+		ctx.currencies,
+	)
 	ctx.stateDB = action.NewCommitStateDB(ctx.contracts, ctx.accountKeeper)
 
 	err = external_apps.RegisterExtApp(ctx.chainstate, ctx.actionRouter, ctx.extStores, ctx.extServiceMap, ctx.extFunctions)
