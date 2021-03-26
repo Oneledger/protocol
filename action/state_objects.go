@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/evm"
 	"github.com/Oneledger/protocol/data/keys"
 	ethcmn "github.com/ethereum/go-ethereum/common"
@@ -85,7 +86,7 @@ type stateObject struct {
 	// DB error
 	dbErr   error
 	stateDB *CommitStateDB
-	account *keys.EthAccount
+	account *balance.EthAccount
 
 	keyToOriginStorageIndex map[ethcmn.Hash]int
 	keyToDirtyStorageIndex  map[ethcmn.Hash]int
@@ -101,7 +102,7 @@ type stateObject struct {
 	deleted   bool
 }
 
-func newStateObject(db *CommitStateDB, acc *keys.EthAccount) *stateObject {
+func newStateObject(db *CommitStateDB, acc *balance.EthAccount) *stateObject {
 	return &stateObject{
 		stateDB:                 db,
 		account:                 acc,

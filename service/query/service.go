@@ -41,7 +41,7 @@ type Service struct {
 	logger          *log.Logger
 	txTypes         *[]action.TxTypeDescribe
 	contracts       *evm.ContractStore
-	accountKeeper   evm.AccountKeeper
+	accountKeeper   balance.AccountKeeper
 }
 
 func Name() string {
@@ -50,7 +50,7 @@ func Name() string {
 
 func NewService(ctx client.ExtServiceContext, balances *balance.Store, currencies *balance.CurrencySet, validators *identity.ValidatorStore, witnesses *identity.WitnessStore,
 	domains *ons.DomainStore, delegators *delegation.DelegationStore, netwkDelegators *netwkDeleg.MasterStore, evidenceStore *evidence.EvidenceStore, govern *governance.Store, feePool *fees.Store, proposalMaster *governance.ProposalMasterStore, rewardMaster *rewards.RewardMasterStore, logger *log.Logger, txTypes *[]action.TxTypeDescribe,
-	contracts *evm.ContractStore, accountKeeper evm.AccountKeeper,
+	contracts *evm.ContractStore, accountKeeper balance.AccountKeeper,
 ) *Service {
 	service := &Service{
 		name:            "query",

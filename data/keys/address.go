@@ -12,6 +12,13 @@ import (
 	"github.com/Oneledger/protocol/utils"
 )
 
+// Code is account Code type alias
+type Code []byte
+
+func (c Code) String() string {
+	return string(c)
+}
+
 //Address to be used as to reference a key-pair.
 type Address []byte
 

@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"sort"
 
+	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/evm"
 	"github.com/Oneledger/protocol/data/keys"
 	ethcmn "github.com/ethereum/go-ethereum/common"
@@ -17,7 +18,7 @@ var _ ethvm.StateDB = (*CommitStateDB)(nil)
 
 type CommitStateDB struct {
 	contractStore *evm.ContractStore
-	accountKeeper evm.AccountKeeper
+	accountKeeper balance.AccountKeeper
 	// The refund counter, also used by state transitioning.
 	refund uint64
 
@@ -57,7 +58,7 @@ type CommitStateDB struct {
 //
 // CONTRACT: Stores used for state must be cache-wrapped as the ordering of the
 // key/value space matters in determining the merkle root.
-func NewCommitStateDB(cs *evm.ContractStore, ak evm.AccountKeeper) *CommitStateDB {
+func NewCommitStateDB(cs *evm.ContractStore, ak balance.AccountKeeper) *CommitStateDB {
 	return &CommitStateDB{
 		contractStore:        cs,
 		accountKeeper:        ak,
@@ -73,7 +74,7 @@ func NewCommitStateDB(cs *evm.ContractStore, ak evm.AccountKeeper) *CommitStateD
 	}
 }
 
-func (s *CommitStateDB) GetAccountKeeper() evm.AccountKeeper {
+func (s *CommitStateDB) GetAccountKeeper() balance.AccountKeeper {
 	return s.accountKeeper
 }
 
@@ -86,7 +87,7 @@ func (s *CommitStateDB) Prepare(thash, bhash ethcmn.Hash, ti int) {
 	s.accessList = newAccessList()
 }
 
-// Commit writes the state to the appropriate KVStores. For each state object
+// Commit writes the state to the appropriate stores. For each state object
 // in the cache, it will either be removed, or have it's code set and/or it's
 // state (storage) updated. In addition, the state object (account) itself will
 // be written. Finally, the root hash (version) will be returned.

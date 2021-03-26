@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"math/big"
 	"os"
 	"strings"
 	"testing"
@@ -65,10 +64,6 @@ func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, se
 		store = balance.NewStore("tb", cs)
 		ctx.Balances = store
 	}
-	ctx.StateDB = action.NewCommitStateDB(
-		evm.NewContractStore(storage.NewState(storage.NewChainState("contracts", db))),
-		evm.NewKeeperStore(storage.NewState(storage.NewChainState("keeper", db))),
-	)
 	// logger
 	if setLogger {
 		ctx.Logger = log.NewLoggerWithPrefix(os.Stdout, "Test-Logger")
@@ -151,6 +146,14 @@ func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, se
 		ChainID: "test-1",
 	}
 	ctx.Logger = log.NewLoggerWithPrefix(os.Stdout, "Test-Logger")
+	ctx.StateDB = action.NewCommitStateDB(
+		evm.NewContractStore(storage.NewState(storage.NewChainState("contracts", db))),
+		balance.NewNesterAccountKeeper(
+			storage.NewState(storage.NewChainState("keeper", db)),
+			ctx.Balances,
+			ctx.Currencies,
+		),
+	)
 	return ctx
 }
 
@@ -251,14 +254,23 @@ func TestRunner(t *testing.T) {
 	// }
 
 	// generating default data
-	ctx := assemblyCtxData("OLT", 18, false, false, false, nil)
+	ctx := assemblyCtxData("OLT", 18, true, false, false, nil)
 
 	from, fromPubKey, fromPrikey := generateKeyPair()
 	to_, _, _ := generateKeyPair()
 
-	acc := &keys.EthAccount{
+	acc := &balance.EthAccount{
 		Address: from.Bytes(),
-		Coins:   big.NewInt(10000),
+		Coins: balance.Coin{
+			Currency: balance.Currency{
+				Id:      0,
+				Name:    "OLT",
+				Chain:   0,
+				Decimal: 18,
+				Unit:    "nue",
+			},
+			Amount: balance.NewAmountFromInt(10000),
+		},
 	}
 	ctx.StateDB.GetAccountKeeper().SetAccount(*acc)
 
