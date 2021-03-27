@@ -113,7 +113,7 @@ func (e ethERC20RedeemTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (
 }
 
 // ProcessFee process the transaction Fee in OLT
-func (e ethERC20RedeemTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (e ethERC20RedeemTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas, gasUsed action.Gas) (bool, action.Response) {
 	return true, action.Response{Log: "ProcessFee"}
 }
 

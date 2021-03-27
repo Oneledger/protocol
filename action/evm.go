@@ -51,45 +51,30 @@ func AbciHeaderToTendermint(header *abci.Header) tmtypes.Header {
 	}
 }
 
-// HashFromContext returns the Ethereum Header hash from the context's protocol
-// block header.
-func HashFromHeader(header *abci.Header) ethcmn.Hash {
-	// cast the ABCI header to tendermint Header type
-	tmHeader := AbciHeaderToTendermint(header)
+// // HashFromContext returns the Ethereum Header hash from the context's protocol
+// // block header.
+// func HashFromHeader(header *abci.Header) ethcmn.Hash {
+// 	// cast the ABCI header to tendermint Header type
+// 	tmHeader := AbciHeaderToTendermint(header)
 
-	// get the Tendermint block hash from the current header
-	tmBlockHash := tmHeader.Hash()
+// 	// get the Tendermint block hash from the current header
+// 	tmBlockHash := tmHeader.Hash()
 
-	// NOTE: if the validator set hash is missing the hash will be returned as nil,
-	// so we need to check for this case to prevent a panic when calling Bytes()
-	if tmBlockHash == nil {
-		return ethcmn.Hash{}
-	}
+// 	// NOTE: if the validator set hash is missing the hash will be returned as nil,
+// 	// so we need to check for this case to prevent a panic when calling Bytes()
+// 	if tmBlockHash == nil {
+// 		return ethcmn.Hash{}
+// 	}
 
-	return ethcmn.BytesToHash(tmBlockHash.Bytes())
-}
+// 	return ethcmn.BytesToHash(tmBlockHash.Bytes())
+// }
 
 // GetHashFn implements vm.GetHashFunc for protocol. It handles 3 cases:
 //  1. The requested height matches the current height from context (and thus same epoch number)
-//  2. The requested height is from an previous height from the same chain epoch
-//  3. The requested height is from a height greater than the latest one
-func GetHashFn(header *abci.Header, s *CommitStateDB) ethvm.GetHashFunc {
+//  2. The requested height is from a height greater than the latest one
+func GetHashFn(s *CommitStateDB) ethvm.GetHashFunc {
 	return func(height uint64) ethcmn.Hash {
-		switch {
-		case header.GetHeight() == int64(height):
-			// Case 1: The requested height matches the one from the context so we can retrieve the header
-			// hash directly from the context.
-			return HashFromHeader(header)
-
-		case header.GetHeight() > int64(height):
-			// Case 2: if the chain is not the current height we need to retrieve the hash from the store for the
-			// current chain epoch. This only applies if the current height is greater than the requested height.
-			return s.GetHeightHash(height)
-
-		default:
-			// Case 3: heights greater than the current one returns an empty hash.
-			return ethcmn.Hash{}
-		}
+		return s.GetHeightHash(height)
 	}
 }
 
@@ -174,7 +159,7 @@ func (etx *EVMTransaction) NewEVM() *ethvm.EVM {
 	blockCtx := ethvm.BlockContext{
 		CanTransfer: ethcore.CanTransfer,
 		Transfer:    ethcore.Transfer,
-		GetHash:     GetHashFn(etx.header, etx.stateDB),
+		GetHash:     GetHashFn(etx.stateDB),
 		Coinbase:    ethcmn.Address{}, // there's no beneficiary since we're not mining
 		GasLimit:    etx.ecfg.gasLimit,
 		BlockNumber: big.NewInt(etx.header.GetHeight()),

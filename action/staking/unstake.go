@@ -115,7 +115,7 @@ func (us unstakeTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bool, 
 	return runCheckUnstake(ctx, tx)
 }
 
-func (us unstakeTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (us unstakeTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas, gasUsed action.Gas) (bool, action.Response) {
 	// TODO: Add fee processing
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 2)
 }

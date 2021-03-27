@@ -15,19 +15,19 @@ var (
 )
 
 type ContractStore struct {
-	state  *storage.State
+	State  *storage.State
 	prefix []byte
 }
 
 func NewContractStore(state *storage.State) *ContractStore {
 	return &ContractStore{
-		state:  state,
+		State:  state,
 		prefix: storage.Prefix("contracts"),
 	}
 }
 
 func (cs *ContractStore) WithState(state *storage.State) *ContractStore {
-	cs.state = state
+	cs.State = state
 	return cs
 }
 
@@ -39,7 +39,7 @@ func (cs *ContractStore) GetStoreKey(prefix []byte, key []byte) storage.StoreKey
 
 func (cs *ContractStore) Get(prefix []byte, key []byte) ([]byte, error) {
 	storeKey := cs.GetStoreKey(prefix, key)
-	dat, err := cs.state.Get(storeKey)
+	dat, err := cs.State.Get(storeKey)
 	if err != nil {
 		return nil, err
 	}
@@ -48,18 +48,18 @@ func (cs *ContractStore) Get(prefix []byte, key []byte) ([]byte, error) {
 
 func (cs *ContractStore) Set(prefix []byte, key []byte, value []byte) error {
 	storeKey := cs.GetStoreKey(prefix, key)
-	err := cs.state.Set(storeKey, value)
+	err := cs.State.Set(storeKey, value)
 	return err
 }
 
 func (cs *ContractStore) Delete(prefix []byte, key []byte) (bool, error) {
 	storeKey := cs.GetStoreKey(prefix, key)
-	return cs.state.Delete(storeKey)
+	return cs.State.Delete(storeKey)
 }
 
 func (cs *ContractStore) Iterate(prefix []byte, fn func(key []byte, value []byte) bool) (stop bool) {
 	prefixKey := append(cs.prefix, prefix...)
-	return cs.state.IterateRange(
+	return cs.State.IterateRange(
 		prefixKey,
 		storage.Rangefix(string(prefixKey)),
 		true,
