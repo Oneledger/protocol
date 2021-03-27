@@ -98,6 +98,7 @@ func main() {
 	RootCmd.AddCommand(DelegationCmd)
 	RootCmd.AddCommand(EvidencesCmd)
 	RootCmd.AddCommand(RewardsCmd)
+	RootCmd.AddCommand(EVMCmd)
 	Execute()
 }
 
