@@ -124,17 +124,20 @@ func newStateObject(db *CommitStateDB, acc *balance.EthAccount) *stateObject {
 // GetState retrieves a value from the account storage trie. Note, the key will
 // be prefixed with the address of the state object.
 func (so *stateObject) GetState(db ethstate.Database, key ethcmn.Hash) ethcmn.Hash {
+	so.logger.Debugf("Get state for key: %s\n", key.String())
 	prefixKey := so.GetStorageByAddressKey(key.Bytes())
 
 	// if we have a dirty value for this state entry, return it
 	idx, dirty := so.keyToDirtyStorageIndex[prefixKey]
 	if dirty {
 		value := ethcmn.HexToHash(so.dirtyStorage[idx].Value)
+		fmt.Printf("GetState - DIRTY: %s\n", value.String())
 		return value
 	}
 
 	// otherwise return the entry's original value
 	value := so.GetCommittedState(db, key)
+	fmt.Printf("GetState - CLEANED: %s\n", value.String())
 	return value
 }
 
@@ -144,6 +147,7 @@ func (so *stateObject) SetState(db ethstate.Database, key, value ethcmn.Hash) {
 	// if the new value is the same as old, don't set
 	prev := so.GetState(db, key)
 	if prev == value {
+		so.logger.Debugf("Nothing to update as the state not changed (%s)\n", key.String())
 		return
 	}
 
@@ -168,6 +172,7 @@ func (so *stateObject) GetCommittedState(_ ethstate.Database, key ethcmn.Hash) e
 	idx, cached := so.keyToOriginStorageIndex[prefixKey]
 	if cached {
 		value := ethcmn.HexToHash(so.originStorage[idx].Value)
+		so.logger.Debugf("GetCommittedState - CACHED, value: %s\n", value.String())
 		return value
 	}
 
@@ -175,7 +180,7 @@ func (so *stateObject) GetCommittedState(_ ethstate.Database, key ethcmn.Hash) e
 	state := NewState(prefixKey, ethcmn.Hash{})
 	value := ethcmn.Hash{}
 
-	rawValue, _ := so.stateDB.contractStore.Get(evm.KeyPrefixStorage, prefixKey.Bytes())
+	rawValue, _ := so.stateDB.contractStore.Get(evm.AddressStoragePrefix(so.Address()), prefixKey.Bytes())
 
 	if len(rawValue) > 0 {
 		value.SetBytes(rawValue)
@@ -184,6 +189,7 @@ func (so *stateObject) GetCommittedState(_ ethstate.Database, key ethcmn.Hash) e
 
 	so.originStorage = append(so.originStorage, state)
 	so.keyToOriginStorageIndex[prefixKey] = len(so.originStorage) - 1
+	so.logger.Debugf("GetCommittedState - CLEANED, value: %s\n", value.String())
 	return value
 }
 

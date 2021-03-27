@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -253,12 +254,12 @@ func getContractAddress(resp action.Response) (contractAddress ethcmn.Address) {
 
 func blockCommit(ctx *action.Context) {
 	// simulate block ender
-	// ctx.StateDB.UpdateAccounts()
-	// root, err := ctx.StateDB.Commit(false)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// ctx.StateDB.Reset(root)
+	ctx.StateDB.UpdateAccounts()
+	root, err := ctx.StateDB.Commit(false)
+	if err != nil {
+		panic(err)
+	}
+	ctx.StateDB.Reset(root)
 }
 
 func TestRunner(t *testing.T) {
@@ -280,7 +281,6 @@ func TestRunner(t *testing.T) {
 	ctx := assemblyCtxData("OLT", 18, true, false, false, nil)
 
 	from, fromPubKey, fromPrikey := generateKeyPair()
-	// to_, _, _ := generateKeyPair()
 
 	acc := &balance.EthAccount{
 		Address: from.Bytes(),
@@ -365,38 +365,39 @@ func TestRunner(t *testing.T) {
 		// assert.True(t, res == 0, "Wrong code deployed")
 	})
 
-	// t.Run("test contract store through the transaction with not enough gas and it is error", func(t *testing.T) {
-	// 	stx := &scExecuteTx{}
-	// 	code := ethcmn.FromHex("0x608060405234801561001057600080fd5b5061016d806100206000396000f3fe608060405234801561001057600080fd5b50600436106100365760003560e01c80635f76f6ab1461003b5780636d4ce63c1461006b575b600080fd5b6100696004803603602081101561005157600080fd5b8101908080351515906020019092919050505061008b565b005b6100736100e4565b60405180821515815260200191505060405180910390f35b806000803373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060006101000a81548160ff02191690831515021790555050565b60008060003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060009054906101000a900460ff1690509056fea2646970667358221220ef09e2f46f4d83d3c8af213cd936666dbb273e3f612b70d008a1d8bbf6d14a1d64736f6c63430007040033")
-	// 	tx := assemblyExecuteData(from.Bytes(), nil, fromPubKey, fromPrikey, code, 100)
+	t.Run("test contract store through the transaction with not enough gas and it is error", func(t *testing.T) {
+		stx := &scExecuteTx{}
+		code := ethcmn.FromHex("0x608060405234801561001057600080fd5b5061016d806100206000396000f3fe608060405234801561001057600080fd5b50600436106100365760003560e01c80635f76f6ab1461003b5780636d4ce63c1461006b575b600080fd5b6100696004803603602081101561005157600080fd5b8101908080351515906020019092919050505061008b565b005b6100736100e4565b60405180821515815260200191505060405180910390f35b806000803373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060006101000a81548160ff02191690831515021790555050565b60008060003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060009054906101000a900460ff1690509056fea2646970667358221220ef09e2f46f4d83d3c8af213cd936666dbb273e3f612b70d008a1d8bbf6d14a1d64736f6c63430007040033")
+		tx := assemblyExecuteData(from.Bytes(), nil, fromPubKey, fromPrikey, code, 100)
 
-	// 	ok, err := stx.Validate(ctx, tx)
-	// 	assert.NoError(t, err)
-	// 	assert.True(t, ok)
+		ok, err := stx.Validate(ctx, tx)
+		assert.NoError(t, err)
+		assert.True(t, ok)
 
-	// 	ok, resp := stx.ProcessDeliver(ctx, tx.RawTx)
-	// 	fmt.Printf("resp: %+v \n", resp)
-	// 	assert.False(t, ok)
-	// 	assert.True(t, strings.Contains(resp.Log, "300103")) // intrinsic gas too low code
+		ok, resp := stx.ProcessDeliver(ctx, tx.RawTx)
+		fmt.Printf("resp: %+v \n", resp)
+		assert.False(t, ok)
+		assert.True(t, strings.Contains(resp.Log, "300103")) // intrinsic gas too low code
 
-	// 	_, errMsg := getTxStatus(resp)
-	// 	assert.True(t, len(errMsg) == 0)
-	// })
+		_, errMsg := getTxStatus(resp)
+		assert.True(t, len(errMsg) == 0)
+	})
 
-	// t.Run("test contract func exec on missed address and it is ok", func(t *testing.T) {
-	// 	stx := &scExecuteTx{}
-	// 	to := keys.Address(to_.Bytes())
-	// 	tx := assemblyExecuteData(from.Bytes(), &to, fromPubKey, fromPrikey, ethcmn.FromHex("0x5f76f6ab0000000000000000000000000000000000000000000000000000000000000001"), 100000)
+	t.Run("test contract func exec on missed address and it is ok", func(t *testing.T) {
+		stx := &scExecuteTx{}
+		to_, _, _ := generateKeyPair()
+		to := keys.Address(to_.Bytes())
+		tx := assemblyExecuteData(from.Bytes(), &to, fromPubKey, fromPrikey, ethcmn.FromHex("0x5f76f6ab0000000000000000000000000000000000000000000000000000000000000001"), 100000)
 
-	// 	ok, err := stx.Validate(ctx, tx)
-	// 	assert.NoError(t, err)
-	// 	assert.True(t, ok)
+		ok, err := stx.Validate(ctx, tx)
+		assert.NoError(t, err)
+		assert.True(t, ok)
 
-	// 	ok, resp := stx.ProcessDeliver(ctx, tx.RawTx)
-	// 	fmt.Printf("resp: %+v \n", resp)
-	// 	assert.True(t, ok)
+		ok, resp := stx.ProcessDeliver(ctx, tx.RawTx)
+		fmt.Printf("resp: %+v \n", resp)
+		assert.True(t, ok)
 
-	// 	_, errMsg := getTxStatus(resp)
-	// 	assert.True(t, len(errMsg) == 0)
-	// })
+		_, errMsg := getTxStatus(resp)
+		assert.True(t, len(errMsg) == 0)
+	})
 }

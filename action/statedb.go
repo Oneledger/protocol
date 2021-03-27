@@ -207,6 +207,7 @@ func (s *CommitStateDB) UpdateAccounts() {
 		acc, err := s.accountKeeper.GetAccount(addr)
 		if err != nil {
 			s.logger.Debugf("Account for address '%s' not found\n", addr)
+			continue
 		}
 		s.logger.Debugf("Account for address '%s' found\n", addr)
 		balance := acc.Balance()
