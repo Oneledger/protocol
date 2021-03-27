@@ -12,7 +12,11 @@ import (
 func (s *CommitStateDB) createObject(addr ethcmn.Address) (newObj, prevObj *stateObject) {
 	prevObj = s.getStateObject(addr)
 
-	acc := s.accountKeeper.NewAccountWithAddress(keys.Address(addr.Bytes()))
+	acc, err := s.accountKeeper.NewAccountWithAddress(keys.Address(addr.Bytes()))
+	if err != nil {
+		s.setError(err)
+		return nil, nil
+	}
 	newObj = newStateObject(s, acc)
 	newObj.setNonce(0) // sets the object to dirty
 
@@ -41,8 +45,8 @@ func (s *CommitStateDB) getStateObject(addr ethcmn.Address) (stateObject *stateO
 	}
 
 	// otherwise, attempt to fetch the account from the account mapper
-	acc := s.accountKeeper.GetAccount(keys.Address(addr.Bytes()))
-	if acc == nil {
+	acc, err := s.accountKeeper.GetAccount(keys.Address(addr.Bytes()))
+	if err != nil {
 		s.setError(fmt.Errorf("no account found for address: %s", addr.String()))
 		return nil
 	}
@@ -73,8 +77,8 @@ func (s *CommitStateDB) setStateObject(so *stateObject) {
 
 // updateStateObject writes the given state object to the store.
 func (s *CommitStateDB) updateStateObject(so *stateObject) error {
-	s.accountKeeper.SetAccount(*so.account)
-	return nil
+	fmt.Printf("so.account: %+v\n", so.account)
+	return s.accountKeeper.SetAccount(*so.account)
 }
 
 // setError remembers the first non-nil error it is called with.

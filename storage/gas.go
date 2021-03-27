@@ -1,6 +1,6 @@
 package storage
 
-type Gas int64
+type Gas int
 
 const (
 	STOREBYTES Gas = 20

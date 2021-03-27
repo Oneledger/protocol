@@ -8,6 +8,8 @@ import (
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/evm"
 	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/log"
+	"github.com/Oneledger/protocol/storage"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	ethvm "github.com/ethereum/go-ethereum/core/vm"
@@ -19,6 +21,7 @@ var _ ethvm.StateDB = (*CommitStateDB)(nil)
 type CommitStateDB struct {
 	contractStore *evm.ContractStore
 	accountKeeper balance.AccountKeeper
+	logger        *log.Logger
 	// The refund counter, also used by state transitioning.
 	refund uint64
 
@@ -58,10 +61,11 @@ type CommitStateDB struct {
 //
 // CONTRACT: Stores used for state must be cache-wrapped as the ordering of the
 // key/value space matters in determining the merkle root.
-func NewCommitStateDB(cs *evm.ContractStore, ak balance.AccountKeeper) *CommitStateDB {
+func NewCommitStateDB(cs *evm.ContractStore, ak balance.AccountKeeper, logger *log.Logger) *CommitStateDB {
 	return &CommitStateDB{
 		contractStore:        cs,
 		accountKeeper:        ak,
+		logger:               logger,
 		stateObjects:         []stateEntry{},
 		preimages:            []preimageEntry{},
 		hashToPreimageIndex:  make(map[ethcmn.Hash]int),
@@ -72,6 +76,12 @@ func NewCommitStateDB(cs *evm.ContractStore, ak balance.AccountKeeper) *CommitSt
 		journal:              newJournal(),
 		validRevisions:       []revision{},
 	}
+}
+
+func (s *CommitStateDB) WithState(state *storage.State) *CommitStateDB {
+	s.contractStore.WithState(state)
+	s.accountKeeper.WithState(state)
+	return s
 }
 
 func (s *CommitStateDB) GetAccountKeeper() balance.AccountKeeper {
@@ -193,7 +203,12 @@ func (s *CommitStateDB) SetBlockHash(hash ethcmn.Hash) {
 // UpdateAccounts updates the nonce and coin balances of accounts
 func (s *CommitStateDB) UpdateAccounts() {
 	for _, stateEntry := range s.stateObjects {
-		acc := s.accountKeeper.GetAccount(keys.Address(stateEntry.address.Bytes()))
+		addr := keys.Address(stateEntry.address.Bytes())
+		acc, err := s.accountKeeper.GetAccount(addr)
+		if err != nil {
+			s.logger.Debugf("Account for address '%s' not found\n", addr)
+		}
+		s.logger.Debugf("Account for address '%s' found\n", addr)
 		balance := acc.Balance()
 
 		if stateEntry.stateObject.Balance() != balance ||

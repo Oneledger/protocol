@@ -16,11 +16,15 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
+	accounts2 "github.com/Oneledger/protocol/data/accounts"
 	"github.com/Oneledger/protocol/data/balance"
+	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/serialize"
 	"github.com/spf13/cobra"
 )
 
@@ -34,7 +38,13 @@ type EvmArguments struct {
 	Password string `json:"password"`
 }
 
-func (args *EvmArguments) ClientRequest(currencies *balance.CurrencySet) (client.SendTxRequest, error) {
+func (args *EvmArguments) EVMAccount() (client.EVMAccountRequest, error) {
+	return client.EVMAccountRequest{
+		Address: args.From,
+	}, nil
+}
+
+func (args *EvmArguments) EVMRequest(currencies *balance.CurrencySet) (client.SendTxRequest, error) {
 	c, ok := currencies.GetCurrencyByName("OLT")
 	if !ok {
 		return client.SendTxRequest{}, errors.New("OLT currency not supported")
@@ -67,7 +77,7 @@ var (
 	evmCallCmd = &cobra.Command{
 		Use:   "call",
 		Short: "Call smart contract function to fetch storage data",
-		Run:   CallContract,
+		RunE:  CallContract,
 	}
 	evmCallArgs = &EvmArguments{}
 
@@ -77,14 +87,24 @@ var (
 		RunE:  CreateContract,
 	}
 	evmCreateArgs = &EvmArguments{}
+
+	evmAccountCmd = &cobra.Command{
+		Use:   "account",
+		Short: "Get account data from storage",
+		RunE:  GetAccount,
+	}
+	evmAccountArgs = &EvmArguments{}
 )
 
 func init() {
 	EVMCmd.AddCommand(evmCallCmd)
-	EVMCmd.AddCommand(evmCreateCmd)
-
 	setEVMArgs(evmCallCmd, evmCallArgs)
+
+	EVMCmd.AddCommand(evmCreateCmd)
 	setEVMArgs(evmCreateCmd, evmCreateArgs)
+
+	EVMCmd.AddCommand(evmAccountCmd)
+	setEVMArgs(evmAccountCmd, evmAccountArgs)
 }
 
 func setEVMArgs(command *cobra.Command, evmArgs *EvmArguments) {
@@ -98,29 +118,53 @@ func setEVMArgs(command *cobra.Command, evmArgs *EvmArguments) {
 	command.Flags().StringVar(&evmArgs.Password, "password", "", "Password to access secure wallet.")
 }
 
+func GetAccount(cmd *cobra.Command, args []string) error {
+	ctx := NewContext()
+	fullnode := ctx.clCtx.FullNodeClient()
+
+	req, err := evmAccountArgs.EVMAccount()
+	if err != nil {
+		ctx.logger.Error("failed to get request", err)
+		return err
+	}
+
+	callResponse, err := fullnode.EVMAccount(req)
+	if err != nil {
+		logger.Error("error in getting evm call response", err)
+		return err
+	}
+	logger.Info("\t Result: ")
+	logger.Info("\t Address: ", callResponse.Address)
+	logger.Info("\t Code: ", callResponse.CodeHash)
+	logger.Info("\t Balance: ", callResponse.Balance)
+	logger.Info("\t Nonce: ", callResponse.Nonce)
+	return nil
+}
+
 // CallContract used to invoke function to read from the contract storage
 // (mostly for public funcs and simultaion to determine gas used)
-func CallContract(cmd *cobra.Command, args []string) {
+func CallContract(cmd *cobra.Command, args []string) error {
 	ctx := NewContext()
 	fullnode := ctx.clCtx.FullNodeClient()
 	currencies, err := fullnode.ListCurrencies()
 	if err != nil {
 		ctx.logger.Error("failed to get currencies", err)
-		return
+		return err
 	}
 
-	req, err := evmCallArgs.ClientRequest(currencies.Currencies.GetCurrencySet())
+	req, err := evmCallArgs.EVMRequest(currencies.Currencies.GetCurrencySet())
 	if err != nil {
 		ctx.logger.Error("failed to get request", err)
-		return
+		return err
 	}
 
 	callResponse, err := fullnode.EVMCall(req)
 	if err != nil {
 		logger.Error("error in getting evm call response", err)
-		return
+		return err
 	}
 	logger.Info("\t Result:", callResponse.Result)
+	return nil
 }
 
 // CreateContract used to deploy/create a contract on the OneLedger protocol
@@ -133,19 +177,71 @@ func CreateContract(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	req, err := evmCallArgs.ClientRequest(currencies.Currencies.GetCurrencySet())
+	req, err := evmCreateArgs.EVMRequest(currencies.Currencies.GetCurrencySet())
 	if err != nil {
 		ctx.logger.Error("failed to get request", err)
 		return err
 	}
 
-	reply, err := fullnode.SendTx(req)
+	//Prompt for password
+	if len(evmCreateArgs.Password) == 0 {
+		evmCreateArgs.Password = PromptForPassword()
+	}
+
+	//Create new Wallet and User Address
+	wallet, err := accounts2.NewWalletKeyStore(keyStorePath)
+	if err != nil {
+		ctx.logger.Error("failed to create secure wallet", err)
+		return err
+	}
+
+	//Verify User Password
+	usrAddress := keys.Address(evmCreateArgs.From)
+	authenticated, err := wallet.VerifyPassphrase(usrAddress, evmCreateArgs.Password)
+	if !authenticated {
+		ctx.logger.Error("authentication error", err)
+		return err
+	}
+
+	//Get Raw "Send" Transaction
+	reply, err := fullnode.CreateRawSend(req)
 	if err != nil {
 		ctx.logger.Error("failed to create SendTx", err)
 		return err
 	}
+	rawTx := &action.RawTx{}
+	err = serialize.GetSerializer(serialize.NETWORK).Deserialize(reply.RawTx, rawTx)
+	if err != nil {
+		ctx.logger.Error("failed to deserialize RawTx", err)
+		return err
+	}
 
-	result, err := ctx.clCtx.BroadcastTxSync(reply.RawTx)
+	if !wallet.Open(usrAddress, evmCreateArgs.Password) {
+		ctx.logger.Error("failed to open secure wallet")
+		return err
+	}
+
+	//Sign Raw "Send" Transaction Using Secure Wallet.
+	pub, signature, err := wallet.SignWithAddress(reply.RawTx, usrAddress)
+	if err != nil {
+		ctx.logger.Error("error signing transaction", err)
+	}
+
+	signatures := []action.Signature{{pub, signature}}
+	fmt.Println(signatures)
+	signedTx := &action.SignedTx{
+		RawTx:      *rawTx,
+		Signatures: signatures,
+	}
+
+	packet, err := serialize.GetSerializer(serialize.NETWORK).Serialize(signedTx)
+	if err != nil {
+		ctx.logger.Error("failed to serialize signedTx", err)
+		return err
+	}
+
+	//Broadcast Transaction
+	result, err := ctx.clCtx.BroadcastTxSync(packet)
 	if err != nil {
 		ctx.logger.Error("error in BroadcastTxSync", err)
 	}

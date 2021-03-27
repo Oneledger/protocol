@@ -163,7 +163,8 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 		ctx.balances,
 		ctx.currencies,
 	)
-	ctx.stateDB = action.NewCommitStateDB(ctx.contracts, ctx.accountKeeper)
+	logger := log.NewLoggerWithPrefix(ctx.logWriter, "state_db").WithLevel(log.Level(ctx.cfg.Node.LogLevel))
+	ctx.stateDB = action.NewCommitStateDB(ctx.contracts, ctx.accountKeeper, logger)
 
 	err = external_apps.RegisterExtApp(ctx.chainstate, ctx.actionRouter, ctx.extStores, ctx.extServiceMap, ctx.extFunctions)
 	if err != nil {
@@ -223,6 +224,8 @@ func (ctx context) dbDir() string {
 }
 
 func (ctx *context) Action(header *Header, state *storage.State) *action.Context {
+	ctx.contracts.WithState(state)
+	ctx.accountKeeper.WithState(state)
 	actionCtx := action.NewContext(
 		ctx.actionRouter,
 		header,
@@ -327,6 +330,9 @@ func (ctx *context) Services() (service.Map, error) {
 		Trackers:        btcTrackers,
 		Govern:          governance.NewStore("g", storage.NewState(ctx.chainstate)),
 		GovUpdate:       ctx.govupdate,
+		Contracts:       ctx.contracts,
+		AccountKeeper:   ctx.accountKeeper,
+		StateDB:         ctx.stateDB,
 	}
 
 	return service.NewMap(svcCtx)
@@ -351,7 +357,10 @@ func (ctx *context) Restful() (service.RestfulRouter, error) {
 		Logger:         log.NewLoggerWithPrefix(ctx.logWriter, "restful").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
 		Services:       extSvcs,
 
-		Trackers: ctx.btcTrackers,
+		Trackers:      ctx.btcTrackers,
+		Contracts:     ctx.contracts,
+		AccountKeeper: ctx.accountKeeper,
+		StateDB:       ctx.stateDB,
 	}
 	return service.NewRestfulService(svcCtx).Router(), nil
 }

@@ -128,6 +128,9 @@ func (app *App) blockBeginner() blockBeginner {
 		currentHash := req.Hash
 		height := req.Header.GetHeight()
 
+		// Set state for update state db
+		app.Context.stateDB.WithState(app.Context.deliver)
+
 		app.Context.stateDB.SetHeightHash(uint64(height), ethcmn.BytesToHash(currentHash))
 		app.Context.stateDB.SetBlockHash(ethcmn.BytesToHash(currentHash))
 
@@ -328,11 +331,14 @@ func (app *App) blockEnder() blockEnder {
 
 		app.Context.validators.WithState(app.Context.deliver).ClearEvents()
 
+		// Set state for update state db
+		app.Context.stateDB.WithState(app.Context.deliver)
+
 		// Update account balances before committing other parts of state
 		app.Context.stateDB.UpdateAccounts()
 
 		// Commit state objects to store
-		root, err := app.Context.stateDB.Commit(true)
+		root, err := app.Context.stateDB.Commit(false)
 		if err != nil {
 			panic(err)
 		}

@@ -5,12 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"time"
-	"unsafe"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/data/keys"
 	ethabi "github.com/ethereum/go-ethereum/accounts/abi"
+	ethcmn "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethcore "github.com/ethereum/go-ethereum/core"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -46,14 +46,31 @@ func newRevertError(result *ethcore.ExecutionResult) *revertError {
 	}
 }
 
-// Call smart contract code to get the result
+func (svc *Service) EVMAccount(args client.EVMAccountRequest, reply *client.EVMAccountReply) error {
+	acc, err := svc.accountKeeper.GetAccount(args.Address)
+	if err != nil {
+		svc.logger.Error("error getting evm account", err)
+		return err
+	}
+	reply.Address = args.Address
+	reply.Balance = acc.Balance().String()
+	reply.CodeHash = ethcmn.Bytes2Hex(acc.CodeHash)
+	reply.Nonce = acc.Sequence
+	return nil
+}
+
+// EVMCall call smart contract code to get the result
 func (svc *Service) EVMCall(args client.SendTxRequest, reply *client.EVMCallReply) error {
 	height := svc.contracts.State.Version()
-	stateDB := action.NewCommitStateDB(svc.contracts, svc.accountKeeper)
+	stateDB := action.NewCommitStateDB(svc.contracts, svc.accountKeeper, svc.logger)
 	bhash := stateDB.GetHeightHash(uint64(height))
 	stateDB.SetBlockHash(bhash)
-	res := svc.ext.Block(0)
-	header := (*abci.Header)(unsafe.Pointer(&res))
+	// TODO: Change this
+	header := &abci.Header{
+		ChainID: "test-1",
+		Height:  height,
+		Time:    time.Now(),
+	}
 
 	var to *keys.Address
 	if len(args.To) != 0 {
@@ -85,6 +102,10 @@ func (svc *Service) EVMCall(args client.SendTxRequest, reply *client.EVMCallRepl
 	result, err := evmTx.Apply(vmenv, tx)
 	if vmenv.Cancelled() {
 		return fmt.Errorf("execution aborted (timeout = %v)", timeout)
+	}
+
+	if result.Failed() {
+		return result.Err
 	}
 
 	if err != nil {

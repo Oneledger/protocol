@@ -1,10 +1,9 @@
 package action
 
 import (
-	"errors"
 	"fmt"
+	"hash/fnv"
 	"math/big"
-	"strings"
 
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/ethereum/go-ethereum/common"
@@ -78,16 +77,16 @@ func GetHashFn(s *CommitStateDB) ethvm.GetHashFunc {
 	}
 }
 
-func EthereumConfig(chainID string) (*ethparams.ChainConfig, error) {
-	chainData := strings.Split(chainID, "-")
-	id := new(big.Int)
-	id, ok := id.SetString(chainData[1], 10)
-	if !ok {
-		return nil, errors.New("chainId is wrong")
-	}
+// hashToBigInt used to convert mostly chain id which is a string
+func hashToBigInt(s string) *big.Int {
+	h := fnv.New64a()
+	h.Write([]byte(s))
+	return new(big.Int).SetUint64(h.Sum64())
+}
 
+func EthereumConfig(chainID string) *ethparams.ChainConfig {
 	return &ethparams.ChainConfig{
-		ChainID:        id,
+		ChainID:        hashToBigInt(chainID),
 		HomesteadBlock: big.NewInt(0),
 
 		DAOForkBlock:   big.NewInt(0),
@@ -108,7 +107,7 @@ func EthereumConfig(chainID string) (*ethparams.ChainConfig, error) {
 
 		YoloV3Block: nil,
 		EWASMBlock:  nil,
-	}, nil
+	}
 }
 
 type EVMConfig struct {
@@ -176,7 +175,7 @@ func (etx *EVMTransaction) NewEVM() *ethvm.EVM {
 		GasPrice: etx.ecfg.gasPrice,
 	}
 
-	ethConfig, _ := EthereumConfig(etx.header.ChainID)
+	ethConfig := EthereumConfig(etx.header.ChainID)
 	return ethvm.NewEVM(blockCtx, txCtx, etx.stateDB, ethConfig, vmConfig)
 }
 
@@ -207,6 +206,7 @@ func (etx *EVMTransaction) Apply(vmenv *ethvm.EVM, tx RawTx) (*ethcore.Execution
 	msg := ethtypes.NewMessage(etx.From(), etx.To(), nonce, etx.value, uint64(tx.Fee.Gas), etx.ecfg.gasPrice, etx.data, make(ethtypes.AccessList, 0), true)
 
 	statedb := etx.stateDB
+	// TODO: Add hashes properly
 	statedb.Prepare(ethcmn.Hash{}, ethcmn.Hash{}, 0)
 	msgResult, err := ethcore.ApplyMessage(vmenv, msg, new(ethcore.GasPool).AddGas(uint64(uint64(tx.Fee.Gas))))
 	if err != nil {

@@ -6,6 +6,8 @@ import (
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/helpers"
+	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/storage"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
@@ -67,7 +69,6 @@ func (s scExecuteTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, er
 	if err != nil {
 		return false, errors.Wrap(action.ErrWrongTxType, err.Error())
 	}
-
 	//validate basic signature
 	err = action.ValidateBasic(tx.RawBytes(), execute.Signers(), tx.Signatures)
 	if err != nil {
@@ -107,8 +108,9 @@ func (s scExecuteTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (ok bo
 }
 
 func (s scExecuteTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas, gasUsed action.Gas) (bool, action.Response) {
-	ctx.State.ConsumeStorageGas(gasUsed)
-	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
+	// checking the difference between nominal and used and get it's price
+	// FIXME: Check gas calculation on the correctness
+	return action.ContractFeeHandling(ctx, signedTx, storage.Gas(signedTx.Fee.Gas), gasUsed)
 }
 
 func runSCExecute(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
@@ -140,14 +142,20 @@ func runSCExecute(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 		})
 	} else {
 		tags = append(tags, action.UintTag("tx.status", ethtypes.ReceiptStatusSuccessful))
+		tags = append(tags, kv.Pair{
+			Key:   []byte("tx.data"),
+			Value: []byte(execResult.ReturnData),
+		})
 		if execute.To == nil {
 			contractAddress := ethcrypto.CreateAddress(vmenv.TxContext.Origin, nonce)
+			ctx.Logger.Debugf("Contract created: %s\n", keys.Address(contractAddress.Bytes()))
 			tags = append(tags, kv.Pair{
 				Key:   []byte("tx.contract"),
 				Value: []byte(contractAddress.Bytes()),
 			})
 		}
 	}
+	ctx.Logger.Debugf("Contract TX: status ok - %t, used gas - %d, err - %s, data - %s\n", execResult.Failed(), execResult.UsedGas, execResult.Err, execResult.ReturnData)
 	return true, action.Response{
 		Events:  action.GetEvent(tags, "smart_contract_execute"),
 		GasUsed: int64(execResult.UsedGas),

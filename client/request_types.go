@@ -97,6 +97,17 @@ type DelegationStatusReply struct {
 
 /* Tx Service */
 
+type EVMAccountRequest struct {
+	Address keys.Address `json:"address"`
+}
+
+type EVMAccountReply struct {
+	Address  keys.Address `json:"address"`
+	Nonce    uint64       `json:"nonce"`
+	CodeHash string       `json:"codeHash"`
+	Balance  string       `json:"balance"`
+}
+
 type EVMCallReply struct {
 	Result []byte `json:"result"`
 }

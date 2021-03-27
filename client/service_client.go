@@ -50,6 +50,11 @@ func (c *ServiceClient) EVMCall(request SendTxRequest) (out EVMCallReply, err er
 	return
 }
 
+func (c *ServiceClient) EVMAccount(request EVMAccountRequest) (out EVMAccountReply, err error) {
+	err = c.Call("query.EVMAccount", &request, &out)
+	return
+}
+
 func (c *ServiceClient) CurrBalance(addr keys.Address, currency string) (out CurrencyBalanceReply, err error) {
 	/*if len(request) <= 20 {
 		return out, errors.New("address has insufficient length")

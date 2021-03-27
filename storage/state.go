@@ -213,7 +213,7 @@ func (s *State) ConsumeStorageGas(gas Gas) bool {
 	return s.gc.Consume(gas, STOREBYTES, true)
 }
 
-func (s *State) ConsumeContractGas(gas Gas, gasLimit Gas) bool {
+func (s *State) ConsumeContractGas(gas Gas) bool {
 	return s.gc.Consume(gas, CONTRACT, false)
 }
 

@@ -103,7 +103,6 @@ func ValidateBasic(data []byte, signerAddr []Address, signatures []Signature) er
 
 func ValidateFee(feeOpt *fees.FeeOption, fee Fee) error {
 	if fee.Price.Currency != feeOpt.FeeCurrency.Name {
-
 		return ErrInvalidFeeCurrency
 	}
 	minFee := feeOpt.MinFee()
@@ -151,12 +150,11 @@ func StakingPayerFeeHandling(ctx *Context, feePayer keys.Address, signedTx Signe
 	return true, Response{GasWanted: signedTx.Fee.Gas, GasUsed: used}
 }
 
-func BasicFeeHandling(ctx *Context, signedTx SignedTx, start Gas, size Gas, signatureCnt Gas) (bool, Response) {
-	ctx.State.ConsumeVerifySigGas(signatureCnt)
-	ctx.State.ConsumeStorageGas(size)
+func feeHandler(ctx *Context, signedTx SignedTx, start Gas) (bool, Response) {
 	// check the used gas for the tx
 	final := ctx.Balances.State.ConsumedGas()
 	used := int64(final - start)
+	ctx.Logger.Debugf("Used gas: %d, proposed: %d, final: %d\n", used, signedTx.Fee.Gas, final)
 	if used > signedTx.Fee.Gas {
 		return false, Response{Log: ErrGasOverflow.Error(), GasWanted: signedTx.Fee.Gas, GasUsed: signedTx.Fee.Gas}
 	}
@@ -179,6 +177,17 @@ func BasicFeeHandling(ctx *Context, signedTx SignedTx, start Gas, size Gas, sign
 		return false, Response{Log: err.Error()}
 	}
 	return true, Response{GasWanted: signedTx.Fee.Gas, GasUsed: used}
+}
+
+func ContractFeeHandling(ctx *Context, signedTx SignedTx, start Gas, gasUsed Gas) (bool, Response) {
+	ctx.State.ConsumeContractGas(gasUsed)
+	return feeHandler(ctx, signedTx, start)
+}
+
+func BasicFeeHandling(ctx *Context, signedTx SignedTx, start Gas, size Gas, signatureCnt Gas) (bool, Response) {
+	ctx.State.ConsumeVerifySigGas(signatureCnt)
+	ctx.State.ConsumeStorageGas(size)
+	return feeHandler(ctx, signedTx, start)
 }
 
 func GetEvent(pairs kv.Pairs, eventType string) []types.Event {

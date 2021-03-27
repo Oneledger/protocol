@@ -8,6 +8,7 @@ import (
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/evm"
 	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/log"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 	ethstate "github.com/ethereum/go-ethereum/core/state"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
@@ -75,7 +76,8 @@ type StateObject interface {
 // Account values can be accessed and modified through the object.
 // Finally, call CommitTrie to write the modified storage trie into a database.
 type stateObject struct {
-	code keys.Code // contract bytecode, which gets set when code is loaded
+	logger *log.Logger
+	code   keys.Code // contract bytecode, which gets set when code is loaded
 	// State objects are used by the consensus core and VM which are
 	// unable to deal with database-level errors. Any error that occurs
 	// during a database read is memoized here and will eventually be returned
@@ -103,7 +105,12 @@ type stateObject struct {
 }
 
 func newStateObject(db *CommitStateDB, acc *balance.EthAccount) *stateObject {
+	// set empty code hash
+	if acc.CodeHash == nil {
+		acc.CodeHash = emptyCodeHash
+	}
 	return &stateObject{
+		logger:                  db.logger,
 		stateDB:                 db,
 		account:                 acc,
 		address:                 acc.EthAddress(),
@@ -228,7 +235,7 @@ func (so *stateObject) SetCode(codeHash ethcmn.Hash, code []byte) {
 
 func (so *stateObject) setCode(codeHash ethcmn.Hash, code []byte) {
 	so.code = code
-	fmt.Printf("setCode: %s\n", ethcmn.Bytes2Hex(so.code))
+	so.logger.Debugf("setCode: %s\n", ethcmn.Bytes2Hex(so.code))
 	so.account.CodeHash = codeHash.Bytes()
 	so.dirtyCode = true
 }
@@ -377,7 +384,7 @@ func (so *stateObject) commitState() {
 
 // commitCode persists the state object's code to the ContractStore.
 func (so *stateObject) commitCode() {
-	fmt.Printf("commitCode: %s\n", ethcmn.Bytes2Hex(so.code))
+	so.logger.Debugf("commitCode: %s\n", ethcmn.Bytes2Hex(so.code))
 	so.stateDB.contractStore.Set(evm.KeyPrefixCode, so.CodeHash(), so.code)
 }
 
