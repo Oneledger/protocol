@@ -110,7 +110,7 @@ func (e ethERC20LockTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (bo
 }
 
 // ProcessFee process the transaction Fee in OLT
-func (e ethERC20LockTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (e ethERC20LockTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas, gasUsed action.Gas) (bool, action.Response) {
 	ctx.State.ConsumeUpfront(237600) //TODO : Calculate GAS price
 
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)

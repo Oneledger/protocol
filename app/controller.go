@@ -231,11 +231,7 @@ func (app *App) txChecker() txChecker {
 		}
 		ok, response := handler.ProcessCheck(txCtx, tx.RawTx)
 
-		gasSize := storage.Gas(len(msg.Tx))
-		if ok && response.GasUsed != 0 {
-			gasSize += storage.Gas(response.GasUsed)
-		}
-		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, gasSize)
+		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, storage.Gas(len(msg.Tx)), storage.Gas(response.GasUsed))
 
 		logString := marshalLog(ok, response, feeResponse)
 
@@ -292,11 +288,7 @@ func (app *App) txDeliverer() txDeliverer {
 
 		ok, response := handler.ProcessDeliver(txCtx, tx.RawTx)
 
-		gasSize := storage.Gas(len(msg.Tx))
-		if ok && response.GasUsed != 0 {
-			gasSize += storage.Gas(response.GasUsed)
-		}
-		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, gasSize)
+		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, storage.Gas(len(msg.Tx)), storage.Gas(response.GasUsed))
 
 		logString := marshalLog(ok, response, feeResponse)
 

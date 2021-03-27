@@ -3,6 +3,7 @@ package evidence
 import (
 	"encoding/binary"
 	"encoding/json"
+
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
 
@@ -118,7 +119,7 @@ func (atx allegationTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (ok
 	return
 }
 
-func (atx allegationTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (atx allegationTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas, gasUsed action.Gas) (bool, action.Response) {
 	ctx.Logger.Detail("Processing 'allegation' Transaction for ProcessFee", signedTx)
 	r := &Allegation{}
 	err := r.Unmarshal(signedTx.Data)

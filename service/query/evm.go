@@ -48,8 +48,11 @@ func newRevertError(result *ethcore.ExecutionResult) *revertError {
 
 // Call smart contract code to get the result
 func (svc *Service) EVMCall(args client.SendTxRequest, reply *client.EVMCallReply) error {
-	res := svc.ext.Block(0)
+	height := svc.contracts.State.Version()
 	stateDB := action.NewCommitStateDB(svc.contracts, svc.accountKeeper)
+	bhash := stateDB.GetHeightHash(uint64(height))
+	stateDB.SetBlockHash(bhash)
+	res := svc.ext.Block(0)
 	header := (*abci.Header)(unsafe.Pointer(&res))
 
 	var to *keys.Address
