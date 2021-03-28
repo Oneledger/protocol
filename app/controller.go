@@ -128,11 +128,9 @@ func (app *App) blockBeginner() blockBeginner {
 		currentHash := req.Hash
 		height := req.Header.GetHeight()
 
-		// Set state for update state db
-		app.Context.stateDB.WithState(app.Context.deliver)
-
-		app.Context.stateDB.SetHeightHash(uint64(height), ethcmn.BytesToHash(currentHash))
-		app.Context.stateDB.SetBlockHash(ethcmn.BytesToHash(currentHash))
+		// Update last block height
+		app.Context.stateDB.WithState(app.Context.deliver).SetHeightHash(uint64(height), ethcmn.BytesToHash(currentHash))
+		app.Context.stateDB.WithState(app.Context.deliver).SetBlockHash(ethcmn.BytesToHash(currentHash))
 
 		feeOpt, err := app.Context.govern.GetFeeOption()
 		if err != nil {
@@ -331,20 +329,22 @@ func (app *App) blockEnder() blockEnder {
 
 		app.Context.validators.WithState(app.Context.deliver).ClearEvents()
 
-		// Set state for update state db
-		app.Context.stateDB.WithState(app.Context.deliver)
+		// Ensure any modifications are committed to the state
+		if err := app.Context.stateDB.WithState(app.Context.deliver).Finalise(false); err != nil {
+			panic(err)
+		}
 
 		// Update account balances before committing other parts of state
-		app.Context.stateDB.UpdateAccounts()
+		app.Context.stateDB.WithState(app.Context.deliver).UpdateAccounts(app.header.GetHeight())
 
 		// Commit state objects to store
-		root, err := app.Context.stateDB.Commit(false)
+		root, err := app.Context.stateDB.WithState(app.Context.deliver).Commit(false)
 		if err != nil {
 			panic(err)
 		}
 
 		// reset all cache after account data has been committed, that make sure node state consistent
-		if err = app.Context.stateDB.Reset(root); err != nil {
+		if err = app.Context.stateDB.WithState(app.Context.deliver).Reset(root); err != nil {
 			panic(err)
 		}
 

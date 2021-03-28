@@ -124,20 +124,19 @@ func newStateObject(db *CommitStateDB, acc *balance.EthAccount) *stateObject {
 // GetState retrieves a value from the account storage trie. Note, the key will
 // be prefixed with the address of the state object.
 func (so *stateObject) GetState(db ethstate.Database, key ethcmn.Hash) ethcmn.Hash {
-	so.logger.Debugf("Get state for key: %s\n", key.String())
 	prefixKey := so.GetStorageByAddressKey(key.Bytes())
 
 	// if we have a dirty value for this state entry, return it
 	idx, dirty := so.keyToDirtyStorageIndex[prefixKey]
 	if dirty {
 		value := ethcmn.HexToHash(so.dirtyStorage[idx].Value)
-		fmt.Printf("GetState - DIRTY: %s\n", value.String())
+		so.logger.Debugf("GetState - DIRTY: prefixKey - %s, value - %s\n", prefixKey, value)
 		return value
 	}
 
 	// otherwise return the entry's original value
 	value := so.GetCommittedState(db, key)
-	fmt.Printf("GetState - CLEANED: %s\n", value.String())
+	so.logger.Debugf("GetState - CLEANED: prefixKey - %s, value - %s\n", prefixKey, value)
 	return value
 }
 
@@ -172,7 +171,11 @@ func (so *stateObject) GetCommittedState(_ ethstate.Database, key ethcmn.Hash) e
 	idx, cached := so.keyToOriginStorageIndex[prefixKey]
 	if cached {
 		value := ethcmn.HexToHash(so.originStorage[idx].Value)
-		so.logger.Debugf("GetCommittedState - CACHED, value: %s\n", value.String())
+		so.logger.Debugf(
+			"Get data from contract (CACHED): key - %s, value - %s\n",
+			prefixKey,
+			value,
+		)
 		return value
 	}
 
@@ -180,8 +183,8 @@ func (so *stateObject) GetCommittedState(_ ethstate.Database, key ethcmn.Hash) e
 	state := NewState(prefixKey, ethcmn.Hash{})
 	value := ethcmn.Hash{}
 
-	rawValue, _ := so.stateDB.contractStore.Get(evm.AddressStoragePrefix(so.Address()), prefixKey.Bytes())
-
+	prefixStore := evm.AddressStoragePrefix(so.Address())
+	rawValue, _ := so.stateDB.contractStore.Get(prefixStore, prefixKey.Bytes())
 	if len(rawValue) > 0 {
 		value.SetBytes(rawValue)
 		state.Value = value.String()
@@ -189,7 +192,12 @@ func (so *stateObject) GetCommittedState(_ ethstate.Database, key ethcmn.Hash) e
 
 	so.originStorage = append(so.originStorage, state)
 	so.keyToOriginStorageIndex[prefixKey] = len(so.originStorage) - 1
-	so.logger.Debugf("GetCommittedState - CLEANED, value: %s\n", value.String())
+	so.logger.Debugf(
+		"Get data from contract (CLEANED): prefixStore - %s, key - %s, value - %s\n",
+		ethcmn.BytesToHash(prefixStore),
+		prefixKey,
+		value,
+	)
 	return value
 }
 
@@ -382,6 +390,12 @@ func (so *stateObject) commitState() {
 		}
 
 		so.originStorage[idx].Value = state.Value
+		so.logger.Debugf(
+			"Store data to contract: prefixStore - %s, key - %s, value - %s\n",
+			ethcmn.BytesToHash(prefixStore),
+			key,
+			value,
+		)
 		so.stateDB.contractStore.Set(prefixStore, key.Bytes(), value.Bytes())
 	}
 	// clean storage as all entries are dirty
@@ -390,7 +404,7 @@ func (so *stateObject) commitState() {
 
 // commitCode persists the state object's code to the ContractStore.
 func (so *stateObject) commitCode() {
-	so.logger.Debugf("commitCode: %s\n", ethcmn.Bytes2Hex(so.code))
+	so.logger.Debugf("Commit the code: %s on '%s'\n", ethcmn.Bytes2Hex(so.code), keys.Address(so.Address().Bytes()))
 	so.stateDB.contractStore.Set(evm.KeyPrefixCode, so.CodeHash(), so.code)
 }
 

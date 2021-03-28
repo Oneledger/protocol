@@ -63,14 +63,41 @@ func TestStateDBRunner(t *testing.T) {
 		codeFromStorage := stateObject.Code(nil)
 		assert.Nil(t, codeFromStorage)
 		assert.Equal(t, stateObject.account.CodeHash, emptyCodeHash)
+		assert.Equal(t, len(stateObject.dirtyStorage), 0)
 
 		stateObject.SetCode(acc.EthAddress().Hash(), code)
 		assert.True(t, stateObject.dirtyCode)
 		assert.Equal(t, stateObject.account.CodeHash, acc.EthAddress().Hash().Bytes())
 
+		assert.Equal(t, len(stateObject.dirtyStorage), 0)
+
 		stateObject.commitCode()
 
 		codeFromStorage = stateObject.Code(nil)
 		assert.True(t, bytes.Equal(code, codeFromStorage), "Wrong code in cache")
+	})
+
+	t.Run("test update data to store and it is ok", func(t *testing.T) {
+		stateObject := newStateObject(stateDB, acc)
+		key := []byte("test")
+		value := ethcmn.BytesToHash(ethcmn.FromHex("0000000000000000000000000000000000000000000000000000000000000001"))
+		prefixKey := stateObject.GetStorageByAddressKey(key)
+		assert.Equal(t, len(stateObject.dirtyStorage), 0)
+		stateObject.SetState(nil, prefixKey, value)
+		assert.Equal(t, len(stateObject.dirtyStorage), 1)
+
+		// commiting the state so we can read from cache
+		stateObject.commitState()
+		assert.Equal(t, len(stateObject.dirtyStorage), 0)
+
+		stateVal := stateObject.GetState(nil, prefixKey)
+		assert.Equal(t, stateVal, value)
+
+		// reset cache
+		stateObject.stateDB.Reset(ethcmn.Hash{})
+		assert.Equal(t, len(stateObject.dirtyStorage), 0)
+
+		stateVal = stateObject.GetState(nil, prefixKey)
+		assert.Equal(t, stateVal, value)
 	})
 }

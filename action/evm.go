@@ -200,8 +200,6 @@ func (etx *EVMTransaction) GetLastNonce() uint64 {
 }
 
 func (etx *EVMTransaction) Apply(vmenv *ethvm.EVM, tx RawTx) (*ethcore.ExecutionResult, error) {
-	fmt.Printf("etx.From(): %s\n", etx.From())
-	fmt.Printf("etx.To(): %s\n", etx.To())
 	nonce := etx.GetLastNonce()
 	msg := ethtypes.NewMessage(etx.From(), etx.To(), nonce, etx.value, uint64(tx.Fee.Gas), etx.ecfg.gasPrice, etx.data, make(ethtypes.AccessList, 0), true)
 
@@ -211,12 +209,6 @@ func (etx *EVMTransaction) Apply(vmenv *ethvm.EVM, tx RawTx) (*ethcore.Execution
 	msgResult, err := ethcore.ApplyMessage(vmenv, msg, new(ethcore.GasPool).AddGas(uint64(uint64(tx.Fee.Gas))))
 	if err != nil {
 		return nil, fmt.Errorf("transaction failed: %v", err)
-	}
-	fmt.Printf("msgResult: %v\n", msgResult)
-	// Ensure any modifications are committed to the state
-	// Only delete empty objects if EIP158/161 (a.k.a Spurious Dragon) is in effect
-	if err := statedb.Finalise(vmenv.ChainConfig().IsEIP158(big.NewInt(etx.header.Height))); err != nil {
-		return nil, fmt.Errorf("failed to finalize: %v", err)
 	}
 	return msgResult, nil
 }

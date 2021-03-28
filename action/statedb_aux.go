@@ -77,7 +77,7 @@ func (s *CommitStateDB) setStateObject(so *stateObject) {
 
 // updateStateObject writes the given state object to the store.
 func (s *CommitStateDB) updateStateObject(so *stateObject) error {
-	fmt.Printf("so.account: %+v\n", so.account)
+	s.logger.Debugf("Update state object for address '%s' with data: %v \n", keys.Address(so.Address().Bytes()), so)
 	return s.accountKeeper.SetAccount(*so.account)
 }
 

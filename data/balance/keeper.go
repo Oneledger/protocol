@@ -68,6 +68,7 @@ func (acc *EthAccount) SetBalance(amount *big.Int) {
 type AccountKeeper interface {
 	NewAccountWithAddress(addr keys.Address) (*EthAccount, error)
 	GetAccount(addr keys.Address) (*EthAccount, error)
+	GetVersionedAccount(height int64, addr keys.Address) (*EthAccount, error)
 	SetAccount(account EthAccount) error
 	RemoveAccount(account EthAccount)
 	WithState(state *storage.State) AccountKeeper
@@ -131,7 +132,28 @@ func (nak *NesterAccountKeeper) GetAccount(addr keys.Address) (*EthAccount, erro
 		return nil, err
 	}
 	ea.Coins = balance.Amounts["OLT"]
-	fmt.Printf("GetAccount: %+v\n", ea)
+	return ea, nil
+}
+
+func (nak *NesterAccountKeeper) GetVersionedAccount(height int64, addr keys.Address) (*EthAccount, error) {
+	prefixKey := append(nak.prefix, addr.Bytes()...)
+
+	dat := nak.state.GetVersioned(height, storage.StoreKey(prefixKey))
+	if len(dat) == 0 {
+		return nil, errors.New(fmt.Sprintf("Previous state on height '%d' for addr '%s' not found", height, addr))
+	}
+
+	ea := &EthAccount{}
+	err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(dat, ea)
+	if err != nil {
+		return nil, err
+	}
+
+	balance, err := nak.balances.GetBalance(addr, nak.currencies)
+	if err != nil {
+		return nil, err
+	}
+	ea.Coins = balance.Amounts["OLT"]
 	return ea, nil
 }
 

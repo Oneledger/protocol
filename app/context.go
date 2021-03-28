@@ -163,7 +163,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 		ctx.balances,
 		ctx.currencies,
 	)
-	logger := log.NewLoggerWithPrefix(ctx.logWriter, "state_db").WithLevel(log.Level(ctx.cfg.Node.LogLevel))
+	logger := log.NewLoggerWithPrefix(ctx.logWriter, "stateDB").WithLevel(log.Level(ctx.cfg.Node.LogLevel))
 	ctx.stateDB = action.NewCommitStateDB(ctx.contracts, ctx.accountKeeper, logger)
 
 	err = external_apps.RegisterExtApp(ctx.chainstate, ctx.actionRouter, ctx.extStores, ctx.extServiceMap, ctx.extFunctions)
@@ -224,8 +224,6 @@ func (ctx context) dbDir() string {
 }
 
 func (ctx *context) Action(header *Header, state *storage.State) *action.Context {
-	ctx.contracts.WithState(state)
-	ctx.accountKeeper.WithState(state)
 	actionCtx := action.NewContext(
 		ctx.actionRouter,
 		header,
@@ -250,7 +248,7 @@ func (ctx *context) Action(header *Header, state *storage.State) *action.Context
 		ctx.govern.WithState(state),
 		ctx.extStores.WithState(state),
 		ctx.govupdate,
-		ctx.stateDB,
+		ctx.stateDB.WithState(state),
 	)
 
 	return actionCtx

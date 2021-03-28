@@ -254,7 +254,8 @@ func getContractAddress(resp action.Response) (contractAddress ethcmn.Address) {
 
 func blockCommit(ctx *action.Context) {
 	// simulate block ender
-	ctx.StateDB.UpdateAccounts()
+	ctx.StateDB.Finalise(false)
+	ctx.StateDB.UpdateAccounts(2)
 	root, err := ctx.StateDB.Commit(false)
 	if err != nil {
 		panic(err)

@@ -142,7 +142,7 @@ func (s *CommitStateDB) Commit(deleteEmptyObjects bool) (ethcmn.Hash, error) {
 }
 
 // Finalise finalizes the state objects (accounts) state by setting their state,
-// removing the csdb destructed objects and clearing the journal as well as the
+// removing the s destructed objects and clearing the journal as well as the
 // refunds.
 func (s *CommitStateDB) Finalise(deleteEmptyObjects bool) error {
 	for _, dirty := range s.journal.dirties {
@@ -201,19 +201,18 @@ func (s *CommitStateDB) SetBlockHash(hash ethcmn.Hash) {
 }
 
 // UpdateAccounts updates the nonce and coin balances of accounts
-func (s *CommitStateDB) UpdateAccounts() {
+func (s *CommitStateDB) UpdateAccounts(height int64) {
 	for _, stateEntry := range s.stateObjects {
 		addr := keys.Address(stateEntry.address.Bytes())
-		acc, err := s.accountKeeper.GetAccount(addr)
+		// NOTE: to prevent node down on resync
+		acc, err := s.accountKeeper.GetVersionedAccount(height-1, addr)
 		if err != nil {
 			s.logger.Debugf("Account for address '%s' not found\n", addr)
 			continue
 		}
-		s.logger.Debugf("Account for address '%s' found\n", addr)
-		balance := acc.Balance()
-
-		if stateEntry.stateObject.Balance() != balance ||
+		if stateEntry.stateObject.Balance().Cmp(acc.Balance()) != 0 ||
 			stateEntry.stateObject.Nonce() != acc.Sequence {
+			s.logger.Debugf("Account for address '%s' updated\n", addr)
 			stateEntry.stateObject.account = acc
 		}
 	}
