@@ -20,6 +20,7 @@ import (
 	"github.com/Oneledger/protocol/data/rewards"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/storage"
+	"github.com/Oneledger/protocol/utils"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/assert"
@@ -263,19 +264,34 @@ func blockCommit(ctx *action.Context) {
 	ctx.StateDB.Reset(root)
 }
 
+func wrapProcessDeliver(stx *scExecuteTx, txHash ethcmn.Hash, ctx *action.Context, rawTx action.RawTx, f func(ctx *action.Context, tx action.RawTx) (bool, action.Response)) (bool, action.Response) {
+	ctx.StateDB.Prepare(txHash)
+	ok, resp := f(ctx, rawTx)
+	blockCommit(ctx)
+	return ok, resp
+}
+
 func TestRunner(t *testing.T) {
 	// pragma solidity >=0.7.0 <0.8.0;
 
 	// contract Test {
-	//     mapping(address => bool) private data;
 
-	//     function set(bool res) public payable {
-	//         data[msg.sender] = res;
-	//     }
+	// 	event TestEvent(address indexed owner);
 
-	//     function get() public view returns(bool) {
-	//         return data[msg.sender];
-	//     }
+	// 	mapping(address => bool) private data;
+
+	// 	function set(bool res) public {
+	// 		data[msg.sender] = res;
+	// 		emit TestEvent(msg.sender);
+	// 	}
+
+	// 	function get() public view returns(bool) {
+	// 		return data[msg.sender];
+	// 	}
+
+	// 	function checkRvt() public pure {
+	// 		revert("hello");
+	// 	}
 	// }
 
 	// generating default data
@@ -299,26 +315,29 @@ func TestRunner(t *testing.T) {
 	ctx.StateDB.GetAccountKeeper().SetAccount(*acc)
 
 	t.Run("test contract store through the transaction and it is OK", func(t *testing.T) {
+		txHash := ethcmn.BytesToHash(utils.SHA2([]byte("test")))
+
 		stx := &scExecuteTx{}
-		code := ethcmn.FromHex("0x608060405234801561001057600080fd5b5061016d806100206000396000f3fe608060405234801561001057600080fd5b50600436106100365760003560e01c80635f76f6ab1461003b5780636d4ce63c1461006b575b600080fd5b6100696004803603602081101561005157600080fd5b8101908080351515906020019092919050505061008b565b005b6100736100e4565b60405180821515815260200191505060405180910390f35b806000803373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060006101000a81548160ff02191690831515021790555050565b60008060003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060009054906101000a900460ff1690509056fea2646970667358221220ef09e2f46f4d83d3c8af213cd936666dbb273e3f612b70d008a1d8bbf6d14a1d64736f6c63430007040033")
+		code := ethcmn.FromHex("0x608060405234801561001057600080fd5b50610233806100206000396000f3fe608060405234801561001057600080fd5b50600436106100415760003560e01c80635f76f6ab146100465780636d4ce63c14610076578063cbed952214610096575b600080fd5b6100746004803603602081101561005c57600080fd5b810190808035151590602001909291905050506100a0565b005b61007e61013c565b60405180821515815260200191505060405180910390f35b61009e61018f565b005b806000803373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060006101000a81548160ff0219169083151502179055503373ffffffffffffffffffffffffffffffffffffffff167fab77f9000c19702a713e62164a239e3764dde2ba5265c7551f9a49e0d304530d60405160405180910390a250565b60008060003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060009054906101000a900460ff16905090565b6040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260058152602001807f68656c6c6f00000000000000000000000000000000000000000000000000000081525060200191505060405180910390fdfea26469706673582212206872039b48bb16fb8cbf559a2e127d91b0af06f0d2d36b97faad6d0f9c335e7864736f6c63430007040033")
 		fmt.Printf("code to deploy: %s\n", ethcmn.Bytes2Hex(code))
-		tx := assemblyExecuteData(from.Bytes(), nil, fromPubKey, fromPrikey, code, 132115)
+		tx := assemblyExecuteData(from.Bytes(), nil, fromPubKey, fromPrikey, code, 232115)
 
 		ok, err := stx.Validate(ctx, tx)
 		assert.NoError(t, err)
 		assert.True(t, ok)
 
-		ok, resp := stx.ProcessDeliver(ctx, tx.RawTx)
+		logs, _ := ctx.StateDB.GetLogs(txHash)
+		assert.Equal(t, len(logs), 0, "Logs must be empty as tx not executed")
+
+		ok, resp := wrapProcessDeliver(stx, txHash, ctx, tx.RawTx, stx.ProcessDeliver)
 		assert.True(t, ok)
 
-		{
-			blockCommit(ctx)
-		}
+		logs, _ = ctx.StateDB.GetLogs(txHash)
+		assert.Equal(t, len(logs), 0, "Logs must be empty as contract only deployed and no event in the constructor")
 
 		status, errMsg := getTxStatus(resp)
 		contractAddress := getContractAddress(resp)
 		to := keys.Address(contractAddress.Bytes())
-		fmt.Printf("contractAddress: %s\n", contractAddress)
 		assert.True(t, status == ethtypes.ReceiptStatusSuccessful, fmt.Sprintf("Got error: %s", errMsg))
 
 		// going to set data
@@ -329,12 +348,11 @@ func TestRunner(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, ok)
 
-		ok, resp = stx.ProcessDeliver(ctx, tx2.RawTx)
+		ok, resp = wrapProcessDeliver(stx, txHash, ctx, tx2.RawTx, stx.ProcessDeliver)
 		assert.True(t, ok)
 
-		{
-			blockCommit(ctx)
-		}
+		logs, _ = ctx.StateDB.GetLogs(txHash)
+		assert.Equal(t, len(logs), 1, "Logs must not be empty as event was emited")
 
 		status, errMsg = getTxStatus(resp)
 		assert.True(t, status == ethtypes.ReceiptStatusSuccessful, fmt.Sprintf("Got error: %s", errMsg))
@@ -347,17 +365,17 @@ func TestRunner(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, ok)
 
-		ok, resp = stx.ProcessDeliver(ctx, tx3.RawTx)
+		ok, resp = wrapProcessDeliver(stx, txHash, ctx, tx3.RawTx, stx.ProcessDeliver)
 		assert.True(t, ok)
 
-		{
-			blockCommit(ctx)
-		}
+		logs, _ = ctx.StateDB.GetLogs(txHash)
+		assert.Equal(t, len(logs), 1, "Logs must not be empty as not removed and taken from previous state")
 
 		status, errMsg = getTxStatus(resp)
 		data := getReturnData(resp)
 		assert.True(t, getBool(data), "Data is not set as 'true'")
 		assert.True(t, status == ethtypes.ReceiptStatusSuccessful, fmt.Sprintf("Got error: %s", errMsg))
+
 		// TODO: Add some check of deployed code
 		// storageCode := ctx.StateDB.GetCode(contractAddress)
 		// fmt.Printf("deployed: %s\n", ethcmn.Bytes2Hex(storageCode))
@@ -368,7 +386,7 @@ func TestRunner(t *testing.T) {
 
 	t.Run("test contract store through the transaction with not enough gas and it is error", func(t *testing.T) {
 		stx := &scExecuteTx{}
-		code := ethcmn.FromHex("0x608060405234801561001057600080fd5b5061016d806100206000396000f3fe608060405234801561001057600080fd5b50600436106100365760003560e01c80635f76f6ab1461003b5780636d4ce63c1461006b575b600080fd5b6100696004803603602081101561005157600080fd5b8101908080351515906020019092919050505061008b565b005b6100736100e4565b60405180821515815260200191505060405180910390f35b806000803373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060006101000a81548160ff02191690831515021790555050565b60008060003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060009054906101000a900460ff1690509056fea2646970667358221220ef09e2f46f4d83d3c8af213cd936666dbb273e3f612b70d008a1d8bbf6d14a1d64736f6c63430007040033")
+		code := ethcmn.FromHex("0x608060405234801561001057600080fd5b50610233806100206000396000f3fe608060405234801561001057600080fd5b50600436106100415760003560e01c80635f76f6ab146100465780636d4ce63c14610076578063cbed952214610096575b600080fd5b6100746004803603602081101561005c57600080fd5b810190808035151590602001909291905050506100a0565b005b61007e61013c565b60405180821515815260200191505060405180910390f35b61009e61018f565b005b806000803373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060006101000a81548160ff0219169083151502179055503373ffffffffffffffffffffffffffffffffffffffff167fab77f9000c19702a713e62164a239e3764dde2ba5265c7551f9a49e0d304530d60405160405180910390a250565b60008060003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060009054906101000a900460ff16905090565b6040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260058152602001807f68656c6c6f00000000000000000000000000000000000000000000000000000081525060200191505060405180910390fdfea26469706673582212206872039b48bb16fb8cbf559a2e127d91b0af06f0d2d36b97faad6d0f9c335e7864736f6c63430007040033")
 		tx := assemblyExecuteData(from.Bytes(), nil, fromPubKey, fromPrikey, code, 100)
 
 		ok, err := stx.Validate(ctx, tx)

@@ -6,11 +6,9 @@ import (
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/helpers"
-	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/storage"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
 )
@@ -131,8 +129,6 @@ func runSCExecute(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 	evmTx := action.NewEVMTransaction(ctx.StateDB, ctx.Header, execute.From, execute.To, execute.Amount.Value.BigInt(), execute.Data)
 	tags := execute.Tags()
 	vmenv := evmTx.NewEVM()
-	// FIXME: Take nonce from tx, not account
-	nonce := evmTx.GetLastNonce()
 	execResult, err := evmTx.Apply(vmenv, tx)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrWrongTxType, tags, err)
@@ -150,11 +146,10 @@ func runSCExecute(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 			Value: []byte(execResult.ReturnData),
 		})
 		if execute.To == nil {
-			contractAddress := ethcrypto.CreateAddress(vmenv.TxContext.Origin, nonce)
-			ctx.Logger.Debugf("Contract created: %s\n", keys.Address(contractAddress.Bytes()))
+			ctx.Logger.Debugf("Contract created: %s\n", execResult.ContractAddress)
 			tags = append(tags, kv.Pair{
 				Key:   []byte("tx.contract"),
-				Value: []byte(contractAddress.Bytes()),
+				Value: []byte(execResult.ContractAddress.Bytes()),
 			})
 		}
 	}

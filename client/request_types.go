@@ -131,6 +131,10 @@ type EVMCallReply struct {
 	Result []byte `json:"result"`
 }
 
+type EVMEstimateGasReply struct {
+	GasUsed uint64 `json:"gasUsed"`
+}
+
 type SendTxRequest struct {
 	From     keys.Address  `json:"from"`
 	To       keys.Address  `json:"to,omitempty"`

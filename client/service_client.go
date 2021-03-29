@@ -55,6 +55,11 @@ func (c *ServiceClient) EVMAccount(request EVMAccountRequest) (out EVMAccountRep
 	return
 }
 
+func (c *ServiceClient) EVMEstimateGas(request SendTxRequest) (out EVMEstimateGasReply, err error) {
+	err = c.Call("query.EVMEstimateGas", &request, &out)
+	return
+}
+
 func (c *ServiceClient) EVMTransactionLogs(request EVMTransactionLogsRequest) (out EVMLogsReply, err error) {
 	err = c.Call("query.EVMTransactionLogs", &request, &out)
 	return

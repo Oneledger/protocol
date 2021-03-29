@@ -199,13 +199,24 @@ func (etx *EVMTransaction) GetLastNonce() uint64 {
 	return etx.stateDB.GetNonce(etx.From())
 }
 
-func (etx *EVMTransaction) Apply(vmenv *ethvm.EVM, tx RawTx) (*ethcore.ExecutionResult, error) {
+func (etx *EVMTransaction) Apply(vmenv *ethvm.EVM, tx RawTx) (*ExecutionResult, error) {
 	nonce := etx.GetLastNonce()
 	msg := ethtypes.NewMessage(etx.From(), etx.To(), nonce, etx.value, uint64(tx.Fee.Gas), etx.ecfg.gasPrice, etx.data, make(ethtypes.AccessList, 0), true)
 
-	msgResult, err := ethcore.ApplyMessage(vmenv, msg, new(ethcore.GasPool).AddGas(uint64(uint64(tx.Fee.Gas))))
+	msgResult, err := ApplyMessage(vmenv, msg, new(ethcore.GasPool).AddGas(uint64(uint64(tx.Fee.Gas))))
 	if err != nil {
 		return nil, fmt.Errorf("transaction failed: %v", err)
 	}
 	return msgResult, nil
+}
+
+func (etx *EVMTransaction) EstimateGas(vmenv *ethvm.EVM, tx RawTx) (uint64, error) {
+	nonce := etx.GetLastNonce()
+	msg := ethtypes.NewMessage(etx.From(), etx.To(), nonce, etx.value, uint64(tx.Fee.Gas), etx.ecfg.gasPrice, etx.data, make(ethtypes.AccessList, 0), true)
+
+	usedGas, err := EstimateGas(vmenv, msg, new(ethcore.GasPool).AddGas(uint64(uint64(tx.Fee.Gas))))
+	if err != nil {
+		return 0, fmt.Errorf("transaction failed: %v", err)
+	}
+	return usedGas, nil
 }

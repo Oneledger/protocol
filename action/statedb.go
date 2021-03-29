@@ -93,6 +93,7 @@ func (s *CommitStateDB) GetAccountKeeper() balance.AccountKeeper {
 func (s *CommitStateDB) Prepare(thash ethcmn.Hash) {
 	s.thash = thash
 	s.accessList = newAccessList()
+	fmt.Printf("thash: %s\n", s.thash)
 }
 
 // Commit writes the state to the appropriate stores. For each state object

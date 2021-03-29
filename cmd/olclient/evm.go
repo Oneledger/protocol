@@ -105,6 +105,13 @@ var (
 	}
 	evmAccountArgs = &EvmArguments{}
 
+	evmEstimateCmd = &cobra.Command{
+		Use:   "estimate_gas",
+		Short: "Estimate execution gas",
+		RunE:  EstimateGas,
+	}
+	evmEstimateArgs = &EvmArguments{}
+
 	evmTransactionLogsCmd = &cobra.Command{
 		Use:   "transaction_logs",
 		Short: "Get transaction logs data from storage",
@@ -122,6 +129,9 @@ func init() {
 
 	EVMCmd.AddCommand(evmAccountCmd)
 	setEVMArgs(evmAccountCmd, evmAccountArgs)
+
+	EVMCmd.AddCommand(evmEstimateCmd)
+	setEVMArgs(evmEstimateCmd, evmEstimateArgs)
 
 	EVMCmd.AddCommand(evmTransactionLogsCmd)
 	setTransactionLogsArgs(evmTransactionLogsCmd, evmTransactionLogsArgs)
@@ -194,6 +204,32 @@ func GetAccount(cmd *cobra.Command, args []string) error {
 
 // CallContract used to invoke function to read from the contract storage
 // (mostly for public funcs and simultaion to determine gas used)
+func EstimateGas(cmd *cobra.Command, args []string) error {
+	ctx := NewContext()
+	fullnode := ctx.clCtx.FullNodeClient()
+	currencies, err := fullnode.ListCurrencies()
+	if err != nil {
+		ctx.logger.Error("failed to get currencies", err)
+		return err
+	}
+
+	req, err := evmEstimateArgs.EVMRequest(currencies.Currencies.GetCurrencySet())
+	if err != nil {
+		ctx.logger.Error("failed to get request", err)
+		return err
+	}
+
+	callResponse, err := fullnode.EVMEstimateGas(req)
+	if err != nil {
+		logger.Error("error in getting evm gas stimate response", err)
+		return err
+	}
+	logger.Info("\t Gas used:", callResponse.GasUsed)
+	return nil
+}
+
+// CallContract used to invoke function to read from the contract storage
+// (mostly for public funcs and simultaion)
 func CallContract(cmd *cobra.Command, args []string) error {
 	ctx := NewContext()
 	fullnode := ctx.clCtx.FullNodeClient()

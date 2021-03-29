@@ -12,12 +12,12 @@ import (
 // ----------------------------------------------------------------------------
 
 func MarshalLogs(logs []*ethtypes.Log) ([]byte, error) {
-	return serialize.GetSerializer(serialize.PERSISTENT).Serialize(logs)
+	return serialize.GetSerializer(serialize.PERSISTENT).Serialize(&logs)
 }
 
 func UnmarshalLogs(in []byte) ([]*ethtypes.Log, error) {
 	logs := []*ethtypes.Log{}
-	err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(in, logs)
+	err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(in, &logs)
 	return logs, err
 }
 
@@ -25,16 +25,26 @@ func UnmarshalLogs(in []byte) ([]*ethtypes.Log, error) {
 func (s *CommitStateDB) SetLogs(hash ethcmn.Hash, logs []*ethtypes.Log) error {
 	bz, err := MarshalLogs(logs)
 	if err != nil {
+		s.logger.Debugf("Failed to marshal logs: %s\n", err)
 		return err
 	}
 
-	s.contractStore.Set(evm.KeyPrefixLogs, hash.Bytes(), bz)
+	err = s.contractStore.Set(evm.KeyPrefixLogs, hash.Bytes(), bz)
+	if err != nil {
+		s.logger.Debugf("Failed to set logs: %s\n", err)
+		return err
+	}
 	s.logSize = uint(len(logs))
+	s.logger.Debugf("Set logs to store: %+v\n", logs)
+
+	data, _ := s.GetLogs(hash)
+	s.logger.Debugf("GETTEST: Set logs to store: %+v\n", data)
 	return nil
 }
 
 // DeleteLogs removes the logs from the store. It is used during journal.Revert.
 func (s *CommitStateDB) DeleteLogs(hash ethcmn.Hash) {
+	s.logger.Debugf("Delete logs from store: %s\n", hash)
 	s.contractStore.Delete(evm.KeyPrefixLogs, hash.Bytes())
 }
 
@@ -47,6 +57,8 @@ func (s *CommitStateDB) AddLog(log *ethtypes.Log) {
 	// NOTE: Maybe redundant?
 	log.BlockNumber = s.bheight
 	log.Index = s.logSize
+
+	s.logger.Debugf("Adding log to store: %+v\n", log)
 
 	logs, err := s.GetLogs(s.thash)
 	if err != nil {
@@ -68,5 +80,7 @@ func (s *CommitStateDB) GetLogs(hash ethcmn.Hash) ([]*ethtypes.Log, error) {
 		return []*ethtypes.Log{}, nil
 	}
 
-	return UnmarshalLogs(bz)
+	logs, err := UnmarshalLogs(bz)
+	s.logger.Debugf("Get logs from store: %+v\n", logs)
+	return logs, err
 }
