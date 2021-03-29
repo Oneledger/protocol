@@ -25,8 +25,8 @@ type CommitStateDB struct {
 	// The refund counter, also used by state transitioning.
 	refund uint64
 
+	bheight      uint64
 	thash, bhash ethcmn.Hash
-	txIndex      int
 	logs         map[ethcmn.Hash][]*ethtypes.Log
 	logSize      uint
 
@@ -88,12 +88,10 @@ func (s *CommitStateDB) GetAccountKeeper() balance.AccountKeeper {
 	return s.accountKeeper
 }
 
-// Prepare sets the current transaction hash and index and block hash which is
+// Prepare sets the current transaction hash which is
 // used when the EVM emits new state logs.
-func (s *CommitStateDB) Prepare(thash, bhash ethcmn.Hash, ti int) {
+func (s *CommitStateDB) Prepare(thash ethcmn.Hash) {
 	s.thash = thash
-	s.bhash = bhash
-	s.txIndex = ti
 	s.accessList = newAccessList()
 }
 
@@ -192,6 +190,7 @@ func (s *CommitStateDB) GetHeightHash(height uint64) ethcmn.Hash {
 
 // SetHeightHash sets the block header hash associated with a given height.
 func (s *CommitStateDB) SetHeightHash(height uint64, hash ethcmn.Hash) {
+	s.bheight = height
 	s.contractStore.Set(evm.KeyPrefixHeightHash, evm.HeightHashKey(height), hash.Bytes())
 }
 
@@ -227,7 +226,6 @@ func (s *CommitStateDB) Reset(_ ethcmn.Hash) error {
 	s.stateObjectsDirty = make(map[ethcmn.Address]struct{})
 	s.thash = ethcmn.Hash{}
 	s.bhash = ethcmn.Hash{}
-	s.txIndex = 0
 	s.logSize = 0
 	s.preimages = []preimageEntry{}
 	s.hashToPreimageIndex = make(map[ethcmn.Hash]int)
@@ -570,9 +568,4 @@ func (s *CommitStateDB) GetOrNewStateObject(addr ethcmn.Address) StateObject {
 		so, _ = s.createObject(addr)
 	}
 	return so
-}
-
-// TxIndex returns the current transaction index set by Prepare.
-func (s *CommitStateDB) TxIndex() int {
-	return s.txIndex
 }

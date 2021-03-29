@@ -8,6 +8,7 @@ import (
 	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/storage"
+	ethcmn "github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
@@ -98,6 +99,8 @@ func (s scExecuteTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, er
 func (s scExecuteTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (ok bool, result action.Response) {
 	ctx.Logger.Detail("Processing SC Deploy Transaction for CheckTx", tx)
 	ok, result = runSCExecute(ctx, tx)
+	// NOTE: clear internal logs and journal as it is only simulation
+	ctx.StateDB.Reset(ethcmn.Hash{})
 	return
 }
 
