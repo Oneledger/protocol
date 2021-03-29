@@ -203,9 +203,6 @@ func (etx *EVMTransaction) Apply(vmenv *ethvm.EVM, tx RawTx) (*ethcore.Execution
 	nonce := etx.GetLastNonce()
 	msg := ethtypes.NewMessage(etx.From(), etx.To(), nonce, etx.value, uint64(tx.Fee.Gas), etx.ecfg.gasPrice, etx.data, make(ethtypes.AccessList, 0), true)
 
-	statedb := etx.stateDB
-	// TODO: Add hashes properly
-	statedb.Prepare(ethcmn.Hash{}, ethcmn.Hash{}, 0)
 	msgResult, err := ethcore.ApplyMessage(vmenv, msg, new(ethcore.GasPool).AddGas(uint64(uint64(tx.Fee.Gas))))
 	if err != nil {
 		return nil, fmt.Errorf("transaction failed: %v", err)

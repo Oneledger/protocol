@@ -21,7 +21,7 @@ func UnmarshalLogs(in []byte) ([]*ethtypes.Log, error) {
 	return logs, err
 }
 
-// SetLogs sets the logs for a transaction in the KVStore.
+// SetLogs sets the logs for a transaction in the store.
 func (s *CommitStateDB) SetLogs(hash ethcmn.Hash, logs []*ethtypes.Log) error {
 	bz, err := MarshalLogs(logs)
 	if err != nil {
@@ -33,7 +33,7 @@ func (s *CommitStateDB) SetLogs(hash ethcmn.Hash, logs []*ethtypes.Log) error {
 	return nil
 }
 
-// DeleteLogs removes the logs from the KVStore. It is used during journal.Revert.
+// DeleteLogs removes the logs from the store. It is used during journal.Revert.
 func (s *CommitStateDB) DeleteLogs(hash ethcmn.Hash) {
 	s.contractStore.Delete(evm.KeyPrefixLogs, hash.Bytes())
 }
@@ -44,7 +44,8 @@ func (s *CommitStateDB) AddLog(log *ethtypes.Log) {
 
 	log.TxHash = s.thash
 	log.BlockHash = s.bhash
-	log.TxIndex = uint(s.txIndex)
+	// NOTE: Maybe redundant?
+	log.BlockNumber = s.bheight
 	log.Index = s.logSize
 
 	logs, err := s.GetLogs(s.thash)
@@ -59,7 +60,7 @@ func (s *CommitStateDB) AddLog(log *ethtypes.Log) {
 	}
 }
 
-// GetLogs returns the current logs for a given transaction hash from the KVStore.
+// GetLogs returns the current logs for a given transaction hash from the store.
 func (s *CommitStateDB) GetLogs(hash ethcmn.Hash) ([]*ethtypes.Log, error) {
 	bz, _ := s.contractStore.Get(evm.KeyPrefixLogs, hash.Bytes())
 	if len(bz) == 0 {

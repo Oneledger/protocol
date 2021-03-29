@@ -230,6 +230,10 @@ func (app *App) txChecker() txChecker {
 				Log:  err.Error(),
 			}
 		}
+
+		// setup transaction hash
+		app.Context.stateDB.WithState(app.Context.deliver).Prepare(ethcmn.BytesToHash(app.GetTransactionHash(msg.Tx)))
+
 		ok, response := handler.ProcessCheck(txCtx, tx.RawTx)
 
 		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, storage.Gas(len(msg.Tx)), storage.Gas(response.GasUsed))
@@ -286,6 +290,9 @@ func (app *App) txDeliverer() txDeliverer {
 		handler := txCtx.Router.Handler(tx.Type)
 
 		gas := txCtx.State.ConsumedGas()
+
+		// setup transaction hash
+		app.Context.stateDB.WithState(app.Context.deliver).Prepare(ethcmn.BytesToHash(app.GetTransactionHash(msg.Tx)))
 
 		ok, response := handler.ProcessDeliver(txCtx, tx.RawTx)
 
@@ -743,8 +750,12 @@ func handleBlockRewards(appCtx *context, block RequestBeginBlock, logger *log.Lo
 }
 
 func (app *App) VerifyCache(tx []byte) bool {
-	hash := utils.SHA2(tx)
+	hash := app.GetTransactionHash(tx)
 	return app.Context.internalService.ExistTx(hash)
+}
+
+func (app App) GetTransactionHash(tx []byte) []byte {
+	return utils.SHA2(tx)
 }
 
 func marshalLog(ok bool, response action.Response, feeResponse action.Response) string {

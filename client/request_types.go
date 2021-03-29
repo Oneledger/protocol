@@ -97,6 +97,25 @@ type DelegationStatusReply struct {
 
 /* Tx Service */
 
+type EVMTransactionLogsRequest struct {
+	TransactionHash []byte         `json:"transactionHash"`
+	Addresses       []keys.Address `json:"address"`
+	Topics          [][][]byte     `json:"topics"`
+}
+
+type EVMLogReply struct {
+	TransactionHash string       `json:"transactionHash"`
+	BlockHeight     string       `json:"blockHeight"`
+	BlockHash       string       `json:"blockHash"`
+	Address         keys.Address `json:"address"`
+	Data            []byte       `json:"data"`
+	Topics          []string     `json:"topics"`
+}
+
+type EVMLogsReply struct {
+	Logs []EVMLogReply `json:"logs"`
+}
+
 type EVMAccountRequest struct {
 	Address keys.Address `json:"address"`
 }

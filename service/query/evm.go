@@ -4,11 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/big"
+	"strconv"
 	"time"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/service/query/filters"
 	ethabi "github.com/ethereum/go-ethereum/accounts/abi"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -44,6 +47,59 @@ func newRevertError(result *ethcore.ExecutionResult) *revertError {
 		error:  err,
 		reason: hexutil.Encode(result.Revert()),
 	}
+}
+
+func parseBlockNumber(blockNumber string, defBlock uint64) (*big.Int, error) {
+	if blockNumber == "latest" {
+		return big.NewInt(int64(defBlock)), nil
+	} else {
+		b, err := strconv.Atoi(blockNumber)
+		if err != nil {
+			return big.NewInt(0), fmt.Errorf("Failed to parse block number: %s", err)
+		}
+		return big.NewInt(int64(b)), nil
+	}
+}
+
+func parseAddresses(addresses []keys.Address) []ethcmn.Address {
+	result := make([]ethcmn.Address, 0, len(addresses))
+	for _, addrB := range addresses {
+		result = append(result, ethcmn.BytesToAddress(addrB))
+	}
+	return result
+}
+
+func parseTopics(topics [][][]byte) [][]ethcmn.Hash {
+
+}
+
+func (svc *Service) EVMTransactionLogs(args client.EVMTransactionLogsRequest, reply *client.EVMLogsReply) error {
+	height := big.NewInt(svc.contracts.State.Version())
+	addresses := parseAddresses(args.Addresses)
+	topics := parseTopics(args.Topics)
+	stateDB := action.NewCommitStateDB(svc.contracts, svc.accountKeeper, svc.logger)
+
+	logs, err := stateDB.GetLogs(ethcmn.BytesToHash(args.TransactionHash))
+	if err != nil {
+		return err
+	}
+
+	for _, log := range filters.FilterLogs(logs, height, height, addresses, topics) {
+		topicsS := make([]string, 0, len(log.Topics))
+		for _, topic := range log.Topics {
+			topicsS = append(topicsS, topic.Hex())
+		}
+		rLog := client.EVMLogReply{
+			TransactionHash: log.TxHash.Hex(),
+			BlockHeight:     strconv.Itoa(int(log.BlockNumber)),
+			BlockHash:       log.BlockHash.Hex(),
+			Address:         keys.Address(log.Address.Bytes()),
+			Data:            log.Data,
+			Topics:          topicsS,
+		}
+		reply.Logs = append(reply.Logs, rLog)
+	}
+	return nil
 }
 
 func (svc *Service) EVMAccount(args client.EVMAccountRequest, reply *client.EVMAccountReply) error {

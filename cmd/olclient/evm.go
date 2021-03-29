@@ -28,6 +28,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type TransactionLogsArguments struct {
+	TransactionHash []byte `json:"transactionHash"`
+}
+
+func (args *TransactionLogsArguments) EVMTransactionLogs() (client.EVMTransactionLogsRequest, error) {
+	return client.EVMTransactionLogsRequest{
+		TransactionHash: args.TransactionHash,
+	}, nil
+}
+
 type EvmArguments struct {
 	From     []byte `json:"from"`
 	To       []byte `json:"to,omitempty"`
@@ -94,6 +104,13 @@ var (
 		RunE:  GetAccount,
 	}
 	evmAccountArgs = &EvmArguments{}
+
+	evmTransactionLogsCmd = &cobra.Command{
+		Use:   "transaction_logs",
+		Short: "Get transaction logs data from storage",
+		RunE:  GetTransactionLogs,
+	}
+	evmTransactionLogsArgs = &TransactionLogsArguments{}
 )
 
 func init() {
@@ -105,6 +122,9 @@ func init() {
 
 	EVMCmd.AddCommand(evmAccountCmd)
 	setEVMArgs(evmAccountCmd, evmAccountArgs)
+
+	EVMCmd.AddCommand(evmTransactionLogsCmd)
+	setTransactionLogsArgs(evmTransactionLogsCmd, evmTransactionLogsArgs)
 }
 
 func setEVMArgs(command *cobra.Command, evmArgs *EvmArguments) {
@@ -116,6 +136,37 @@ func setEVMArgs(command *cobra.Command, evmArgs *EvmArguments) {
 	command.Flags().StringVar(&evmArgs.Amount, "amount", "0", "Integer of the amount sent with this transaction")
 	command.Flags().BytesHexVar(&evmArgs.Data, "data", []byte{}, "The compiled code of a contract OR the hash of the invoked method signature and encoded parameters")
 	command.Flags().StringVar(&evmArgs.Password, "password", "", "Password to access secure wallet.")
+}
+
+func setTransactionLogsArgs(command *cobra.Command, evmArgs *TransactionLogsArguments) {
+	command.Flags().BytesHexVar(&evmArgs.TransactionHash, "transactionHash", []byte{}, "The hash of the transaction")
+}
+
+func GetTransactionLogs(cmd *cobra.Command, args []string) error {
+	ctx := NewContext()
+	fullnode := ctx.clCtx.FullNodeClient()
+
+	req, err := evmTransactionLogsArgs.EVMTransactionLogs()
+	if err != nil {
+		ctx.logger.Error("failed to get request", err)
+		return err
+	}
+
+	callResponse, err := fullnode.EVMTransactionLogs(req)
+	if err != nil {
+		logger.Error("error in getting evm call response", err)
+		return err
+	}
+	logger.Info("\t Result: ")
+	for _, log := range callResponse.Logs {
+		logger.Info("\t Address: ", log.Address)
+		logger.Info("\t Transaction: ", log.TransactionHash)
+		logger.Info("\t Block height: ", log.BlockHeight)
+		logger.Info("\t Block hash: ", log.BlockHash)
+		logger.Info("\t Data: ", log.Data)
+		logger.Info("\t Topics: ", log.Topics)
+	}
+	return nil
 }
 
 func GetAccount(cmd *cobra.Command, args []string) error {
