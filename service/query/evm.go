@@ -11,7 +11,6 @@ import (
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/data/keys"
-	"github.com/Oneledger/protocol/service/query/filters"
 	ethabi "github.com/ethereum/go-ethereum/accounts/abi"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -79,9 +78,12 @@ func parseTopics(topics [][][]byte) [][]ethcmn.Hash {
 }
 
 func (svc *Service) EVMTransactionLogs(args client.EVMTransactionLogsRequest, reply *client.EVMLogsReply) error {
-	height := big.NewInt(svc.contracts.State.Version())
-	addresses := parseAddresses(args.Addresses)
-	topics := parseTopics(args.Topics)
+	// height := big.NewInt(svc.contracts.State.Version())
+	// svc.logger.Debugf("Current height: %d\n", height)
+	// addresses := parseAddresses(args.Addresses)
+	// svc.logger.Debugf("Parsed addresses: %v\n", addresses)
+	// topics := parseTopics(args.Topics)
+	// svc.logger.Debugf("Parsed topics: %v\n", topics)
 	stateDB := action.NewCommitStateDB(svc.contracts, svc.accountKeeper, svc.logger)
 
 	logs, err := stateDB.GetLogs(ethcmn.BytesToHash(args.TransactionHash))
@@ -89,7 +91,7 @@ func (svc *Service) EVMTransactionLogs(args client.EVMTransactionLogsRequest, re
 		return err
 	}
 
-	for _, log := range filters.FilterLogs(logs, height, height, addresses, topics) {
+	for _, log := range logs {
 		topicsS := make([]string, 0, len(log.Topics))
 		for _, topic := range log.Topics {
 			topicsS = append(topicsS, topic.Hex())

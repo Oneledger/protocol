@@ -36,9 +36,6 @@ func (s *CommitStateDB) SetLogs(hash ethcmn.Hash, logs []*ethtypes.Log) error {
 	}
 	s.logSize = uint(len(logs))
 	s.logger.Debugf("Set logs to store: %+v\n", logs)
-
-	data, _ := s.GetLogs(hash)
-	s.logger.Debugf("GETTEST: Set logs to store: %+v\n", data)
 	return nil
 }
 

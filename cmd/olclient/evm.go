@@ -91,12 +91,12 @@ var (
 	}
 	evmCallArgs = &EvmArguments{}
 
-	evmCreateCmd = &cobra.Command{
-		Use:   "create",
-		Short: "Create smart contract on the OneLedger network",
-		RunE:  CreateContract,
+	evmExecuteCmd = &cobra.Command{
+		Use:   "execute",
+		Short: "Execute smart contract or it's code on the OneLedger network",
+		RunE:  ExecuteContract,
 	}
-	evmCreateArgs = &EvmArguments{}
+	evmExecuteArgs = &EvmArguments{}
 
 	evmAccountCmd = &cobra.Command{
 		Use:   "account",
@@ -124,8 +124,8 @@ func init() {
 	EVMCmd.AddCommand(evmCallCmd)
 	setEVMArgs(evmCallCmd, evmCallArgs)
 
-	EVMCmd.AddCommand(evmCreateCmd)
-	setEVMArgs(evmCreateCmd, evmCreateArgs)
+	EVMCmd.AddCommand(evmExecuteCmd)
+	setEVMArgs(evmExecuteCmd, evmExecuteArgs)
 
 	EVMCmd.AddCommand(evmAccountCmd)
 	setEVMArgs(evmAccountCmd, evmAccountArgs)
@@ -202,8 +202,7 @@ func GetAccount(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// CallContract used to invoke function to read from the contract storage
-// (mostly for public funcs and simultaion to determine gas used)
+// EstimateGas used to estimate gas of the deployment code
 func EstimateGas(cmd *cobra.Command, args []string) error {
 	ctx := NewContext()
 	fullnode := ctx.clCtx.FullNodeClient()
@@ -254,8 +253,8 @@ func CallContract(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// CreateContract used to deploy/create a contract on the OneLedger protocol
-func CreateContract(cmd *cobra.Command, args []string) error {
+// ExecuteContract used to deploy/create a contract on the OneLedger protocol
+func ExecuteContract(cmd *cobra.Command, args []string) error {
 	ctx := NewContext()
 	fullnode := ctx.clCtx.FullNodeClient()
 	currencies, err := fullnode.ListCurrencies()
@@ -264,15 +263,15 @@ func CreateContract(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	req, err := evmCreateArgs.EVMRequest(currencies.Currencies.GetCurrencySet())
+	req, err := evmExecuteArgs.EVMRequest(currencies.Currencies.GetCurrencySet())
 	if err != nil {
 		ctx.logger.Error("failed to get request", err)
 		return err
 	}
 
 	//Prompt for password
-	if len(evmCreateArgs.Password) == 0 {
-		evmCreateArgs.Password = PromptForPassword()
+	if len(evmExecuteArgs.Password) == 0 {
+		evmExecuteArgs.Password = PromptForPassword()
 	}
 
 	//Create new Wallet and User Address
@@ -283,8 +282,8 @@ func CreateContract(cmd *cobra.Command, args []string) error {
 	}
 
 	//Verify User Password
-	usrAddress := keys.Address(evmCreateArgs.From)
-	authenticated, err := wallet.VerifyPassphrase(usrAddress, evmCreateArgs.Password)
+	usrAddress := keys.Address(evmExecuteArgs.From)
+	authenticated, err := wallet.VerifyPassphrase(usrAddress, evmExecuteArgs.Password)
 	if !authenticated {
 		ctx.logger.Error("authentication error", err)
 		return err
@@ -303,7 +302,7 @@ func CreateContract(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if !wallet.Open(usrAddress, evmCreateArgs.Password) {
+	if !wallet.Open(usrAddress, evmExecuteArgs.Password) {
 		ctx.logger.Error("failed to open secure wallet")
 		return err
 	}

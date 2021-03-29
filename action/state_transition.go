@@ -279,7 +279,9 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 }
 
 func (st *StateTransition) EstimateGas() (uint64, error) {
-	st.initialGas = DefaultGasLimit
+	if err := st.preCheck(); err != nil {
+		return 0, err
+	}
 	msg := st.msg
 	sender := ethvm.AccountRef(msg.From())
 	homestead := st.evm.ChainConfig().IsHomestead(st.evm.Context.BlockNumber)
@@ -304,16 +306,17 @@ func (st *StateTransition) EstimateGas() (uint64, error) {
 		st.state.PrepareAccessList(msg.From(), msg.To(), st.evm.ActivePrecompiles(), msg.AccessList())
 	}
 
+	var vmerr error
+
 	if contractCreation {
-		_, _, st.gas, _ = st.evm.Create(sender, st.data, st.gas, st.value)
+		_, _, st.gas, vmerr = st.evm.Create(sender, st.data, st.gas, st.value)
 	} else {
 		// Increment the nonce for the next transaction
 		st.state.SetNonce(msg.From(), st.state.GetNonce(sender.Address())+1)
-		_, st.gas, _ = st.evm.Call(sender, st.to(), st.data, st.gas, st.value)
+		_, st.gas, vmerr = st.evm.Call(sender, st.to(), st.data, st.gas, st.value)
 	}
 	st.refundGas()
-	st.state.AddBalance(st.evm.Context.Coinbase, new(big.Int).Mul(new(big.Int).SetUint64(st.gasUsed()), st.gasPrice))
-	return st.gasUsed(), nil
+	return st.gasUsed(), vmerr
 }
 
 func (st *StateTransition) refundGas() {
