@@ -247,3 +247,100 @@ func TestRunner(t *testing.T) {
 		assert.Equal(t, false, getBool(res), "Wrong data was stored")
 	})
 }
+
+func TestRunner_ecrecover(t *testing.T) {
+	// pragma solidity ^0.5.0;
+
+	// contract test {
+
+	// 	function verify(bytes32 _message, uint8 _v, bytes32 _r, bytes32 _s) public view returns (address) {
+	// 		address signer = ecrecover(_message, _v, _r, _s);
+	// 		return signer;
+	// 	}
+
+	// }
+
+	acc, _ := accounts.GenerateNewAccount(1, "test")
+	ctx := assemblyCtxData(acc, "OLT", 18, true, false, false, nil)
+	ctx.StateDB.GetAccountKeeper().NewAccountWithAddress(acc.Address())
+	code := ethcmn.FromHex("0x608060405234801561001057600080fd5b50610251806100206000396000f300608060405260043610610041576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff168063f1835db714610046575b600080fd5b34801561005257600080fd5b5061009e6004803603810190808035600019169060200190929190803560ff169060200190929190803560001916906020019092919080356000191690602001909291905050506100e0565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b600060606000806040805190810160405280601c81526020017f19457468657265756d205369676e6564204d6573736167653a0a333200000000815250925082886040518083805190602001908083835b6020831015156101565780518252602082019150602081019050602083039250610131565b6001836020036101000a03801982511681845116808217855250505050505090500182600019166000191681526020019250505060405180910390209150600182888888604051600081526020016040526040518085600019166000191681526020018460ff1660ff1681526020018360001916600019168152602001826000191660001916815260200194505050505060206040516020810390808403906000865af115801561020b573d6000803e3d6000fd5b5050506020604051035190508093505050509493505050505600a165627a7a72305820d41e468fb32b8e5cd5ce468362016d770f132827d73bf66a87a5ea647eca80b00029")
+	gas := uint64(3000000)
+	value := big.NewInt(0)
+
+	accRef := ethvm.AccountRef(ethcmn.BytesToAddress(acc.Address()))
+	nonce := getNonce(ctx, acc.Address())
+	evm := NewEVMTransaction(ctx.StateDB, ctx.Header, acc.Address(), nil, nonce, value, code, true).NewEVM()
+
+	t.Run("test ecrecover func and it is OK", func(t *testing.T) {
+		// deploy a contract
+		_, contractAddr, leftOverGas, err := evm.Create(accRef, code, gas, value)
+		assert.NoError(t, err, "Set contract failed")
+		assertExcError(t, contractAddr, gas, leftOverGas, 118765)
+
+		// execute method with signed hello for address "0x7156526fbD7a3C72969B54f64e42c10fbb768C8a"
+		// web3.sha3("hello")
+		input := ethcmn.FromHex("0xf1835db71c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8000000000000000000000000000000000000000000000000000000000000001c9242685bf161793cc25603c231bc2f568eb630ea16aa137d2664ac80388256084f8ae3bd7535248d0bd448298cc2e2071e56992d0774dc340c368ae950852ada")
+		data, leftOverGas, err := evm.Call(accRef, contractAddr, input, gas, value)
+		assert.NoError(t, err, "Execute contract failed")
+		assertExcError(t, contractAddr, gas, leftOverGas, 6688)
+		fmt.Println("Data: ", data)
+		signer := ethcmn.BytesToAddress(data)
+		assert.Equal(t, signer.Hex(), "0x7156526fbD7a3C72969B54f64e42c10fbb768C8a")
+	})
+}
+
+func TestRunner_fallback(t *testing.T) {
+	// pragma solidity ^0.4.0;
+
+	// contract test {
+
+	// 	address public addr;
+
+	// 	function() external payable {
+	// 		addr = msg.sender;
+	// 	}
+
+	// }
+
+	acc, _ := accounts.GenerateNewAccount(1, "test")
+	ctx := assemblyCtxData(acc, "OLT", 18, true, false, false, nil)
+	ctx.StateDB.GetAccountKeeper().NewAccountWithAddress(acc.Address())
+	code := ethcmn.FromHex("0x608060405234801561001057600080fd5b50610126806100206000396000f300608060405260043610603f576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff168063767800de146081575b336000806101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff160217905550005b348015608c57600080fd5b50609360d5565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b6000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff16815600a165627a7a72305820a2500fe275ffd84cf2dab4522f0a3c214a35a4ce81a9f71e1974b2e5f301b73e0029")
+	gas := uint64(3000000)
+	value := big.NewInt(0)
+
+	accRef := ethvm.AccountRef(ethcmn.BytesToAddress(acc.Address()))
+	nonce := getNonce(ctx, acc.Address())
+	evm := NewEVMTransaction(ctx.StateDB, ctx.Header, acc.Address(), nil, nonce, value, code, true).NewEVM()
+
+	t.Run("test fallback function and it is executed", func(t *testing.T) {
+		// deploy a contract
+		_, contractAddr, leftOverGas, err := evm.Create(accRef, code, gas, value)
+		assert.NoError(t, err, "Set contract failed")
+		assertExcError(t, contractAddr, gas, leftOverGas, 58911)
+
+		// check the addr and it must be zero
+		input := ethcmn.FromHex("0x767800de")
+		data, leftOverGas, err := evm.Call(accRef, contractAddr, input, gas, value)
+		assert.NoError(t, err, "Execute contract failed")
+		assertExcError(t, contractAddr, gas, leftOverGas, 2342)
+		fmt.Println("Data: ", data)
+		addr := ethcmn.BytesToAddress(data)
+		assert.Equal(t, addr.Hex(), "0x0000000000000000000000000000000000000000")
+
+		// execute non existing method and apply fallback
+		input = ethcmn.FromHex("0x40c10f190000000000000000000000007156526fbd7a3c72969b54f64e42c10fbb768c8a0000000000000000000000000000000000000000000000000000000000000001")
+		_, leftOverGas, err = evm.Call(accRef, contractAddr, input, gas, value)
+		assert.NoError(t, err, "Execute contract failed")
+		assertExcError(t, contractAddr, gas, leftOverGas, 20251)
+
+		// check the addr and it must be zero an sender address as fallback was applied
+		input = ethcmn.FromHex("0x767800de")
+		data, leftOverGas, err = evm.Call(accRef, contractAddr, input, gas, value)
+		assert.NoError(t, err, "Execute contract failed")
+		assertExcError(t, contractAddr, gas, leftOverGas, 342)
+		fmt.Println("Data: ", data)
+		addr = ethcmn.BytesToAddress(data)
+		assert.Equal(t, addr.Hex(), ethcmn.BytesToAddress(acc.Address()).Hex())
+	})
+}
