@@ -117,7 +117,8 @@ type EVMLogsReply struct {
 }
 
 type EVMAccountRequest struct {
-	Address keys.Address `json:"address"`
+	Address  keys.Address `json:"address"`
+	BlockTag string       `json:"blockTag"`
 }
 
 type EVMAccountReply struct {

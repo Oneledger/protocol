@@ -55,7 +55,8 @@ type EvmArguments struct {
 
 func (args *EvmArguments) EVMAccount() (client.EVMAccountRequest, error) {
 	return client.EVMAccountRequest{
-		Address: args.From,
+		Address:  args.From,
+		BlockTag: "latest",
 	}, nil
 }
 
