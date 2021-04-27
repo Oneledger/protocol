@@ -110,13 +110,34 @@ func (svc *Service) EVMTransactionLogs(args client.EVMTransactionLogsRequest, re
 	return nil
 }
 
+func (svc *Service) getBlockNumberFromTag(blockTag string) (int64, error) {
+	switch blockTag {
+	case "latest", "earliest", "pending":
+		return svc.contracts.State.Version(), nil
+	}
+	height, err := strconv.Atoi(blockTag)
+	if err != nil {
+		return 0, err
+	}
+	return int64(height), nil
+}
+
 func (svc *Service) EVMAccount(args client.EVMAccountRequest, reply *client.EVMAccountReply) error {
-	acc, err := svc.accountKeeper.GetAccount(args.Address)
+	height, err := svc.getBlockNumberFromTag(args.BlockTag)
+	if err != nil {
+		return err
+	}
+	acc, err := svc.accountKeeper.GetVersionedAccount(height, args.Address)
 	reply.Address = args.Address
 	reply.CodeHash = ethcmn.Bytes2Hex(ethcrypto.Keccak256(nil))
 	if err == nil {
-		reply.Balance = acc.Coins.String()
+		reply.Balance = acc.Coins.Amount.String()
 		reply.Nonce = acc.Sequence
+	} else {
+		balance, _ := svc.balances.GetBalance(args.Address, svc.currencies)
+		coins := balance.Amounts["OLT"]
+		fmt.Printf("Coins: %+v\n", coins)
+		reply.Balance = balance.Amounts["OLT"].Amount.String()
 	}
 	return nil
 }
