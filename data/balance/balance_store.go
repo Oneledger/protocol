@@ -160,7 +160,6 @@ func (st *Store) CheckBalanceFromAddress(addr keys.Address, coin Coin) error {
 	}
 
 	base := coin.Currency.NewCoinFromAmount(*amt)
-	//fmt.Println("check balance", addr.String())
 	_, err = base.Minus(coin)
 	if err != nil {
 		return errors.Wrap(err, "minus from address")

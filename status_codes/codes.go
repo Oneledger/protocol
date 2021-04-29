@@ -38,6 +38,7 @@ const (
 	InternalErrorTrackerInsufficientBalance = 100609
 	InternalErrorListWitnesses              = 100610
 	InternalErrorGettingProposal            = 100611
+	InternalErrorGettingBidConv             = 100612
 
 	ONSError                        = 1007
 	ONSErrDomainMissing             = 100701
@@ -81,6 +82,7 @@ const (
 	TxErrInsufficientFunds  = 300110
 	TxErrGasOverflow        = 300111
 	TxErrInvalidExtTx       = 300112
+	TxErrMaliciousValidator = 300113
 
 	ExternalErr                        = 400100
 	ExternalErrBitcoinTxNotFound       = 400101
@@ -106,9 +108,22 @@ const (
 	ETHTrackerExists          = 600103
 	ETHTrackerUnabletoSet     = 600104
 
+	// Staking
 	DelgErr                     = 6003
 	DelgErrStakeAddressInUse    = 600301
 	DelgErrStakeAddressMismatch = 600302
+
+	NetDelgErr                              = 6005
+	NetDelgErrGettingActiveDelgAmount       = 600501
+	NetDelgErrDeductingActiveDelgAmount     = 600502
+	NetDelgErrSettingActiveDelgAmount       = 600503
+	NetDelgErrGettingDelgOption             = 600504
+	NetDelgErrSettingPendingDelgAmount      = 600505
+	NetDelgErrGettingPendingDelgAmount      = 600506
+	NetDelgErrWithdraw                      = 600507
+	NetDelgErrFinalizingDelgRewards         = 600508
+	NetDelgErrAddingWithdrawAmountToBalance = 600509
+	NetDelgErrReinvest                      = 600510
 
 	GovErr                                = 7001
 	GovErrGetProposalOptions              = 700101
@@ -167,9 +182,10 @@ const (
 	TxErrGettingBTCOptions                = 700153
 	TxErrGettingRewardsOptions            = 700154
 	TxErrGettingFeeOptions                = 700155
-	GovErrErrGettingPoolList              = 700156
 	TxErrValidateGovState                 = 700156
 	TxErrGetStakingOptions                = 700158
+	TxErrInvalidOptions                   = 700159
+	TxErrEvidenceError                    = 700160
 
 	//Rewards Error
 	RewardsUnableToGetMaturedAmount = 800001
@@ -178,4 +194,5 @@ const (
 
 	//Ethereum Errors
 
+	//6 digit error codes starting with 99 are reserved for external apps
 )

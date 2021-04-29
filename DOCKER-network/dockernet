@@ -1,0 +1,304 @@
+import argparse
+import shutil
+import yaml
+import os
+import time
+import glob
+import subprocess
+
+
+def get_builder_volumes(docker_path, docker_bin, protocol_path):
+    return [
+        protocol_path + ':/home/ubuntu/go/protocol',
+        docker_bin + ':/home/ubuntu/go/bin',
+        docker_path + ':/opt/data/devnet'
+    ]
+
+
+def get_node_volumes(docker_path, docker_bin, node_name):
+    return [
+        docker_bin + ':/home/ubuntu/go/bin',
+        docker_path + '/' + node_name + ':/opt/data/devnet'
+    ]
+
+
+def get_node_network(subnet, node_id):
+    subnet_parsed = subnet.split('/')
+    subnet_ip = subnet_parsed[0]
+    ip_parsed = subnet_ip.split('.')
+    ip = '%s.%s.%s.%s' % (ip_parsed[0], ip_parsed[1], ip_parsed[2], str(node_id + 10))
+    return {
+        'vpcbr': {
+            'ipv4_address': ip
+        }
+    }
+
+
+def setup_network(subnet):
+    return {
+        'vpcbr': {
+            'driver': 'bridge',
+            'name': 'docker-network_vpcbr',
+            'ipam': {
+                'config': [{'subnet': subnet}]
+            }
+        }
+    }
+
+
+def stop_nodes():
+    out_str = subprocess.check_output(['docker', 'ps', '-q', '-f', 'network=docker-network_vpcbr'])
+    containers = out_str.split('\n')
+    cmd = 'docker container kill'
+    for c in containers:
+        cmd = cmd + ' ' + c
+    os.system(cmd)
+    return
+
+
+def stop_containers():
+    out_str = subprocess.check_output(['docker', 'ps', '-q'])
+    containers = out_str.split('\n')
+    cmd = 'docker container kill'
+    for c in containers:
+        cmd = cmd + ' ' + c
+    os.system(cmd)
+    return
+
+
+def generate_node_config(arguments):
+    version = '3'
+    port = 26600
+    node_yml_file = {}
+    services = {}
+    cmd = 'bash -c \"cd /opt/data/devnet && ' \
+          'olfullnode node --root /opt/data/devnet >> /opt/data/devnet/olfullnode.log 2>&1\"'
+
+    # Clean up subnet string
+    subnet = arguments['subnet']
+    subnet = subnet.replace('\\', '')
+    subnet = subnet.replace('\"', '')
+
+    # Loop through each node and generate docker-compose.yml
+    num_nodes = int(arguments['validators']) + int(arguments['nonvalidators'])
+    for i in range(num_nodes):
+        node_service = {}
+        container_name = str(i) + '-Node'
+        node_service['image'] = arguments['image']
+        node_service['container_name'] = container_name
+        node_service['ports'] = []
+        port_base = port
+        for k in range(3):
+            node_service['ports'].append('%d:%d' % (port_base + k, port_base + k))
+            port += 1
+        node_service['volumes'] = get_node_volumes(arguments['docker_path'], arguments['docker_bin'], container_name)
+        node_service['command'] = cmd
+        node_service['networks'] = get_node_network(subnet, i)
+        node_service['stdin_open'] = True
+        node_service['tty'] = True
+        services[container_name] = node_service
+
+    node_yml_file['version'] = version
+    node_yml_file['services'] = services
+    node_yml_file['networks'] = setup_network(subnet)
+
+    return node_yml_file
+
+
+def generate_build_config(arguments):
+    image = arguments.pop('image', None)
+    container_name = 'builder'
+    docker_path = arguments.pop('docker_path', None)
+    protocol_path = arguments.pop('protocol_path', None)
+    docker_bin = arguments.pop('docker_bin', None)
+
+    # Generate docker-compose-build.yml
+    version = "3"
+    build_yml_file = {}
+    services = {}
+    build_service = {}
+
+    build_yml_file['version'] = version
+    services['builder'] = build_service
+
+    build_service['image'] = image
+    build_service['container_name'] = container_name
+    build_service['volumes'] = get_builder_volumes(docker_path, docker_bin, protocol_path)
+    build_service['tty'] = True
+    build_service['stdin_open'] = True
+    build_service['ports'] = []
+    build_service['ports'].append('443:443')
+    build_service['ports'].append('8080:8080')
+
+    build_cmd = 'bash -c \"rm -rf /opt/data/devnet/*-Node && ' \
+                'cd /home/ubuntu/go/protocol && make install_c && olfullnode init devnet ' \
+                '--dir /opt/data/devnet '
+
+    for key in arguments:
+        value = arguments[key]
+        flag = '--' + key + ' '
+        if isinstance(value, bool) and value:
+            build_cmd += flag
+            continue
+        if value:
+            build_cmd += flag + value + ' '
+
+    build_cmd += '&& /bin/bash\"'
+
+    build_service['command'] = build_cmd
+    build_yml_file['services'] = services
+    return build_yml_file
+
+
+def init(arguments):
+    print 'Initializing docker compose files...'
+
+    # If default flag is true then use default docker compose files
+    if arguments['default']:
+        shutil.copy('default/docker-compose-build.yml', '.')
+        shutil.copy('default/docker-compose.yml', '.')
+        return
+
+    # Remove unnecessary keys
+    arguments.pop('subparsers', None)
+    arguments.pop('default', None)
+
+    node_yml_file = generate_node_config(arguments)
+    with open(r'docker-compose.yml', 'w') as out_file:
+        yaml.dump(node_yml_file, out_file)
+
+    build_yml_file = generate_build_config(arguments)
+    with open(r'docker-compose-build.yml', 'w') as out_file:
+        yaml.dump(build_yml_file, out_file)
+
+    print 'done'
+
+
+def start(arguments):
+    print 'Starting up docker network...'
+    # Setup environment
+    docker_path = arguments['docker_path']
+    docker_bin = arguments['docker_bin']
+
+    if not os.path.exists(docker_path):
+        os.mkdir(docker_path)
+
+    if not os.path.exists(docker_bin):
+        os.mkdir(docker_bin)
+
+    if not os.path.exists('docker-compose-build.yml') or not os.path.exists('docker-compose.yml'):
+        print 'error: need to run > python dockernet init'
+        return
+
+    # Start build container and initialize build
+    os.system('docker-compose -f docker-compose-build.yml up -d')
+
+    # Allow Builder to complete preliminary tasks
+    time.sleep(5)
+
+    # Wait for build to complete
+    print 'building binaries...'
+    while len(glob.glob(os.path.join(docker_path, '*-Node'))) == 0:
+        time.sleep(10)
+    print 'done'
+
+    # Wait for builder to finish
+    if arguments['deploy_smart_contracts']:
+        time.sleep(40)
+
+    os.system('docker-compose up -d')
+
+
+def update(arguments):
+    print 'Updating Docker Network...'
+    deploy_genesis = arguments['genesis']
+
+    # Stop all running nodes
+    stop_nodes()
+
+    if deploy_genesis:
+        print 'Deploying Genesis...'
+        os.system('docker exec -it builder bash -c '
+                  '"./home/ubuntu/go/protocol/DOCKER-network/default/scripts/genesis.sh"')
+
+    os.system('docker exec -it builder bash -c "cd /home/ubuntu/go/protocol && make install_c"')
+    os.system('docker-compose up -d')
+
+
+def stop(arguments):
+    print 'Stopping Docker Network...'
+    # stop all nodes
+    stop_nodes()
+    # remove node data if clean flag is set
+    if arguments['clean']:
+        print 'Cleaning Node Data...'
+        os.system('docker exec -it builder bash -c "rm -rf /opt/data/devnet/*-Node"')
+    # remove the remaining containers
+    stop_containers()
+    os.system('docker system prune -f')
+
+
+def run(arguments):
+    container = arguments['container']
+    cmd = arguments['cmd']
+    docker_cmd = 'docker exec -it ' + container + ' bash -c \"cd /opt/data/devnet && ' + cmd + '\"'
+    os.system(docker_cmd)
+
+
+if __name__ == '__main__':
+    # initialize commands
+    cmd_list = {'init': init, 'start': start, 'update': update, 'stop': stop, 'run': run}
+
+    # Initialize Parser
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers(dest='subparsers', help='sub-command help')
+
+    # Initialize init Parser
+    parser_init = subparsers.add_parser('init', help='generate docker compose files')
+    parser_init.add_argument('--validators', default='4', help='number of validator nodes')
+    parser_init.add_argument('--nonvalidators', default='1', help='number of non validator nodes')
+    parser_init.add_argument('--loglevel', default='4', help='level of logging for each node')
+    parser_init.add_argument('--total_funds', default='1000000000', help='initial funds for the network')
+    parser_init.add_argument('--maturity_time', default='4', help='staking maturity time in blocks')
+    parser_init.add_argument('--deleg_rewards_maturity_time', default='4', help='delegation rewards maturity in blocks')
+    parser_init.add_argument('--rewards_interval', default='1', help='number of reward blocks stored in one record')
+    parser_init.add_argument('--funding_deadline', default='10', help='governance proposal funding deadline in blocks')
+    parser_init.add_argument('--voting_deadline', default='12', help='governance proposal voting deadline in blocks')
+    parser_init.add_argument('--timeout_commit', default='1000', help='time between each block creation in (ms)')
+    parser_init.add_argument('--docker', action='store_true', default=True, help='docker flag used by olfullnode init')
+    parser_init.add_argument('--block_diff', default='4', help='block votes diff evidence')
+    parser_init.add_argument('--min_votes', default='2', help='min votes for evidence')
+    parser_init.add_argument('--top_validators', default='4', help='top validators to be active')
+    parser_init.add_argument('--subnet', default='\\\"10.5.0.0/16\\\"', help='subnet of all node IP addresses')
+    parser_init.add_argument('--empty_blocks', action="store_true", help='create empty blocks')
+    parser_init.add_argument('--eth_rpc', default="https://rinkeby.infura.io/v3", help='create empty blocks')
+    parser_init.add_argument('--deploy_smart_contracts', action="store_true", help='deploy ethereum smart contract')
+    parser_init.add_argument('--eth_pk', default="", help='ethereum test private key')
+    parser_init.add_argument('--default', action='store_true', help='use default docker compose files')
+    parser_init.add_argument('--image', default='olprotocol', help='name of docker image')
+    parser_init.add_argument('--protocol_path', default=os.getenv('PROTOCOLPATH'), help='protocol source code path')
+    parser_init.add_argument('--docker_path', default=os.getenv('DOCKERPATH'), help='docker shared volume for nodes')
+    parser_init.add_argument('--docker_bin', default=os.getenv('DOCKERBIN'), help='path for protocol executables')
+
+    # Initialize start Parser
+    parser_start = subparsers.add_parser('start', help='start network with generated docker compose files')
+    parser_start.add_argument('--docker_path', default=os.getenv('DOCKERPATH'), help='docker shared volume for nodes')
+    parser_start.add_argument('--docker_bin', default=os.getenv('DOCKERBIN'), help='path for protocol executables')
+    parser_start.add_argument('--deploy_smart_contracts', action="store_true", help='deploy ethereum smart contract')
+
+    # Initialize update Parser
+    parser_update = subparsers.add_parser('update', help='stop containers, rebuild binaries and start back up')
+    parser_update.add_argument('--genesis', action='store_true', help='clean node data and use genesis from docker path')
+
+    # Initialize stop Parser
+    parser_stop = subparsers.add_parser('stop', help='stop and remove all containers and networks')
+    parser_stop.add_argument('--clean', action='store_true', help='clean node data')
+
+    # Initialize run Parser
+    parser_run = subparsers.add_parser('run', help='run command inside container')
+    parser_run.add_argument('container', help='container to execute command in')
+    parser_run.add_argument('cmd', help='command to be executed in container')
+
+    # Execute command
+    args = vars(parser.parse_args())
+    cmd_list[args['subparsers']](args)

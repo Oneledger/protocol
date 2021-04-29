@@ -2,6 +2,7 @@ package delegation
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 
@@ -168,6 +169,11 @@ func (st *DelegationStore) GetMatureAmounts(version int64) (mature *MatureBlock,
 }
 
 func (st *DelegationStore) SetMatureAmounts(version int64, mature *MatureBlock) (err error) {
+	// sort by validator addresses
+	sort.Slice(mature.Data, func(i, j int) bool {
+		return mature.Data[i].Address.Humanize() < mature.Data[j].Address.Humanize()
+	})
+
 	key := st.getMatureKey(version)
 	dat, err := st.szlr.Serialize(mature)
 	if err != nil {
@@ -206,6 +212,10 @@ func (st *DelegationStore) Stake(validatorAddress keys.Address, delegatorAddress
 	st.mux.Lock()
 	defer st.mux.Unlock()
 
+	return st.AddToAddress(validatorAddress, delegatorAddress, amount)
+}
+
+func (st *DelegationStore) AddToAddress(validatorAddress keys.Address, delegatorAddress keys.Address, amount balance.Amount) error {
 	lockedAmt, err := st.GetValidatorAmount(validatorAddress)
 	if err != nil {
 		return err
@@ -238,9 +248,7 @@ func (st *DelegationStore) Stake(validatorAddress keys.Address, delegatorAddress
 	return nil
 }
 
-func (st *DelegationStore) Unstake(validatorAddress keys.Address, delegatorAddress keys.Address, coin balance.Amount, height int64) error {
-	st.mux.Lock()
-	defer st.mux.Unlock()
+func (st *DelegationStore) MinusFromAddress(validatorAddress keys.Address, delegatorAddress keys.Address, coin balance.Amount) error {
 	// st_v_ operation
 
 	// take current total effective amount from total
@@ -300,7 +308,17 @@ func (st *DelegationStore) Unstake(validatorAddress keys.Address, delegatorAddre
 	if err != nil {
 		return err
 	}
+	return nil
+}
 
+func (st *DelegationStore) Unstake(validatorAddress keys.Address, delegatorAddress keys.Address, coin balance.Amount, height int64) error {
+	st.mux.Lock()
+	defer st.mux.Unlock()
+
+	err := st.MinusFromAddress(validatorAddress, delegatorAddress, coin)
+	if err != nil {
+		return err
+	}
 	// st_m_ operation
 
 	// get pending mature coins at block height
@@ -527,9 +545,17 @@ func (st *DelegationStore) DumpState(options *Options) (state *DelegationState, 
 		state.DelegatorBoundedAmounts = append(state.DelegatorBoundedAmounts, dm)
 		return false
 	})
+
 	// dump pending mature amount
 	version := st.state.Version()
 	matureAmounts := st.GetMaturedPendingAmount(keys.Address{}, version, options.MaturityTime+1)
+
+	// Adjust maturity heights since block height will be reset to zero
+	for _, v := range matureAmounts {
+		if v.Height > version {
+			v.Height = v.Height - version
+		}
+	}
 	state.MatureAmounts = append(state.MatureAmounts, matureAmounts...)
 
 	succeed = true
@@ -576,6 +602,13 @@ func (st *DelegationStore) LoadState(state DelegationState) (succeed bool) {
 			}
 		} else {
 			blk.Data = append(blk.Data, data)
+		}
+	}
+	// write pending mature amounts to db
+	for height, mature := range blocks {
+		err := st.SetMatureAmounts(height, mature)
+		if err != nil {
+			return
 		}
 	}
 

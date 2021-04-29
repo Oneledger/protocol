@@ -1,0 +1,31 @@
+version: "3"
+
+services:
+  builder:
+    container_name: builder
+    image: olprotocol
+    ports:
+    - "8080:8080"
+    volumes:
+    - ~/go/protocol:/home/ubuntu/go/protocol
+    - ~/oldata/docker/bin:/home/ubuntu/go/bin
+    - ~/oldata/docker:/opt/data/devnet
+    command: >
+      bash -c "cd /home/ubuntu/go/protocol &&
+              make install_c &&
+              rm -rf /opt/data/devnet/*-Node &&
+              olfullnode init devnet --dir /opt/data/devnet --nonvalidators 1 \
+                --empty_blocks \
+                --loglevel 4 \
+                --total_funds 1000000000 \
+                --maturity_time 4 \
+                --deleg_rewards_maturity_time 4 \
+                --rewards_interval 1 \
+                --funding_deadline 10 \
+                --voting_deadline 12 \
+                --timeout_commit 1000 \
+                --docker \
+                --subnet \"10.5.0.0/16\" &&
+              /bin/bash"
+    stdin_open: true
+    tty: true

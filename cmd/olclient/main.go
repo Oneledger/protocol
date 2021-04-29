@@ -75,6 +75,12 @@ var DelegationCmd = &cobra.Command{
 	Long:  "Delegation module for OneLedger chain",
 }
 
+var EvidencesCmd = &cobra.Command{
+	Use:   "byzantine_fault",
+	Short: "OneLedger evidences",
+	Long:  "Evidence module for OneLedger chain",
+}
+
 var RewardsCmd = &cobra.Command{
 	Use:   "rewards",
 	Short: "OneLedger rewards",
@@ -83,6 +89,7 @@ var RewardsCmd = &cobra.Command{
 
 func main() {
 	RootCmd.AddCommand(DelegationCmd)
+	RootCmd.AddCommand(EvidencesCmd)
 	RootCmd.AddCommand(RewardsCmd)
 	Execute()
 }

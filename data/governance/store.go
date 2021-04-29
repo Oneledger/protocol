@@ -6,6 +6,8 @@ import (
 	"os"
 	"sync"
 
+	"github.com/Oneledger/protocol/data/network_delegation"
+
 	"github.com/Oneledger/protocol/data/delegation"
 	"github.com/Oneledger/protocol/data/evidence"
 	"github.com/Oneledger/protocol/data/keys"
@@ -43,21 +45,30 @@ const (
 
 	ADMIN_EVIDENCE_OPTION string = "evidenceopt"
 
+	ADMIN_NETWK_DELEG_OPTION string = "networkdelegopt"
+
 	TOTAL_FUNDS_PREFIX string = "t"
 
 	INDIVIDUAL_FUNDS_PREFIX string = "i"
 
-	LAST_UPDATE_HEIGHT          string = "defaultOptions"
-	LAST_UPDATE_HEIGHT_CURRENCY string = "currencyOptions"
-	LAST_UPDATE_HEIGHT_FEE      string = "feeOptions"
-	LAST_UPDATE_HEIGHT_ETH      string = "ethOptions"
-	LAST_UPDATE_HEIGHT_BTC      string = "btcOptions"
-	LAST_UPDATE_HEIGHT_REWARDS  string = "rewardsOptions"
-	LAST_UPDATE_HEIGHT_STAKING  string = "stakingOptions"
-	LAST_UPDATE_HEIGHT_ONS      string = "onsOptions"
-	LAST_UPDATE_HEIGHT_PROPOSAL string = "proposalOptions"
-	LAST_UPDATE_HEIGHT_EVIDENCE string = "evidenceOptions"
-	HEIGHT_INDEPENDENT_VALUE    string = "heightindependent"
+	LAST_UPDATE_HEIGHT             string = "defaultOptions"
+	LAST_UPDATE_HEIGHT_CURRENCY    string = "currencyOptions"
+	LAST_UPDATE_HEIGHT_FEE         string = "feeOptions"
+	LAST_UPDATE_HEIGHT_ETH         string = "ethOptions"
+	LAST_UPDATE_HEIGHT_BTC         string = "btcOptions"
+	LAST_UPDATE_HEIGHT_REWARDS     string = "rewardsOptions"
+	LAST_UPDATE_HEIGHT_STAKING     string = "stakingOptions"
+	LAST_UPDATE_HEIGHT_NETWK_DELEG string = "delegOptions"
+	LAST_UPDATE_HEIGHT_ONS         string = "onsOptions"
+	LAST_UPDATE_HEIGHT_PROPOSAL    string = "proposalOptions"
+	LAST_UPDATE_HEIGHT_EVIDENCE    string = "evidenceOptions"
+	HEIGHT_INDEPENDENT_VALUE       string = "heightindependent"
+
+	// Pool names
+	POOL_BOUNTY     = "BountyPool"
+	POOL_FEE        = "FeePool"
+	POOL_REWARDS    = "RewardsPool"
+	POOL_DELEGATION = "DelegationPool"
 )
 
 type Store struct {
@@ -178,7 +189,15 @@ func (st *Store) SetAllLUH() error {
 	if err != nil {
 		return err
 	}
+	err = st.SetLUH(LAST_UPDATE_HEIGHT_NETWK_DELEG)
+	if err != nil {
+		return err
+	}
 	err = st.SetLUH(LAST_UPDATE_HEIGHT)
+	if err != nil {
+		return err
+	}
+	err = st.SetLUH(LAST_UPDATE_HEIGHT_NETWK_DELEG)
 	if err != nil {
 		return err
 	}
@@ -302,21 +321,6 @@ func (st *Store) GetStakingOptions() (*delegation.Options, error) {
 	return r, nil
 }
 
-func (st *Store) SetStakingOptions(opt delegation.Options) error {
-
-	bytes, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(opt)
-	if err != nil {
-		return errors.Wrap(err, "failed to serialize staking options")
-	}
-
-	err = st.Set(ADMIN_STAKING_OPTION, bytes)
-	if err != nil {
-		return errors.Wrap(err, "failed to set the staking options")
-	}
-
-	return nil
-}
-
 func (st *Store) SetEvidenceOptions(opt evidence.Options) error {
 
 	bytes, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(opt)
@@ -346,6 +350,21 @@ func (st *Store) GetEvidenceOptions() (*evidence.Options, error) {
 	}
 
 	return r, nil
+}
+
+func (st *Store) SetStakingOptions(opt delegation.Options) error {
+
+	bytes, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(opt)
+	if err != nil {
+		return errors.Wrap(err, "failed to serialize staking options")
+	}
+
+	err = st.Set(ADMIN_STAKING_OPTION, bytes)
+	if err != nil {
+		return errors.Wrap(err, "failed to set the staking options")
+	}
+
+	return nil
 }
 
 func (st *Store) GetETHChainDriverOption() (*ethchain.ChainDriverOption, error) {
@@ -504,6 +523,32 @@ func (st *Store) GetRewardOptions() (*rewards.Options, error) {
 	return rewardOptions, nil
 }
 
+func (st *Store) SetNetworkDelegOptions(delegOptions network_delegation.Options) error {
+	bytes, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(delegOptions)
+	if err != nil {
+		return errors.Wrap(err, "failed to serialize network delegation options")
+	}
+	err = st.Set(ADMIN_NETWK_DELEG_OPTION, bytes)
+	if err != nil {
+		return errors.Wrap(err, "failed to set network delegation options")
+	}
+	return nil
+}
+
+func (st *Store) GetNetworkDelegOptions() (*network_delegation.Options, error) {
+	bytes, err := st.Get(ADMIN_NETWK_DELEG_OPTION, LAST_UPDATE_HEIGHT_NETWK_DELEG)
+	if err != nil {
+		return nil, err
+	}
+
+	delegOptions := &network_delegation.Options{}
+	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(bytes, delegOptions)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to deserialize network delegation options")
+	}
+	return delegOptions, nil
+}
+
 func (st *Store) GetPoolList() (map[string]keys.Address, error) {
 	poolList := map[string]keys.Address{}
 	propOpt, err := st.GetProposalOptions()
@@ -514,8 +559,21 @@ func (st *Store) GetPoolList() (map[string]keys.Address, error) {
 	if err != nil {
 		return nil, err
 	}
-	poolList["BountyPool"] = keys.Address(propOpt.BountyProgramAddr)
-	poolList["FeePool"] = keys.Address(fees.POOL_KEY)
-	poolList["RewardsPool"] = keys.Address(rewardOpt.RewardPoolAddress)
+	poolList[POOL_BOUNTY] = keys.Address(propOpt.BountyProgramAddr)
+	poolList[POOL_FEE] = keys.Address(fees.POOL_KEY)
+	poolList[POOL_REWARDS] = keys.Address(rewardOpt.RewardPoolAddress)
+	poolList[POOL_DELEGATION] = keys.Address(network_delegation.DELEGATION_POOL_KEY)
 	return poolList, nil
+}
+
+func (st *Store) GetPoolByName(poolName string) (address keys.Address, err error) {
+	poolList, err := st.GetPoolList()
+	if err != nil {
+		return
+	}
+	address, ok := poolList[poolName]
+	if !ok {
+		err = errors.New("Pool not found: " + poolName)
+	}
+	return
 }

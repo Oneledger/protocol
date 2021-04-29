@@ -9,7 +9,7 @@ def query_block_rewards(count=1):
             print '-------------------------------- Height: ', response["height"], ' --------------------------------'
             for v in response["validators"]:
                 print query_rewards(v["address"])
-                print "Validator Reward Stats: ", query_matured_rewards(v["address"])
+                print "Validator Reward Stats: ", query_all_rewards(v["address"])
             sleep(5)
             count -= 1
     except KeyboardInterrupt:

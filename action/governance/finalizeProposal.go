@@ -150,6 +150,9 @@ func runFinalizeProposal(ctx *action.Context, tx action.RawTx) (bool, action.Res
 		if proposal.Type == governance.ProposalTypeConfigUpdate {
 			updates := proposal.GovernanceStateUpdate
 			splitstring := strings.Split(updates, ":")
+			if len(splitstring) != 2 {
+				return helpers.LogAndReturnFalse(ctx.Logger, governance.ErrInvalidOptions, finalizedProposal.Tags(), errors.New("Invalid options string"))
+			}
 			updatekey := splitstring[0]
 			updateValue := splitstring[1]
 			updatefunc, ok := ctx.GovUpdate.GovernanceUpdateFunction[updatekey]

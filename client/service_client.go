@@ -98,6 +98,21 @@ func (c *ServiceClient) ListAccountAddresses() (out ListAccountAddressesReply, e
 	return
 }
 
+func (c *ServiceClient) Release(req ReleaseRequest) (out ReleaseReply, err error) {
+	err = c.Call("tx.Release", req, &out)
+	return
+}
+
+func (c *ServiceClient) Allegation(req AllegationRequest) (out AllegationReply, err error) {
+	err = c.Call("tx.Allegation", req, &out)
+	return
+}
+
+func (c *ServiceClient) Vote(req VoteRequest) (out VoteReply, err error) {
+	err = c.Call("tx.Vote", req, &out)
+	return
+}
+
 func (c *ServiceClient) Stake(req StakeRequest) (out StakeReply, err error) {
 	err = c.Call("tx.Stake", req, &out)
 	return
@@ -149,6 +164,11 @@ func (c *ServiceClient) CreateRawSendPool(req SendPoolTxRequest) (out *CreateTxR
 /* Governance */
 func (c *ServiceClient) VoteProposal(req VoteProposalRequest) (out *VoteProposalReply, err error) {
 	err = c.Call("tx.VoteProposal", req, &out)
+	return
+}
+
+func (c *ServiceClient) VoteRequests(req VoteRequestRequest) (out VoteRequestReply, err error) {
+	err = c.Call("query.VoteRequests", req, &out)
 	return
 }
 
@@ -220,3 +240,20 @@ func (c *ServiceClient) CheckCommitResult(hash string, prove bool) (reply TxResp
 
 	return
 }
+
+func (c *ServiceClient) GetTotalNetwkDelegation(onlyActive int) (reply GetTotalNetwkDelgReply, err error) {
+	request := &GetTotalNetwkDelegation{OnlyActive: onlyActive}
+
+	err = c.Call("query.GetTotalNetwkDelegation", request, &reply)
+
+	return
+}
+
+func (c *ServiceClient) ListDelegation(delegationAddresses []keys.Address) (reply ListDelegationReply, err error) {
+	request := &ListDelegationRequest{DelegationAddresses: delegationAddresses}
+
+	err = c.Call("query.ListDelegation", request, &reply)
+
+	return
+}
+

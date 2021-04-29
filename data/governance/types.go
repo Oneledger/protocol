@@ -10,6 +10,7 @@ import (
 	"github.com/Oneledger/protocol/data/delegation"
 	"github.com/Oneledger/protocol/data/evidence"
 	"github.com/Oneledger/protocol/data/fees"
+	"github.com/Oneledger/protocol/data/network_delegation"
 	"github.com/Oneledger/protocol/data/ons"
 	"github.com/Oneledger/protocol/data/rewards"
 )
@@ -21,6 +22,7 @@ type GovernanceState struct {
 	ONSOptions      ons.Options                `json:"onsOptions"`
 	PropOptions     ProposalOptionSet          `json:"propOptions"`
 	StakingOptions  delegation.Options         `json:"stakingOptions"`
+	DelegOptions    network_delegation.Options `json:"delegOptions"`
 	EvidenceOptions evidence.Options           `json:"evidenceOptions"`
 	RewardOptions   rewards.Options            `json:"rewardOptions"`
 }

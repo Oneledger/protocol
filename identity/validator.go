@@ -6,6 +6,7 @@ import (
 
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/delegation"
+	"github.com/Oneledger/protocol/data/evidence"
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/keys"
@@ -82,18 +83,30 @@ type Unstake struct {
 }
 
 type ValidatorContext struct {
-	Balances   *balance.Store
-	FeePool    *fees.Store
-	Delegators *delegation.DelegationStore
-	Govern     *governance.Store
+	Balances      *balance.Store
+	FeePool       *fees.Store
+	Delegators    *delegation.DelegationStore
+	EvidenceStore *evidence.EvidenceStore
+	Govern        *governance.Store
+	Currencies    *balance.CurrencySet
+	Validators    *ValidatorStore
 	// TODO: add necessary config
 }
 
-func NewValidatorContext(balances *balance.Store, feePool *fees.Store, delegators *delegation.DelegationStore, govern *governance.Store) *ValidatorContext {
+func NewValidatorContext(
+	balances *balance.Store, feePool *fees.Store,
+	delegators *delegation.DelegationStore,
+	evidenceStore *evidence.EvidenceStore,
+	govern *governance.Store, currencies *balance.CurrencySet,
+	validators *ValidatorStore,
+) *ValidatorContext {
 	return &ValidatorContext{
-		Balances:   balances,
-		FeePool:    feePool,
-		Delegators: delegators,
-		Govern:     govern,
+		Balances:      balances,
+		FeePool:       feePool,
+		Delegators:    delegators,
+		EvidenceStore: evidenceStore,
+		Govern:        govern,
+		Currencies:    currencies,
+		Validators:    validators,
 	}
 }

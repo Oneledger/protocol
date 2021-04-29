@@ -26,6 +26,21 @@ def query_rewards(validator):
         result = ""
     return result
 
+
+def query_all_rewards(validator):
+    req = {
+        "validator": validator,
+    }
+
+    resp = rpc_call('query.ListRewardsForValidator', req)
+
+    if "result" in resp:
+        result = resp["result"]
+    else:
+        result = ""
+    return result
+
+
 def query_balance(address):
     req = {
         "currency": "OLT",

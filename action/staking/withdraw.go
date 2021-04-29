@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/data/evidence"
 	"github.com/Oneledger/protocol/data/keys"
 )
 
@@ -128,6 +129,10 @@ func runWithdraw(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	err := draw.Unmarshal(tx.Data)
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
+	}
+
+	if ctx.EvidenceStore.IsFrozenValidator(draw.ValidatorAddress) {
+		return false, action.Response{Log: evidence.ErrFrozenValidator.Error()}
 	}
 
 	coin := draw.Stake.ToCoinWithBase(ctx.Currencies)

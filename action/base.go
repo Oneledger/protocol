@@ -113,6 +113,44 @@ func ValidateFee(feeOpt *fees.FeeOption, fee Fee) error {
 	return nil
 }
 
+func StakingPayerFeeHandling(ctx *Context, feePayer keys.Address, signedTx SignedTx, start Gas, size Gas, signatureCnt Gas) (bool, Response) {
+	ctx.State.ConsumeVerifySigGas(signatureCnt)
+	ctx.State.ConsumeStorageGas(size)
+	// check the used gas for the tx
+	final := ctx.Balances.State.ConsumedGas()
+	used := int64(final - start)
+	if used > signedTx.Fee.Gas {
+		return false, Response{Log: ErrGasOverflow.Error(), GasWanted: signedTx.Fee.Gas, GasUsed: signedTx.Fee.Gas}
+	}
+
+	signer := signedTx.Signatures[0].Signer
+	h, err := signer.GetHandler()
+	if err != nil {
+		return false, Response{Log: err.Error()}
+	}
+	addr := h.Address()
+
+	val, err := ctx.Validators.Get(addr)
+	if err != nil {
+		return false, Response{Log: err.Error()}
+	}
+
+	if !val.Address.Equal(feePayer) {
+		return false, Response{Log: errors.Wrap(err, "wrong fee payer").Error()}
+	}
+
+	charge := signedTx.Fee.Price.ToCoin(ctx.Currencies).MultiplyInt64(int64(used))
+	err = ctx.Balances.MinusFromAddress(val.StakeAddress, charge)
+	if err != nil {
+		return false, Response{Log: errors.Wrap(err, "charge fee").Error()}
+	}
+	err = ctx.FeePool.AddToPool(charge)
+	if err != nil {
+		return false, Response{Log: err.Error()}
+	}
+	return true, Response{GasWanted: signedTx.Fee.Gas, GasUsed: used}
+}
+
 func BasicFeeHandling(ctx *Context, signedTx SignedTx, start Gas, size Gas, signatureCnt Gas) (bool, Response) {
 	ctx.State.ConsumeVerifySigGas(signatureCnt)
 	ctx.State.ConsumeStorageGas(size)
