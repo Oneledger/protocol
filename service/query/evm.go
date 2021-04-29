@@ -172,7 +172,7 @@ func (svc *Service) EVMCall(args client.SendTxRequest, reply *client.EVMCallRepl
 	evmTx := action.NewEVMTransaction(stateDB, header, args.From, to, args.Nonce, args.Amount.Value.BigInt(), args.Data, true)
 
 	// TODO: Move in some constant
-	timeout := 5 * time.Second
+	timeout := 10 * time.Second
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
@@ -194,10 +194,6 @@ func (svc *Service) EVMCall(args client.SendTxRequest, reply *client.EVMCallRepl
 	}
 
 	svc.logger.Debugf("Result of call: %+v\n", result)
-
-	if result.Failed() {
-		return result.Err
-	}
 
 	// If the result contains a revert reason, try to unpack and return it.
 	if len(result.Revert()) > 0 {

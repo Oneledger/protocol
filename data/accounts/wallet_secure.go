@@ -86,7 +86,6 @@ func (wks *WalletKeyStore) GetAccount(address keys.Address) (Account, error) {
 			return account, err
 		}
 		err = json.Unmarshal(data, &account)
-
 		return account, err
 	}
 	return account, errorWalletClosed
