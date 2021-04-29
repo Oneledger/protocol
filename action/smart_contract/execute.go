@@ -94,12 +94,15 @@ func (s scExecuteTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, er
 	return true, nil
 }
 
-func (s scExecuteTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
+func (s scExecuteTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (ok bool, result action.Response) {
 	ctx.Logger.Detail("Processing SC Deploy Transaction for CheckTx", tx)
 	// NOTE: We do not need to run a logic, but only calculate a gas
 	// maybe it will be required a stateDB copy without deliver and clear it's dirties
 	// TODO: Add gas calculation here
-	return true, action.Response{GasUsed: -1}
+	ok = true
+	result = action.Response{GasUsed: -1}
+	// ok, result = runSCExecute(ctx, tx)
+	return
 }
 
 func (s scExecuteTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (ok bool, result action.Response) {
