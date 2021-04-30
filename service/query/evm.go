@@ -79,12 +79,6 @@ func parseTopics(topics [][][]byte) [][]ethcmn.Hash {
 }
 
 func (svc *Service) EVMTransactionLogs(args client.EVMTransactionLogsRequest, reply *client.EVMLogsReply) error {
-	// height := big.NewInt(svc.contracts.State.Version())
-	// svc.logger.Debugf("Current height: %d\n", height)
-	// addresses := parseAddresses(args.Addresses)
-	// svc.logger.Debugf("Parsed addresses: %v\n", addresses)
-	// topics := parseTopics(args.Topics)
-	// svc.logger.Debugf("Parsed topics: %v\n", topics)
 	stateDB := action.NewCommitStateDB(svc.contracts, svc.accountKeeper, svc.logger)
 
 	logs, err := stateDB.GetLogs(ethcmn.BytesToHash(args.TransactionHash))
@@ -135,8 +129,6 @@ func (svc *Service) EVMAccount(args client.EVMAccountRequest, reply *client.EVMA
 		reply.Nonce = acc.Sequence
 	} else {
 		balance, _ := svc.balances.GetBalance(args.Address, svc.currencies)
-		coins := balance.Amounts["OLT"]
-		fmt.Printf("Coins: %+v\n", coins)
 		reply.Balance = balance.Amounts["OLT"].Amount.String()
 	}
 	return nil
@@ -167,8 +159,6 @@ func (svc *Service) EVMCall(args client.SendTxRequest, reply *client.EVMCallRepl
 		},
 	}
 
-	svc.logger.Debugf("Nonce: %d\n", args.Nonce)
-
 	evmTx := action.NewEVMTransaction(stateDB, header, args.From, to, args.Nonce, args.Amount.Value.BigInt(), args.Data, true)
 
 	// TODO: Move in some constant
@@ -192,8 +182,6 @@ func (svc *Service) EVMCall(args client.SendTxRequest, reply *client.EVMCallRepl
 	if err != nil {
 		return fmt.Errorf("err: %w (supplied gas %d)", err, args.Gas)
 	}
-
-	svc.logger.Debugf("Result of call: %+v\n", result)
 
 	// If the result contains a revert reason, try to unpack and return it.
 	if len(result.Revert()) > 0 {
