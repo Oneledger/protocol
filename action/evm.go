@@ -50,27 +50,7 @@ func AbciHeaderToTendermint(header *abci.Header) tmtypes.Header {
 	}
 }
 
-// // HashFromContext returns the Ethereum Header hash from the context's protocol
-// // block header.
-// func HashFromHeader(header *abci.Header) ethcmn.Hash {
-// 	// cast the ABCI header to tendermint Header type
-// 	tmHeader := AbciHeaderToTendermint(header)
-
-// 	// get the Tendermint block hash from the current header
-// 	tmBlockHash := tmHeader.Hash()
-
-// 	// NOTE: if the validator set hash is missing the hash will be returned as nil,
-// 	// so we need to check for this case to prevent a panic when calling Bytes()
-// 	if tmBlockHash == nil {
-// 		return ethcmn.Hash{}
-// 	}
-
-// 	return ethcmn.BytesToHash(tmBlockHash.Bytes())
-// }
-
-// GetHashFn implements vm.GetHashFunc for protocol. It handles 3 cases:
-//  1. The requested height matches the current height from context (and thus same epoch number)
-//  2. The requested height is from a height greater than the latest one
+// GetHashFn implements vm.GetHashFunc for protocol.
 func GetHashFn(s *CommitStateDB) ethvm.GetHashFunc {
 	return func(height uint64) ethcmn.Hash {
 		return s.GetHeightHash(height)
