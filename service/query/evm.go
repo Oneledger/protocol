@@ -140,11 +140,11 @@ func (svc *Service) EVMCall(args client.SendTxRequest, reply *client.EVMCallRepl
 	stateDB := action.NewCommitStateDB(svc.contracts, svc.accountKeeper, svc.logger)
 	bhash := stateDB.GetHeightHash(uint64(height))
 	stateDB.SetBlockHash(bhash)
-	// TODO: Change this
+	block := svc.ext.Block(height).Block
 	header := &abci.Header{
-		ChainID: "test-1",
-		Height:  height,
-		Time:    time.Now(),
+		ChainID: block.ChainID,
+		Height:  block.Height,
+		Time:    block.Time,
 	}
 
 	var to *keys.Address
@@ -200,11 +200,11 @@ func (svc *Service) EVMEstimateGas(args client.SendTxRequest, reply *client.EVME
 	stateDB := action.NewCommitStateDB(svc.contracts, svc.accountKeeper, svc.logger)
 	bhash := stateDB.GetHeightHash(uint64(height))
 	stateDB.SetBlockHash(bhash)
-	// TODO: Change this
+	block := svc.ext.Block(height).Block
 	header := &abci.Header{
-		ChainID: "test-1",
-		Height:  height,
-		Time:    time.Now(),
+		ChainID: block.ChainID,
+		Height:  block.Height,
+		Time:    block.Time,
 	}
 
 	var to *keys.Address
