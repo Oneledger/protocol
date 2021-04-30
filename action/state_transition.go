@@ -226,11 +226,9 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 	// 6. caller has enough balance to cover asset transfer for **topmost** call
 
 	// Check clauses 1-3, buy gas if everything is correct
-	fmt.Println("st.gas: before preCheck: ", st.gas)
 	if err := st.preCheck(); err != nil {
 		return nil, err
 	}
-	fmt.Println("st.gas: after preCheck: ", st.gas)
 	msg := st.msg
 	sender := ethvm.AccountRef(msg.From())
 	homestead := st.evm.ChainConfig().IsHomestead(st.evm.Context.BlockNumber)
@@ -239,7 +237,6 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 
 	// Check clauses 4-5, subtract intrinsic gas if everything is correct
 	gas, err := IntrinsicGas(st.data, st.msg.AccessList(), contractCreation, homestead, istanbul)
-	fmt.Println("intristic gas: ", gas)
 	if err != nil {
 		return nil, err
 	}
@@ -247,7 +244,6 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 		return nil, fmt.Errorf("%w: have %d, want %d", ethcore.ErrIntrinsicGas, st.gas, gas)
 	}
 	st.gas -= gas
-	fmt.Println("st.gas: after minus", st.gas)
 
 	// Check clause 6
 	if msg.Value().Sign() > 0 && !st.evm.Context.CanTransfer(st.state, msg.From(), msg.Value()) {
@@ -271,16 +267,13 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 		st.state.SetNonce(msg.From(), st.state.GetNonce(msg.From())+1)
 		ret, st.gas, vmerr = st.evm.Call(sender, st.to(), st.data, st.gas, st.value)
 	}
-	fmt.Println("gas after evaluation: ", st.gas)
 	st.refundGas()
-	fmt.Println("gas after refund: ", st.gas)
 
 	result := &ExecutionResult{
 		UsedGas:    st.gasUsed(),
 		Err:        vmerr,
 		ReturnData: ret,
 	}
-	fmt.Println("used gas: ", result.UsedGas)
 	if contractCreation {
 		result.ContractAddress = keys.Address(ca.Bytes())
 	}
@@ -344,6 +337,5 @@ func (st *StateTransition) refundGas() {
 
 // gasUsed returns the amount of gas used up by the state transition.
 func (st *StateTransition) gasUsed() uint64 {
-	fmt.Println("initialGas gas: ", st.initialGas)
 	return st.initialGas - st.gas
 }

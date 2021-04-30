@@ -121,20 +121,17 @@ func (app *App) chainInitializer() chainInitializer {
 func (app *App) commitVMChanges(state *storage.State) {
 	// Update account balances before committing other parts of state
 	app.Context.stateDB.WithState(state).UpdateAccounts()
-	app.logger.Debugf("Accounts updated\n")
 
 	// Commit state objects to store
 	root, err := app.Context.stateDB.WithState(state).Commit(false)
 	if err != nil {
 		panic(err)
 	}
-	app.logger.Debugf("Results commited\n")
 
 	// reset all cache after account data has been committed, that make sure node state consistent
 	if err = app.Context.stateDB.WithState(state).Reset(root); err != nil {
 		panic(err)
 	}
-	app.logger.Debugf("State reseted\n")
 }
 
 func (app *App) resetInternalState(state *storage.State) {
@@ -273,7 +270,7 @@ func (app *App) txChecker() txChecker {
 			Codespace: "",
 		}
 
-		// app.resetInternalState(app.Context.check)
+		app.resetInternalState(app.Context.check)
 
 		if !(ok && feeOk) {
 			app.Context.check.DiscardTxSession()
