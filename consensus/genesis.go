@@ -2,8 +2,10 @@ package consensus
 
 import (
 	"encoding/json"
-	"github.com/Oneledger/protocol/data/network_delegation"
 	"time"
+
+	"github.com/Oneledger/protocol/data/evidence"
+	"github.com/Oneledger/protocol/data/network_delegation"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/types"
@@ -82,7 +84,8 @@ type AppState struct {
 	Chain         ChainState                     `json:"state"`
 	Balances      []BalanceState                 `json:"balances"`
 	Staking       []Stake                        `json:"staking"`
-	Witness       []Stake                        `json:"witness"`
+	Penalties     []identity.Penalty             `json:"penalties"`
+	Witness       []identity.Witness             `json:"witness"`
 	Delegation    delegation.DelegationState     `json:"delegation"`
 	Rewards       rewards.RewardMasterState      `json:"rewards"`
 	Domains       []DomainState                  `json:"domains"`
@@ -91,12 +94,14 @@ type AppState struct {
 	Proposals     []governance.GovProposal       `json:"proposals"`
 	NetDelegators network_delegation.State       `json:"net_delegators"`
 	DelegatorRew  network_delegation.RewardState `json:"delegator_rewards"`
+	Evidences     evidence.EvidenceState         `json:"evidences"`
 }
 
 func NewAppState(currencies balance.Currencies,
 	balances []BalanceState,
 	staking []Stake,
-	witness []Stake,
+	penalties []identity.Penalty,
+	witness []identity.Witness,
 	delegation delegation.DelegationState,
 	rewards rewards.RewardMasterState,
 	domains []DomainState,
@@ -107,6 +112,7 @@ func NewAppState(currencies balance.Currencies,
 		Currencies: currencies,
 		Balances:   balances,
 		Staking:    staking,
+		Penalties:  penalties,
 		Witness:    witness,
 		Delegation: delegation,
 		Rewards:    rewards,

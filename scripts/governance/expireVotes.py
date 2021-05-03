@@ -63,7 +63,7 @@ def completed_votes():
 
     # 4th vote --> 75%
     vote_proposal(encoded_pid, OPIN_POSITIVE, url_3, addr_list[2])
-    check_proposal_state(encoded_pid, ProposalOutcomeCompleted, ProposalStatusCompleted)
+    check_proposal_state(encoded_pid, ProposalOutcomeCompletedYes, ProposalStatusCompleted)
 
 
 def show_proposals():
