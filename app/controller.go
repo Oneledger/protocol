@@ -3,16 +3,20 @@ package app
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/Oneledger/protocol/data/network_delegation"
-	"github.com/Oneledger/protocol/external_apps/common"
-	"github.com/tendermint/tendermint/libs/kv"
 	"math"
 	"math/big"
 	"runtime/debug"
 	"strconv"
 
+	"github.com/Oneledger/protocol/data/governance"
+	"github.com/tendermint/tendermint/libs/kv"
+
+	"github.com/Oneledger/protocol/data/network_delegation"
+	"github.com/Oneledger/protocol/external_apps/common"
+
 	"github.com/Oneledger/protocol/data/balance"
 
+	ethcmn "github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 
 	abciTypes "github.com/tendermint/tendermint/abci/types"
@@ -115,11 +119,36 @@ func (app *App) chainInitializer() chainInitializer {
 	}
 }
 
+func (app *App) commitVMChanges(state *storage.State) {
+	// Update account balances before committing other parts of state
+	app.Context.stateDB.WithState(state).UpdateAccounts()
+
+	// Commit state objects to store
+	root, err := app.Context.stateDB.WithState(state).Commit(false)
+	if err != nil {
+		panic(err)
+	}
+
+	// reset all cache after account data has been committed, that make sure node state consistent
+	if err = app.Context.stateDB.WithState(state).Reset(root); err != nil {
+		panic(err)
+	}
+}
+
+func (app *App) resetInternalState(state *storage.State) {
+	// for clearing garbage for VM etc.
+	app.Context.stateDB.WithState(state).Reset(ethcmn.Hash{})
+}
+
 func (app *App) blockBeginner() blockBeginner {
 	return func(req RequestBeginBlock) ResponseBeginBlock {
 		defer app.handlePanic()
 		gc := getGasCalculator(app.genesisDoc.ConsensusParams)
 		app.Context.deliver = storage.NewState(app.Context.chainstate).WithGas(gc)
+
+		// Update last block height
+		app.Context.stateDB.WithState(app.Context.deliver).SetHeightHash(uint64(req.Header.GetHeight()), ethcmn.BytesToHash(req.Hash))
+		app.Context.stateDB.WithState(app.Context.deliver).SetBlockHash(ethcmn.BytesToHash(req.Hash))
 
 		feeOpt, err := app.Context.govern.GetFeeOption()
 		if err != nil {
@@ -162,9 +191,6 @@ func (app *App) blockBeginner() blockBeginner {
 
 		//update the header to current block
 		app.header = req.Header
-		//Adds proposals that meet the requirements to either Expired or Finalizing Keys from transaction store
-		//Transaction store is not part of chainstate ,it just maintains a list of proposals from BlockBeginner to BlockEnder .Gets cleared at each Block Ender
-		AddInternalTX(app.Context.proposalMaster, app.Context.node.ValidatorAddress(), app.header.Height, app.Context.transaction, app.logger)
 		functionList, err := app.Context.extFunctions.Iterate(common.BlockBeginner)
 		functionParam := common.ExtParam{
 			InternalTxStore: app.Context.transaction,
@@ -219,8 +245,15 @@ func (app *App) txChecker() txChecker {
 				Log:  err.Error(),
 			}
 		}
+
+		// setup transaction hash
+		app.Context.stateDB.WithState(app.Context.check).Prepare(ethcmn.BytesToHash(app.GetTransactionHash(msg.Tx)))
+
 		ok, response := handler.ProcessCheck(txCtx, tx.RawTx)
-		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, storage.Gas(len(msg.Tx)))
+
+		app.logger.Debug("Response used gas: ", response.GasUsed)
+
+		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, storage.Gas(len(msg.Tx)), storage.Gas(response.GasUsed))
 
 		logString := marshalLog(ok, response, feeResponse)
 
@@ -234,6 +267,8 @@ func (app *App) txChecker() txChecker {
 			Events:    response.Events,
 			Codespace: "",
 		}
+
+		app.resetInternalState(app.Context.check)
 
 		if !(ok && feeOk) {
 			app.Context.check.DiscardTxSession()
@@ -275,9 +310,14 @@ func (app *App) txDeliverer() txDeliverer {
 
 		gas := txCtx.State.ConsumedGas()
 
+		// setup transaction hash
+		app.Context.stateDB.WithState(app.Context.deliver).Prepare(ethcmn.BytesToHash(app.GetTransactionHash(msg.Tx)))
+
 		ok, response := handler.ProcessDeliver(txCtx, tx.RawTx)
 
-		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, storage.Gas(len(msg.Tx)))
+		app.logger.Debug("Response used gas: ", response.GasUsed)
+
+		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, storage.Gas(len(msg.Tx)), storage.Gas(response.GasUsed))
 
 		logString := marshalLog(ok, response, feeResponse)
 
@@ -317,15 +357,16 @@ func (app *App) blockEnder() blockEnder {
 
 		app.Context.validators.WithState(app.Context.deliver).ClearEvents()
 
+		// commit changes before the next execution
+		app.commitVMChanges(app.Context.deliver)
+
 		ethTrackerlog := log.NewLoggerWithPrefix(app.Context.logWriter, "ethtracker").WithLevel(log.Level(app.Context.cfg.Node.LogLevel))
 		doTransitions(app.Context.jobStore, app.Context.btcTrackers.WithState(app.Context.deliver), app.Context.validators)
 		doEthTransitions(app.Context.jobStore, app.Context.ethTrackers, app.Context.node.ValidatorAddress(), ethTrackerlog, app.Context.witnesses, app.Context.deliver)
-		// Proposals currently in store are cleared if deliver is successful
-		// If Expire or Finalize TX returns false,they will added to the proposals queue in the next block
-		// Errors are logged at the function level
-		// These functions iterate the transactions store
-		ExpireProposals(&app.header, &app.Context, app.logger)
-		FinalizeProposals(&app.header, &app.Context, app.logger)
+
+		//Trigger internal transactions to Expire or Finalize Proposals if necessary
+		updateProposals(app.Context.proposalMaster, app.Context.jobStore, app.Context.deliver)
+
 		functionList, err := app.Context.extFunctions.Iterate(common.BlockEnder)
 		functionParam := common.ExtParam{
 			InternalTxStore: app.Context.transaction,
@@ -618,7 +659,7 @@ func handleBlockRewards(appCtx *context, block RequestBeginBlock, logger *log.Lo
 	if err != nil {
 		return abciTypes.Event{}
 	}
-	totalRewards, err := rewardMaster.RewardCm.PullRewards(lastHeight, rewardPoolCoin.Amount)
+	totalRewards, err := rewardMaster.RewardCm.PullRewards(lastHeight, block.Header.Time.UTC(), rewardPoolCoin.Amount)
 	if err != nil {
 		return abciTypes.Event{}
 	}
@@ -712,8 +753,12 @@ func handleBlockRewards(appCtx *context, block RequestBeginBlock, logger *log.Lo
 }
 
 func (app *App) VerifyCache(tx []byte) bool {
-	hash := utils.SHA2(tx)
+	hash := app.GetTransactionHash(tx)
 	return app.Context.internalService.ExistTx(hash)
+}
+
+func (app App) GetTransactionHash(tx []byte) []byte {
+	return utils.SHA2(tx)
 }
 
 func marshalLog(ok bool, response action.Response, feeResponse action.Response) string {
@@ -838,6 +883,66 @@ func matureDelegationRewards(appCtx *context, req *RequestBeginBlock, kvMap map[
 		kvMap[rewardsKey] = kv.Pair{
 			Key:   []byte(rewardsKey),
 			Value: []byte(coin.String()),
+		}
+		return false
+	})
+}
+
+func updateProposals(proposalMaster *governance.ProposalMasterStore, jobStore *jobs.JobStore, deliver *storage.State) {
+	//Iterate through all active proposals
+	proposals := proposalMaster.Proposal.WithState(deliver)
+	activeProposals := proposals.WithPrefixType(governance.ProposalStateActive)
+
+	activeProposals.Iterate(func(id governance.ProposalID, proposal *governance.Proposal) bool {
+		height := deliver.Version()
+		//If the proposal is in Voting state and voting period expired, trigger internal tx to handle expiry
+		if proposal.Status == governance.ProposalStatusVoting && proposal.VotingDeadline < height {
+
+			//Create New Job to Expire the votes for current proposal
+			checkVotesJob := event.NewGovCheckVotesJob(proposal.ProposalID, proposal.Status)
+
+			//Check if the Job already exists
+			exists, _ := jobStore.WithChain(chain.ONELEDGER).JobExists(checkVotesJob.JobID)
+			if !exists {
+
+				//Save Job to OneLedger Job Store
+				err := jobStore.WithChain(chain.ONELEDGER).SaveJob(checkVotesJob)
+				if err != nil {
+					return true
+				}
+			}
+		}
+
+		return false
+	})
+
+	passedProposals := proposals.WithPrefixType(governance.ProposalStatePassed)
+	passedProposals.Iterate(func(id governance.ProposalID, proposal *governance.Proposal) bool {
+		if proposal.Status == governance.ProposalStatusCompleted && proposal.Outcome == governance.ProposalOutcomeCompletedYes {
+			finalizeJob := event.NewGovFinalizeProposalJob(proposal.ProposalID, proposal.Status)
+
+			exists, _ := jobStore.WithChain(chain.ONELEDGER).JobExists(finalizeJob.JobID)
+			if !exists {
+				err := jobStore.WithChain(chain.ONELEDGER).SaveJob(finalizeJob)
+				if err != nil {
+					return true
+				}
+			}
+		}
+		return false
+	})
+	failedProposals := proposals.WithPrefixType(governance.ProposalStateFailed)
+	failedProposals.Iterate(func(id governance.ProposalID, proposal *governance.Proposal) bool {
+		if proposal.Status == governance.ProposalStatusCompleted && proposal.Outcome == governance.ProposalOutcomeCompletedNo {
+			finalizeJob := event.NewGovFinalizeProposalJob(proposal.ProposalID, proposal.Status)
+
+			exists, _ := jobStore.WithChain(chain.ONELEDGER).JobExists(finalizeJob.JobID)
+			if !exists {
+				err := jobStore.WithChain(chain.ONELEDGER).SaveJob(finalizeJob)
+				if err != nil {
+					return true
+				}
+			}
 		}
 		return false
 	})

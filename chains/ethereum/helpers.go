@@ -64,7 +64,7 @@ func getSignFromName(contractAbi *abi.ABI, methodName string, funcSigs map[strin
 	if !exists {
 		return "", errors.New("Function not found in abi ")
 	}
-	signature, ok := mapkey(funcSigs, method.Sig())
+	signature, ok := mapkey(funcSigs, method.Sig)
 	if !ok {
 		return "", errors.New("Method Signature does not exist")
 	}

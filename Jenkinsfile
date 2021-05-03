@@ -2,13 +2,13 @@ pipeline {
     agent {
    //kubernetes jenkins agent
       kubernetes {
-        label 'slave'
+        label 'slave-protocol'
         yaml """
   apiVersion: v1
   kind: Pod
   metadata:
     label:
-      jenkins: slave
+      jenkins: slave-protocol
   spec:
     containers:
     - name: oneledger

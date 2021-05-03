@@ -61,6 +61,10 @@ func (vs *ValidatorStore) WithState(state *storage.State) *ValidatorStore {
 	return vs
 }
 
+func (vs *ValidatorStore) Version() int64 {
+	return vs.store.Version()
+}
+
 func (vs *ValidatorStore) Get(addr keys.Address) (*Validator, error) {
 	key := append(vs.prefix, addr...)
 	value, _ := vs.store.Get(key)

@@ -298,7 +298,7 @@ func (rs *RewardStore) dumpState() (state *RewardState, err error) {
 	lastInterval := rs.GetInterval(rs.State.Version())
 	lastIndex := lastInterval.LastIndex + (rs.State.Version()-lastInterval.LastHeight)/rs.rewardOptions.RewardInterval + 1
 	initialInterval := Interval{
-		LastIndex:  lastIndex,
+		LastIndex:  lastIndex - 1,
 		LastHeight: 2, //First height receiving rewards is 2
 	}
 	state.Intervals = append(state.Intervals, initialInterval)

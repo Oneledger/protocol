@@ -94,7 +94,7 @@ func (delegWithdrawRewardsTx) ProcessDeliver(ctx *action.Context, tx action.RawT
 	return runDeleWithdraw(ctx, tx)
 }
 
-func (delegWithdrawRewardsTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas) (bool, action.Response) {
+func (delegWithdrawRewardsTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas, gasUsed action.Gas) (bool, action.Response) {
 	return action.BasicFeeHandling(ctx, signedTx, start, size, 1)
 }
 
