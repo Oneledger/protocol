@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 	"sort"
+	"sync"
 
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/evm"
@@ -54,6 +55,9 @@ type CommitStateDB struct {
 	journal        *journal
 	validRevisions []revision
 	nextRevisionID int
+
+	// mutex for state deep copying
+	lock sync.Mutex
 }
 
 // NewCommitStateDB returns a reference to a newly initialized CommitStateDB
@@ -572,4 +576,71 @@ func (s *CommitStateDB) GetOrNewStateObject(addr ethcmn.Address) StateObject {
 		so, _ = s.createObject(addr)
 	}
 	return so
+}
+
+// Copy creates a deep, independent copy of the state.
+//
+// NOTE: Snapshots of the copied state cannot be applied to the copy.
+func (csdb *CommitStateDB) Copy() *CommitStateDB {
+
+	// copy all the basic fields, initialize the memory ones
+	state := &CommitStateDB{}
+	CopyCommitStateDB(csdb, state)
+
+	return state
+}
+
+func CopyCommitStateDB(from, to *CommitStateDB) {
+	from.lock.Lock()
+	defer from.lock.Unlock()
+
+	to.accountKeeper = from.accountKeeper
+	to.stateObjects = []stateEntry{}
+	to.addressToObjectIndex = make(map[ethcmn.Address]int)
+	to.stateObjectsDirty = make(map[ethcmn.Address]struct{})
+	to.refund = from.refund
+	to.logSize = from.logSize
+	to.preimages = make([]preimageEntry, len(from.preimages))
+	to.hashToPreimageIndex = make(map[ethcmn.Hash]int, len(from.hashToPreimageIndex))
+	to.journal = newJournal()
+	to.thash = from.thash
+	to.bhash = from.bhash
+	validRevisions := make([]revision, len(from.validRevisions))
+	copy(validRevisions, from.validRevisions)
+	to.validRevisions = validRevisions
+	to.nextRevisionID = from.nextRevisionID
+	to.accessList = from.accessList.Copy()
+
+	// copy the dirty states, logs, and preimages
+	for _, dirty := range from.journal.dirties {
+		// There is a case where an object is in the journal but not in the
+		// stateObjects: OOG after touch on ripeMD prior to Byzantium. Thus, we
+		// need to check for nil.
+		//
+		// Ref: https://github.com/ethereum/go-ethereum/pull/16485#issuecomment-380438527
+		if idx, exist := from.addressToObjectIndex[dirty.address]; exist {
+			to.stateObjects = append(to.stateObjects, stateEntry{
+				address:     dirty.address,
+				stateObject: from.stateObjects[idx].stateObject.deepCopy(to),
+			})
+			to.addressToObjectIndex[dirty.address] = len(to.stateObjects) - 1
+			to.stateObjectsDirty[dirty.address] = struct{}{}
+		}
+	}
+
+	// Above, we don't copy the actual journal. This means that if the copy is
+	// copied, the loop above will be a no-op, since the copy's journal is empty.
+	// Thus, here we iterate over stateObjects, to enable copies of copies.
+	for addr := range from.stateObjectsDirty {
+		if idx, exist := to.addressToObjectIndex[addr]; !exist {
+			to.setStateObject(from.stateObjects[idx].stateObject.deepCopy(to))
+			to.stateObjectsDirty[addr] = struct{}{}
+		}
+	}
+
+	// copy pre-images
+	for i, preimageEntry := range from.preimages {
+		to.preimages[i] = preimageEntry
+		to.hashToPreimageIndex[preimageEntry.hash] = i
+	}
 }

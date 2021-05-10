@@ -135,11 +135,6 @@ func (app *App) commitVMChanges(state *storage.State) {
 	}
 }
 
-func (app *App) resetInternalState(state *storage.State) {
-	// for clearing garbage for VM etc.
-	app.Context.stateDB.WithState(state).Reset(ethcmn.Hash{})
-}
-
 func (app *App) blockBeginner() blockBeginner {
 	return func(req RequestBeginBlock) ResponseBeginBlock {
 		defer app.handlePanic()
@@ -267,8 +262,6 @@ func (app *App) txChecker() txChecker {
 			Events:    response.Events,
 			Codespace: "",
 		}
-
-		app.resetInternalState(app.Context.check)
 
 		if !(ok && feeOk) {
 			app.Context.check.DiscardTxSession()
