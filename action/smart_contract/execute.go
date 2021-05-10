@@ -96,7 +96,11 @@ func (s scExecuteTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, er
 
 func (s scExecuteTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (ok bool, result action.Response) {
 	ctx.Logger.Detail("Processing SC Deploy Transaction for CheckTx", tx)
-	ok, result = runSCExecute(ctx, tx)
+	// ok, result = runSCExecute(ctx, tx)
+	// NOTE: We do not need to run a logic, but only calculate a gas
+	// maybe it will be required a stateDB copy without deliver and clear it's dirties
+	ok = true
+	result = action.Response{GasUsed: -1}
 	return
 }
 
@@ -107,6 +111,10 @@ func (s scExecuteTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (ok bo
 }
 
 func (s scExecuteTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas, gasUsed action.Gas) (bool, action.Response) {
+	// -1 if ProcessCheck
+	if gasUsed == -1 {
+		return true, action.Response{}
+	}
 	ok, result := action.ContractFeeHandling(ctx, signedTx, gasUsed)
 	ctx.Logger.Detailf("Processing SC Deploy Transaction for BasicFeeHandling: %+v, status - %t\n", result, ok)
 	return ok, result
