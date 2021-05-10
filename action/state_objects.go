@@ -47,6 +47,24 @@ func NewState(key, value ethcmn.Hash) State {
 
 type Storage []State
 
+// String implements the stringer interface
+func (s Storage) String() string {
+	var str string
+	for _, state := range s {
+		str += fmt.Sprintf("%s: %s\n", state.Key, state.Value)
+	}
+
+	return str
+}
+
+// Copy returns a copy of storage.
+func (s Storage) Copy() Storage {
+	cpy := make(Storage, len(s))
+	copy(cpy, s)
+
+	return cpy
+}
+
 // StateObject interface for interacting with state object
 type StateObject interface {
 	GetCommittedState(db ethstate.Database, key ethcmn.Hash) ethcmn.Hash
@@ -413,6 +431,19 @@ func (so *stateObject) touch() {
 		// flattened journals.
 		so.stateDB.journal.dirty(so.address)
 	}
+}
+
+func (so *stateObject) deepCopy(db *CommitStateDB) *stateObject {
+	newStateObj := newStateObject(db, so.account)
+
+	newStateObj.code = so.code
+	newStateObj.dirtyStorage = so.dirtyStorage.Copy()
+	newStateObj.originStorage = so.originStorage.Copy()
+	newStateObj.suicided = so.suicided
+	newStateObj.dirtyCode = so.dirtyCode
+	newStateObj.deleted = so.deleted
+
+	return newStateObj
 }
 
 // stateEntry represents a single key value pair from the StateDB's stateObject mappindg.

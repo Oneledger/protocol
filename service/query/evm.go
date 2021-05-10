@@ -123,13 +123,18 @@ func (svc *Service) EVMAccount(args client.EVMAccountRequest, reply *client.EVMA
 	}
 	acc, err := svc.accountKeeper.GetVersionedAccount(height, args.Address)
 	reply.Address = args.Address
-	reply.CodeHash = ethcmn.Bytes2Hex(ethcrypto.Keccak256(nil))
-	if err == nil {
+	if err != nil {
+		balance, _ := svc.balances.GetBalance(args.Address, svc.currencies)
+		if balance.Amounts["OLT"].Amount == nil {
+			reply.Balance = "0"
+		} else {
+			reply.Balance = balance.Amounts["OLT"].Amount.String()
+		}
+		reply.CodeHash = ethcmn.Bytes2Hex(ethcrypto.Keccak256(nil))
+	} else {
 		reply.Balance = acc.Coins.Amount.String()
 		reply.Nonce = acc.Sequence
-	} else {
-		balance, _ := svc.balances.GetBalance(args.Address, svc.currencies)
-		reply.Balance = balance.Amounts["OLT"].Amount.String()
+		reply.CodeHash = ethcmn.Bytes2Hex(acc.CodeHash)
 	}
 	return nil
 }
