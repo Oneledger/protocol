@@ -186,7 +186,7 @@ func (acc *ETHChainDriver) DecodeTransaction(rawBytes []byte) (*types.Transactio
 
 // GetTransactionMessage takes a trasaction as input and returns the message
 func (acc *ETHChainDriver) GetTransactionMessage(tx *types.Transaction) (*types.Message, error) {
-	msg, err := tx.AsMessage(types.NewEIP155Signer(tx.ChainId()))
+	msg, err := tx.AsMessage(types.NewEIP155Signer(tx.ChainId()), nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "Unable to convert Tx to message")
 	}
