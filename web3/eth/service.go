@@ -1,40 +1,43 @@
 package eth
 
 import (
-	"math/big"
+	"errors"
 
+	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
-	"github.com/Oneledger/protocol/data/balance"
-	"github.com/Oneledger/protocol/data/evm"
 	"github.com/Oneledger/protocol/log"
-	"github.com/Oneledger/protocol/utils"
-	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/rpc"
+
+	rpcclient "github.com/Oneledger/protocol/client"
 )
 
 type Service struct {
-	log           *log.Logger
-	ext           client.ExtServiceContext
-	contracts     *evm.ContractStore
-	accountKeeper balance.AccountKeeper
+	log     *log.Logger
+	ext     client.ExtServiceContext
+	stateDB *action.CommitStateDB
 }
 
-func NewService(logger *log.Logger, ext client.ExtServiceContext, contracts *evm.ContractStore, accountKeeper balance.AccountKeeper) *Service {
+func NewService(logger *log.Logger, ext client.ExtServiceContext, stateDB *action.CommitStateDB) *Service {
 	return &Service{
-		log:           logger,
-		ext:           ext,
-		contracts:     contracts,
-		accountKeeper: accountKeeper,
+		log:     logger,
+		ext:     ext,
+		stateDB: stateDB,
 	}
 }
 
-func (svc *Service) ChainId() hexutil.Big {
-	block := svc.ext.Block(0).Block
-	chainID := utils.HashToBigInt(block.Header.ChainID)
-	return hexutil.Big(*chainID)
-}
-
-func (svc *Service) BlockNumber() hexutil.Big {
-	height := svc.contracts.State.Version()
-	blockNumber := big.NewInt(height)
-	return hexutil.Big(*blockNumber)
+func StateAndHeaderByNumberOrHash(client rpcclient.Client, blockNrOrHash rpc.BlockNumberOrHash) (int64, error) {
+	if blockNr, ok := blockNrOrHash.Number(); ok {
+		return blockNr.Int64(), nil
+	}
+	if hash, ok := blockNrOrHash.Hash(); ok {
+		header, err := client.BlockByHash(hash.Bytes())
+		if err != nil {
+			return 0, err
+		}
+		if header == nil || header.Block == nil {
+			return 0, errors.New("header for hash not found")
+		}
+		return header.Block.Header.Height, nil
+	}
+	return 0, errors.New("invalid arguments; neither block nor hash specified")
 }

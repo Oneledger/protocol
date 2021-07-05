@@ -89,6 +89,10 @@ func NewCommitStateDB(cs *evm.ContractStore, ak balance.AccountKeeper, logger *l
 	}
 }
 
+func (s *CommitStateDB) GetContractStore() *evm.ContractStore {
+	return s.contractStore
+}
+
 func (s *CommitStateDB) WithState(state *storage.State) *CommitStateDB {
 	s.contractStore.WithState(state)
 	s.accountKeeper.WithState(state)

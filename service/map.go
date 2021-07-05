@@ -112,6 +112,6 @@ func NewMap(ctx *Context) (Map, error) {
 
 func NewWeb3Map(ctx *Context) (Map, error) {
 	return Map{
-		"eth": ethservice.NewService(ctx.Logger, ctx.Services, ctx.Contracts, ctx.AccountKeeper),
+		"eth": ethservice.NewService(ctx.Logger, ctx.Services, ctx.StateDB),
 	}, nil
 }

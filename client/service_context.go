@@ -20,7 +20,6 @@ import (
 	"net/url"
 
 	"github.com/pkg/errors"
-	rpcclient "github.com/tendermint/tendermint/rpc/client"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 
 	"github.com/Oneledger/protocol/rpc"
@@ -33,7 +32,7 @@ var (
 
 // ExtServiceContext holds clients for making requests to external services
 type ExtServiceContext struct {
-	rpcClient     rpcclient.Client
+	rpcClient     Client
 	broadcastMode BroadcastMode
 	proof         bool
 	oltClient     *ServiceClient
@@ -51,7 +50,7 @@ func NewExtServiceContext(rpcAddress, sdkAddress string) (cliCtx ExtServiceConte
 	}()
 
 	// tm rpc ExtServiceContext
-	tmRPCClient, err := rpcclient.NewHTTP(rpcAddress, "/websocket")
+	tmRPCClient, err := NewHTTP(rpcAddress, "/websocket")
 	if err != nil {
 		return ExtServiceContext{}, err
 	}
@@ -85,6 +84,10 @@ func NewExtServiceContext(rpcAddress, sdkAddress string) (cliCtx ExtServiceConte
 
 func (ctx *ExtServiceContext) FullNodeClient() *ServiceClient {
 	return ctx.oltClient
+}
+
+func (ctx *ExtServiceContext) RPCClient() Client {
+	return ctx.rpcClient
 }
 
 /*
