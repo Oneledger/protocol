@@ -49,6 +49,7 @@ func (s *CommitStateDB) AddLog(log *ethtypes.Log) {
 	log.BlockHash = s.bhash
 	// NOTE: Maybe redundant?
 	log.BlockNumber = s.bheight
+	log.TxIndex = uint(s.txIndex)
 	log.Index = s.logSize
 
 	logs, err := s.GetLogs(s.thash)
