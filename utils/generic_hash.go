@@ -16,6 +16,8 @@ package utils
 
 import (
 	"crypto/sha256"
+	"hash/fnv"
+	"math/big"
 
 	"golang.org/x/crypto/ripemd160"
 )
@@ -34,4 +36,11 @@ func SHA2(data []byte) []byte {
 
 func GetTransactionHash(tx []byte) []byte {
 	return SHA2(tx)
+}
+
+// hashToBigInt used to convert mostly chain id which is a string
+func HashToBigInt(s string) *big.Int {
+	h := fnv.New64a()
+	h.Write([]byte(s))
+	return new(big.Int).SetUint64(h.Sum64())
 }

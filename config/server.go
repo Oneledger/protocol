@@ -267,6 +267,8 @@ type NetworkConfig struct {
 	ExternalP2PAddress string `toml:"external_p2p_address" desc:"Address to advertise for incoming peers to connect to"`
 
 	SDKAddress string `toml:"sdk_address"`
+
+	Web3Address string `toml:"web3_address" desc:"Address to new RPC endpoint based on web3"`
 }
 
 func DefaultNetworkConfig() *NetworkConfig {
@@ -276,6 +278,7 @@ func DefaultNetworkConfig() *NetworkConfig {
 		P2PAddress:         "tcp://127.0.0.1:26611",
 		ExternalP2PAddress: "",
 		SDKAddress:         "http://127.0.0.1:26631",
+		Web3Address:        "http://127.0.0.1:8545",
 	}
 }
 

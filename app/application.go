@@ -475,9 +475,21 @@ func (app *App) Start() error {
 		return errors.Wrap(err, "failed to prepare rpc service")
 	}
 
+	// Starting Web3
+	startWeb3, err := app.web3Starter()
+	if err != nil {
+		return errors.Wrap(err, "failed to prepare web3 service")
+	}
+
 	err = startRPC()
 	if err != nil {
 		app.logger.Error("Failed to start rpc")
+		return err
+	}
+
+	err = startWeb3()
+	if err != nil {
+		app.logger.Error("Failed to start web3")
 		return err
 	}
 
@@ -500,6 +512,24 @@ func (app *App) Close() {
 		app.node.OnStop()
 	}
 	app.Context.Close()
+}
+
+func (app *App) web3Starter() (func() error, error) {
+	noop := func() error { return nil }
+
+	services, err := app.Context.Web3Services()
+	if err != nil {
+		return noop, err
+	}
+
+	for name, svc := range services {
+		err := app.Context.web3.RegisterName(name, svc)
+		if err != nil {
+			app.logger.Errorf("failed to register service %s", name)
+		}
+	}
+
+	return app.Context.web3.Start, nil
 }
 
 func (app *App) rpcStarter() (func() error, error) {
