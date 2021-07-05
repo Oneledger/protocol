@@ -91,15 +91,13 @@ func EthereumConfig(chainID string) *ethparams.ChainConfig {
 }
 
 type EVMConfig struct {
-	addr      keys.Address
 	gasPrice  *big.Int
 	gasLimit  uint64
 	extraEIPs []int
 }
 
-func NewEVMConfig(addr keys.Address, gasPrice *big.Int, gasLimit uint64, extraEIPs []int) *EVMConfig {
+func NewEVMConfig(gasPrice *big.Int, gasLimit uint64, extraEIPs []int) *EVMConfig {
 	return &EVMConfig{
-		addr:      addr,
 		gasPrice:  gasPrice,
 		gasLimit:  gasLimit,
 		extraEIPs: extraEIPs,
@@ -134,7 +132,7 @@ func NewEVMTransaction(stateDB *CommitStateDB, header *abci.Header, from keys.Ad
 		data:         data,
 		isSimulation: isSimulation,
 		// NOTE: Decide what to do with the gas price as we have a fee system
-		ecfg: NewEVMConfig(from, DefaultGasPrice, DefaultGasLimit, make([]int, 0)),
+		ecfg: NewEVMConfig(DefaultGasPrice, DefaultGasLimit, make([]int, 0)),
 	}
 }
 
@@ -164,7 +162,7 @@ func (etx *EVMTransaction) NewEVM() *ethvm.EVM {
 }
 
 func (etx *EVMTransaction) Origin() ethcmn.Address {
-	return ethcmn.BytesToAddress(etx.ecfg.addr)
+	return ethcmn.BytesToAddress(etx.from)
 }
 
 func (etx *EVMTransaction) From() ethcmn.Address {
@@ -195,6 +193,9 @@ func (etx *EVMTransaction) Apply(vmenv *ethvm.EVM, tx RawTx) (*ExecutionResult, 
 		if err := etx.stateDB.Finalise(false); err != nil {
 			return nil, err
 		}
+		// increasing log counter for next tx index
+		// TODO: Check on parallel execution if it works as expected
+		etx.stateDB.TxCount++
 	}
 	etx.stateDB.logger.Debugf("State finalized\n")
 	return msgResult, nil
