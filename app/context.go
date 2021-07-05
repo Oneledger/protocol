@@ -302,6 +302,7 @@ func (ctx *context) Web3Services() (service.Map, error) {
 		Services:      extSvcs,
 		Contracts:     ctx.contracts,
 		AccountKeeper: ctx.accountKeeper,
+		StateDB:       ctx.stateDB,
 	}
 
 	return service.NewWeb3Map(svcCtx)

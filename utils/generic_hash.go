@@ -19,6 +19,8 @@ import (
 	"hash/fnv"
 	"math/big"
 
+	ethcmn "github.com/ethereum/go-ethereum/common"
+	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 	"golang.org/x/crypto/ripemd160"
 )
 
@@ -43,4 +45,14 @@ func HashToBigInt(s string) *big.Int {
 	h := fnv.New64a()
 	h.Write([]byte(s))
 	return new(big.Int).SetUint64(h.Sum64())
+}
+
+func GetStorageByAddressKey(address ethcmn.Address, key []byte) ethcmn.Hash {
+	prefix := address.Bytes()
+	compositeKey := make([]byte, len(prefix)+len(key))
+
+	copy(compositeKey, prefix)
+	copy(compositeKey[len(prefix):], key)
+
+	return ethcrypto.Keccak256Hash(compositeKey)
 }
