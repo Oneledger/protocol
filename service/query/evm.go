@@ -191,7 +191,12 @@ func (svc *Service) EVMCall(args client.SendTxRequest, reply *client.EVMCallRepl
 	// If the result contains a revert reason, try to unpack and return it.
 	if len(result.Revert()) > 0 {
 		return newRevertError(result)
+		// if failed, return execution reverted
+	} else if result.Failed() {
+		return result.Err
 	}
+
+	fmt.Println("return: ", result.Return())
 
 	*reply = client.EVMCallReply{
 		Result: ethcmn.Bytes2Hex(result.Return()),
