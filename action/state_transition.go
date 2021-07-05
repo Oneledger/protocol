@@ -251,8 +251,8 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 	}
 
 	// Set up the initial access list.
-	if st.evm.ChainConfig().IsBerlin(st.evm.Context.BlockNumber) {
-		st.state.PrepareAccessList(msg.From(), msg.To(), st.evm.ActivePrecompiles(), msg.AccessList())
+	if rules := st.evm.ChainConfig().Rules(st.evm.Context.BlockNumber); rules.IsBerlin {
+		st.state.PrepareAccessList(msg.From(), msg.To(), ethvm.ActivePrecompiles(rules), msg.AccessList())
 	}
 
 	var (
@@ -267,7 +267,13 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 		st.state.SetNonce(msg.From(), st.state.GetNonce(msg.From())+1)
 		ret, st.gas, vmerr = st.evm.Call(sender, st.to(), st.data, st.gas, st.value)
 	}
-	st.refundGas()
+	if !st.evm.ChainConfig().IsLondon(st.evm.Context.BlockNumber) {
+		// Before EIP-3529: refunds were capped to gasUsed / 2
+		st.refundGas(ethparams.RefundQuotient)
+	} else {
+		// After EIP-3529: refunds are capped to gasUsed / 5
+		st.refundGas(ethparams.RefundQuotientEIP3529)
+	}
 
 	result := &ExecutionResult{
 		UsedGas:    st.gasUsed(),
@@ -303,8 +309,8 @@ func (st *StateTransition) EstimateGas() (uint64, error) {
 		return 0, fmt.Errorf("%w: address %v", ethcore.ErrInsufficientFundsForTransfer, msg.From().Hex())
 	}
 
-	if st.evm.ChainConfig().IsBerlin(st.evm.Context.BlockNumber) {
-		st.state.PrepareAccessList(msg.From(), msg.To(), st.evm.ActivePrecompiles(), msg.AccessList())
+	if rules := st.evm.ChainConfig().Rules(st.evm.Context.BlockNumber); rules.IsBerlin {
+		st.state.PrepareAccessList(msg.From(), msg.To(), ethvm.ActivePrecompiles(rules), msg.AccessList())
 	}
 
 	var vmerr error
@@ -314,13 +320,19 @@ func (st *StateTransition) EstimateGas() (uint64, error) {
 	} else {
 		_, st.gas, vmerr = st.evm.Call(sender, st.to(), st.data, st.gas, st.value)
 	}
-	st.refundGas()
+	if !st.evm.ChainConfig().IsLondon(st.evm.Context.BlockNumber) {
+		// Before EIP-3529: refunds were capped to gasUsed / 2
+		st.refundGas(ethparams.RefundQuotient)
+	} else {
+		// After EIP-3529: refunds are capped to gasUsed / 5
+		st.refundGas(ethparams.RefundQuotientEIP3529)
+	}
 	return st.gasUsed(), vmerr
 }
 
-func (st *StateTransition) refundGas() {
-	// Apply refund counter, capped to half of the used gas.
-	refund := st.gasUsed() / 2
+func (st *StateTransition) refundGas(refundQuotient uint64) {
+	// Apply refund counter, capped to a refund quotient
+	refund := st.gasUsed() / refundQuotient
 	if refund > st.state.GetRefund() {
 		refund = st.state.GetRefund()
 	}
