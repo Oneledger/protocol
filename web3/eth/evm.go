@@ -17,10 +17,8 @@ func (svc *Service) GetStorageAt(address common.Address, key string, blockNrOrHa
 	}
 	switch height {
 	case -1:
-		height = contractStore.State.Version()
-		break
 	case -2:
-		// NOTE: Need a pending state?
+		height = contractStore.State.Version()
 		break
 	}
 	prefixKey := utils.GetStorageByAddressKey(address, common.HexToHash(key).Bytes())
@@ -33,4 +31,28 @@ func (svc *Service) GetStorageAt(address common.Address, key string, blockNrOrHa
 		value.SetBytes(rawValue)
 	}
 	return value[:], nil
+}
+
+func (svc *Service) GetCode(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
+	accountKeeper := svc.stateDB.GetAccountKeeper()
+	contractStore := svc.stateDB.GetContractStore()
+
+	height, err := StateAndHeaderByNumberOrHash(svc.ext.RPCClient(), blockNrOrHash)
+	if err != nil {
+		return hexutil.Bytes{}, err
+	}
+	switch height {
+	case -1:
+	case -2:
+		height = contractStore.State.Version()
+		break
+	}
+
+	ethAcc, err := accountKeeper.GetVersionedAccount(height, address.Bytes())
+	if err != nil {
+		return hexutil.Bytes{}, nil
+	}
+	storeKey := contractStore.GetStoreKey(evm.KeyPrefixCode, ethAcc.CodeHash)
+	code := contractStore.State.GetVersioned(height, storeKey)
+	return code[:], nil
 }
