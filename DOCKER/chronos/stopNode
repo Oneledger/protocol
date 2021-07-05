@@ -14,20 +14,6 @@ then
 	killed=true
 fi
 
-pids=`pgrep -f "olmonitor start.*--root $WORK"`
-if ! [ -z "$pids" ]
-then
-	pkill -f "olmonitor start.*--root $WORK" >> $LOG/olvm.log
-	killed=true
-fi
-
-pids=`pgrep -f "olvm execute --root $WORK"`
-if ! [ -z "$pids" ]
-then
-	pkill -f "olvm execute --root $WORK" >> $LOG/olvm.log
-	killed=true
-fi
-
 if ! [ -z "$killed" ]
 then
 	echo "Stopped $nodeName"

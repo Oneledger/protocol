@@ -84,9 +84,9 @@ func EthereumConfig(chainID string) *ethparams.ChainConfig {
 		IstanbulBlock:       big.NewInt(0),
 		MuirGlacierBlock:    big.NewInt(0),
 		BerlinBlock:         big.NewInt(0),
+		LondonBlock:         big.NewInt(0),
 
-		YoloV3Block: nil,
-		EWASMBlock:  nil,
+		EWASMBlock: nil,
 	}
 }
 
@@ -180,7 +180,7 @@ func (etx *EVMTransaction) To() *ethcmn.Address {
 }
 
 func (etx *EVMTransaction) Apply(vmenv *ethvm.EVM, tx RawTx) (*ExecutionResult, error) {
-	msg := ethtypes.NewMessage(etx.From(), etx.To(), etx.nonce, etx.value, uint64(tx.Fee.Gas), etx.ecfg.gasPrice, etx.data, make(ethtypes.AccessList, 0), true)
+	msg := ethtypes.NewMessage(etx.From(), etx.To(), etx.nonce, etx.value, uint64(tx.Fee.Gas), etx.ecfg.gasPrice, nil, nil, etx.data, make(ethtypes.AccessList, 0), true)
 
 	// Clear cache of accounts to handle changes outside of the EVM
 	etx.stateDB.UpdateAccounts()
@@ -201,7 +201,7 @@ func (etx *EVMTransaction) Apply(vmenv *ethvm.EVM, tx RawTx) (*ExecutionResult, 
 }
 
 func (etx *EVMTransaction) EstimateGas(vmenv *ethvm.EVM, tx RawTx) (uint64, error) {
-	msg := ethtypes.NewMessage(etx.From(), etx.To(), etx.nonce, etx.value, uint64(tx.Fee.Gas), etx.ecfg.gasPrice, etx.data, make(ethtypes.AccessList, 0), true)
+	msg := ethtypes.NewMessage(etx.From(), etx.To(), etx.nonce, etx.value, uint64(tx.Fee.Gas), etx.ecfg.gasPrice, nil, nil, etx.data, make(ethtypes.AccessList, 0), true)
 
 	usedGas, err := EstimateGas(vmenv, msg, new(ethcore.GasPool).AddGas(uint64(uint64(tx.Fee.Gas))))
 	if err != nil {
