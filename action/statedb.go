@@ -28,6 +28,7 @@ type CommitStateDB struct {
 
 	bheight      uint64
 	thash, bhash ethcmn.Hash
+	txIndex      int
 	logs         map[ethcmn.Hash][]*ethtypes.Log
 	logSize      uint
 
@@ -58,6 +59,11 @@ type CommitStateDB struct {
 
 	// mutex for state deep copying
 	lock sync.Mutex
+
+	// Transaction counter in a block. Used on StateSB's Prepare function.
+	// It is reset to 0 every block on EndBlock so there's no point in storing the counter
+	// to store or adding it as a field on the EVM genesis state.
+	TxCount int
 }
 
 // NewCommitStateDB returns a reference to a newly initialized CommitStateDB
@@ -79,6 +85,7 @@ func NewCommitStateDB(cs *evm.ContractStore, ak balance.AccountKeeper, logger *l
 		accessList:           newAccessList(),
 		journal:              newJournal(),
 		validRevisions:       []revision{},
+		TxCount:              0,
 	}
 }
 
@@ -96,6 +103,7 @@ func (s *CommitStateDB) GetAccountKeeper() balance.AccountKeeper {
 // used when the EVM emits new state logs.
 func (s *CommitStateDB) Prepare(thash ethcmn.Hash) {
 	s.thash = thash
+	s.txIndex = s.TxCount
 	s.accessList = newAccessList()
 }
 
@@ -192,15 +200,18 @@ func (s *CommitStateDB) GetHeightHash(height uint64) ethcmn.Hash {
 	return ethcmn.BytesToHash(bz)
 }
 
-// SetHeightHash sets the block header hash associated with a given height.
-func (s *CommitStateDB) SetHeightHash(height uint64, hash ethcmn.Hash) {
+// SetHeightHash set hash and height of the block
+func (s *CommitStateDB) SetHeightHash(height uint64, hash ethcmn.Hash, updateState bool) {
+	s.bhash = hash
 	s.bheight = height
-	s.contractStore.Set(evm.KeyPrefixHeightHash, evm.HeightHashKey(height), hash.Bytes())
+	if updateState {
+		s.contractStore.Set(evm.KeyPrefixHeightHash, evm.HeightHashKey(height), hash.Bytes())
+	}
 }
 
-// SetBlockHash set hash of the block
-func (s *CommitStateDB) SetBlockHash(hash ethcmn.Hash) {
-	s.bhash = hash
+// GetCurrentHeight for get last block number, if zero means update not started
+func (s *CommitStateDB) GetCurrentHeight() uint64 {
+	return s.bheight
 }
 
 // UpdateAccounts updates the nonce and coin balances of accounts
@@ -214,12 +225,8 @@ func (s *CommitStateDB) UpdateAccounts() {
 		if err != nil {
 			continue
 		}
-		s.logger.Debug("Checking on update for acc: ", stateEntry.stateObject.account.Address)
-		s.logger.Debugf("Balance, current: %d, from store: %d\n", stateEntry.stateObject.Balance(), acc.Balance())
-		s.logger.Debugf("Nonce, current: %d, from store: %d\n", stateEntry.stateObject.Nonce(), acc.Sequence)
 		if stateEntry.stateObject.Balance().Cmp(acc.Balance()) != 0 ||
 			stateEntry.stateObject.Nonce() != acc.Sequence {
-			s.logger.Debugf("Account for address '%s' updated\n", addr)
 			stateEntry.stateObject.account = acc
 		}
 	}
@@ -234,10 +241,12 @@ func (s *CommitStateDB) Reset(_ ethcmn.Hash) error {
 	s.stateObjectsDirty = make(map[ethcmn.Address]struct{})
 	s.thash = ethcmn.Hash{}
 	s.bhash = ethcmn.Hash{}
+	s.txIndex = 0
 	s.logSize = 0
 	s.preimages = []preimageEntry{}
 	s.hashToPreimageIndex = make(map[ethcmn.Hash]int)
 	s.accessList = newAccessList()
+	s.TxCount = 0
 
 	s.clearJournalAndRefund()
 	return nil
@@ -605,6 +614,7 @@ func CopyCommitStateDB(from, to *CommitStateDB) {
 	to.journal = newJournal()
 	to.thash = from.thash
 	to.bhash = from.bhash
+	to.txIndex = from.txIndex
 	validRevisions := make([]revision, len(from.validRevisions))
 	copy(validRevisions, from.validRevisions)
 	to.validRevisions = validRevisions

@@ -104,12 +104,15 @@ type EVMTransactionLogsRequest struct {
 }
 
 type EVMLogReply struct {
-	TransactionHash string       `json:"transactionHash"`
-	BlockHeight     string       `json:"blockHeight"`
-	BlockHash       string       `json:"blockHash"`
-	Address         keys.Address `json:"address"`
-	Data            string       `json:"data"`
-	Topics          []string     `json:"topics"`
+	TransactionHash  string       `json:"transactionHash"`
+	BlockHeight      string       `json:"blockHeight"`
+	BlockHash        string       `json:"blockHash"`
+	Address          keys.Address `json:"address"`
+	Data             string       `json:"data"`
+	Topics           []string     `json:"topics"`
+	LogIndex         string       `json:"logIndex"`
+	TranscationIndex string       `json:"transactionIndex"`
+	Removed          bool         `json:"removed"`
 }
 
 type EVMLogsReply struct {

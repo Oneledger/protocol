@@ -2,6 +2,7 @@ module github.com/Oneledger/protocol
 
 require (
 	github.com/Oneledger/toml v0.4.1
+	github.com/Workiva/go-datastructures v1.0.52 // indirect
 	github.com/allegro/bigcache v1.2.1 // indirect
 	github.com/aristanetworks/goarista v0.0.0-20191023202215-f096da5361bb // indirect
 	github.com/blockcypher/gobcy v1.3.1
