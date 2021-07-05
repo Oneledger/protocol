@@ -3,6 +3,7 @@ package net
 import (
 	"fmt"
 	"github.com/Oneledger/protocol/service"
+	"github.com/Oneledger/protocol/utils"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"math/big"
 )
@@ -28,9 +29,10 @@ func (svc *PublicNetAPI) Listening() bool {
 }
 
 func (svc *PublicNetAPI) PeerCount() hexutil.Big {
+	// TODO: how to fetch the current connection peers?
 	return svc.peerCount
 }
 
 func (svc *PublicNetAPI) Version() string {
-	return fmt.Sprintf("%s", svc.networkVersion)
+	return fmt.Sprintf("%s", utils.HashToBigInt(svc.networkVersion))
 }

@@ -35,6 +35,7 @@ import (
 
 	ethservice "github.com/Oneledger/protocol/web3/eth"
 	netservice "github.com/Oneledger/protocol/web3/net"
+	web3service "github.com/Oneledger/protocol/web3/web3"
 )
 
 // Context is the master context for creating new contexts
@@ -115,5 +116,6 @@ func NewWeb3Map(ctx *Context) (Map, error) {
 	return Map{
 		"eth": ethservice.NewService(ctx.Logger, ctx.Services, ctx.Contracts, ctx.AccountKeeper),
 		"net": netservice.NewService(ctx),
+		"web3": web3service.NewService(),
 	}, nil
 }
