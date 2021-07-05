@@ -95,6 +95,7 @@ func (app *App) chainInitializer() chainInitializer {
 		app.Context.govern.WithState(app.Context.deliver)
 		app.Context.btcTrackers.WithState(app.Context.deliver)
 
+		app.logger.Info("NexusBlock start at height: ", app.Context.cfg.Node.NexusBlock)
 		err := app.setupState(req.AppStateBytes)
 		// This should cause consensus to halt
 		if err != nil {
@@ -140,9 +141,10 @@ func (app *App) blockBeginner() blockBeginner {
 		gc := getGasCalculator(app.genesisDoc.ConsensusParams)
 		app.Context.deliver = storage.NewState(app.Context.chainstate).WithGas(gc)
 
-		// Update last block height
-		app.Context.stateDB.WithState(app.Context.deliver).SetHeightHash(uint64(req.Header.GetHeight()), ethcmn.BytesToHash(req.Hash))
-		app.Context.stateDB.WithState(app.Context.deliver).SetBlockHash(ethcmn.BytesToHash(req.Hash))
+		// Update last block height and hash
+		if app.Context.cfg.IsNexusUpdate(req.Header.GetHeight()) {
+			app.Context.stateDB.WithState(app.Context.deliver).SetHeightHash(uint64(req.Header.GetHeight()), ethcmn.BytesToHash(req.GetHash()), true)
+		}
 
 		feeOpt, err := app.Context.govern.GetFeeOption()
 		if err != nil {
@@ -243,9 +245,6 @@ func (app *App) txChecker() txChecker {
 			}
 		}
 
-		// setup transaction hash
-		app.Context.stateDB.WithState(app.Context.check).Prepare(ethcmn.BytesToHash(app.GetTransactionHash(msg.Tx)))
-
 		ok, response := handler.ProcessCheck(txCtx, tx.RawTx)
 
 		app.logger.Debug("Response used gas: ", response.GasUsed)
@@ -305,8 +304,8 @@ func (app *App) txDeliverer() txDeliverer {
 
 		gas := txCtx.State.ConsumedGas()
 
-		// setup transaction hash
-		app.Context.stateDB.WithState(app.Context.deliver).Prepare(ethcmn.BytesToHash(app.GetTransactionHash(msg.Tx)))
+		// setup transaction hash, no state update
+		app.Context.stateDB.Prepare(ethcmn.BytesToHash(utils.GetTransactionHash(msg.Tx)))
 
 		ok, response := handler.ProcessDeliver(txCtx, tx.RawTx)
 
@@ -353,7 +352,9 @@ func (app *App) blockEnder() blockEnder {
 		app.Context.validators.WithState(app.Context.deliver).ClearEvents()
 
 		// commit changes before the next execution
-		app.commitVMChanges(app.Context.deliver)
+		if app.Context.cfg.IsNexusUpdate(req.GetHeight()) {
+			app.commitVMChanges(app.Context.deliver)
+		}
 
 		ethTrackerlog := log.NewLoggerWithPrefix(app.Context.logWriter, "ethtracker").WithLevel(log.Level(app.Context.cfg.Node.LogLevel))
 		doTransitions(app.Context.jobStore, app.Context.btcTrackers.WithState(app.Context.deliver), app.Context.validators)
@@ -750,12 +751,8 @@ func handleBlockRewards(appCtx *context, block RequestBeginBlock, logger *log.Lo
 }
 
 func (app *App) VerifyCache(tx []byte) bool {
-	hash := app.GetTransactionHash(tx)
+	hash := utils.GetTransactionHash(tx)
 	return app.Context.internalService.ExistTx(hash)
-}
-
-func (app App) GetTransactionHash(tx []byte) []byte {
-	return utils.SHA2(tx)
 }
 
 func marshalLog(ok bool, response action.Response, feeResponse action.Response) string {

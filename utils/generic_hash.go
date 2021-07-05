@@ -31,3 +31,7 @@ func SHA2(data []byte) []byte {
 	h := sha256.Sum256(data)
 	return h[:]
 }
+
+func GetTransactionHash(tx []byte) []byte {
+	return SHA2(tx)
+}

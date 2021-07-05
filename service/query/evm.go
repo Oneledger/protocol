@@ -92,12 +92,15 @@ func (svc *Service) EVMTransactionLogs(args client.EVMTransactionLogsRequest, re
 			topicsS = append(topicsS, topic.Hex())
 		}
 		rLog := client.EVMLogReply{
-			TransactionHash: log.TxHash.Hex(),
-			BlockHeight:     strconv.Itoa(int(log.BlockNumber)),
-			BlockHash:       log.BlockHash.Hex(),
-			Address:         keys.Address(log.Address.Bytes()),
-			Data:            ethcmn.Bytes2Hex(log.Data),
-			Topics:          topicsS,
+			TransactionHash:  log.TxHash.Hex(),
+			BlockHeight:      strconv.Itoa(int(log.BlockNumber)),
+			BlockHash:        log.BlockHash.Hex(),
+			Address:          keys.Address(log.Address.Bytes()),
+			Data:             fmt.Sprintf("0x%s", ethcmn.Bytes2Hex(log.Data)),
+			Topics:           topicsS,
+			TranscationIndex: fmt.Sprintf("0x%x", log.TxIndex),
+			LogIndex:         fmt.Sprintf("0x%x", log.Index),
+			Removed:          false,
 		}
 		reply.Logs = append(reply.Logs, rLog)
 	}
@@ -144,7 +147,7 @@ func (svc *Service) EVMCall(args client.SendTxRequest, reply *client.EVMCallRepl
 	height := svc.contracts.State.Version()
 	stateDB := action.NewCommitStateDB(svc.contracts, svc.accountKeeper, svc.logger)
 	bhash := stateDB.GetHeightHash(uint64(height))
-	stateDB.SetBlockHash(bhash)
+	stateDB.SetHeightHash(uint64(height), bhash, false)
 	block := svc.ext.Block(height).Block
 	header := &abci.Header{
 		ChainID: block.ChainID,
@@ -209,7 +212,7 @@ func (svc *Service) EVMEstimateGas(args client.SendTxRequest, reply *client.EVME
 	height := svc.contracts.State.Version()
 	stateDB := action.NewCommitStateDB(svc.contracts, svc.accountKeeper, svc.logger)
 	bhash := stateDB.GetHeightHash(uint64(height))
-	stateDB.SetBlockHash(bhash)
+	stateDB.SetHeightHash(uint64(height), bhash, false)
 	block := svc.ext.Block(height).Block
 	header := &abci.Header{
 		ChainID: block.ChainID,

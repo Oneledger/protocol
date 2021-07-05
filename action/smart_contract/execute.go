@@ -63,6 +63,11 @@ type scExecuteTx struct {
 }
 
 func (s scExecuteTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error) {
+	// zero means stateDB does not receive a block number so nexus update has not been applied
+	if ctx.StateDB.GetCurrentHeight() == 0 {
+		return false, errors.Wrap(action.ErrWrongTxType, "not enabled")
+	}
+
 	execute := &Execute{}
 	err := execute.Unmarshal(tx.Data)
 	if err != nil {

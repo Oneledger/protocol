@@ -187,12 +187,16 @@ func GetTransactionLogs(cmd *cobra.Command, args []string) error {
 	}
 	logger.Info("\t Result: ")
 	for _, log := range callResponse.Logs {
+		logger.Info("\t Transaction index: ", log.TranscationIndex)
+		logger.Info("\t Log index: ", log.LogIndex)
 		logger.Info("\t Address: ", log.Address)
 		logger.Info("\t Transaction: ", log.TransactionHash)
 		logger.Info("\t Block height: ", log.BlockHeight)
 		logger.Info("\t Block hash: ", log.BlockHash)
 		logger.Info("\t Data: ", log.Data)
 		logger.Info("\t Topics: ", log.Topics)
+		logger.Info("\t Removed: ", log.Removed)
+		logger.Info("\t")
 	}
 	return nil
 }
