@@ -8,7 +8,7 @@ import (
 )
 
 // ClientVersion returns the client version in the Web3 user agent format.
-func (svc *web3rpc.Servic) ClientVersion() string {
+func (svc *web3rpc.Servics) ClientVersion() string {
 	return version.Client.String()
 }
 
