@@ -23,20 +23,18 @@ func (svc *Service) GetStorageAt(address common.Address, key string, blockNrOrHa
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
-	contractStore := svc.stateDB.GetContractStore()
-
 	height, err := svc.stateAndHeaderByNumberOrHash(blockNrOrHash)
 	if err != nil {
 		return hexutil.Bytes{}, err
 	}
-	svc.log.Debug("eth_getStorageAt", "address", address, "key", key, "height", height)
+	svc.logger.Debug("eth_getStorageAt", "address", address, "key", key, "height", height)
 
 	prefixKey := utils.GetStorageByAddressKey(address, common.HexToHash(key).Bytes())
 	prefixStore := evm.AddressStoragePrefix(address)
 
 	value := common.Hash{}
-	storeKey := contractStore.GetStoreKey(prefixStore, prefixKey.Bytes())
-	rawValue := contractStore.State.GetVersioned(height, storeKey)
+	storeKey := svc.ctx.GetContractStore().GetStoreKey(prefixStore, prefixKey.Bytes())
+	rawValue := svc.ctx.GetContractStore().State.GetVersioned(height, storeKey)
 	if len(rawValue) > 0 {
 		value.SetBytes(rawValue)
 	}
@@ -47,21 +45,18 @@ func (svc *Service) GetCode(address common.Address, blockNrOrHash rpc.BlockNumbe
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
-	accountKeeper := svc.stateDB.GetAccountKeeper()
-	contractStore := svc.stateDB.GetContractStore()
-
 	height, err := svc.stateAndHeaderByNumberOrHash(blockNrOrHash)
 	if err != nil {
 		return hexutil.Bytes{}, err
 	}
-	svc.log.Debug("eth_getCode", "address", address, "height", height)
+	svc.logger.Debug("eth_getCode", "address", address, "height", height)
 
-	ethAcc, err := accountKeeper.GetVersionedAccount(height, address.Bytes())
+	ethAcc, err := svc.ctx.GetAccountKeeper().GetVersionedAccount(height, address.Bytes())
 	if err != nil {
 		return hexutil.Bytes{}, nil
 	}
-	storeKey := contractStore.GetStoreKey(evm.KeyPrefixCode, ethAcc.CodeHash)
-	code := contractStore.State.GetVersioned(height, storeKey)
+	storeKey := svc.ctx.GetContractStore().GetStoreKey(evm.KeyPrefixCode, ethAcc.CodeHash)
+	code := svc.ctx.GetContractStore().State.GetVersioned(height, storeKey)
 	return code[:], nil
 }
 
@@ -73,7 +68,7 @@ func (svc *Service) Call(call web3types.CallArgs, blockNrOrHash rpc.BlockNumberO
 	if err != nil {
 		return nil, err
 	}
-	svc.log.Debug("eth_call", "args", call, "height", height)
+	svc.logger.Debug("eth_call", "args", call, "height", height)
 
 	result, err := svc.callContract(call, height)
 	if err != nil {
@@ -90,7 +85,7 @@ func (svc *Service) EstimateGas(call web3types.CallArgs) (hexutil.Uint64, error)
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
-	svc.log.Debug("eth_estimateGas", "args", call)
+	svc.logger.Debug("eth_estimateGas", "args", call)
 	height := svc.getState().Version()
 	result, err := svc.callContract(call, height)
 	if err != nil {
@@ -106,15 +101,12 @@ func (svc *Service) EstimateGas(call web3types.CallArgs) (hexutil.Uint64, error)
 }
 
 func (svc *Service) callContract(call web3types.CallArgs, height int64) (*action.ExecutionResult, error) {
-	accountKeeper := svc.stateDB.GetAccountKeeper()
-	contractStore := svc.stateDB.GetContractStore()
-
 	// TODO: Add versioning support
-	stateDB := action.NewCommitStateDB(contractStore, accountKeeper, svc.log)
+	stateDB := action.NewCommitStateDB(svc.ctx.GetContractStore(), svc.ctx.GetAccountKeeper(), svc.logger)
 	bhash := stateDB.GetHeightHash(uint64(height))
 	stateDB.SetHeightHash(uint64(height), bhash, false)
 
-	block := svc.ext.Block(height).Block
+	block := svc.ctx.GetAPI().Block(height).Block
 	header := &abci.Header{
 		ChainID: block.ChainID,
 		Height:  block.Height,
@@ -149,7 +141,7 @@ func (svc *Service) callContract(call web3types.CallArgs, height int64) (*action
 	}
 
 	// TODO: Change on account nonce with involving of pending transactions
-	ethAcc, _ := accountKeeper.GetVersionedAccount(height, call.From.Bytes())
+	ethAcc, _ := svc.ctx.GetAccountKeeper().GetVersionedAccount(height, call.From.Bytes())
 	nonce := ethAcc.Sequence
 
 	price := action.Amount{

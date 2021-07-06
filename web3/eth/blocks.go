@@ -7,7 +7,7 @@ import (
 )
 
 func (svc *Service) BlockNumber() hexutil.Big {
-	height := svc.stateDB.GetContractStore().State.Version()
+	height := svc.getState().Version()
 	blockNumber := big.NewInt(height)
 	return hexutil.Big(*blockNumber)
 }
