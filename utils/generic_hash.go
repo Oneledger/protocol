@@ -7,8 +7,6 @@
   \____/|_| |_|\___|______\___|\__,_|\__, |\___|_|       |_|   |_|  \___/ \__\___/ \___\___/|_|
                                       __/ |
                                      |___/
-
-
 Copyright 2017 - 2019 OneLedger
 */
 
@@ -46,8 +44,6 @@ func HashToBigInt(s string) *big.Int {
 	h.Write([]byte(s))
 	return new(big.Int).SetUint64(h.Sum64())
 }
-<<<<<<< HEAD
-=======
 
 func GetStorageByAddressKey(address ethcmn.Address, key []byte) ethcmn.Hash {
 	prefix := address.Bytes()
@@ -58,4 +54,3 @@ func GetStorageByAddressKey(address ethcmn.Address, key []byte) ethcmn.Hash {
 
 	return ethcrypto.Keccak256Hash(compositeKey)
 }
->>>>>>> web3-api

@@ -2,13 +2,14 @@ package eth
 
 import (
 	"github.com/Oneledger/protocol/data/accounts"
+	"github.com/Oneledger/protocol/web3rpc"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
 // Accounts returns the list of accounts available to this node.
-func (svc *Service) Accounts() ([]common.Address, error) {
+func (svc *web3rpc.Service) Accounts() ([]common.Address, error) {
 	svc.logger.Debug("eth_accounts")
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
@@ -35,7 +36,7 @@ func (svc *Service) Accounts() ([]common.Address, error) {
 }
 
 // GetBalance returns the provided account's balance up to the provided block number.
-func (svc *Service) GetBalance(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (*hexutil.Big, error) {
+func (svc *web3rpc.Service) GetBalance(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (*hexutil.Big, error) {
 	height, err := svc.stateAndHeaderByNumberOrHash(blockNrOrHash)
 	if err != nil {
 		return &hexutil.Big{}, err

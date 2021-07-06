@@ -200,10 +200,7 @@ func runGenesis(_ *cobra.Command, _ []string) error {
 		cfg.Network.RPCAddress = generateAddress(i, generatePort(), true)
 		cfg.Network.P2PAddress = generateAddress(i, generatePort(), true)
 		cfg.Network.SDKAddress = generateAddress(i, generatePort(), true)
-<<<<<<< HEAD
-=======
 		cfg.Network.Web3Address = generateAddress(i, generateWeb3Port(), true, true)
->>>>>>> web3-api
 
 		n := node{isValidator: isValidator, cfg: cfg, key: nodekey, esdcaPk: ecdsaPk}
 		if isValidator {

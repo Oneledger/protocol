@@ -1,4 +1,4 @@
-package web3
+package web3rpc
 
 import (
 	"fmt"
@@ -64,4 +64,3 @@ func (s *Server) Start() error {
 
 	return err
 }
-

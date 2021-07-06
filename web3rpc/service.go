@@ -1,4 +1,4 @@
-package eth
+package web3rpc
 
 import (
 	"errors"
@@ -7,7 +7,7 @@ import (
 	"github.com/Oneledger/protocol/log"
 
 	"github.com/Oneledger/protocol/storage"
-	web3types "github.com/Oneledger/protocol/web3/types"
+	web3types "github.com/Oneledger/protocol/web3rpc/types"
 	"github.com/ethereum/go-ethereum/rpc"
 
 	rpcclient "github.com/Oneledger/protocol/client"
