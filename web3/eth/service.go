@@ -2,10 +2,12 @@ package eth
 
 import (
 	"errors"
+	"sync"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/log"
+	"github.com/Oneledger/protocol/storage"
 	"github.com/ethereum/go-ethereum/rpc"
 
 	rpcclient "github.com/Oneledger/protocol/client"
@@ -15,6 +17,8 @@ type Service struct {
 	log     *log.Logger
 	ext     client.ExtServiceContext
 	stateDB *action.CommitStateDB
+
+	mu sync.Mutex
 }
 
 func NewService(logger *log.Logger, ext client.ExtServiceContext, stateDB *action.CommitStateDB) *Service {
@@ -25,12 +29,28 @@ func NewService(logger *log.Logger, ext client.ExtServiceContext, stateDB *actio
 	}
 }
 
-func StateAndHeaderByNumberOrHash(client rpcclient.Client, blockNrOrHash rpc.BlockNumberOrHash) (int64, error) {
+func (svc *Service) getTMClient() rpcclient.Client {
+	return svc.ext.RPCClient()
+}
+
+func (svc *Service) getState() *storage.State {
+	return svc.stateDB.GetContractStore().State
+}
+
+func (svc *Service) getStateHeight(height int64) int64 {
+	switch height {
+	case -1, -2:
+		return svc.getState().Version()
+	}
+	return height
+}
+
+func (svc *Service) stateAndHeaderByNumberOrHash(blockNrOrHash rpc.BlockNumberOrHash) (int64, error) {
 	if blockNr, ok := blockNrOrHash.Number(); ok {
-		return blockNr.Int64(), nil
+		return svc.getStateHeight(blockNr.Int64()), nil
 	}
 	if hash, ok := blockNrOrHash.Hash(); ok {
-		header, err := client.BlockByHash(hash.Bytes())
+		header, err := svc.getTMClient().BlockByHash(hash.Bytes())
 		if err != nil {
 			return 0, err
 		}
