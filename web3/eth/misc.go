@@ -16,11 +16,14 @@ func (svc *Service) ProtocolVersion() string {
 }
 
 // ChainId returns the chain's identifier in hex format
-func (svc *Service) ChainId() hexutil.Big {
+func (svc *Service) ChainId() (hexutil.Big, error) {
 	svc.logger.Debug("eth_chainId")
-	block := svc.ctx.GetAPI().Block(0).Block
-	chainID := utils.HashToBigInt(block.Header.ChainID)
-	return hexutil.Big(*chainID)
+	blockResult, err := svc.getTMClient().Block(nil)
+	if err != nil {
+		return hexutil.Big(*big.NewInt(0)), err
+	}
+	chainID := utils.HashToBigInt(blockResult.Block.Header.ChainID)
+	return hexutil.Big(*chainID), nil
 }
 
 // Syncing returns whether or not the current node is syncing with other peers. Returns false if not, or a struct
