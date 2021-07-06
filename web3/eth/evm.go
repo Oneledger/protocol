@@ -11,11 +11,10 @@ import (
 	"github.com/Oneledger/protocol/data/evm"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/utils"
+	rpctypes "github.com/Oneledger/protocol/web3/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/rpc"
-
-	web3types "github.com/Oneledger/protocol/web3/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
@@ -23,7 +22,7 @@ func (svc *Service) GetStorageAt(address common.Address, key string, blockNrOrHa
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
-	height, err := svc.stateAndHeaderByNumberOrHash(blockNrOrHash)
+	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.getTMClient(), blockNrOrHash)
 	if err != nil {
 		return hexutil.Bytes{}, err
 	}
@@ -34,7 +33,7 @@ func (svc *Service) GetStorageAt(address common.Address, key string, blockNrOrHa
 
 	value := common.Hash{}
 	storeKey := svc.ctx.GetContractStore().GetStoreKey(prefixStore, prefixKey.Bytes())
-	rawValue := svc.ctx.GetContractStore().State.GetVersioned(height, storeKey)
+	rawValue := svc.ctx.GetContractStore().State.GetVersioned(svc.getStateHeight(height), storeKey)
 	if len(rawValue) > 0 {
 		value.SetBytes(rawValue)
 	}
@@ -45,7 +44,7 @@ func (svc *Service) GetCode(address common.Address, blockNrOrHash rpc.BlockNumbe
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
-	height, err := svc.stateAndHeaderByNumberOrHash(blockNrOrHash)
+	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.getTMClient(), blockNrOrHash)
 	if err != nil {
 		return hexutil.Bytes{}, err
 	}
@@ -56,32 +55,32 @@ func (svc *Service) GetCode(address common.Address, blockNrOrHash rpc.BlockNumbe
 		return hexutil.Bytes{}, nil
 	}
 	storeKey := svc.ctx.GetContractStore().GetStoreKey(evm.KeyPrefixCode, ethAcc.CodeHash)
-	code := svc.ctx.GetContractStore().State.GetVersioned(height, storeKey)
+	code := svc.ctx.GetContractStore().State.GetVersioned(svc.getStateHeight(height), storeKey)
 	return code[:], nil
 }
 
-func (svc *Service) Call(call web3types.CallArgs, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
+func (svc *Service) Call(call rpctypes.CallArgs, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
-	height, err := svc.stateAndHeaderByNumberOrHash(blockNrOrHash)
+	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.getTMClient(), blockNrOrHash)
 	if err != nil {
 		return nil, err
 	}
 	svc.logger.Debug("eth_call", "args", call, "height", height)
 
-	result, err := svc.callContract(call, height)
+	result, err := svc.callContract(call, svc.getStateHeight(height))
 	if err != nil {
 		return hexutil.Bytes{}, err
 	}
 	// If the result contains a revert reason, try to unpack and return it.
 	if len(result.Revert()) > 0 {
-		return hexutil.Bytes{}, newRevertError(result)
+		return hexutil.Bytes{}, rpctypes.NewRevertError(result)
 	}
 	return result.Return(), result.Err
 }
 
-func (svc *Service) EstimateGas(call web3types.CallArgs) (hexutil.Uint64, error) {
+func (svc *Service) EstimateGas(call rpctypes.CallArgs) (hexutil.Uint64, error) {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
@@ -93,14 +92,14 @@ func (svc *Service) EstimateGas(call web3types.CallArgs) (hexutil.Uint64, error)
 	}
 	// If the result contains a revert reason, try to unpack and return it.
 	if len(result.Revert()) > 0 {
-		return 0, newRevertError(result)
+		return 0, rpctypes.NewRevertError(result)
 	}
 	// TODO: change 1000 buffer for more accurate buffer
 	gas := result.UsedGas + 1000
 	return hexutil.Uint64(gas), result.Err
 }
 
-func (svc *Service) callContract(call web3types.CallArgs, height int64) (*action.ExecutionResult, error) {
+func (svc *Service) callContract(call rpctypes.CallArgs, height int64) (*action.ExecutionResult, error) {
 	// TODO: Add versioning support
 	stateDB := action.NewCommitStateDB(svc.ctx.GetContractStore(), svc.ctx.GetAccountKeeper(), svc.logger)
 	bhash := stateDB.GetHeightHash(uint64(height))

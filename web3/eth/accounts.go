@@ -2,6 +2,7 @@ package eth
 
 import (
 	"github.com/Oneledger/protocol/data/accounts"
+	rpctypes "github.com/Oneledger/protocol/web3/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -36,13 +37,13 @@ func (svc *Service) Accounts() ([]common.Address, error) {
 
 // GetBalance returns the provided account's balance up to the provided block number.
 func (svc *Service) GetBalance(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (*hexutil.Big, error) {
-	height, err := svc.stateAndHeaderByNumberOrHash(blockNrOrHash)
+	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.getTMClient(), blockNrOrHash)
 	if err != nil {
 		return &hexutil.Big{}, err
 	}
 	svc.logger.Debug("eth_getBalance", "height", height)
 
-	ethAcc, err := svc.ctx.GetAccountKeeper().GetVersionedAccount(height, address.Bytes())
+	ethAcc, err := svc.ctx.GetAccountKeeper().GetVersionedAccount(svc.getStateHeight(height), address.Bytes())
 	if err != nil {
 		svc.logger.Debug("eth_getBalance", "account_not_found", address)
 		return (*hexutil.Big)(ethAcc.Balance()), nil

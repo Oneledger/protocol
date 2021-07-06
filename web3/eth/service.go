@@ -1,14 +1,12 @@
 package eth
 
 import (
-	"errors"
 	"sync"
 
 	"github.com/Oneledger/protocol/log"
 
 	"github.com/Oneledger/protocol/storage"
 	web3types "github.com/Oneledger/protocol/web3/types"
-	"github.com/ethereum/go-ethereum/rpc"
 
 	rpcclient "github.com/Oneledger/protocol/client"
 )
@@ -38,21 +36,4 @@ func (svc *Service) getStateHeight(height int64) int64 {
 		return svc.getState().Version()
 	}
 	return height
-}
-
-func (svc *Service) stateAndHeaderByNumberOrHash(blockNrOrHash rpc.BlockNumberOrHash) (int64, error) {
-	if blockNr, ok := blockNrOrHash.Number(); ok {
-		return svc.getStateHeight(blockNr.Int64()), nil
-	}
-	if hash, ok := blockNrOrHash.Hash(); ok {
-		header, err := svc.getTMClient().BlockByHash(hash.Bytes())
-		if err != nil {
-			return 0, err
-		}
-		if header == nil || header.Block == nil {
-			return 0, errors.New("header for hash not found")
-		}
-		return header.Block.Header.Height, nil
-	}
-	return 0, errors.New("invalid arguments; neither block nor hash specified")
 }
