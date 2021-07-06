@@ -3,7 +3,6 @@ package eth
 import (
 	"context"
 	"fmt"
-	"github.com/Oneledger/protocol/web3rpc"
 	"math/big"
 	"time"
 
@@ -20,7 +19,7 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
-func (svc *web3rpc.Service) GetStorageAt(address common.Address, key string, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
+func (svc *Service) GetStorageAt(address common.Address, key string, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
@@ -42,7 +41,7 @@ func (svc *web3rpc.Service) GetStorageAt(address common.Address, key string, blo
 	return value[:], nil
 }
 
-func (svc *web3rpc.Service) GetCode(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
+func (svc *Service) GetCode(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
@@ -61,7 +60,7 @@ func (svc *web3rpc.Service) GetCode(address common.Address, blockNrOrHash rpc.Bl
 	return code[:], nil
 }
 
-func (svc *web3rpc.Service) Call(call web3types.CallArgs, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
+func (svc *Service) Call(call web3types.CallArgs, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
@@ -82,7 +81,7 @@ func (svc *web3rpc.Service) Call(call web3types.CallArgs, blockNrOrHash rpc.Bloc
 	return result.Return(), result.Err
 }
 
-func (svc *web3rpc.Service) EstimateGas(call web3types.CallArgs) (hexutil.Uint64, error) {
+func (svc *Service) EstimateGas(call web3types.CallArgs) (hexutil.Uint64, error) {
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
@@ -101,7 +100,7 @@ func (svc *web3rpc.Service) EstimateGas(call web3types.CallArgs) (hexutil.Uint64
 	return hexutil.Uint64(gas), result.Err
 }
 
-func (svc *web3rpc.Service) callContract(call web3types.CallArgs, height int64) (*action.ExecutionResult, error) {
+func (svc *Service) callContract(call web3types.CallArgs, height int64) (*action.ExecutionResult, error) {
 	// TODO: Add versioning support
 	stateDB := action.NewCommitStateDB(svc.ctx.GetContractStore(), svc.ctx.GetAccountKeeper(), svc.logger)
 	bhash := stateDB.GetHeightHash(uint64(height))

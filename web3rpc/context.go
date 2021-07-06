@@ -7,7 +7,10 @@ import (
 	"github.com/Oneledger/protocol/data/evm"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
+	"github.com/Oneledger/protocol/web3rpc/eth"
+	"github.com/Oneledger/protocol/web3rpc/net"
 	web3types "github.com/Oneledger/protocol/web3rpc/types"
+	"github.com/Oneledger/protocol/web3rpc/web3"
 )
 
 // Context set up for service processing
@@ -33,9 +36,9 @@ func NewContext(
 
 // DefaultRegisterForAll regs services from the namespaces
 func (ctx *Context) DefaultRegisterForAll() {
-	ctx.RegisterService("eth", NewService(ctx))
-	ctx.RegisterService("net", NewService(ctx))
-	ctx.RegisterService("web3", NewService(ctx))
+	ctx.RegisterService("eth", eth.NewService(ctx))
+	ctx.RegisterService("net", net.NewService(ctx))
+	ctx.RegisterService("web3", web3.NewService(ctx))
 }
 
 // RegisterService used to register service. NOTE: Must be called by service

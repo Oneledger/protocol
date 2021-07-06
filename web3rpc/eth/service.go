@@ -1,4 +1,4 @@
-package web3rpc
+package eth
 
 import (
 	"errors"

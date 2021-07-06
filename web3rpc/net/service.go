@@ -1,15 +1,27 @@
 package net
 
 import (
-	"github.com/Oneledger/protocol/web3rpc"
 	"math/big"
+	"sync"
 
-	"github.com/Oneledger/protocol/utils"
+	"github.com/Oneledger/protocol/log"
+	web3types "github.com/Oneledger/protocol/web3rpc/types"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-func (svc *web3rpc.Service) Listening() bool {
+type Service struct {
+	ctx    web3types.Web3Context
+	logger *log.Logger
+
+	mu sync.Mutex
+}
+
+func NewService(ctx web3types.Web3Context) *Service {
+	return &Service{ctx: ctx, logger: ctx.GetLogger()}
+}
+
+func (svc *Service) Listening() bool {
 	netInfo, err := svc.ctx.GetAPI().RPCClient().NetInfo()
 	if err != nil {
 		svc.logger.Error(err)
@@ -18,7 +30,7 @@ func (svc *web3rpc.Service) Listening() bool {
 	return netInfo.Listening
 }
 
-func (svc *web3rpc.Service) PeerCount() hexutil.Big {
+func (svc *Service) PeerCount() hexutil.Big {
 	netInfo, err := svc.ctx.GetAPI().RPCClient().NetInfo()
 	if err != nil {
 		svc.logger.Error(err)
@@ -28,10 +40,11 @@ func (svc *web3rpc.Service) PeerCount() hexutil.Big {
 	return hexutil.Big(*big.NewInt(int64(netInfo.NPeers)))
 }
 
-func (svc *web3rpc.Service) Version() string {
-	svc.logger.Debug("net_version??")
-
-	block := svc.ctx.GetAPI().Block(1).Block
-	svc.logger.Debug("???????  ", block.Header.ChainID)
-	return utils.HashToBigInt(block.Header.ChainID).String()
+func (svc *Service) Version() string {
+	svc.logger.Debug("net_version")
+	blockResult, err := svc.ctx.GetAPI().RPCClient().Block(nil)
+	if err != nil {
+		return "0x0"
+	}
+	return blockResult.Block.ChainID
 }
