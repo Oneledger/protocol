@@ -16,7 +16,7 @@ func (svc *Service) BlockNumber() hexutil.Big {
 }
 
 // GetBlockByHash returns the block identified by hash.
-func (svc *Service) GetBlockByHash(hash common.Hash, fullTx bool) (map[string]interface{}, error) {
+func (svc *Service) GetBlockByHash(hash common.Hash, fullTx bool) (*rpctypes.Block, error) {
 	svc.logger.Debug("eth_getBlockByHash", "hash", hash, "fullTx", fullTx)
 
 	result, err := svc.getTMClient().BlockByHash(hash.Bytes())
@@ -31,7 +31,7 @@ func (svc *Service) GetBlockByHash(hash common.Hash, fullTx bool) (map[string]in
 }
 
 // GetBlockByNumber returns the block identified by number.
-func (svc *Service) GetBlockByNumber(blockNrOrHash rpc.BlockNumberOrHash, fullTx bool) (map[string]interface{}, error) {
+func (svc *Service) GetBlockByNumber(blockNrOrHash rpc.BlockNumberOrHash, fullTx bool) (*rpctypes.Block, error) {
 	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.getTMClient(), blockNrOrHash)
 	if err != nil {
 		return nil, err
@@ -67,10 +67,10 @@ func (svc *Service) GetBlockTransactionCountByHash(hash common.Hash) *hexutil.Ui
 }
 
 // GetBlockTransactionCountByNumber returns the number of transactions in the block identified by its height.
-func (svc *Service) GetBlockTransactionCountByNumber(blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Uint, error) {
+func (svc *Service) GetBlockTransactionCountByNumber(blockNrOrHash rpc.BlockNumberOrHash) *hexutil.Uint {
 	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.getTMClient(), blockNrOrHash)
 	if err != nil {
-		return 0, err
+		return nil
 	}
 
 	var (
@@ -85,17 +85,17 @@ func (svc *Service) GetBlockTransactionCountByNumber(blockNrOrHash rpc.BlockNumb
 
 		result, err := svc.getTMClient().Block(&blockNum)
 		if err != nil {
-			return 0, nil
+			return nil
 		}
 		if result.Block == nil {
 			svc.logger.Debug("eth_getBlockTransactionCountByNumber", "block not found with height", blockNum)
-			return 0, nil
+			return nil
 		}
 
 		unconfirmed, err := svc.getTMClient().UnconfirmedTxs(1000)
 		if err != nil {
 			svc.logger.Debug("eth_getBlockTransactionCountByNumber", "failed to get unconfirmed txs", err)
-			return 0, nil
+			return nil
 		}
 		txsLen = len(result.Block.Txs) + len(unconfirmed.Txs)
 	case -1:
@@ -104,11 +104,11 @@ func (svc *Service) GetBlockTransactionCountByNumber(blockNrOrHash rpc.BlockNumb
 
 		result, err := svc.getTMClient().Block(&blockNum)
 		if err != nil {
-			return 0, nil
+			return nil
 		}
 		if result.Block == nil {
 			svc.logger.Debug("eth_getBlockTransactionCountByNumber", "block not found with height", blockNum)
-			return 0, nil
+			return nil
 		}
 		txsLen = len(result.Block.Txs)
 	default:
@@ -117,15 +117,36 @@ func (svc *Service) GetBlockTransactionCountByNumber(blockNrOrHash rpc.BlockNumb
 
 		result, err := svc.getTMClient().Block(&blockNum)
 		if err != nil {
-			return 0, nil
+			return nil
 		}
 		if result.Block == nil {
 			svc.logger.Debug("eth_getBlockTransactionCountByNumber", "block not found with height", blockNum)
-			return 0, nil
+			return nil
 		}
 		txsLen = len(result.Block.Txs)
 	}
 
 	svc.logger.Debug("eth_getBlockTransactionCountByNumber", "height", blockNum, "txsLen", txsLen)
-	return hexutil.Uint(txsLen), nil
+	txCount := hexutil.Uint(txsLen)
+	return &txCount
+}
+
+// GetUncleCountByBlockHash returns the number of uncles in the block idenfied by hash. Always zero.
+func (svc *Service) GetUncleCountByBlockHash(_ common.Hash) hexutil.Uint {
+	return 0
+}
+
+// GetUncleCountByBlockNumber returns the number of uncles in the block idenfied by number. Always zero.
+func (svc *Service) GetUncleCountByBlockNumber(_ rpc.BlockNumberOrHash) hexutil.Uint {
+	return 0
+}
+
+// GetUncleByBlockHashAndIndex returns the uncle identified by hash and index. Always returns nil.
+func (svc *Service) GetUncleByBlockHashAndIndex(hash common.Hash, idx hexutil.Uint) *rpctypes.Block {
+	return nil
+}
+
+// GetUncleByBlockNumberAndIndex returns the uncle identified by number and index. Always returns nil.
+func (svc *Service) GetUncleByBlockNumberAndIndex(number hexutil.Uint, idx hexutil.Uint) *rpctypes.Block {
+	return nil
 }

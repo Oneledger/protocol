@@ -133,6 +133,9 @@ func (app *App) commitVMChanges(state *storage.State) {
 	if err = app.Context.stateDB.WithState(state).Reset(root); err != nil {
 		panic(err)
 	}
+
+	// TODO: Add storing of the bloom filter
+	// needs to be implemented in evm tx process
 }
 
 func (app *App) blockBeginner() blockBeginner {
