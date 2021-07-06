@@ -341,6 +341,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 	}
 
 	generatePort := portGenerator(26600)
+	generateWeb3Port := portGenerator(10545)
 
 	validatorList := make([]consensus.GenesisValidator, args.numValidators)
 	nodeList := make([]node, totalNodes)
@@ -380,6 +381,7 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		cfg.Network.RPCAddress = generateAddress(i, generatePort(), true)
 		cfg.Network.P2PAddress = generateAddress(i, generatePort(), true)
 		cfg.Network.SDKAddress = generateAddress(i, generatePort(), true)
+		cfg.Network.Web3Address = generateAddress(i, generateWeb3Port(), true, true)
 
 		dirs := []string{configDir, dataDir, nodeDataDir}
 		for _, dir := range dirs {
