@@ -65,10 +65,3 @@ func (s *Server) Start() error {
 	return err
 }
 
-// func main() {
-// 	server := rpc.NewServer()
-// 	defer server.Stop()
-
-// 	http.HandleFunc("/", server.ServeHTTP)
-// 	log.Fatal(http.ListenAndServe(":12345", nil))
-// }

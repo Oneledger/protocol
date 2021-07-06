@@ -292,11 +292,16 @@ func (ctx *context) Balances() *balance.Context {
 		ctx.currencies)
 }
 
+<<<<<<< HEAD
 func (ctx *context) Web3Services() (service.Map, error) {
+=======
+func (ctx *context) Web3Services() (map[string]interface{}, error) {
+>>>>>>> web3-api
 	extSvcs, err := client.NewExtServiceContext(ctx.cfg.Network.RPCAddress, ctx.cfg.Network.SDKAddress)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to start service context")
 	}
+<<<<<<< HEAD
 	svcCtx := &service.Context{
 		Logger:        log.NewLoggerWithPrefix(ctx.logWriter, "rpc").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
 		Services:      extSvcs,
@@ -305,6 +310,19 @@ func (ctx *context) Web3Services() (service.Map, error) {
 	}
 
 	return service.NewWeb3Map(svcCtx)
+=======
+	web3Ctx := web3.NewContext(
+		log.NewLoggerWithPrefix(ctx.logWriter, "web3").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
+		&extSvcs,
+		ctx.validators,
+		ctx.contracts,
+		ctx.accountKeeper,
+		ctx.node,
+	)
+	// registering services
+	web3Ctx.DefaultRegisterForAll()
+	return web3Ctx.ServiceList(), nil
+>>>>>>> web3-api
 }
 
 func (ctx *context) Services() (service.Map, error) {

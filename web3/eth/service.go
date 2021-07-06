@@ -1,40 +1,58 @@
 package eth
 
 import (
-	"math/big"
+	"errors"
+	"sync"
 
-	"github.com/Oneledger/protocol/client"
-	"github.com/Oneledger/protocol/data/balance"
-	"github.com/Oneledger/protocol/data/evm"
 	"github.com/Oneledger/protocol/log"
-	"github.com/Oneledger/protocol/utils"
-	"github.com/ethereum/go-ethereum/common/hexutil"
+
+	"github.com/Oneledger/protocol/storage"
+	web3types "github.com/Oneledger/protocol/web3/types"
+	"github.com/ethereum/go-ethereum/rpc"
+
+	rpcclient "github.com/Oneledger/protocol/client"
 )
 
 type Service struct {
-	log           *log.Logger
-	ext           client.ExtServiceContext
-	contracts     *evm.ContractStore
-	accountKeeper balance.AccountKeeper
+	ctx    web3types.Web3Context
+	logger *log.Logger
+
+	mu sync.Mutex
 }
 
-func NewService(logger *log.Logger, ext client.ExtServiceContext, contracts *evm.ContractStore, accountKeeper balance.AccountKeeper) *Service {
-	return &Service{
-		log:           logger,
-		ext:           ext,
-		contracts:     contracts,
-		accountKeeper: accountKeeper,
+func NewService(ctx web3types.Web3Context) *Service {
+	return &Service{ctx: ctx, logger: ctx.GetLogger()}
+}
+
+func (svc *Service) getTMClient() rpcclient.Client {
+	return svc.ctx.GetAPI().RPCClient()
+}
+
+func (svc *Service) getState() *storage.State {
+	return svc.ctx.GetContractStore().State
+}
+
+func (svc *Service) getStateHeight(height int64) int64 {
+	switch height {
+	case -1, -2:
+		return svc.getState().Version()
 	}
+	return height
 }
 
-func (svc *Service) ChainId() hexutil.Big {
-	block := svc.ext.Block(0).Block
-	chainID := utils.HashToBigInt(block.Header.ChainID)
-	return hexutil.Big(*chainID)
-}
-
-func (svc *Service) BlockNumber() hexutil.Big {
-	height := svc.contracts.State.Version()
-	blockNumber := big.NewInt(height)
-	return hexutil.Big(*blockNumber)
+func (svc *Service) stateAndHeaderByNumberOrHash(blockNrOrHash rpc.BlockNumberOrHash) (int64, error) {
+	if blockNr, ok := blockNrOrHash.Number(); ok {
+		return svc.getStateHeight(blockNr.Int64()), nil
+	}
+	if hash, ok := blockNrOrHash.Hash(); ok {
+		header, err := svc.getTMClient().BlockByHash(hash.Bytes())
+		if err != nil {
+			return 0, err
+		}
+		if header == nil || header.Block == nil {
+			return 0, errors.New("header for hash not found")
+		}
+		return header.Block.Header.Height, nil
+	}
+	return 0, errors.New("invalid arguments; neither block nor hash specified")
 }
