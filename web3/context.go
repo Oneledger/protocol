@@ -1,4 +1,4 @@
-package web3rpc
+package web3
 
 import (
 	"github.com/Oneledger/protocol/app/node"
@@ -7,10 +7,10 @@ import (
 	"github.com/Oneledger/protocol/data/evm"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
-	"github.com/Oneledger/protocol/web3rpc/eth"
-	"github.com/Oneledger/protocol/web3rpc/net"
-	web3types "github.com/Oneledger/protocol/web3rpc/types"
-	"github.com/Oneledger/protocol/web3rpc/web3"
+	"github.com/Oneledger/protocol/web3/eth"
+	"github.com/Oneledger/protocol/web3/net"
+	web3types "github.com/Oneledger/protocol/web3/types"
+	"github.com/Oneledger/protocol/web3/web3"
 )
 
 // Context set up for service processing

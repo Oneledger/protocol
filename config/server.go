@@ -268,7 +268,7 @@ type NetworkConfig struct {
 
 	SDKAddress string `toml:"sdk_address"`
 
-	Web3Address string `toml:"web3_address" desc:"Address to new RPC endpoint based on web3rpc"`
+	Web3Address string `toml:"web3_address" desc:"Address to new RPC endpoint based on web3"`
 }
 
 func DefaultNetworkConfig() *NetworkConfig {

@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/Oneledger/protocol/log"
-	web3types "github.com/Oneledger/protocol/web3rpc/types"
+	web3types "github.com/Oneledger/protocol/web3/types"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )

@@ -507,7 +507,7 @@ func TestRunner_ecrecover(t *testing.T) {
 		assertExcError(t, contractAddr, gas, leftOverGas, 118765)
 
 		// execute method with signed hello for address "0x7156526fbD7a3C72969B54f64e42c10fbb768C8a"
-		// web3rpc.sha3("hello")
+		// web3.sha3("hello")
 		input := ethcmn.FromHex("0xf1835db71c8aff950685c2ed4bc3174f3472287b56d9517b9c948127319a09a7a36deac8000000000000000000000000000000000000000000000000000000000000001c9242685bf161793cc25603c231bc2f568eb630ea16aa137d2664ac80388256084f8ae3bd7535248d0bd448298cc2e2071e56992d0774dc340c368ae950852ada")
 		data, leftOverGas, err := evm.Call(accRef, contractAddr, input, gas, value)
 		assert.NoError(t, err, "Execute contract failed")

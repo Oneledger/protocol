@@ -490,7 +490,7 @@ func (app *App) Start() error {
 	// Starting Web3
 	startWeb3, err := app.web3Starter()
 	if err != nil {
-		return errors.Wrap(err, "failed to prepare web3rpc service")
+		return errors.Wrap(err, "failed to prepare web3 service")
 	}
 
 	err = startRPC()
@@ -501,7 +501,7 @@ func (app *App) Start() error {
 
 	err = startWeb3()
 	if err != nil {
-		app.logger.Error("Failed to start web3rpc")
+		app.logger.Error("Failed to start web3")
 		return err
 	}
 

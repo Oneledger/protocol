@@ -15,7 +15,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/rpc"
 
-	web3types "github.com/Oneledger/protocol/web3rpc/types"
+	web3types "github.com/Oneledger/protocol/web3/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 

@@ -9,7 +9,7 @@ import (
 	"github.com/Oneledger/protocol/data/evm"
 	"github.com/Oneledger/protocol/external_apps"
 	"github.com/Oneledger/protocol/external_apps/common"
-	"github.com/Oneledger/protocol/web3rpc"
+	"github.com/Oneledger/protocol/web3"
 
 	tmdb "github.com/tendermint/tm-db"
 
@@ -59,7 +59,7 @@ type context struct {
 	cfg  config.Server
 
 	rpc          *rpc.Server
-	web3         *web3rpc.Server
+	web3         *web3.Server
 	actionRouter action.Router
 
 	//db for chain state storage
@@ -114,9 +114,9 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 
 	ctx.rpc = rpc.NewServer(logWriter, &cfg)
 	// new rpc service
-	web3, err := web3rpc.NewServer(logWriter, &cfg)
+	web3, err := web3.NewServer(logWriter, &cfg)
 	if err != nil {
-		return ctx, errors.Wrap(err, "web3rpc api failed")
+		return ctx, errors.Wrap(err, "web3 api failed")
 	}
 	ctx.web3 = web3
 
@@ -297,8 +297,8 @@ func (ctx *context) Web3Services() (map[string]interface{}, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to start service context")
 	}
-	web3Ctx := web3rpc.NewContext(
-		log.NewLoggerWithPrefix(ctx.logWriter, "web3rpc").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
+	web3Ctx := web3.NewContext(
+		log.NewLoggerWithPrefix(ctx.logWriter, "web3").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
 		&extSvcs,
 		ctx.validators,
 		ctx.contracts,
