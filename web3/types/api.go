@@ -3,6 +3,7 @@ package types
 import (
 	"github.com/Oneledger/protocol/app/node"
 	"github.com/Oneledger/protocol/client"
+	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/evm"
 	"github.com/Oneledger/protocol/identity"
@@ -17,7 +18,8 @@ type Web3Context interface {
 	GetValidatorStore() *identity.ValidatorStore
 	GetContractStore() *evm.ContractStore
 	GetAccountKeeper() balance.AccountKeeper
-	GetNodeContext() node.Context
+	GetNodeContext() *node.Context
+	GetConfig() *config.Server
 
 	// service registry
 	DefaultRegisterForAll()

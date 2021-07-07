@@ -9,7 +9,9 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
+// BlockNumber returns the current block number.
 func (svc *Service) BlockNumber() hexutil.Big {
+	svc.logger.Debug("eth_blockNumber")
 	height := svc.getState().Version()
 	blockNumber := big.NewInt(height)
 	return hexutil.Big(*blockNumber)

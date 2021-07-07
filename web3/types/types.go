@@ -16,6 +16,7 @@ type CallArgs struct {
 	Data     *hexutil.Bytes  `json:"data"`
 }
 
+// Block represents a block returned to RPC clients.
 type Block struct {
 	Number           hexutil.Uint64 `json:"number"`
 	Hash             hexutil.Bytes  `json:"hash"`
@@ -37,4 +38,22 @@ type Block struct {
 	Uncles           []common.Hash  `json:"uncles"`
 	ReceiptsRoot     common.Hash    `json:"receiptsRoot"`
 	Transactions     []common.Hash  `json:"transactions"`
+}
+
+// Transaction represents a transaction returned to RPC clients.
+type Transaction struct {
+	BlockHash        *common.Hash    `json:"blockHash"`
+	BlockNumber      *hexutil.Big    `json:"blockNumber"`
+	From             common.Address  `json:"from"`
+	Gas              hexutil.Uint64  `json:"gas"`
+	GasPrice         *hexutil.Big    `json:"gasPrice"`
+	Hash             common.Hash     `json:"hash"`
+	Input            hexutil.Bytes   `json:"input"`
+	Nonce            hexutil.Uint64  `json:"nonce"`
+	To               *common.Address `json:"to"`
+	TransactionIndex *hexutil.Uint64 `json:"transactionIndex"`
+	Value            hexutil.Big     `json:"value"`
+	V                *hexutil.Big    `json:"v"`
+	R                *common.Hash    `json:"r"`
+	S                *common.Hash    `json:"s"`
 }

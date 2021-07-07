@@ -298,7 +298,8 @@ func (ctx *context) Web3Services() (map[string]interface{}, error) {
 		ctx.validators,
 		ctx.contracts,
 		ctx.accountKeeper,
-		ctx.node,
+		&ctx.node,
+		&ctx.cfg,
 	)
 	// registering services
 	web3Ctx.DefaultRegisterForAll()
