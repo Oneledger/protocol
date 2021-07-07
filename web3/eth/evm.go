@@ -67,7 +67,7 @@ func (svc *Service) Call(call rpctypes.CallArgs, blockNrOrHash rpc.BlockNumberOr
 	if err != nil {
 		return nil, err
 	}
-	svc.logger.Debug("eth_call", "args", call, "height", height)
+	svc.logger.Debugf("eth_call args %+v height %d", call, height)
 
 	result, err := svc.callContract(call, svc.getStateHeight(height))
 	if err != nil {
