@@ -1,7 +1,6 @@
 package types
 
 import (
-	"bytes"
 	"errors"
 	"math/big"
 
@@ -17,19 +16,23 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
-// GetPendingTx search for tx in pool
-func GetPendingTx(tmClient rpcclient.Client, hash common.Hash, chainID *big.Int) (*Transaction, error) {
-	unconfirmed, err := tmClient.UnconfirmedTxs(1000)
-	if err != nil {
-		return nil, err
-	}
+var jsonSerializer serialize.Serializer = serialize.GetSerializer(serialize.NETWORK)
 
-	for _, uTx := range unconfirmed.Txs {
-		if bytes.Compare(uTx.Hash(), hash.Bytes()) == 0 {
-			return LegacyRawBlockAndTxToEthTx(nil, &uTx, chainID, nil)
+// GetBlockCumulativeGas returns the cumulative gas used on a block up to a given
+// transaction index. The returned gas used includes the gas from both the SDK and
+// EVM module transactions.
+func GetBlockCumulativeGas(block *tmtypes.Block, idx int) uint64 {
+	var gasUsed uint64
+
+	for i := 0; i < idx && i < len(block.Txs); i++ {
+		tx, err := ParseLegacyTx(block.Txs[i])
+		if err != nil {
+			continue
 		}
+
+		gasUsed += uint64(tx.Fee.Gas)
 	}
-	return nil, err
+	return gasUsed
 }
 
 // LegacyRawBlockAndTxToEthTx returns a eth Transaction compatible from the legacy tx structure.
@@ -129,54 +132,11 @@ func LegacyRawBlockAndTxToEthTx(tmBlock *tmtypes.Block, tmTx *tmtypes.Tx, chainI
 func ParseLegacyTx(tmTx tmtypes.Tx) (*action.SignedTx, error) {
 	tx := &action.SignedTx{}
 
-	err := serialize.GetSerializer(serialize.NETWORK).Deserialize(tmTx, tx)
+	err := jsonSerializer.Deserialize(tmTx, tx)
 	if err != nil {
 		return nil, err
 	}
 	return tx, nil
-}
-
-// TxIsPending is used to check if pending tx by hash in the pool
-func TxIsPending(tmClient rpcclient.Client, hash common.Hash) bool {
-	unconfirmed, err := tmClient.UnconfirmedTxs(1000)
-	if err != nil {
-		return false
-	}
-	for _, tx := range unconfirmed.Txs {
-		if bytes.Compare(tx.Hash(), hash.Bytes()) == 0 {
-			return true
-		}
-	}
-	return false
-}
-
-// GetPendingTxCountByAddress is used to get pending tx count (nonce) for user address
-// NOTE: Working right now only with legacy tx
-func GetPendingTxCountByAddress(tmClient rpcclient.Client, address common.Address) (total uint64) {
-	unconfirmed, err := tmClient.UnconfirmedTxs(1000)
-	if err != nil {
-		return 0
-	}
-	for _, tx := range unconfirmed.Txs {
-		lTx, err := ParseLegacyTx(tx)
-		if err != nil {
-			// means tx is not legacy and we need to check is tx is ethereum
-			// TODO: Add ethereum tx check when it will be released
-			continue
-		}
-		// This is only for legacy tx
-		for _, sig := range lTx.Signatures {
-			pubKeyHandler, err := sig.Signer.GetHandler()
-			if err != nil {
-				continue
-			}
-			// match if signer is a user
-			if pubKeyHandler.Address().Equal(address.Bytes()) {
-				total++
-			}
-		}
-	}
-	return
 }
 
 // EthHeaderFromTendermint is an util function that returns an Ethereum Header
