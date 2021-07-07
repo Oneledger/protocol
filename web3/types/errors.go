@@ -1,4 +1,4 @@
-package eth
+package types
 
 import (
 	"errors"
@@ -27,7 +27,7 @@ func (e *revertError) ErrorData() interface{} {
 	return e.reason
 }
 
-func newRevertError(result *action.ExecutionResult) *revertError {
+func NewRevertError(result *action.ExecutionResult) *revertError {
 	reason, errUnpack := ethabi.UnpackRevert(result.Revert())
 	err := errors.New("execution reverted")
 	if errUnpack == nil {
