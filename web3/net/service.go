@@ -41,13 +41,12 @@ func (svc *Service) PeerCount() hexutil.Big {
 	return hexutil.Big(*big.NewInt(int64(netInfo.NPeers)))
 }
 
-func (svc *Service) Version() string {
+func (svc *Service) Version() (string, error) {
 	svc.logger.Debug("net_version")
 	blockResult, err := svc.ctx.GetAPI().RPCClient().Block(nil)
 	if err != nil {
-		svc.logger.Error(err)
-		return "0x0"
+		return "", err
 	}
 
-	return utils.HashToBigInt(blockResult.Block.ChainID).String()
+	return utils.HashToBigInt(blockResult.Block.ChainID).String(), nil
 }
