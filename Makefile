@@ -7,6 +7,7 @@ export GO111MODULE=on
 #
 update:
 	go mod vendor
+	go mod tidy
 #
 # Build and install a copy in bin
 #
