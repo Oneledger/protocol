@@ -1,6 +1,7 @@
 package net
 
 import (
+	"github.com/Oneledger/protocol/utils"
 	"math/big"
 	"sync"
 
@@ -44,7 +45,9 @@ func (svc *Service) Version() string {
 	svc.logger.Debug("net_version")
 	blockResult, err := svc.ctx.GetAPI().RPCClient().Block(nil)
 	if err != nil {
+		svc.logger.Error(err)
 		return "0x0"
 	}
-	return blockResult.Block.ChainID
+
+	return utils.HashToBigInt(blockResult.Block.ChainID).String()
 }
