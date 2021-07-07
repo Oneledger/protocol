@@ -3,6 +3,7 @@ package web3
 import (
 	"github.com/Oneledger/protocol/app/node"
 	"github.com/Oneledger/protocol/client"
+	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/evm"
 	"github.com/Oneledger/protocol/identity"
@@ -20,7 +21,8 @@ type Context struct {
 	validatorStore *identity.ValidatorStore
 	contractStore  *evm.ContractStore
 	accountKeeper  balance.AccountKeeper
-	nodeContext    node.Context
+	nodeContext    *node.Context
+	cfg            *config.Server
 
 	services map[string]interface{}
 }
@@ -29,9 +31,9 @@ type Context struct {
 func NewContext(
 	logger *log.Logger, extAPI *client.ExtServiceContext,
 	validatorStore *identity.ValidatorStore, contractStore *evm.ContractStore,
-	accountKeeper balance.AccountKeeper, nodeContext node.Context,
+	accountKeeper balance.AccountKeeper, nodeContext *node.Context, cfg *config.Server,
 ) web3types.Web3Context {
-	return &Context{logger, extAPI, validatorStore, contractStore, accountKeeper, nodeContext, make(map[string]interface{}, 0)}
+	return &Context{logger, extAPI, validatorStore, contractStore, accountKeeper, nodeContext, cfg, make(map[string]interface{}, 0)}
 }
 
 // DefaultRegisterForAll regs services from the namespaces
@@ -71,6 +73,10 @@ func (ctx *Context) GetAccountKeeper() balance.AccountKeeper {
 	return ctx.accountKeeper
 }
 
-func (ctx *Context) GetNodeContext() node.Context {
+func (ctx *Context) GetNodeContext() *node.Context {
 	return ctx.nodeContext
+}
+
+func (ctx *Context) GetConfig() *config.Server {
+	return ctx.cfg
 }

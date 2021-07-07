@@ -1,11 +1,13 @@
 package types
 
 import (
+	"bytes"
 	"errors"
 	"math/big"
 
 	"github.com/Oneledger/protocol/action"
 	rpcclient "github.com/Oneledger/protocol/client"
+	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -14,6 +16,114 @@ import (
 	tmbytes "github.com/tendermint/tendermint/libs/bytes"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
+
+// GetPendingTx search for tx in pool
+func GetPendingTx(tmClient rpcclient.Client, hash common.Hash, chainID *big.Int) (*Transaction, error) {
+	unconfirmed, err := tmClient.UnconfirmedTxs(1000)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, uTx := range unconfirmed.Txs {
+		if bytes.Compare(uTx.Hash(), hash.Bytes()) == 0 {
+			return LegacyRawBlockAndTxToEthTx(nil, &uTx, chainID, nil)
+		}
+	}
+	return nil, err
+}
+
+// LegacyRawBlockAndTxToEthTx returns a eth Transaction compatible from the legacy tx structure.
+func LegacyRawBlockAndTxToEthTx(tmBlock *tmtypes.Block, tmTx *tmtypes.Tx, chainID *big.Int, txIndex *hexutil.Uint64) (*Transaction, error) {
+	var (
+		to           *common.Address
+		value        hexutil.Big   = hexutil.Big(*big.NewInt(0))
+		input        hexutil.Bytes = make(hexutil.Bytes, 0)
+		unpackedData               = struct {
+			To     *keys.Address  `json:"to"`
+			Amount *action.Amount `json:"amount"`
+			Data   []byte         `json:"data"`
+			Nonce  uint64         `json:"nonce"`
+		}{}
+		nonce       hexutil.Uint64
+		blockNumber *hexutil.Big
+		blockHash   *common.Hash
+		r           *common.Hash
+		s           *common.Hash
+		v           *big.Int
+	)
+
+	lTx, err := ParseLegacyTx(*tmTx)
+	if err != nil {
+		return nil, err
+	}
+
+	if tmBlock != nil {
+		blockHash = new(common.Hash)
+		*blockHash = common.BytesToHash(tmBlock.Hash())
+		blockNumber = (*hexutil.Big)(big.NewInt(tmBlock.Height))
+	}
+
+	from := common.Address{}
+	// If signatures found, means that we have a sender, so taking first one
+	if len(lTx.Signatures) > 0 {
+		actSig := lTx.Signatures[0]
+		sig := actSig.Signed
+		pubKeyHandler, err := actSig.Signer.GetHandler()
+		if err != nil {
+			return nil, err
+		}
+		from = common.BytesToAddress(pubKeyHandler.Address().Bytes())
+
+		// Convert to Ethereum signature format with 'recovery id' v at the end.
+		tmpV := sig[0] - 27
+
+		r = new(common.Hash)
+		*r = common.BytesToHash(sig[:32])
+
+		s = new(common.Hash)
+		*s = common.BytesToHash(sig[32:64])
+
+		if chainID.Sign() == 0 {
+			v = new(big.Int).SetBytes([]byte{tmpV + 27})
+		} else {
+			v = big.NewInt(int64(tmpV + 35))
+			chainIDMul := new(big.Int).Mul(chainID, big.NewInt(2))
+			v.Add(v, chainIDMul)
+		}
+	}
+
+	err = serialize.GetSerializer(serialize.NETWORK).Deserialize(lTx.Data, &unpackedData)
+	if err == nil {
+		if unpackedData.To != nil {
+			to = new(common.Address)
+			*to = common.BytesToAddress(unpackedData.To.Bytes())
+		}
+		if unpackedData.Amount != nil {
+			value = hexutil.Big(*unpackedData.Amount.Value.BigInt())
+		}
+		if len(unpackedData.Data) > 0 {
+			input = (hexutil.Bytes)(unpackedData.Data)
+		}
+		nonce = hexutil.Uint64(unpackedData.Nonce)
+	}
+
+	return &Transaction{
+		BlockHash:        blockHash,
+		BlockNumber:      blockNumber,
+		From:             from,
+		Gas:              hexutil.Uint64(lTx.Fee.Gas),
+		GasPrice:         (*hexutil.Big)(&lTx.Fee.Price.Value),
+		Hash:             common.BytesToHash(tmTx.Hash()),
+		Input:            input,
+		Nonce:            nonce,
+		To:               to,
+		TransactionIndex: txIndex,
+		Value:            value,
+		V:                (*hexutil.Big)(v),
+		R:                r,
+		S:                s,
+	}, nil
+}
 
 // ParseLegacyTx is used to parse the signed tx for old OneLedger tx types
 func ParseLegacyTx(tmTx tmtypes.Tx) (*action.SignedTx, error) {
@@ -24,6 +134,49 @@ func ParseLegacyTx(tmTx tmtypes.Tx) (*action.SignedTx, error) {
 		return nil, err
 	}
 	return tx, nil
+}
+
+// TxIsPending is used to check if pending tx by hash in the pool
+func TxIsPending(tmClient rpcclient.Client, hash common.Hash) bool {
+	unconfirmed, err := tmClient.UnconfirmedTxs(1000)
+	if err != nil {
+		return false
+	}
+	for _, tx := range unconfirmed.Txs {
+		if bytes.Compare(tx.Hash(), hash.Bytes()) == 0 {
+			return true
+		}
+	}
+	return false
+}
+
+// GetPendingTxCountByAddress is used to get pending tx count (nonce) for user address
+// NOTE: Working right now only with legacy tx
+func GetPendingTxCountByAddress(tmClient rpcclient.Client, address common.Address) (total uint64) {
+	unconfirmed, err := tmClient.UnconfirmedTxs(1000)
+	if err != nil {
+		return 0
+	}
+	for _, tx := range unconfirmed.Txs {
+		lTx, err := ParseLegacyTx(tx)
+		if err != nil {
+			// means tx is not legacy and we need to check is tx is ethereum
+			// TODO: Add ethereum tx check when it will be released
+			continue
+		}
+		// This is only for legacy tx
+		for _, sig := range lTx.Signatures {
+			pubKeyHandler, err := sig.Signer.GetHandler()
+			if err != nil {
+				continue
+			}
+			// match if signer is a user
+			if pubKeyHandler.Address().Equal(address.Bytes()) {
+				total++
+			}
+		}
+	}
+	return
 }
 
 // EthHeaderFromTendermint is an util function that returns an Ethereum Header
