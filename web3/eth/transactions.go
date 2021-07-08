@@ -29,8 +29,11 @@ func (svc *Service) GetTransactionCount(address common.Address, blockNrOrHash rp
 	// getting actual block
 	blockNum := svc.getStateHeight(height)
 
-	ethAcc, _ := svc.ctx.GetAccountKeeper().GetVersionedAccount(blockNum, address.Bytes())
-	txLen := ethAcc.Sequence
+	var txLen uint64
+	ethAcc, err := svc.ctx.GetAccountKeeper().GetVersionedAccount(blockNum, address.Bytes())
+	if err == nil {
+		txLen = ethAcc.Sequence
+	}
 
 	// for pending
 	if height == rpctypes.PendingBlockNumber {
@@ -78,13 +81,7 @@ func (svc *Service) GetTransactionReceipt(hash common.Hash) (*rpctypes.Transacti
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
-	chainID, err := svc.ChainId()
-	if err != nil {
-		svc.logger.Debug("eth_getTransactionByHash", "hash", hash, "failed to get chainId")
-		return nil, err
-	}
-
-	svc.logger.Debug("eth_getTransactionByHash", "hash", hash)
+	svc.logger.Debug("eth_getTransactionReceipt", "hash", hash)
 	resTx, err := svc.getTMClient().Tx(hash.Bytes(), false)
 	if err != nil {
 		return nil, nil
@@ -92,12 +89,17 @@ func (svc *Service) GetTransactionReceipt(hash common.Hash) (*rpctypes.Transacti
 
 	resBlock, err := svc.getTMClient().Block(&resTx.Height)
 	if err != nil {
-		svc.logger.Debug("eth_getTransactionByHash", "hash", hash, "block not found")
+		svc.logger.Debug("eth_getTransactionReceipt", "hash", hash, "err", err)
 		return nil, err
 	}
+	if resBlock.Block == nil {
+		svc.logger.Debug("eth_getTransactionReceipt", "hash", hash, "block not found")
+		return nil, nil
+	}
 
+	chainID := utils.HashToBigInt(resBlock.Block.ChainID)
 	txIndex := hexutil.Uint64(resTx.Index)
-	tx, err := rpctypes.LegacyRawBlockAndTxToEthTx(resBlock.Block, &resTx.Tx, (*big.Int)(&chainID), &txIndex)
+	tx, err := rpctypes.LegacyRawBlockAndTxToEthTx(resBlock.Block, &resTx.Tx, chainID, &txIndex)
 	if err != nil {
 		return nil, err
 	}
