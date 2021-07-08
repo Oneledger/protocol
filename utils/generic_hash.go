@@ -40,9 +40,9 @@ func GetTransactionHash(tx []byte) []byte {
 
 // hashToBigInt used to convert mostly chain id which is a string
 func HashToBigInt(s string) *big.Int {
-	h := fnv.New64a()
+	h := fnv.New32a()
 	h.Write([]byte(s))
-	return new(big.Int).SetUint64(h.Sum64())
+	return new(big.Int).SetUint64(uint64(h.Sum32()))
 }
 
 func GetStorageByAddressKey(address ethcmn.Address, key []byte) ethcmn.Hash {
