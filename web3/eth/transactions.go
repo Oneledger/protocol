@@ -9,7 +9,6 @@ import (
 	rpcutils "github.com/Oneledger/protocol/web3/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rpc"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
@@ -118,8 +117,7 @@ func (svc *Service) GetTransactionReceipt(hash common.Hash) (*rpctypes.Transacti
 	if err != nil {
 		return nil, err
 	}
-	// TODO: Implement bloom
-	bloom := ethtypes.BytesToBloom(make([]byte, 6))
+	bloom := stateDB.GetBlockBloom(uint64(resBlock.Block.Height))
 
 	var contractAddress *common.Address
 	if tx.To == nil {

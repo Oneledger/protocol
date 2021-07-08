@@ -173,25 +173,35 @@ func (etx *EVMTransaction) To() *ethcmn.Address {
 func (etx *EVMTransaction) Apply(vmenv *ethvm.EVM, tx RawTx) (*ExecutionResult, error) {
 	msg := ethtypes.NewMessage(etx.From(), etx.To(), etx.nonce, etx.value, uint64(tx.Fee.Gas), etx.ecfg.gasPrice, nil, nil, etx.data, make(ethtypes.AccessList, 0), true)
 
-	// Clear cache of accounts to handle changes outside of the EVM
-	etx.stateDB.UpdateAccounts()
+	txHash := etx.stateDB.GetCurrentTxHash()
 
-	msgResult, err := ApplyMessage(vmenv, msg, new(ethcore.GasPool).AddGas(uint64(uint64(tx.Fee.Gas))))
+	if !etx.isSimulation {
+		// Clear cache of accounts to handle changes outside of the EVM
+		etx.stateDB.UpdateAccounts()
+	}
+
+	executionResult, err := ApplyMessage(vmenv, msg, new(ethcore.GasPool).AddGas(uint64(uint64(tx.Fee.Gas))))
 	if err != nil {
 		return nil, fmt.Errorf("transaction failed: %v", err)
 	}
 
 	if !etx.isSimulation {
+		// calculating bloom
+		logs, err := etx.stateDB.GetLogs(txHash)
+		if err != nil {
+			return nil, err
+		}
+		bloomInt := big.NewInt(0).SetBytes(ethtypes.LogsBloom(logs))
+		etx.stateDB.logger.Debug("tx hash", txHash, "bloom created", bloomInt)
+		etx.stateDB.Bloom.Or(etx.stateDB.Bloom, bloomInt)
+		etx.stateDB.logger.Debug("block bloom updated", etx.stateDB.Bloom)
 		// Ensure any modifications are committed to the state
 		if err := etx.stateDB.Finalise(false); err != nil {
 			return nil, err
 		}
-		// increasing log counter for next tx index
-		// TODO: Check on parallel execution if it works as expected
-		etx.stateDB.TxCount++
 	}
 	etx.stateDB.logger.Debugf("State finalized\n")
-	return msgResult, nil
+	return executionResult, nil
 }
 
 func (etx *EVMTransaction) EstimateGas(vmenv *ethvm.EVM, tx RawTx) (uint64, error) {
