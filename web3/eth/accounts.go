@@ -1,10 +1,12 @@
 package eth
 
 import (
+	"bytes"
 	"math/big"
 
 	"github.com/Oneledger/protocol/data/accounts"
 	rpctypes "github.com/Oneledger/protocol/web3/types"
+	rpcutils "github.com/Oneledger/protocol/web3/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -39,16 +41,52 @@ func (svc *Service) Accounts() ([]common.Address, error) {
 
 // GetBalance returns the provided account's balance up to the provided block number.
 func (svc *Service) GetBalance(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (*hexutil.Big, error) {
+	svc.mu.Lock()
+	defer svc.mu.Unlock()
+
 	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.getTMClient(), blockNrOrHash)
 	if err != nil {
-		return &hexutil.Big{}, err
+		return (*hexutil.Big)(big.NewInt(0)), err
 	}
-	svc.logger.Debug("eth_getBalance", "height", height)
 
-	ethAcc, err := svc.ctx.GetAccountKeeper().GetVersionedAccount(svc.getStateHeight(height), address.Bytes())
+	var (
+		blockNum       int64
+		pendingBalance = big.NewInt(0)
+	)
+
+	switch height {
+	case rpctypes.PendingBlockNumber:
+		blockNum = svc.getState().Version()
+		svc.logger.Debug("eth_getBalance", "height", blockNum, "pending")
+		chainID, err := svc.ChainId()
+		if err != nil {
+			return nil, err
+		}
+		rpcutils.GetPendingTxsWithCallback(svc.getTMClient(), (*big.Int)(&chainID), func(tx *rpctypes.Transaction) bool {
+			if bytes.Equal(tx.From.Bytes(), address.Bytes()) {
+				pendingBalance = new(big.Int).Sub(pendingBalance, tx.Value.ToInt())
+			} else if tx.To != nil && bytes.Equal(tx.To.Bytes(), address.Bytes()) {
+				pendingBalance = new(big.Int).Add(pendingBalance, tx.Value.ToInt())
+			}
+			return false
+		})
+	case rpctypes.LatestBlockNumber:
+		blockNum = svc.getState().Version()
+		svc.logger.Debug("eth_getBalance", "height", blockNum, "latest")
+	case rpctypes.EarliestBlockNumber:
+		blockNum = 1
+		svc.logger.Debug("eth_getBalance", "height", blockNum, "earliest")
+	default:
+		blockNum = height
+		svc.logger.Debug("eth_getBalance", "height", blockNum)
+	}
+
+	balance, err := svc.ctx.GetAccountKeeper().GetVersionedBalance(address.Bytes(), blockNum)
 	if err != nil {
 		svc.logger.Debug("eth_getBalance", "account_not_found", address)
 		return (*hexutil.Big)(big.NewInt(0)), nil
 	}
-	return (*hexutil.Big)(ethAcc.Balance()), nil
+	// involve pending balance
+	total := new(big.Int).Add(balance, pendingBalance)
+	return (*hexutil.Big)(total), nil
 }
