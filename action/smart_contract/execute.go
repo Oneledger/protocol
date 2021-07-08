@@ -2,7 +2,6 @@ package smart_contract
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/helpers"
@@ -130,11 +129,6 @@ func runSCExecute(ctx *action.Context, tx action.RawTx) (bool, action.Response) 
 	err := execute.Unmarshal(tx.Data)
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
-	}
-
-	if !execute.Amount.IsValid(ctx.Currencies) {
-		log := fmt.Sprint("amount is invalid", execute.Amount, ctx.Currencies)
-		return false, action.Response{Log: log}
 	}
 
 	evmTx := action.NewEVMTransaction(ctx.StateDB, ctx.Header, execute.From, execute.To, execute.Nonce, execute.Amount.Value.BigInt(), execute.Data, false)

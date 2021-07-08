@@ -64,6 +64,9 @@ type CommitStateDB struct {
 	// It is reset to 0 every block on EndBlock so there's no point in storing the counter
 	// to store or adding it as a field on the EVM genesis state.
 	TxCount int
+
+	// Bloom bytes generation from the logs
+	Bloom *big.Int
 }
 
 // NewCommitStateDB returns a reference to a newly initialized CommitStateDB
@@ -86,6 +89,7 @@ func NewCommitStateDB(cs *evm.ContractStore, ak balance.AccountKeeper, logger *l
 		journal:              newJournal(),
 		validRevisions:       []revision{},
 		TxCount:              0,
+		Bloom:                big.NewInt(0),
 	}
 }
 
@@ -109,6 +113,14 @@ func (s *CommitStateDB) Prepare(thash ethcmn.Hash) {
 	s.thash = thash
 	s.txIndex = s.TxCount
 	s.accessList = newAccessList()
+	// increment tx index
+	// NOTE: Check if it has the same as tendermint make
+	s.TxCount++
+}
+
+// GetCurrentTxHash return current processing tx hash
+func (s *CommitStateDB) GetCurrentTxHash() ethcmn.Hash {
+	return s.thash
 }
 
 // Commit writes the state to the appropriate stores. For each state object
@@ -251,6 +263,7 @@ func (s *CommitStateDB) Reset(_ ethcmn.Hash) error {
 	s.hashToPreimageIndex = make(map[ethcmn.Hash]int)
 	s.accessList = newAccessList()
 	s.TxCount = 0
+	s.Bloom = big.NewInt(0)
 
 	s.clearJournalAndRefund()
 	return nil
@@ -594,11 +607,11 @@ func (s *CommitStateDB) GetOrNewStateObject(addr ethcmn.Address) StateObject {
 // Copy creates a deep, independent copy of the state.
 //
 // NOTE: Snapshots of the copied state cannot be applied to the copy.
-func (csdb *CommitStateDB) Copy() *CommitStateDB {
+func (s *CommitStateDB) Copy() *CommitStateDB {
 
 	// copy all the basic fields, initialize the memory ones
 	state := &CommitStateDB{}
-	CopyCommitStateDB(csdb, state)
+	CopyCommitStateDB(s, state)
 
 	return state
 }
@@ -624,6 +637,9 @@ func CopyCommitStateDB(from, to *CommitStateDB) {
 	to.validRevisions = validRevisions
 	to.nextRevisionID = from.nextRevisionID
 	to.accessList = from.accessList.Copy()
+	to.TxCount = from.TxCount
+	to.Bloom = new(big.Int)
+	*to.Bloom = *from.Bloom
 
 	// copy the dirty states, logs, and preimages
 	for _, dirty := range from.journal.dirties {
@@ -657,4 +673,19 @@ func CopyCommitStateDB(from, to *CommitStateDB) {
 		to.preimages[i] = preimageEntry
 		to.hashToPreimageIndex[preimageEntry.hash] = i
 	}
+}
+
+// Set bloom bytes to store by block height
+func (s *CommitStateDB) SetBlockBloom(height uint64, bz []byte) error {
+	bloom := ethtypes.BytesToBloom(bz)
+	return s.contractStore.Set(evm.KeyPrefixBloom, evm.BloomKey(height), bloom.Bytes())
+}
+
+// Get bloom by block height
+func (s *CommitStateDB) GetBlockBloom(height uint64) ethtypes.Bloom {
+	bz, _ := s.contractStore.Get(evm.KeyPrefixBloom, evm.BloomKey(height))
+	if len(bz) == 0 {
+		return ethtypes.Bloom{}
+	}
+	return ethtypes.BytesToBloom(bz)
 }

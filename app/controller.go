@@ -119,23 +119,27 @@ func (app *App) chainInitializer() chainInitializer {
 	}
 }
 
-func (app *App) commitVMChanges(state *storage.State) {
+func (app *App) commitVMChanges(req *abciTypes.RequestEndBlock) {
+	csdb := app.Context.stateDB
+	// apply state
+	csdb.WithState(app.Context.deliver)
+
 	// Update account balances before committing other parts of state
-	app.Context.stateDB.WithState(state).UpdateAccounts()
+	csdb.UpdateAccounts()
 
 	// Commit state objects to store
-	root, err := app.Context.stateDB.WithState(state).Commit(false)
+	root, err := csdb.Commit(false)
 	if err != nil {
 		panic(err)
 	}
 
+	// Apply bloom
+	csdb.SetBlockBloom(uint64(req.GetHeight()), csdb.Bloom.Bytes())
+
 	// reset all cache after account data has been committed, that make sure node state consistent
-	if err = app.Context.stateDB.WithState(state).Reset(root); err != nil {
+	if err = csdb.Reset(root); err != nil {
 		panic(err)
 	}
-
-	// TODO: Add storing of the bloom filter
-	// needs to be implemented in evm tx process
 }
 
 func (app *App) blockBeginner() blockBeginner {
@@ -356,7 +360,7 @@ func (app *App) blockEnder() blockEnder {
 
 		// commit changes before the next execution
 		if app.Context.cfg.IsNexusUpdate(req.GetHeight()) {
-			app.commitVMChanges(app.Context.deliver)
+			app.commitVMChanges(&req)
 		}
 
 		ethTrackerlog := log.NewLoggerWithPrefix(app.Context.logWriter, "ethtracker").WithLevel(log.Level(app.Context.cfg.Node.LogLevel))
