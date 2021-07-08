@@ -6,19 +6,19 @@ import (
 	"github.com/Oneledger/protocol/log"
 
 	"github.com/Oneledger/protocol/storage"
-	web3types "github.com/Oneledger/protocol/web3/types"
+	rpctypes "github.com/Oneledger/protocol/web3/types"
 
 	rpcclient "github.com/Oneledger/protocol/client"
 )
 
 type Service struct {
-	ctx    web3types.Web3Context
+	ctx    rpctypes.Web3Context
 	logger *log.Logger
 
 	mu sync.Mutex
 }
 
-func NewService(ctx web3types.Web3Context) *Service {
+func NewService(ctx rpctypes.Web3Context) *Service {
 	return &Service{ctx: ctx, logger: ctx.GetLogger()}
 }
 
@@ -32,8 +32,10 @@ func (svc *Service) getState() *storage.State {
 
 func (svc *Service) getStateHeight(height int64) int64 {
 	switch height {
-	case -1, -2:
+	case rpctypes.LatestBlockNumber, rpctypes.PendingBlockNumber:
 		return svc.getState().Version()
+	case rpctypes.EarliestBlockNumber:
+		return 1
 	}
 	return height
 }

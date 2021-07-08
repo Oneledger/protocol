@@ -12,6 +12,7 @@ import (
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/utils"
 	rpctypes "github.com/Oneledger/protocol/web3/types"
+	rpcutils "github.com/Oneledger/protocol/web3/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -50,7 +51,7 @@ func (svc *Service) GetCode(address common.Address, blockNrOrHash rpc.BlockNumbe
 	}
 	svc.logger.Debug("eth_getCode", "address", address, "height", height)
 
-	ethAcc, err := svc.ctx.GetAccountKeeper().GetVersionedAccount(height, address.Bytes())
+	ethAcc, err := svc.ctx.GetAccountKeeper().GetVersionedAccount(address.Bytes(), height)
 	if err != nil {
 		return hexutil.Bytes{}, nil
 	}
@@ -145,12 +146,7 @@ func (svc *Service) callContract(call rpctypes.CallArgs, height int64) (*action.
 		data = []byte(*call.Data)
 	}
 
-	// TODO: Change on account nonce with involving of pending transactions
-	var nonce uint64
-	ethAcc, err := svc.ctx.GetAccountKeeper().GetVersionedAccount(height, from)
-	if err == nil {
-		nonce = ethAcc.Sequence
-	}
+	nonce := svc.getNonce(common.BytesToAddress(from.Bytes()), height, utils.HashToBigInt(block.ChainID))
 
 	svc.logger.Debug("eth_callContract", "from", from, "to", to, "gasPrice", gasPrice, "gas", gas, "value", value, "data", data, "nonce", nonce)
 
@@ -186,4 +182,14 @@ func (svc *Service) callContract(call rpctypes.CallArgs, height int64) (*action.
 		return nil, fmt.Errorf("execution aborted (timeout = %v)", timeout)
 	}
 	return result, err
+}
+
+func (svc *Service) getNonce(address common.Address, height int64, chainID *big.Int) uint64 {
+	var nonce uint64
+	pendingNonce := rpcutils.GetPendingTxCountByAddress(svc.getTMClient(), address)
+	ethAcc, err := svc.ctx.GetAccountKeeper().GetVersionedAccount(address.Bytes(), height)
+	if err == nil {
+		nonce = ethAcc.Sequence
+	}
+	return nonce + pendingNonce
 }

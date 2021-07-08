@@ -30,7 +30,7 @@ func (svc *Service) GetTransactionCount(address common.Address, blockNrOrHash rp
 	blockNum := svc.getStateHeight(height)
 
 	var txLen uint64
-	ethAcc, err := svc.ctx.GetAccountKeeper().GetVersionedAccount(blockNum, address.Bytes())
+	ethAcc, err := svc.ctx.GetAccountKeeper().GetVersionedAccount(address.Bytes(), blockNum)
 	if err == nil {
 		txLen = ethAcc.Sequence
 	}

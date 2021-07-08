@@ -52,3 +52,42 @@ func GetPendingTx(tmClient rpcclient.Client, hash common.Hash, chainID *big.Int)
 	}
 	return nil, err
 }
+
+// GetPendingTransactions search for txs in pool
+func GetPendingTxs(tmClient rpcclient.Client, chainID *big.Int) ([]*rpctypes.Transaction, error) {
+	unconfirmed, err := tmClient.UnconfirmedTxs(1000)
+	if err != nil {
+		return nil, err
+	}
+
+	transactions := make([]*rpctypes.Transaction, 0)
+
+	for _, uTx := range unconfirmed.Txs {
+		tx, err := rpctypes.LegacyRawBlockAndTxToEthTx(nil, &uTx, chainID, nil)
+		if err != nil {
+			continue
+		}
+		transactions = append(transactions, tx)
+	}
+	return transactions, nil
+}
+
+// GetPendingTxsWithCallback search for txs in pool and return in callback form
+func GetPendingTxsWithCallback(tmClient rpcclient.Client, chainID *big.Int, callback func(tx *rpctypes.Transaction) bool) error {
+	unconfirmed, err := tmClient.UnconfirmedTxs(1000)
+	if err != nil {
+		return err
+	}
+
+	for _, uTx := range unconfirmed.Txs {
+		tx, err := rpctypes.LegacyRawBlockAndTxToEthTx(nil, &uTx, chainID, nil)
+		if err != nil {
+			continue
+		}
+		stopped := callback(tx)
+		if stopped {
+			break
+		}
+	}
+	return nil
+}

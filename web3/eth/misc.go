@@ -42,11 +42,11 @@ func (svc *Service) Syncing() (interface{}, error) {
 	}
 
 	return map[string]interface{}{
-		// "startingBlock": nil, // NA
-		"currentBlock": hexutil.Uint64(status.SyncInfo.LatestBlockHeight),
-		// "highestBlock":  nil, // NA
-		// "pulledStates":  nil, // NA
-		// "knownStates":   nil, // NA
+		"startingBlock": nil, // NA
+		"currentBlock":  hexutil.Uint64(status.SyncInfo.LatestBlockHeight),
+		"highestBlock":  nil, // NA
+		"pulledStates":  nil, // NA
+		"knownStates":   nil, // NA
 	}, nil
 }
 
@@ -80,6 +80,6 @@ func (svc *Service) GasPrice() *hexutil.Big {
 	svc.logger.Debug("eth_gasPrice")
 	// NOTE: Maybe we could add the mean price in according to previous blocks
 	// but not really need it right now
-	out := big.NewInt(0)
+	out := big.NewInt(1_000_000_000) // NEI
 	return (*hexutil.Big)(out)
 }

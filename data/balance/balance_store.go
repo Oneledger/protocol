@@ -41,6 +41,15 @@ func (st *Store) WithState(state *storage.State) *Store {
 	return st
 }
 
+func (st *Store) BuildKey(addr keys.Address, coin *Coin) []byte {
+	name := "OLT"
+	if coin != nil {
+		name = coin.Currency.Name
+	}
+	key := storage.StoreKey(addr.String() + storage.DB_PREFIX + name)
+	return append(st.prefix, key...)
+}
+
 func (st *Store) get(key storage.StoreKey) (amt *Amount, err error) {
 	prefixed := append(st.prefix, storage.StoreKey(key)...)
 	dat, _ := st.State.Get(prefixed)
