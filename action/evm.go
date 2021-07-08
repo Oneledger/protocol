@@ -2,10 +2,10 @@ package action
 
 import (
 	"fmt"
-	"hash/fnv"
 	"math/big"
 
 	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/utils"
 	"github.com/ethereum/go-ethereum/common"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 	ethcore "github.com/ethereum/go-ethereum/core"
@@ -57,16 +57,9 @@ func GetHashFn(s *CommitStateDB) ethvm.GetHashFunc {
 	}
 }
 
-// hashToBigInt used to convert mostly chain id which is a string
-func hashToBigInt(s string) *big.Int {
-	h := fnv.New64a()
-	h.Write([]byte(s))
-	return new(big.Int).SetUint64(h.Sum64())
-}
-
 func EthereumConfig(chainID string) *ethparams.ChainConfig {
 	return &ethparams.ChainConfig{
-		ChainID:        hashToBigInt(chainID),
+		ChainID:        utils.HashToBigInt(chainID),
 		HomesteadBlock: big.NewInt(0),
 
 		DAOForkBlock:   big.NewInt(0),
