@@ -1,6 +1,8 @@
 package eth
 
 import (
+	"math/big"
+
 	"github.com/Oneledger/protocol/data/accounts"
 	rpctypes "github.com/Oneledger/protocol/web3/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -46,7 +48,7 @@ func (svc *Service) GetBalance(address common.Address, blockNrOrHash rpc.BlockNu
 	ethAcc, err := svc.ctx.GetAccountKeeper().GetVersionedAccount(svc.getStateHeight(height), address.Bytes())
 	if err != nil {
 		svc.logger.Debug("eth_getBalance", "account_not_found", address)
-		return (*hexutil.Big)(ethAcc.Balance()), nil
+		return (*hexutil.Big)(big.NewInt(0)), nil
 	}
 	return (*hexutil.Big)(ethAcc.Balance()), nil
 }

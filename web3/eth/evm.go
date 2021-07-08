@@ -67,16 +67,21 @@ func (svc *Service) Call(call rpctypes.CallArgs, blockNrOrHash rpc.BlockNumberOr
 	if err != nil {
 		return nil, err
 	}
-	svc.logger.Debugf("eth_call args %+v height %d", call, height)
+	svc.logger.Debugf("eth_call args data '%s' with height '%d'", call, height)
 
 	result, err := svc.callContract(call, svc.getStateHeight(height))
 	if err != nil {
+		svc.logger.Debug("eth_call", "err", err)
 		return hexutil.Bytes{}, err
 	}
+	svc.logger.Debug("eth_call", "result", result)
 	// If the result contains a revert reason, try to unpack and return it.
 	if len(result.Revert()) > 0 {
-		return hexutil.Bytes{}, rpctypes.NewRevertError(result)
+		rErr := rpctypes.NewRevertError(result)
+		svc.logger.Debug("eth_call", "revert err", rErr)
+		return hexutil.Bytes{}, rErr
 	}
+	svc.logger.Debug("eth_call", "return", result.Return(), "err", result.Err)
 	return result.Return(), result.Err
 }
 
@@ -113,9 +118,10 @@ func (svc *Service) callContract(call rpctypes.CallArgs, height int64) (*action.
 	}
 
 	var from keys.Address = call.From.Bytes()
-	var to keys.Address
+	var to *keys.Address
 	if call.To != nil {
-		to = call.To.Bytes()
+		to = new(keys.Address)
+		*to = call.To.Bytes()
 	}
 
 	var gasPrice int64 = action.DefaultGasPrice.Int64()
@@ -140,8 +146,13 @@ func (svc *Service) callContract(call rpctypes.CallArgs, height int64) (*action.
 	}
 
 	// TODO: Change on account nonce with involving of pending transactions
-	ethAcc, _ := svc.ctx.GetAccountKeeper().GetVersionedAccount(height, call.From.Bytes())
-	nonce := ethAcc.Sequence
+	var nonce uint64
+	ethAcc, err := svc.ctx.GetAccountKeeper().GetVersionedAccount(height, from)
+	if err == nil {
+		nonce = ethAcc.Sequence
+	}
+
+	svc.logger.Debug("eth_callContract", "from", from, "to", to, "gasPrice", gasPrice, "gas", gas, "value", value, "data", data, "nonce", nonce)
 
 	price := action.Amount{
 		Currency: "OLT",
@@ -156,7 +167,7 @@ func (svc *Service) callContract(call rpctypes.CallArgs, height int64) (*action.
 			Gas:   gas,
 		},
 	}
-	evmTx := action.NewEVMTransaction(stateDB, header, from, &to, nonce, value, data, true)
+	evmTx := action.NewEVMTransaction(stateDB, header, from, to, nonce, value, data, true)
 
 	timeout := 10 * time.Second
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
