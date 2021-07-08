@@ -12,6 +12,7 @@ var (
 	KeyPrefixStorage    = []byte{0x02}
 	KeyPrefixHeightHash = []byte{0x03}
 	KeyPrefixLogs       = []byte{0x04}
+	KeyPrefixBloom      = []byte{0x05}
 )
 
 type ContractStore struct {
@@ -81,4 +82,16 @@ func HeightHashKey(height uint64) []byte {
 	buf := make([]byte, 8)
 	binary.PutVarint(buf, int64(height))
 	return buf
+}
+
+// Uint64ToBigEndian - marshals uint64 to a bigendian byte slice so it can be sorted
+func Uint64ToBigEndian(i uint64) []byte {
+	b := make([]byte, 8)
+	binary.BigEndian.PutUint64(b, i)
+	return b
+}
+
+// BloomKey defines the store key for a block Bloom
+func BloomKey(height uint64) []byte {
+	return Uint64ToBigEndian(height)
 }

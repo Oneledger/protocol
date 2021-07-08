@@ -3,10 +3,13 @@ package eth
 import (
 	"math/big"
 
+	"github.com/Oneledger/protocol/data/evm"
 	rpctypes "github.com/Oneledger/protocol/web3/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rpc"
+	tmtypes "github.com/tendermint/tendermint/types"
 )
 
 // BlockNumber returns the current block number.
@@ -15,6 +18,18 @@ func (svc *Service) BlockNumber() hexutil.Big {
 	height := svc.getState().Version()
 	blockNumber := big.NewInt(height)
 	return hexutil.Big(*blockNumber)
+}
+
+func (svc *Service) blockWithBloom(tmBlock *tmtypes.Block, fullTx bool) (*rpctypes.Block, error) {
+	block, err := rpctypes.EthBlockFromTendermint(svc.getTMClient(), tmBlock, fullTx)
+	if err != nil {
+		return nil, err
+	}
+	bz, _ := svc.ctx.GetContractStore().Get(evm.KeyPrefixBloom, evm.BloomKey(uint64(tmBlock.Height)))
+	if len(bz) > 0 {
+		block.LogsBloom = ethtypes.BytesToBloom(bz)
+	}
+	return block, nil
 }
 
 // GetBlockByHash returns the block identified by hash.
@@ -29,7 +44,7 @@ func (svc *Service) GetBlockByHash(hash common.Hash, fullTx bool) (*rpctypes.Blo
 		svc.logger.Debug("eth_getBlockByHash", "block not found with hash", common.Bytes2Hex(hash.Bytes()))
 		return nil, nil
 	}
-	return rpctypes.EthBlockFromTendermint(svc.getTMClient(), result.Block, fullTx)
+	return svc.blockWithBloom(result.Block, fullTx)
 }
 
 // GetBlockByNumber returns the block identified by number.
@@ -49,7 +64,7 @@ func (svc *Service) GetBlockByNumber(blockNrOrHash rpc.BlockNumberOrHash, fullTx
 		svc.logger.Debug("eth_getBlockByHash", "block not found with height", height)
 		return nil, nil
 	}
-	return rpctypes.EthBlockFromTendermint(svc.getTMClient(), result.Block, fullTx)
+	return svc.blockWithBloom(result.Block, fullTx)
 }
 
 // GetBlockTransactionCountByHash returns the number of transactions in the block identified by hash.

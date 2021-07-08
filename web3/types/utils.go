@@ -205,10 +205,7 @@ func EthBlockFromTendermint(tmClient rpcclient.Client, block *tmtypes.Block, ful
 		return nil, err
 	}
 
-	// TODO: Add get bloom from storage when bloom filter will be implemented
-	bloom := ethtypes.BytesToBloom(make([]byte, 6))
-
-	return FormatBlock(block.Header, block.Size(), block.Hash(), gasLimit, gasUsed, transactions, bloom), nil
+	return FormatBlock(block.Header, block.Size(), block.Hash(), gasLimit, gasUsed, transactions), nil
 }
 
 // EthTransactionsFromTendermint returns a slice of ethereum transaction hashes and the total gas usage from a set of
@@ -238,7 +235,7 @@ func EthTransactionsFromTendermint(tmClient rpcclient.Client, txs []tmtypes.Tx, 
 // transactions.
 func FormatBlock(
 	header tmtypes.Header, size int, curBlockHash tmbytes.HexBytes, gasLimit int64,
-	gasUsed *big.Int, transactions interface{}, bloom ethtypes.Bloom,
+	gasUsed *big.Int, transactions interface{},
 ) *Block {
 	if len(header.DataHash) == 0 {
 		header.DataHash = tmbytes.HexBytes(common.Hash{}.Bytes())
@@ -250,7 +247,7 @@ func FormatBlock(
 		ParentHash:       hexutil.Bytes(header.LastBlockID.Hash),
 		Nonce:            hexutil.Uint64(0), // PoW specific
 		Sha3Uncles:       common.Hash{},     // No uncles in Tendermint
-		LogsBloom:        bloom,
+		LogsBloom:        ethtypes.BytesToBloom(make([]byte, 6)),
 		TransactionsRoot: hexutil.Bytes(header.DataHash),
 		StateRoot:        hexutil.Bytes(header.AppHash),
 		Miner:            common.BytesToAddress(header.ProposerAddress.Bytes()),
