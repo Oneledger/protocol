@@ -81,7 +81,7 @@ func (svc *Service) GetBlockTransactionCountByNumber(blockNrOrHash rpc.BlockNumb
 	)
 
 	switch height {
-	case -2:
+	case rpctypes.PendingBlockNumber:
 		blockNum = svc.getStateHeight(height)
 		svc.logger.Debug("eth_getBlockTransactionCountByNumber", "height", blockNum, "for pending txs")
 
@@ -100,7 +100,7 @@ func (svc *Service) GetBlockTransactionCountByNumber(blockNrOrHash rpc.BlockNumb
 			return nil
 		}
 		txsLen = len(result.Block.Txs) + len(unconfirmed.Txs)
-	case -1:
+	case rpctypes.LatestBlockNumber:
 		blockNum = svc.getStateHeight(height)
 		svc.logger.Debug("eth_getBlockTransactionCountByNumber", "height", blockNum, "for last txs")
 

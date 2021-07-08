@@ -1,6 +1,7 @@
 package types
 
 import (
+	"bytes"
 	"errors"
 	"math/big"
 
@@ -12,11 +13,26 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rpc"
+	abci "github.com/tendermint/tendermint/abci/types"
 	tmbytes "github.com/tendermint/tendermint/libs/bytes"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
 var jsonSerializer serialize.Serializer = serialize.GetSerializer(serialize.NETWORK)
+
+// GetContractAddress taken the contract address from event logs
+func GetContractAddress(res *abci.ResponseDeliverTx) (contractAddress *common.Address) {
+	for _, evt := range res.Events {
+		for _, attr := range evt.Attributes {
+			if bytes.Equal(attr.Key, []byte("tx.contract")) {
+				contractAddress = new(common.Address)
+				*contractAddress = common.BytesToAddress(attr.Value)
+				return
+			}
+		}
+	}
+	return
+}
 
 // GetBlockCumulativeGas returns the cumulative gas used on a block up to a given
 // transaction index. The returned gas used includes the gas from both the SDK and
@@ -95,7 +111,7 @@ func LegacyRawBlockAndTxToEthTx(tmBlock *tmtypes.Block, tmTx *tmtypes.Tx, chainI
 		}
 	}
 
-	err = serialize.GetSerializer(serialize.NETWORK).Deserialize(lTx.Data, &unpackedData)
+	err = jsonSerializer.Deserialize(lTx.Data, &unpackedData)
 	if err == nil {
 		if unpackedData.To != nil {
 			to = new(common.Address)
