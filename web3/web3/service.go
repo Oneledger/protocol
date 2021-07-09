@@ -1,24 +1,27 @@
 package web3
 
 import (
+	"os"
 	"sync"
 
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/version"
-	web3types "github.com/Oneledger/protocol/web3/types"
+	rpctypes "github.com/Oneledger/protocol/web3/types"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
+var _ rpctypes.Web3Service = (*Service)(nil)
+
 type Service struct {
-	ctx    web3types.Web3Context
+	ctx    rpctypes.Web3Context
 	logger *log.Logger
 
 	mu sync.Mutex
 }
 
-func NewService(ctx web3types.Web3Context) *Service {
-	return &Service{ctx: ctx, logger: ctx.GetLogger()}
+func NewService(ctx rpctypes.Web3Context) *Service {
+	return &Service{ctx: ctx, logger: log.NewLoggerWithPrefix(os.Stdout, "web3")}
 }
 
 // ClientVersion returns the client version in the Web3 user agent format.
