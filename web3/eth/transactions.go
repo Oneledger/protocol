@@ -109,7 +109,11 @@ func (svc *Service) GetTransactionReceipt(hash common.Hash) (*rpctypes.Transacti
 	}
 
 	// Set status codes based on tx result
-	status := hexutil.Uint64(resTx.TxResult.Code)
+	var status uint32
+	// swap
+	if resTx.TxResult.Code == 0 {
+		status = 1
+	}
 
 	stateDB := action.NewCommitStateDB(svc.ctx.GetContractStore(), svc.ctx.GetAccountKeeper(), svc.logger)
 
@@ -125,7 +129,7 @@ func (svc *Service) GetTransactionReceipt(hash common.Hash) (*rpctypes.Transacti
 	}
 
 	receipt := &rpctypes.TransactionReceipt{
-		Status:            status,
+		Status:            hexutil.Uint64(status),
 		CumulativeGasUsed: hexutil.Uint64(cumulativeGasUsed),
 		LogsBloom:         bloom,
 		Logs:              logs,
@@ -197,8 +201,10 @@ func (svc *Service) GetTransactionByBlockNumberAndIndex(blockNrOrHash rpc.BlockN
 		chainID := utils.HashToBigInt(result.Block.ChainID)
 
 		return rpctypes.LegacyRawBlockAndTxToEthTx(result.Block, &unconfirmed.Txs[idx], chainID, &idx)
+	case rpctypes.EarliestBlockNumber:
+		blockNum = 1
 	case rpctypes.LatestBlockNumber:
-		blockNum = svc.getStateHeight(height)
+		blockNum = svc.getState().Version()
 	default:
 		blockNum = height
 	}

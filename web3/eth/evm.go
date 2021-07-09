@@ -70,7 +70,7 @@ func (svc *Service) Call(call rpctypes.CallArgs, blockNrOrHash rpc.BlockNumberOr
 	}
 	svc.logger.Debugf("eth_call args data '%s' with height '%d'", call, height)
 
-	result, err := svc.callContract(call, svc.getStateHeight(height))
+	result, err := svc.callContract(call, height)
 	if err != nil {
 		svc.logger.Debug("eth_call", "err", err)
 		return hexutil.Bytes{}, err
@@ -106,12 +106,23 @@ func (svc *Service) EstimateGas(call rpctypes.CallArgs) (hexutil.Uint64, error) 
 }
 
 func (svc *Service) callContract(call rpctypes.CallArgs, height int64) (*action.ExecutionResult, error) {
+	var (
+		blockNum  uint64
+		isPending bool
+	)
+	switch height {
+	case rpctypes.EarliestBlockNumber:
+		blockNum = 1
+	default:
+		blockNum = uint64(svc.getState().Version())
+		isPending = true
+	}
 	// TODO: Add versioning support
 	stateDB := action.NewCommitStateDB(svc.ctx.GetContractStore(), svc.ctx.GetAccountKeeper(), svc.logger)
-	bhash := stateDB.GetHeightHash(uint64(height))
-	stateDB.SetHeightHash(uint64(height), bhash, false)
+	bhash := stateDB.GetHeightHash(blockNum)
+	stateDB.SetHeightHash(blockNum, bhash, false)
 
-	block := svc.ctx.GetAPI().Block(height).Block
+	block := svc.ctx.GetAPI().Block(int64(blockNum)).Block
 	header := &abci.Header{
 		ChainID: block.ChainID,
 		Height:  block.Height,
@@ -146,7 +157,7 @@ func (svc *Service) callContract(call rpctypes.CallArgs, height int64) (*action.
 		data = []byte(*call.Data)
 	}
 
-	nonce := svc.getNonce(common.BytesToAddress(from.Bytes()), height, utils.HashToBigInt(block.ChainID))
+	nonce := svc.getNonce(common.BytesToAddress(from.Bytes()), blockNum, utils.HashToBigInt(block.ChainID), isPending)
 
 	svc.logger.Debug("eth_callContract", "from", from, "to", to, "gasPrice", gasPrice, "gas", gas, "value", value, "data", data, "nonce", nonce)
 
@@ -184,10 +195,15 @@ func (svc *Service) callContract(call rpctypes.CallArgs, height int64) (*action.
 	return result, err
 }
 
-func (svc *Service) getNonce(address common.Address, height int64, chainID *big.Int) uint64 {
-	var nonce uint64
-	pendingNonce := rpcutils.GetPendingTxCountByAddress(svc.getTMClient(), address)
-	ethAcc, err := svc.ctx.GetAccountKeeper().GetVersionedAccount(address.Bytes(), height)
+func (svc *Service) getNonce(address common.Address, height uint64, chainID *big.Int, isPending bool) uint64 {
+	var (
+		nonce        uint64
+		pendingNonce uint64
+	)
+	if isPending {
+		pendingNonce = rpcutils.GetPendingTxCountByAddress(svc.getTMClient(), address)
+	}
+	ethAcc, err := svc.ctx.GetAccountKeeper().GetVersionedAccount(address.Bytes(), int64(height))
 	if err == nil {
 		nonce = ethAcc.Sequence
 	}

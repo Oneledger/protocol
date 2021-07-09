@@ -9,6 +9,7 @@ import (
 	rpcclient "github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
+	"github.com/Oneledger/protocol/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -200,7 +201,7 @@ func EthBlockFromTendermint(tmClient rpcclient.Client, block *tmtypes.Block, ful
 		return nil, err
 	}
 
-	transactions, gasUsed, err := EthTransactionsFromTendermint(tmClient, block.Txs, fullTx)
+	transactions, gasUsed, err := EthTransactionsFromTendermint(tmClient, block, fullTx)
 	if err != nil {
 		return nil, err
 	}
@@ -210,32 +211,45 @@ func EthBlockFromTendermint(tmClient rpcclient.Client, block *tmtypes.Block, ful
 
 // EthTransactionsFromTendermint returns a slice of ethereum transaction hashes and the total gas usage from a set of
 // tendermint block transactions.
-func EthTransactionsFromTendermint(tmClient rpcclient.Client, txs []tmtypes.Tx, fullTx bool) ([]common.Hash, *big.Int, error) {
-	transactionHashes := []common.Hash{}
+func EthTransactionsFromTendermint(tmClient rpcclient.Client, block *tmtypes.Block, fullTx bool) ([]interface{}, *big.Int, error) {
+	transactions := make([]interface{}, 0)
 	gasUsed := big.NewInt(0)
 
-	for _, tx := range txs {
-		// first parse legacy tx
-		lTx, err := ParseLegacyTx(tx)
-		if err != nil {
-			// means tx is not legacy and we need to check is tx is ethereum
-			// TODO: Add ethereum tx check when it will be released
-			continue
+	chainID := utils.HashToBigInt(block.ChainID)
+
+	for i, tx := range block.Txs {
+		if !fullTx {
+			// first parse legacy tx
+			lTx, err := ParseLegacyTx(tx)
+			if err != nil {
+				// means tx is not legacy and we need to check is tx is ethereum
+				// TODO: Add ethereum tx check when it will be released
+				continue
+			}
+			// TODO: Remove gas usage calculation if saving gasUsed per block
+			gasUsed.Add(gasUsed, big.NewInt(int64(lTx.Fee.Gas)))
+			transactions = append(transactions, common.BytesToHash(tx.Hash()))
+		} else {
+			// TODO: How to fix index?
+			index := hexutil.Uint64(i)
+			fTx, err := LegacyRawBlockAndTxToEthTx(block, &tx, chainID, &index)
+			if err != nil {
+				continue
+			}
+			// TODO: Remove gas usage calculation if saving gasUsed per block
+			gasUsed.Add(gasUsed, big.NewInt(int64(fTx.Gas)))
+			transactions = append(transactions, fTx)
 		}
-		// TODO: Remove gas usage calculation if saving gasUsed per block
-		gasUsed.Add(gasUsed, big.NewInt(int64(lTx.Fee.Gas)))
-		// TODO: Add full tx handle
-		transactionHashes = append(transactionHashes, common.BytesToHash(tx.Hash()))
 	}
 
-	return transactionHashes, gasUsed, nil
+	return transactions, gasUsed, nil
 }
 
 // FormatBlock creates an ethereum block from a tendermint header and ethereum-formatted
 // transactions.
 func FormatBlock(
 	header tmtypes.Header, size int, curBlockHash tmbytes.HexBytes, gasLimit int64,
-	gasUsed *big.Int, transactions interface{},
+	gasUsed *big.Int, transactions []interface{},
 ) *Block {
 	if len(header.DataHash) == 0 {
 		header.DataHash = tmbytes.HexBytes(common.Hash{}.Bytes())
@@ -243,23 +257,23 @@ func FormatBlock(
 
 	return &Block{
 		Number:           hexutil.Uint64(header.Height),
-		Hash:             hexutil.Bytes(curBlockHash),
-		ParentHash:       hexutil.Bytes(header.LastBlockID.Hash),
-		Nonce:            hexutil.Uint64(0), // PoW specific
-		Sha3Uncles:       common.Hash{},     // No uncles in Tendermint
+		Hash:             common.BytesToHash(curBlockHash),
+		ParentHash:       common.BytesToHash(header.LastBlockID.Hash),
+		Nonce:            ethtypes.BlockNonce{}, // PoW specific
+		Sha3Uncles:       common.Hash{},         // No uncles in Tendermint
 		LogsBloom:        ethtypes.BytesToBloom(make([]byte, 6)),
-		TransactionsRoot: hexutil.Bytes(header.DataHash),
-		StateRoot:        hexutil.Bytes(header.AppHash),
+		TransactionsRoot: common.BytesToHash(header.DataHash),
+		StateRoot:        common.BytesToHash(header.AppHash),
 		Miner:            common.BytesToAddress(header.ProposerAddress.Bytes()),
 		MixHash:          common.Hash{},
-		Difficulty:       0,
-		TotalDifficulty:  0,
-		ExtraData:        hexutil.Uint64(0),
+		Difficulty:       1,
+		TotalDifficulty:  1,
+		ExtraData:        common.Hex2Bytes(""),
 		Size:             hexutil.Uint64(size),
 		GasLimit:         hexutil.Uint64(gasLimit), // Static gas limit
 		GasUsed:          (*hexutil.Big)(gasUsed),
 		Timestamp:        hexutil.Uint64(header.Time.Unix()),
-		Transactions:     transactions.([]common.Hash),
+		Transactions:     transactions,
 		Uncles:           make([]common.Hash, 0),
 		ReceiptsRoot:     common.Hash{},
 	}
