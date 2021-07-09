@@ -10,6 +10,7 @@ import (
 	"github.com/Oneledger/protocol/external_apps"
 	"github.com/Oneledger/protocol/external_apps/common"
 	"github.com/Oneledger/protocol/web3"
+	web3types "github.com/Oneledger/protocol/web3/types"
 
 	tmdb "github.com/tendermint/tm-db"
 
@@ -287,7 +288,7 @@ func (ctx *context) Balances() *balance.Context {
 		ctx.currencies)
 }
 
-func (ctx *context) Web3Services() (map[string]interface{}, error) {
+func (ctx *context) Web3Services() (map[string]web3types.Web3Service, error) {
 	extSvcs, err := client.NewExtServiceContext(ctx.cfg.Network.RPCAddress, ctx.cfg.Network.SDKAddress)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to start service context")
