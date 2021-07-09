@@ -9,6 +9,7 @@ import (
 	"github.com/Oneledger/protocol/data/evm"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/log"
+	"github.com/Oneledger/protocol/utils"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 	ethstate "github.com/ethereum/go-ethereum/core/state"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
@@ -347,13 +348,7 @@ func (so *stateObject) setError(err error) {
 // GetStorageByAddressKey returns a hash of the composite key for a state
 // object's storage prefixed with it's address.
 func (so stateObject) GetStorageByAddressKey(key []byte) ethcmn.Hash {
-	prefix := so.Address().Bytes()
-	compositeKey := make([]byte, len(prefix)+len(key))
-
-	copy(compositeKey, prefix)
-	copy(compositeKey[len(prefix):], key)
-
-	return ethcrypto.Keccak256Hash(compositeKey)
+	return utils.GetStorageByAddressKey(so.Address(), key)
 }
 
 func (so *stateObject) markSuicided() {

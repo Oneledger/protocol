@@ -9,6 +9,8 @@ import (
 	"github.com/Oneledger/protocol/data/evm"
 	"github.com/Oneledger/protocol/external_apps"
 	"github.com/Oneledger/protocol/external_apps/common"
+	"github.com/Oneledger/protocol/web3"
+	web3types "github.com/Oneledger/protocol/web3/types"
 
 	tmdb "github.com/tendermint/tm-db"
 
@@ -58,6 +60,7 @@ type context struct {
 	cfg  config.Server
 
 	rpc          *rpc.Server
+	web3         *web3.Server
 	actionRouter action.Router
 
 	//db for chain state storage
@@ -111,6 +114,12 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	}
 
 	ctx.rpc = rpc.NewServer(logWriter, &cfg)
+	// new rpc service
+	web3, err := web3.NewServer(logWriter, &cfg)
+	if err != nil {
+		return ctx, errors.Wrap(err, "web3 api failed")
+	}
+	ctx.web3 = web3
 
 	db, err := storage.GetDatabase("chainstate", ctx.dbDir(), ctx.cfg.Node.DB)
 	if err != nil {
@@ -282,6 +291,25 @@ func (ctx *context) Balances() *balance.Context {
 		log.NewLoggerWithPrefix(ctx.logWriter, "balances").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
 		ctx.balances,
 		ctx.currencies)
+}
+
+func (ctx *context) Web3Services() (map[string]web3types.Web3Service, error) {
+	extSvcs, err := client.NewExtServiceContext(ctx.cfg.Network.RPCAddress, ctx.cfg.Network.SDKAddress)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to start service context")
+	}
+	web3Ctx := web3.NewContext(
+		log.NewLoggerWithPrefix(ctx.logWriter, "web3").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
+		&extSvcs,
+		ctx.validators,
+		ctx.contracts,
+		ctx.accountKeeper,
+		&ctx.node,
+		&ctx.cfg,
+	)
+	// registering services
+	web3Ctx.DefaultRegisterForAll()
+	return web3Ctx.ServiceList(), nil
 }
 
 func (ctx *context) Services() (service.Map, error) {

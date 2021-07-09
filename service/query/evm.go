@@ -124,7 +124,7 @@ func (svc *Service) EVMAccount(args client.EVMAccountRequest, reply *client.EVMA
 	if err != nil {
 		return err
 	}
-	acc, err := svc.accountKeeper.GetVersionedAccount(height, args.Address)
+	acc, err := svc.accountKeeper.GetVersionedAccount(args.Address, height)
 	reply.Address = args.Address
 	if err != nil {
 		balance, _ := svc.balances.GetBalance(args.Address, svc.currencies)

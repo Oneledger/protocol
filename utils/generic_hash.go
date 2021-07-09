@@ -7,8 +7,6 @@
   \____/|_| |_|\___|______\___|\__,_|\__, |\___|_|       |_|   |_|  \___/ \__\___/ \___\___/|_|
                                       __/ |
                                      |___/
-
-
 Copyright 2017 - 2019 OneLedger
 */
 
@@ -16,7 +14,11 @@ package utils
 
 import (
 	"crypto/sha256"
+	"hash/fnv"
+	"math/big"
 
+	ethcmn "github.com/ethereum/go-ethereum/common"
+	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 	"golang.org/x/crypto/ripemd160"
 )
 
@@ -34,4 +36,21 @@ func SHA2(data []byte) []byte {
 
 func GetTransactionHash(tx []byte) []byte {
 	return SHA2(tx)
+}
+
+// hashToBigInt used to convert mostly chain id which is a string
+func HashToBigInt(s string) *big.Int {
+	h := fnv.New32a()
+	h.Write([]byte(s))
+	return new(big.Int).SetUint64(uint64(h.Sum32()))
+}
+
+func GetStorageByAddressKey(address ethcmn.Address, key []byte) ethcmn.Hash {
+	prefix := address.Bytes()
+	compositeKey := make([]byte, len(prefix)+len(key))
+
+	copy(compositeKey, prefix)
+	copy(compositeKey[len(prefix):], key)
+
+	return ethcrypto.Keccak256Hash(compositeKey)
 }

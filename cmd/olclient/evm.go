@@ -398,6 +398,7 @@ func PollContractTxResult(ctx *Context, hash string) bool {
 				fmt.Println("Error message: ", msgError)
 			}
 			fmt.Println("TX status: ", msgStatus)
+			fmt.Println("Block height: ", result.Height)
 			return true
 		}
 		time.Sleep(time.Duration(queryTxInternal) * 1000 * time.Millisecond)
