@@ -7,6 +7,7 @@ import (
 
 	"github.com/Oneledger/protocol/action"
 	rpcclient "github.com/Oneledger/protocol/client"
+	"github.com/Oneledger/protocol/data/evm"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/utils"
@@ -158,8 +159,8 @@ func ParseLegacyTx(tmTx tmtypes.Tx) (*action.SignedTx, error) {
 
 // EthHeaderFromTendermint is an util function that returns an Ethereum Header
 // from a tendermint Header.
-func EthHeaderFromTendermint(header tmtypes.Header) *ethtypes.Header {
-	return &ethtypes.Header{
+func EthHeaderFromTendermint(cs *evm.ContractStore, header tmtypes.Header) *ethtypes.Header {
+	ethHeader := &ethtypes.Header{
 		ParentHash:  common.BytesToHash(header.LastBlockID.Hash.Bytes()),
 		UncleHash:   common.Hash{},
 		Coinbase:    common.BytesToAddress(header.ProposerAddress.Bytes()),
@@ -173,6 +174,13 @@ func EthHeaderFromTendermint(header tmtypes.Header) *ethtypes.Header {
 		MixDigest:   common.Hash{},
 		Nonce:       ethtypes.BlockNonce{},
 	}
+	if cs != nil {
+		bz, _ := cs.Get(evm.KeyPrefixBloom, evm.BloomKey(ethHeader.Number.Uint64()))
+		if len(bz) > 0 {
+			ethHeader.Bloom = ethtypes.BytesToBloom(bz)
+		}
+	}
+	return ethHeader
 }
 
 // BlockMaxGasFromConsensusParams returns the gas limit for the latest block from the chain consensus params.

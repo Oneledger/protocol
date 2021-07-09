@@ -1,8 +1,10 @@
 package eth
 
 import (
+	"os"
 	"sync"
 
+	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/log"
 
 	"github.com/Oneledger/protocol/storage"
@@ -10,6 +12,8 @@ import (
 
 	rpcclient "github.com/Oneledger/protocol/client"
 )
+
+var _ rpctypes.EthService = (*Service)(nil)
 
 type Service struct {
 	ctx    rpctypes.Web3Context
@@ -19,7 +23,7 @@ type Service struct {
 }
 
 func NewService(ctx rpctypes.Web3Context) *Service {
-	return &Service{ctx: ctx, logger: ctx.GetLogger()}
+	return &Service{ctx: ctx, logger: log.NewLoggerWithPrefix(os.Stdout, "eth")}
 }
 
 func (svc *Service) getTMClient() rpcclient.Client {
@@ -38,4 +42,8 @@ func (svc *Service) getStateHeight(height int64) int64 {
 		return 1
 	}
 	return height
+}
+
+func (svc *Service) GetStateDB() *action.CommitStateDB {
+	return action.NewCommitStateDB(svc.ctx.GetContractStore(), svc.ctx.GetAccountKeeper(), svc.logger)
 }

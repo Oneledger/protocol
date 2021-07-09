@@ -10,7 +10,7 @@ import (
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/web3/eth"
 	"github.com/Oneledger/protocol/web3/net"
-	web3types "github.com/Oneledger/protocol/web3/types"
+	rpctypes "github.com/Oneledger/protocol/web3/types"
 	"github.com/Oneledger/protocol/web3/web3"
 )
 
@@ -24,7 +24,7 @@ type Context struct {
 	nodeContext    *node.Context
 	cfg            *config.Server
 
-	services map[string]interface{}
+	services map[string]rpctypes.Web3Service
 }
 
 // NewContext Initializing context with properties
@@ -32,8 +32,8 @@ func NewContext(
 	logger *log.Logger, extAPI *client.ExtServiceContext,
 	validatorStore *identity.ValidatorStore, contractStore *evm.ContractStore,
 	accountKeeper balance.AccountKeeper, nodeContext *node.Context, cfg *config.Server,
-) web3types.Web3Context {
-	return &Context{logger, extAPI, validatorStore, contractStore, accountKeeper, nodeContext, cfg, make(map[string]interface{}, 0)}
+) rpctypes.Web3Context {
+	return &Context{logger, extAPI, validatorStore, contractStore, accountKeeper, nodeContext, cfg, make(map[string]rpctypes.Web3Service, 0)}
 }
 
 // DefaultRegisterForAll regs services from the namespaces
@@ -44,12 +44,12 @@ func (ctx *Context) DefaultRegisterForAll() {
 }
 
 // RegisterService used to register service. NOTE: Must be called by service
-func (ctx *Context) RegisterService(name string, service interface{}) {
+func (ctx *Context) RegisterService(name string, service rpctypes.Web3Service) {
 	ctx.services[name] = service
 }
 
 // ServiceList represents a cuurent list of registered servises
-func (ctx *Context) ServiceList() map[string]interface{} {
+func (ctx *Context) ServiceList() map[string]rpctypes.Web3Service {
 	return ctx.services
 }
 
