@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/Oneledger/protocol/web3/websockets"
 	"net/url"
 	"os"
 
@@ -542,6 +543,17 @@ func (app *App) web3Starter() (func() error, error) {
 	}
 
 	return app.Context.web3.Start, nil
+}
+
+func (app *App) websocketStarter() (func() error, error) {
+	noop := func() error { return nil }
+
+	web3Context, err := app.Context.Web3Context()
+	if err != nil {
+		return noop, err
+	}
+	app.Context.ws = websockets.NewServer(web3Context, &app.Context.cfg)
+	return app.Context.ws.Start, nil
 }
 
 func (app *App) rpcStarter() (func() error, error) {

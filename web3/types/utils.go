@@ -3,7 +3,9 @@ package types
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"math/big"
+	"strings"
 
 	"github.com/Oneledger/protocol/action"
 	rpcclient "github.com/Oneledger/protocol/client"
@@ -20,7 +22,7 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
-var jsonSerializer serialize.Serializer = serialize.GetSerializer(serialize.NETWORK)
+var jsonSerializer = serialize.GetSerializer(serialize.NETWORK)
 
 // GetContractAddress taken the contract address from event logs
 func GetContractAddress(res *abci.ResponseDeliverTx) (contractAddress *common.Address) {
@@ -57,9 +59,9 @@ func GetBlockCumulativeGas(block *tmtypes.Block, idx int) uint64 {
 func LegacyRawBlockAndTxToEthTx(tmBlock *tmtypes.Block, tmTx *tmtypes.Tx, chainID *big.Int, txIndex *hexutil.Uint64) (*Transaction, error) {
 	var (
 		to           *common.Address
-		value        hexutil.Big   = hexutil.Big(*big.NewInt(0))
-		input        hexutil.Bytes = make(hexutil.Bytes, 0)
-		unpackedData               = struct {
+		value        = hexutil.Big(*big.NewInt(0))
+		input        = make(hexutil.Bytes, 0)
+		unpackedData = struct {
 			To     *keys.Address  `json:"to"`
 			Amount *action.Amount `json:"amount"`
 			Data   []byte         `json:"data"`
@@ -302,4 +304,46 @@ func StateAndHeaderByNumberOrHash(tmClient rpcclient.Client, blockNrOrHash rpc.B
 		return header.Block.Header.Height, nil
 	}
 	return 0, errors.New("invalid arguments; neither block nor hash specified")
+}
+
+// ResultData represents the data returned in an sdk.Result
+type ResultData struct {
+	ContractAddress *common.Address `json:"contract_address"`
+	Bloom           ethtypes.Bloom  `json:"bloom"`
+	Logs            []*ethtypes.Log `json:"logs"`
+	Ret             []byte          `json:"ret"`
+	TxHash          *common.Hash    `json:"tx_hash"`
+}
+
+// String implements fmt.Stringer interface.
+func (rd ResultData) String() string {
+	var logsStr string
+	logsLen := len(rd.Logs)
+	for i := 0; i < logsLen; i++ {
+		logsStr = fmt.Sprintf("%s\t\t%v\n ", logsStr, *rd.Logs[i])
+	}
+
+	return strings.TrimSpace(fmt.Sprintf(`ResultData:
+	ContractAddress: %s
+	Bloom: %s
+	Ret: %v
+	TxHash: %s	
+	Logs: 
+%s`, rd.ContractAddress.String(), rd.Bloom.Big().String(), rd.Ret, rd.TxHash.String(), logsStr))
+}
+
+// EncodeResultData takes all of the necessary data from the EVM execution
+// and returns the data as a byte slice encoded with amino
+func EncodeResultData(data ResultData) ([]byte, error) {
+	return jsonSerializer.Serialize(data)
+}
+
+// DecodeResultData decodes an amino-encoded byte slice into ResultData
+func DecodeResultData(in []byte) (ResultData, error) {
+	var data ResultData
+	err := jsonSerializer.Deserialize(in, &data)
+	if err != nil {
+		return ResultData{}, err
+	}
+	return data, nil
 }

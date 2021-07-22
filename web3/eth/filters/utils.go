@@ -18,13 +18,13 @@ func includes(addresses []common.Address, a common.Address) bool {
 	return false
 }
 
-// filterLogs creates a slice of logs matching the given criteria.
+// FilterLogs creates a slice of logs matching the given criteria.
 // [] -> anything
 // [A] -> A in first position of log topics, anything after
 // [null, B] -> anything in first position, B in second position
 // [A, B] -> A in first position and B in second position
 // [[A, B], [A, B]] -> A or B in first position, A or B in second position
-func filterLogs(logs []*types.Log, fromBlock, toBlock *big.Int, addresses []common.Address, topics [][]common.Hash) []*types.Log {
+func FilterLogs(logs []*types.Log, fromBlock, toBlock *big.Int, addresses []common.Address, topics [][]common.Hash) []*types.Log {
 	var ret []*types.Log
 Logs:
 	for _, log := range logs {
