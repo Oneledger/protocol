@@ -1,6 +1,8 @@
 package eth
 
 import (
+	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/Oneledger/protocol/action"
@@ -9,8 +11,16 @@ import (
 	rpcutils "github.com/Oneledger/protocol/web3/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rpc"
 	tmtypes "github.com/tendermint/tendermint/types"
+)
+
+// TODO: Move to the config
+const (
+	RPCTxFeeCap        = 1 // olt
+	UnprotectedAllowed = false
 )
 
 // GetTransactionCount returns the number of transactions at the given address up to the given block number.
@@ -229,4 +239,71 @@ func (svc *Service) getTransactionByBlockAndIndex(block *tmtypes.Block, idx hexu
 
 	chainID := utils.HashToBigInt(block.ChainID)
 	return rpctypes.LegacyRawBlockAndTxToEthTx(block, &block.Txs[idx], chainID, &idx)
+}
+
+// SendRawTransaction will add the signed transaction to the transaction pool.
+// The sender is responsible for signing the transaction and using the correct nonce.
+func (svc *Service) SendRawTransaction(input hexutil.Bytes) (common.Hash, error) {
+	tx := new(ethtypes.Transaction)
+	if err := tx.UnmarshalBinary(input); err != nil {
+		return common.Hash{}, err
+	}
+	return svc.submitTransaction(tx)
+}
+
+// submitTransaction is a helper function that submits tx to tendermint pool and logs a message.
+func (svc *Service) submitTransaction(tx *ethtypes.Transaction) (common.Hash, error) {
+	// If the transaction fee cap is already specified, ensure the
+	// fee of the given transaction is _reasonable_.
+	if err := rpcutils.CheckTxFee(tx.GasPrice(), tx.Gas(), RPCTxFeeCap); err != nil {
+		return common.Hash{}, err
+	}
+
+	if !UnprotectedAllowed && !tx.Protected() {
+		// Ensure only eip155 signed transactions are submitted if EIP155Required is set.
+		return common.Hash{}, errors.New("only replay-protected (EIP-155) transactions allowed over RPC")
+	}
+	// TODO: Add pre check if the smae tx exists in the pool before send
+	txHash, err := svc.sendTx(tx)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	config := action.EthereumConfig(tx.ChainId().String())
+
+	// Print a log with full tx details for manual investigations and interventions
+	resBlock, err := svc.getTMClient().Block(nil)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	if resBlock.Block == nil {
+		return common.Hash{}, err
+	}
+	signer := ethtypes.MakeSigner(config, big.NewInt(resBlock.Block.Height))
+	from, err := ethtypes.Sender(signer, tx)
+	if err != nil {
+		return common.Hash{}, err
+	}
+
+	if tx.To() == nil {
+		addr := crypto.CreateAddress(from, tx.Nonce())
+		svc.logger.Info("Submitted contract creation", "hash", txHash.Hex(), "from", from, "nonce", tx.Nonce(), "contract", addr.Hex(), "value", tx.Value())
+	} else {
+		svc.logger.Info("Submitted transaction", "hash", txHash.Hex(), "from", from, "nonce", tx.Nonce(), "recipient", tx.To(), "value", tx.Value())
+	}
+	return txHash, nil
+}
+
+// sendTx directly to the pool, all validation steps was done before
+func (svc *Service) sendTx(signedTx *ethtypes.Transaction) (common.Hash, error) {
+	// TODO: Implement this
+	tmTx := tmtypes.Tx{}
+	resBrodTx, err := svc.getTMClient().BroadcastTxSync(tmTx)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	txHash := common.BytesToHash(resBrodTx.Hash)
+	if resBrodTx.Code != 0 {
+		return common.Hash{}, fmt.Errorf("failed to broadcast tx \"%s\"", txHash.Hex())
+	}
+	return txHash, nil
 }
