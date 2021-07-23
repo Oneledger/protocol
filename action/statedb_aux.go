@@ -12,7 +12,7 @@ import (
 func (s *CommitStateDB) createObject(addr ethcmn.Address) (newObj, prevObj *stateObject) {
 	prevObj = s.getStateObject(addr)
 
-	acc, _ := s.accountKeeper.NewAccountWithAddress(keys.Address(addr.Bytes()))
+	acc, _ := s.accountKeeper.NewAccountWithAddress(keys.Address(addr.Bytes()), !s.isSimulation)
 	newObj = newStateObject(s, acc)
 	newObj.setNonce(0) // sets the object to dirty
 
@@ -74,7 +74,10 @@ func (s *CommitStateDB) setStateObject(so *stateObject) {
 // updateStateObject writes the given state object to the store.
 func (s *CommitStateDB) updateStateObject(so *stateObject) error {
 	s.logger.Debugf("Update state object for address '%s' with data: %+v \n", keys.Address(so.Address().Bytes()), so.account)
-	return s.accountKeeper.SetAccount(*so.account)
+	if !s.isSimulation {
+		return s.accountKeeper.SetAccount(*so.account)
+	}
+	return nil
 }
 
 // setError remembers the first non-nil error it is called with.
@@ -93,5 +96,7 @@ func (s *CommitStateDB) clearJournalAndRefund() {
 // deleteStateObject removes the given state object from the state store.
 func (s *CommitStateDB) deleteStateObject(so *stateObject) {
 	so.deleted = true
-	s.accountKeeper.RemoveAccount(*so.account)
+	if !s.isSimulation {
+		s.accountKeeper.RemoveAccount(*so.account)
+	}
 }

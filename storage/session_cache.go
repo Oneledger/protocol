@@ -4,6 +4,11 @@
 
 package storage
 
+import (
+	"fmt"
+	"sort"
+)
+
 /* sessionCache is a simple in-memory keyvalue store, to store binary  This is not thread safe and
 any concurrent read/write might throw panics.
 */
@@ -26,6 +31,39 @@ func NewSessionCache(name string) *sessionCache {
 		keys:  make([]string, 0, 100),
 		done:  make(map[string]bool),
 	}
+}
+
+func (c *sessionCache) DumpState() {
+	keys1 := make([]string, 0)
+	for _, key := range c.keys {
+		keys1 = append(keys1, key)
+	}
+	sort.Strings(keys1)
+
+	keys2 := make([]string, 0)
+	for key, _ := range c.store {
+		keys2 = append(keys2, key)
+	}
+	sort.Strings(keys2)
+
+	fmt.Println("--- Start dump cache keys ---")
+	for _, key := range keys1 {
+		fmt.Println("key", key)
+	}
+	fmt.Println("--- End dump cache keys ---")
+	fmt.Println("--- Start dump store data keys ---")
+	for _, key := range keys2 {
+		value := c.store[key]
+
+		var val []byte
+		if len(value) > 24 {
+			val = value[:24]
+		} else {
+			val = value
+		}
+		fmt.Println("key", key, "value", val)
+	}
+	fmt.Println("--- End dump store data keys ---")
 }
 
 // Get retrieves store for a key.

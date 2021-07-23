@@ -152,7 +152,11 @@ func StakingPayerFeeHandling(ctx *Context, feePayer keys.Address, signedTx Signe
 
 func ContractFeeHandling(ctx *Context, signedTx SignedTx, gasUsed Gas) (bool, Response) {
 	ctx.State.ConsumeContractGas(gasUsed)
-	used := int64(ctx.Balances.State.ConsumedGas())
+	used := int(gasUsed)
+	// in case of error, gasUsed is zero, so we use a default calculator logic for that
+	if int(gasUsed) == 0 {
+		used = int(ctx.Balances.State.ConsumedGas())
+	}
 	ctx.Logger.Debugf("gas used: %d, gas limit: %d", used, signedTx.Fee.Gas)
 
 	// only charge the first signer for now
@@ -164,7 +168,7 @@ func ContractFeeHandling(ctx *Context, signedTx SignedTx, gasUsed Gas) (bool, Re
 	}
 	addr := h.Address()
 
-	charge := signedTx.Fee.Price.ToCoin(ctx.Currencies).MultiplyInt64(int64(used))
+	charge := signedTx.Fee.Price.ToCoin(ctx.Currencies).MultiplyInt(used)
 	ctx.Logger.Debugf("Perform minus balance '%s' with charge: %s\n", addr, charge)
 	err = ctx.Balances.MinusFromAddress(addr, charge)
 	if err != nil {
@@ -177,7 +181,7 @@ func ContractFeeHandling(ctx *Context, signedTx SignedTx, gasUsed Gas) (bool, Re
 	}
 
 	// NOTE: For the smart contract we need to eat used gas to prevent redundant vm execution of attacker
-	return true, Response{GasWanted: signedTx.Fee.Gas, GasUsed: used}
+	return true, Response{GasWanted: signedTx.Fee.Gas, GasUsed: int64(used)}
 }
 
 func BasicFeeHandling(ctx *Context, signedTx SignedTx, start Gas, size Gas, signatureCnt Gas) (bool, Response) {
