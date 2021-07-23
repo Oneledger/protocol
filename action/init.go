@@ -69,8 +69,8 @@ const (
 	//Rewards
 	WITHDRAW_REWARD Type = 0x41
 
-	//Smart Contract
-	SC_EXECUTE Type = 0x71
+	// Nexus transactions (new sends + evm)
+	NEXUS Type = 0x101
 
 	//EOF here Only used as a marker to mark the end of Type list
 	//So that the query for Types can return all Types dynamically
@@ -124,7 +124,6 @@ func init() {
 	RegisterTxType(PROPOSAL_WITHDRAW_FUNDS, "PROPOSAL_WITHDRAW_FUNDS")
 
 	RegisterTxType(WITHDRAW_REWARD, "WITHDRAW_REWARD")
-	RegisterTxType(SC_EXECUTE, "SC_EXECUTE")
 
 	RegisterTxType(ADD_NETWORK_DELEGATE, "ADD_NETWORK_DELEGATION")
 	RegisterTxType(NETWORK_UNDELEGATE, "NETWORK_UNDELEGATE")
@@ -134,6 +133,8 @@ func init() {
 	RegisterTxType(ALLEGATION, "ALLEGATION")
 	RegisterTxType(ALLEGATION_VOTE, "ALLEGATION_VOTE")
 	RegisterTxType(RELEASE, "RELEASE")
+
+	RegisterTxType(NEXUS, "NEXUS")
 }
 
 func RegisterTxType(value Type, name string) {

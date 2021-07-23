@@ -9,7 +9,7 @@ require (
 	github.com/cespare/cp v1.1.1 // indirect
 	github.com/davecgh/go-spew v1.1.1
 	github.com/deckarep/golang-set v1.7.1 // indirect
-	github.com/ethereum/go-ethereum v1.10.4
+	github.com/ethereum/go-ethereum v1.10.7
 	github.com/go-kit/kit v0.10.0
 	github.com/google/go-cmp v0.5.4
 	github.com/google/uuid v1.1.5

@@ -2,11 +2,13 @@ package utils
 
 import (
 	"bytes"
+	"fmt"
 	"math/big"
 
 	rpcclient "github.com/Oneledger/protocol/client"
 	rpctypes "github.com/Oneledger/protocol/web3/types"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/params"
 )
 
 // GetPendingTxCountByAddress is used to get pending tx count (nonce) for user address
@@ -88,6 +90,21 @@ func GetPendingTxsWithCallback(tmClient rpcclient.Client, chainID *big.Int, call
 		if stopped {
 			break
 		}
+	}
+	return nil
+}
+
+// checkTxFee is an internal function used to check whether the fee of
+// the given transaction is _reasonable_(under the cap).
+func CheckTxFee(gasPrice *big.Int, gas uint64, cap float64) error {
+	// Short circuit if there is no cap for transaction fee at all.
+	if cap == 0 {
+		return nil
+	}
+	feeEth := new(big.Float).Quo(new(big.Float).SetInt(new(big.Int).Mul(gasPrice, new(big.Int).SetUint64(gas))), new(big.Float).SetInt(big.NewInt(params.Ether)))
+	feeFloat, _ := feeEth.Float64()
+	if feeFloat > cap {
+		return fmt.Errorf("tx fee (%.2f OLT) exceeds the configured cap (%.2f OLT)", feeFloat, cap)
 	}
 	return nil
 }

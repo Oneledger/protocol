@@ -101,6 +101,7 @@ type SessionedDirectStorage interface {
 
 	BeginSession() Session
 	Close()
+	DumpState()
 }
 
 // NewSessionedDirectStorage initializes a non sessioned storage

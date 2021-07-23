@@ -9,6 +9,8 @@ import (
 	"github.com/tendermint/tendermint/abci/types"
 )
 
+const DEFAULT_CURRENCY = "OLT"
+
 // Address an action package over Address in data/keys package
 type Address = keys.Address
 

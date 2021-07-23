@@ -411,8 +411,17 @@ func (k PublicKeyETHSECP) Bytes() []byte {
 }
 
 func (k PublicKeyETHSECP) VerifyBytes(msg []byte, sig []byte) bool {
+	var sigNoRecoverID []byte
 	pub := k.Bytes()
-	return crypto.VerifySignature(pub, msg, sig)
+	// if length 65, means that v or recovery ID is present. It is not used in
+	// crypto.VerifySignature as as it only accept R || S params. Gotcha point ;)
+	// NOTE: Maybe to use crypto.Ecrecover here?
+	if len(sig) == 65 {
+		sigNoRecoverID = sig[:len(sig)-1]
+	} else {
+		sigNoRecoverID = sig
+	}
+	return crypto.VerifySignature(pub, msg, sigNoRecoverID)
 }
 
 func (k PublicKeyETHSECP) Equals(pubKey PublicKey) bool {

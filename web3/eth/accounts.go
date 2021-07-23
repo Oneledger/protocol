@@ -84,7 +84,7 @@ func (svc *Service) GetBalance(address common.Address, blockNrOrHash rpc.BlockNu
 	balance, err := svc.ctx.GetAccountKeeper().GetVersionedBalance(address.Bytes(), blockNum)
 	if err != nil {
 		svc.logger.Debug("eth_getBalance", "account_not_found", address)
-		return (*hexutil.Big)(big.NewInt(0)), nil
+		balance = big.NewInt(0)
 	}
 	// involve pending balance
 	total := new(big.Int).Add(balance, pendingBalance)

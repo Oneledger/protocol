@@ -25,6 +25,8 @@ const (
 
 func (a Algorithm) String() string {
 	switch a {
+	case ETHSECP:
+		return "ethsecp"
 	case ED25519:
 		return "ed25519"
 	case SECP256K1:
@@ -37,7 +39,7 @@ func (a Algorithm) String() string {
 
 func (a Algorithm) MarshalText() ([]byte, error) {
 	switch a {
-	case ED25519, SECP256K1, BTCECSECP:
+	case ETHSECP, ED25519, SECP256K1, BTCECSECP:
 		return []byte(a.String()), nil
 	case UNKNOWN:
 		return []byte{}, nil
@@ -57,6 +59,8 @@ func (a *Algorithm) UnmarshalText(name []byte) error {
 
 func GetAlgorithmFromTmKeyName(name string) Algorithm {
 	switch name {
+	case "ethsecp":
+		return ETHSECP
 	case "ed25519":
 		return ED25519
 	case "secp256k1":

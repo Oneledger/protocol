@@ -66,12 +66,16 @@ func (acc *EthAccount) SetBalance(amount *big.Int) {
 }
 
 type AccountKeeper interface {
-	NewAccountWithAddress(addr keys.Address) (*EthAccount, error)
+	NewAccountWithAddress(addr keys.Address, setAcc bool) (*EthAccount, error)
+	GetOrCreateAccount(addr keys.Address) (*EthAccount, error)
 	GetAccount(addr keys.Address) (*EthAccount, error)
 	GetVersionedAccount(addr keys.Address, height int64) (*EthAccount, error)
 	SetAccount(account EthAccount) error
 	RemoveAccount(account EthAccount)
 	GetVersionedBalance(addr keys.Address, height int64) (*big.Int, error)
+	GetNonce(addr keys.Address) uint64
+	GetBalance(addr keys.Address) *big.Int
+	GetState() *storage.State
 	WithState(state *storage.State) AccountKeeper
 }
 
@@ -94,26 +98,31 @@ func NewNesterAccountKeeper(state *storage.State, balances *Store, currencies *C
 	}
 }
 
+func (nak *NesterAccountKeeper) GetState() *storage.State {
+	return nak.state
+}
+
 func (nak *NesterAccountKeeper) WithState(state *storage.State) AccountKeeper {
 	nak.balances.WithState(state)
 	nak.state = state
 	return nak
 }
 
-func (nak *NesterAccountKeeper) NewAccountWithAddress(addr keys.Address) (*EthAccount, error) {
+func (nak *NesterAccountKeeper) NewAccountWithAddress(addr keys.Address, setAcc bool) (*EthAccount, error) {
 	coin, err := nak.getOrCreateCurrencyBalance(addr)
 	if err != nil {
 		return nil, errors.Errorf("Failed to get balance: %s", err)
 	}
 	acc := NewEthAccount(addr, coin)
-
-	err = nak.SetAccount(*acc)
-	if err != nil {
-		return nil, errors.Errorf("Failed to set account: %s", err)
-	}
-	acc, err = nak.GetAccount(addr)
-	if err != nil {
-		return nil, errors.Errorf("Failed to get account: %s", err)
+	if setAcc {
+		err = nak.SetAccount(*acc)
+		if err != nil {
+			return nil, errors.Errorf("Failed to set account: %s", err)
+		}
+		acc, err = nak.GetAccount(addr)
+		if err != nil {
+			return nil, errors.Errorf("Failed to get account: %s", err)
+		}
 	}
 	return acc, nil
 }
@@ -133,17 +142,29 @@ func (nak *NesterAccountKeeper) GetVersionedBalance(addr keys.Address, height in
 }
 
 func (nak *NesterAccountKeeper) getOrCreateCurrencyBalance(addr keys.Address) (Coin, error) {
-	balance, _ := nak.balances.GetBalance(addr, nak.currencies)
-	coin := balance.Amounts["OLT"]
-	if coin.Amount == nil {
-		currency, ok := nak.currencies.GetCurrencyByName("OLT")
-		if !ok {
-			return Coin{}, errors.Errorf("Failed to get currency OLT")
+	currency, ok := nak.currencies.GetCurrencyByName("OLT")
+	if !ok {
+		return Coin{}, errors.Errorf("Failed to get currency OLT")
+	}
+	coin, _ := nak.balances.GetBalanceForCurr(addr, &currency)
+	if coin == (Coin{}) {
+		coin = Coin{
+			Currency: currency,
+			Amount:   NewAmountFromBigInt(big.NewInt(0)),
 		}
-		coin.Amount = NewAmountFromBigInt(big.NewInt(0))
-		coin.Currency = currency
 	}
 	return coin, nil
+}
+
+func (nak *NesterAccountKeeper) GetOrCreateAccount(addr keys.Address) (*EthAccount, error) {
+	eoa, err := nak.GetAccount(addr)
+	if err != nil {
+		eoa, err = nak.NewAccountWithAddress(addr, true)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return eoa, nil
 }
 
 func (nak *NesterAccountKeeper) GetAccount(addr keys.Address) (*EthAccount, error) {
@@ -210,4 +231,19 @@ func (nak *NesterAccountKeeper) SetAccount(account EthAccount) error {
 func (nak *NesterAccountKeeper) RemoveAccount(account EthAccount) {
 	prefixKey := append(nak.prefix, account.Address.Bytes()...)
 	nak.state.Delete(prefixKey)
+}
+
+func (nak *NesterAccountKeeper) GetNonce(addr keys.Address) uint64 {
+	acc, err := nak.GetAccount(addr)
+	if err != nil {
+		return 0
+	}
+	return acc.Sequence
+}
+func (nak *NesterAccountKeeper) GetBalance(addr keys.Address) *big.Int {
+	coin, err := nak.getOrCreateCurrencyBalance(addr)
+	if err != nil {
+		return big.NewInt(0)
+	}
+	return coin.Amount.BigInt()
 }

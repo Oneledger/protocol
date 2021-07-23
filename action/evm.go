@@ -1,10 +1,10 @@
 package action
 
 import (
-	"fmt"
 	"math/big"
 
 	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/storage"
 	"github.com/Oneledger/protocol/utils"
 	"github.com/ethereum/go-ethereum/common"
 	ethcmn "github.com/ethereum/go-ethereum/common"
@@ -78,8 +78,6 @@ func EthereumConfig(chainID string) *ethparams.ChainConfig {
 		MuirGlacierBlock:    big.NewInt(0),
 		BerlinBlock:         big.NewInt(0),
 		LondonBlock:         big.NewInt(0),
-
-		EWASMBlock: nil,
 	}
 }
 
@@ -107,6 +105,7 @@ type EVMTransaction struct {
 	data         []byte
 	ecfg         *EVMConfig
 	isSimulation bool
+	state        *storage.State
 }
 
 var (
@@ -181,35 +180,28 @@ func (etx *EVMTransaction) Apply(vmenv *ethvm.EVM, tx RawTx) (*ExecutionResult, 
 	}
 
 	executionResult, err := ApplyMessage(vmenv, msg, new(ethcore.GasPool).AddGas(uint64(uint64(tx.Fee.Gas))))
-	if err != nil {
-		return nil, fmt.Errorf("transaction failed: %v", err)
-	}
 
 	if !etx.isSimulation {
-		// calculating bloom
-		logs, err := etx.stateDB.GetLogs(txHash)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			// calculating bloom
+			logs, err := etx.stateDB.GetLogs(txHash)
+			if err != nil {
+				return nil, err
+			}
+			bloomInt := big.NewInt(0).SetBytes(ethtypes.LogsBloom(logs))
+			etx.stateDB.logger.Debug("tx hash", txHash, "bloom created", bloomInt)
+			etx.stateDB.Bloom.Or(etx.stateDB.Bloom, bloomInt)
+			etx.stateDB.logger.Debug("block bloom updated", etx.stateDB.Bloom)
 		}
-		bloomInt := big.NewInt(0).SetBytes(ethtypes.LogsBloom(logs))
-		etx.stateDB.logger.Debug("tx hash", txHash, "bloom created", bloomInt)
-		etx.stateDB.Bloom.Or(etx.stateDB.Bloom, bloomInt)
-		etx.stateDB.logger.Debug("block bloom updated", etx.stateDB.Bloom)
 		// Ensure any modifications are committed to the state
-		if err := etx.stateDB.Finalise(false); err != nil {
+		if err := etx.stateDB.Finalise(true); err != nil {
 			return nil, err
 		}
+		// Commit state objects to store
+		if _, err := etx.stateDB.Commit(true); err != nil {
+			return nil, err
+		}
+		etx.stateDB.logger.Debugf("State finalized\n")
 	}
-	etx.stateDB.logger.Debugf("State finalized\n")
-	return executionResult, nil
-}
-
-func (etx *EVMTransaction) EstimateGas(vmenv *ethvm.EVM, tx RawTx) (uint64, error) {
-	msg := ethtypes.NewMessage(etx.From(), etx.To(), etx.nonce, etx.value, uint64(tx.Fee.Gas), etx.ecfg.gasPrice, nil, nil, etx.data, make(ethtypes.AccessList, 0), true)
-
-	usedGas, err := EstimateGas(vmenv, msg, new(ethcore.GasPool).AddGas(uint64(uint64(tx.Fee.Gas))))
-	if err != nil {
-		return 0, fmt.Errorf("transaction failed: %v", err)
-	}
-	return usedGas, nil
+	return executionResult, err
 }
