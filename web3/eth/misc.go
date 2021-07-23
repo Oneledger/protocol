@@ -78,8 +78,6 @@ func (svc *Service) Hashrate() hexutil.Uint64 {
 // GasPrice returns the current gas price
 func (svc *Service) GasPrice() *hexutil.Big {
 	svc.logger.Debug("eth_gasPrice")
-	// NOTE: Maybe we could add the mean price in according to previous blocks
-	// but not really need it right now
-	out := big.NewInt(1_000_000_000) // NEI
+	out := svc.ctx.GetFeePool().GetOpt().MinFee().Amount.BigInt()
 	return (*hexutil.Big)(out)
 }

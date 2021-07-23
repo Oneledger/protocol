@@ -7,6 +7,7 @@ import (
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/evm"
+	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
 	"github.com/ethereum/go-ethereum/common"
@@ -31,6 +32,7 @@ type Web3Context interface {
 	GetValidatorStore() *identity.ValidatorStore
 	GetContractStore() *evm.ContractStore
 	GetAccountKeeper() balance.AccountKeeper
+	GetFeePool() *fees.Store
 	GetNodeContext() *node.Context
 	GetConfig() *config.Server
 

@@ -67,6 +67,9 @@ type CommitStateDB struct {
 
 	// Bloom bytes generation from the logs
 	Bloom *big.Int
+
+	// for simulation purposes, so no need to modify a store
+	isSimulation bool
 }
 
 // NewCommitStateDB returns a reference to a newly initialized CommitStateDB
@@ -90,6 +93,7 @@ func NewCommitStateDB(cs *evm.ContractStore, ak balance.AccountKeeper, logger *l
 		validRevisions:       []revision{},
 		TxCount:              0,
 		Bloom:                big.NewInt(0),
+		isSimulation:         false,
 	}
 }
 
@@ -123,6 +127,10 @@ func (s *CommitStateDB) GetCurrentTxHash() ethcmn.Hash {
 	return s.thash
 }
 
+func (s *CommitStateDB) EnableSimulation() {
+	s.isSimulation = true
+}
+
 // Commit writes the state to the appropriate stores. For each state object
 // in the cache, it will either be removed, or have it's code set and/or it's
 // state (storage) updated. In addition, the state object (account) itself will
@@ -143,18 +151,24 @@ func (s *CommitStateDB) Commit(deleteEmptyObjects bool) (ethcmn.Hash, error) {
 		case stateEntry.stateObject.suicided || (isDirty && deleteEmptyObjects && stateEntry.stateObject.empty()):
 			// If the state object has been removed, don't bother syncing it and just
 			// remove it from the store.
-			s.deleteStateObject(stateEntry.stateObject)
+			if !s.isSimulation {
+				s.deleteStateObject(stateEntry.stateObject)
+			}
 
 		case isDirty:
 			// write any contract code associated with the state object
 			if stateEntry.stateObject.code != nil && stateEntry.stateObject.dirtyCode {
-				stateEntry.stateObject.commitCode()
+				if !s.isSimulation {
+					stateEntry.stateObject.commitCode()
+				}
 				stateEntry.stateObject.dirtyCode = false
 			}
 
-			// update the object in the store
-			if err := s.updateStateObject(stateEntry.stateObject); err != nil {
-				return ethcmn.Hash{}, err
+			if !s.isSimulation {
+				// update the object in the store
+				if err := s.updateStateObject(stateEntry.stateObject); err != nil {
+					return ethcmn.Hash{}, err
+				}
 			}
 		}
 
@@ -189,13 +203,17 @@ func (s *CommitStateDB) Finalise(deleteEmptyObjects bool) error {
 
 		stateEntry := s.stateObjects[idx]
 		if stateEntry.stateObject.suicided || (deleteEmptyObjects && stateEntry.stateObject.empty()) {
-			s.deleteStateObject(stateEntry.stateObject)
+			if !s.isSimulation {
+				s.deleteStateObject(stateEntry.stateObject)
+			}
 		} else {
 			// Set all the dirty state storage items for the state object in the
 			// protocol and finally set the account in the account mapper.
-			stateEntry.stateObject.commitState()
-			if err := s.updateStateObject(stateEntry.stateObject); err != nil {
-				return err
+			if !s.isSimulation {
+				stateEntry.stateObject.commitState()
+				if err := s.updateStateObject(stateEntry.stateObject); err != nil {
+					return err
+				}
 			}
 		}
 
@@ -217,10 +235,10 @@ func (s *CommitStateDB) GetHeightHash(height uint64) ethcmn.Hash {
 }
 
 // SetHeightHash set hash and height of the block
-func (s *CommitStateDB) SetHeightHash(height uint64, hash ethcmn.Hash, updateState bool) {
+func (s *CommitStateDB) SetHeightHash(height uint64, hash ethcmn.Hash) {
 	s.bhash = hash
 	s.bheight = height
-	if updateState {
+	if !s.isSimulation {
 		s.contractStore.Set(evm.KeyPrefixHeightHash, evm.HeightHashKey(height), hash.Bytes())
 	}
 }
@@ -234,9 +252,6 @@ func (s *CommitStateDB) GetCurrentHeight() uint64 {
 func (s *CommitStateDB) UpdateAccounts() {
 	for _, stateEntry := range s.stateObjects {
 		addr := keys.Address(stateEntry.address.Bytes())
-		// NOTE: to prevent node down on resync
-		// version := int64(s.bheight)
-		// acc, err := s.accountKeeper.GetVersionedAccount(version-1, addr)
 		acc, err := s.accountKeeper.GetAccount(addr)
 		if err != nil {
 			continue
@@ -251,7 +266,7 @@ func (s *CommitStateDB) UpdateAccounts() {
 // Reset clears out all ephemeral state objects from the state db, but keeps
 // the underlying account mapper and store keys to avoid reloading data for the
 // next operations.
-func (s *CommitStateDB) Reset(_ ethcmn.Hash) error {
+func (s *CommitStateDB) Reset() error {
 	s.stateObjects = []stateEntry{}
 	s.addressToObjectIndex = make(map[ethcmn.Address]int)
 	s.stateObjectsDirty = make(map[ethcmn.Address]struct{})

@@ -6,6 +6,7 @@ import (
 	"math/big"
 
 	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/storage"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 	ethcore "github.com/ethereum/go-ethereum/core"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -40,6 +41,7 @@ type StateTransition struct {
 	data       []byte
 	state      ethvm.StateDB
 	evm        *ethvm.EVM
+	gs         *storage.State
 }
 
 // Message represents a message sent to a contract.
@@ -158,11 +160,6 @@ func ApplyMessage(evm *ethvm.EVM, msg Message, gp *ethcore.GasPool) (*ExecutionR
 	return NewStateTransition(evm, msg, gp).TransitionDb()
 }
 
-// EstimateGas used to estimate gas with the maximum limit of the gas
-func EstimateGas(evm *ethvm.EVM, msg Message, gp *ethcore.GasPool) (uint64, error) {
-	return NewStateTransition(evm, msg, gp).EstimateGas()
-}
-
 // to returns the recipient of the message.
 func (st *StateTransition) to() ethcmn.Address {
 	if st.msg == nil || st.msg.To() == nil /* contract creation */ {
@@ -231,12 +228,10 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 	}
 	msg := st.msg
 	sender := ethvm.AccountRef(msg.From())
-	homestead := st.evm.ChainConfig().IsHomestead(st.evm.Context.BlockNumber)
-	istanbul := st.evm.ChainConfig().IsIstanbul(st.evm.Context.BlockNumber)
 	contractCreation := msg.To() == nil
 
 	// Check clauses 4-5, subtract intrinsic gas if everything is correct
-	gas, err := IntrinsicGas(st.data, st.msg.AccessList(), contractCreation, homestead, istanbul)
+	gas, err := IntrinsicGas(st.data, st.msg.AccessList(), contractCreation, true, true)
 	if err != nil {
 		return nil, err
 	}
@@ -264,7 +259,8 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 		ret, ca, st.gas, vmerr = st.evm.Create(sender, st.data, st.gas, st.value)
 	} else {
 		// Increment the nonce for the next transaction
-		st.state.SetNonce(msg.From(), st.state.GetNonce(msg.From())+1)
+		nextNonce := st.state.GetNonce(msg.From()) + 1
+		st.state.SetNonce(msg.From(), nextNonce)
 		ret, st.gas, vmerr = st.evm.Call(sender, st.to(), st.data, st.gas, st.value)
 	}
 	if !st.evm.ChainConfig().IsLondon(st.evm.Context.BlockNumber) {
@@ -284,50 +280,6 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 		result.ContractAddress = keys.Address(ca.Bytes())
 	}
 	return result, nil
-}
-
-func (st *StateTransition) EstimateGas() (uint64, error) {
-	if err := st.preCheck(); err != nil {
-		return 0, err
-	}
-	msg := st.msg
-	sender := ethvm.AccountRef(msg.From())
-	homestead := st.evm.ChainConfig().IsHomestead(st.evm.Context.BlockNumber)
-	istanbul := st.evm.ChainConfig().IsIstanbul(st.evm.Context.BlockNumber)
-	contractCreation := msg.To() == nil
-
-	gas, err := IntrinsicGas(st.data, st.msg.AccessList(), contractCreation, homestead, istanbul)
-	if err != nil {
-		return 0, err
-	}
-	if st.gas < gas {
-		return 0, fmt.Errorf("%w: have %d, want %d", ethcore.ErrIntrinsicGas, st.gas, gas)
-	}
-	st.gas -= gas
-
-	if msg.Value().Sign() > 0 && !st.evm.Context.CanTransfer(st.state, msg.From(), msg.Value()) {
-		return 0, fmt.Errorf("%w: address %v", ethcore.ErrInsufficientFundsForTransfer, msg.From().Hex())
-	}
-
-	if rules := st.evm.ChainConfig().Rules(st.evm.Context.BlockNumber); rules.IsBerlin {
-		st.state.PrepareAccessList(msg.From(), msg.To(), ethvm.ActivePrecompiles(rules), msg.AccessList())
-	}
-
-	var vmerr error
-
-	if contractCreation {
-		_, _, st.gas, vmerr = st.evm.Create(sender, st.data, st.gas, st.value)
-	} else {
-		_, st.gas, vmerr = st.evm.Call(sender, st.to(), st.data, st.gas, st.value)
-	}
-	if !st.evm.ChainConfig().IsLondon(st.evm.Context.BlockNumber) {
-		// Before EIP-3529: refunds were capped to gasUsed / 2
-		st.refundGas(ethparams.RefundQuotient)
-	} else {
-		// After EIP-3529: refunds are capped to gasUsed / 5
-		st.refundGas(ethparams.RefundQuotientEIP3529)
-	}
-	return st.gasUsed(), vmerr
 }
 
 func (st *StateTransition) refundGas(refundQuotient uint64) {

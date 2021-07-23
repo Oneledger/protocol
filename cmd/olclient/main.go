@@ -16,6 +16,7 @@ package main
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -30,6 +31,7 @@ import (
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/log"
+	ethrpc "github.com/ethereum/go-ethereum/rpc"
 )
 
 const (
@@ -41,9 +43,10 @@ const (
 var logger = log.NewLoggerWithPrefix(os.Stdout, "olclient")
 
 type Context struct {
-	logger *log.Logger
-	clCtx  *client.ExtServiceContext
-	cfg    config.Server
+	logger     *log.Logger
+	clCtx      *client.ExtServiceContext
+	web3Client *ethrpc.Client
+	cfg        config.Server
 }
 
 func NewContext() *Context {
@@ -65,15 +68,20 @@ func NewContext() *Context {
 	if err != nil {
 		Ctx.logger.Fatal("error starting rpc client", err)
 	}
-
 	Ctx.clCtx = &clientContext
-	return Ctx
-}
 
-var EVMCmd = &cobra.Command{
-	Use:   "evm",
-	Short: "OneLedger evm",
-	Long:  "EVM module for OneLedger chain to execute smart contracts",
+	_, err = url.Parse(Ctx.cfg.Web3.HTTPAddress)
+	if err != nil {
+		logger.Fatal("failed to read configuration for web3", err)
+	}
+
+	web3Client, err := ethrpc.Dial(Ctx.cfg.Web3.HTTPAddress)
+	if err != nil {
+		Ctx.logger.Fatal("error starting web3 client", err)
+	}
+
+	Ctx.web3Client = web3Client
+	return Ctx
 }
 
 var DelegationCmd = &cobra.Command{
@@ -98,7 +106,6 @@ func main() {
 	RootCmd.AddCommand(DelegationCmd)
 	RootCmd.AddCommand(EvidencesCmd)
 	RootCmd.AddCommand(RewardsCmd)
-	RootCmd.AddCommand(EVMCmd)
 	Execute()
 }
 

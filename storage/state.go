@@ -33,6 +33,10 @@ func (s *State) WithGas(gc GasCalculator) *State {
 	}
 }
 
+func (s *State) GetCalculator() GasCalculator {
+	return s.gc
+}
+
 func (s *State) WithoutGas() *State {
 
 	s.cache = NewSessionedDirectStorage(SESSION_CACHE, "state")
@@ -66,8 +70,11 @@ func (s State) RootHash() []byte {
 	return s.cs.Hash
 }
 
-func (s *State) Get(key StoreKey) ([]byte, error) {
+func (s *State) DumpState() {
+	s.cache.DumpState()
+}
 
+func (s *State) Get(key StoreKey) ([]byte, error) {
 	if s.txSession != nil {
 		// Get the txSession first
 		result, err := s.txSession.Get(key)
@@ -214,7 +221,7 @@ func (s *State) ConsumeStorageGas(gas Gas) bool {
 }
 
 func (s *State) ConsumeContractGas(gas Gas) bool {
-	return s.gc.Consume(gas, CONTRACT, false)
+	return s.gc.Consume(gas, CONTRACT, true)
 }
 
 func (s *State) GetVersioned(version int64, key StoreKey) []byte {
