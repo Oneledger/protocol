@@ -45,14 +45,8 @@ func TestStateDBRunner(t *testing.T) {
 	acc := &balance.EthAccount{
 		Address: from.Bytes(),
 		Coins: balance.Coin{
-			Currency: balance.Currency{
-				Id:      0,
-				Name:    "OLT",
-				Chain:   0,
-				Decimal: 18,
-				Unit:    "nue",
-			},
-			Amount: balance.NewAmountFromInt(10000),
+			Currency: currency,
+			Amount:   balance.NewAmountFromInt(10000),
 		},
 	}
 	stateDB.GetAccountKeeper().SetAccount(*acc)
@@ -94,7 +88,7 @@ func TestStateDBRunner(t *testing.T) {
 		assert.Equal(t, stateVal, value)
 
 		// reset cache
-		stateObject.stateDB.Reset(ethcmn.Hash{})
+		stateObject.stateDB.Reset()
 		assert.Equal(t, len(stateObject.dirtyStorage), 0)
 
 		stateVal = stateObject.GetState(nil, prefixKey)

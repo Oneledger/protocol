@@ -95,6 +95,10 @@ func (a *Amount) Minus(value Amount) (*Amount, error) {
 	return NewAmountFromBigInt(base), nil
 }
 
+func (a *Amount) IsZero() bool {
+	return a.BigInt().Cmp(big.NewInt(0)) == 0
+}
+
 func (a *Amount) Equals(value Amount) bool {
 	if a.BigInt().Cmp(value.BigInt()) == 0 {
 		return true

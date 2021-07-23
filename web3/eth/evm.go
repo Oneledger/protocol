@@ -100,9 +100,8 @@ func (svc *Service) EstimateGas(call rpctypes.CallArgs) (hexutil.Uint64, error) 
 	if len(result.Revert()) > 0 {
 		return 0, rpctypes.NewRevertError(result)
 	}
-	// TODO: change 1000 buffer for more accurate buffer
-	gas := result.UsedGas + 1000
-	return hexutil.Uint64(gas), result.Err
+	svc.logger.Debug("eth_estimateGas", "gas", result.UsedGas)
+	return hexutil.Uint64(result.UsedGas), err
 }
 
 func (svc *Service) callContract(call rpctypes.CallArgs, height int64) (*action.ExecutionResult, error) {
@@ -117,10 +116,10 @@ func (svc *Service) callContract(call rpctypes.CallArgs, height int64) (*action.
 		blockNum = uint64(svc.getState().Version())
 		isPending = true
 	}
-	// TODO: Add versioning support
-	stateDB := action.NewCommitStateDB(svc.ctx.GetContractStore(), svc.ctx.GetAccountKeeper(), svc.logger)
+
+	stateDB := svc.GetStateDB()
 	bhash := stateDB.GetHeightHash(blockNum)
-	stateDB.SetHeightHash(blockNum, bhash, false)
+	stateDB.SetHeightHash(blockNum, bhash)
 
 	block := svc.ctx.GetAPI().Block(int64(blockNum)).Block
 	header := &abci.Header{
@@ -166,9 +165,8 @@ func (svc *Service) callContract(call rpctypes.CallArgs, height int64) (*action.
 		Value:    balance.Amount(*big.NewInt(gasPrice)),
 	}
 
-	// TODO: Change this when the new sig mechanics will be implemented
 	tx := action.RawTx{
-		Type: action.SC_EXECUTE,
+		Type: action.NEXUS,
 		Fee: action.Fee{
 			Price: price,
 			Gas:   gas,

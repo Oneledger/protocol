@@ -192,6 +192,8 @@ const (
 	RewardsUnableToWithdraw         = 800002
 	RewardsYearRewardsMissing       = 800003
 
+	TxErrVMExecution = 900001
+
 	//Ethereum Errors
 
 	//6 digit error codes starting with 99 are reserved for external apps
