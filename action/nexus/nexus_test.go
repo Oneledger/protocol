@@ -1,9 +1,13 @@
-package smart_contract
+package nexus
 
 import (
+	"bytes"
+	"crypto/ecdsa"
+	"crypto/rand"
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"math/big"
 	"os"
 	"strings"
 	"testing"
@@ -23,10 +27,10 @@ import (
 	"github.com/Oneledger/protocol/utils"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/assert"
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/ed25519"
 	db "github.com/tendermint/tm-db"
 )
 
@@ -160,13 +164,23 @@ func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, se
 	return ctx
 }
 
-func generateKeyPair() (crypto.Address, crypto.PubKey, ed25519.PrivKeyEd25519) {
+func generateKeyPair() (keys.Address, *ecdsa.PublicKey, *ecdsa.PrivateKey) {
+	randBytes := make([]byte, 64)
+	_, err := rand.Read(randBytes)
+	if err != nil {
+		panic("key generation: could not read from random source: " + err.Error())
+	}
+	reader := bytes.NewReader(randBytes)
+	prikey, err := ecdsa.GenerateKey(ethcrypto.S256(), reader)
+	if err != nil {
+		panic("key generation: ecdsa.GenerateKey failed: " + err.Error())
+	}
+	pubkey := prikey.PublicKey
+	data := ethcrypto.PubkeyToAddress(pubkey)
+	addr := make([]byte, 20)
+	copy(addr[:], data.Bytes())
 
-	prikey := ed25519.GenPrivKey()
-	pubkey := prikey.PubKey()
-	addr := pubkey.Address()
-
-	return addr, pubkey, prikey
+	return addr, &pubkey, prikey
 }
 
 func getBool(res []byte) bool {
@@ -180,8 +194,8 @@ func getBool(res []byte) bool {
 	return false
 }
 
-func assemblyExecuteData(from keys.Address, to *keys.Address, nonce uint64, fromPubKey crypto.PubKey, fromPrikey ed25519.PrivKeyEd25519, code []byte, gas int64) action.SignedTx {
-	av := &Execute{
+func assemblyExecuteData(from keys.Address, to *keys.Address, nonce uint64, fromPubKey *ecdsa.PublicKey, fromPrikey *ecdsa.PrivateKey, code []byte, gas int64) action.SignedTx {
+	av := &Nexus{
 		From:   from,
 		Amount: action.Amount{Currency: "OLT", Value: *balance.NewAmount(0)},
 		Data:   code,
@@ -195,18 +209,57 @@ func assemblyExecuteData(from keys.Address, to *keys.Address, nonce uint64, from
 		Gas:   gas,
 	}
 	data, _ := av.Marshal()
-	tx := action.RawTx{
+	rawTx := action.RawTx{
 		Type: av.Type(),
 		Data: data,
 		Fee:  fee,
 		Memo: "test_memo",
 	}
-	signature, _ := fromPrikey.Sign(tx.RawBytes())
+
+	var big8 = big.NewInt(8)
+	chainId := utils.HashToBigInt("test-1")
+	chainIdMul := new(big.Int).Mul(chainId, big.NewInt(2))
+
+	var ethTo ethcmn.Address
+	if to != nil {
+		ethTo = ethcmn.BytesToAddress(to.Bytes())
+	}
+	legacyTx := &ethtypes.LegacyTx{
+		Nonce:    nonce,
+		GasPrice: big.NewInt(10000000000),
+		Gas:      uint64(gas),
+		To:       &ethTo,
+		Value:    big.NewInt(0),
+		Data:     code,
+	}
+	tx := ethtypes.NewTx(legacyTx)
+	signer := ethtypes.NewEIP155Signer(chainId)
+	tx, err := ethtypes.SignTx(tx, signer, fromPrikey)
+	if err != nil {
+		panic(err)
+	}
+
+	V, R, S := tx.RawSignatureValues()
+	V = new(big.Int).Sub(V, chainIdMul)
+	V.Sub(V, big8)
+
+	pub, err := utils.RecoverPlain(signer.Hash(tx), R, S, V, true)
+	if err != nil {
+		panic(err)
+	}
+
+	compressedPub := ethcrypto.CompressPubkey(pub)
+	pubKey, err := keys.GetPublicKeyFromBytes(compressedPub, keys.ETHSECP)
+	if err != nil {
+		panic(err)
+	}
+
+	signature := utils.ToUncompressedSig(R, S, V)
 	signed := action.SignedTx{
-		RawTx: tx,
+		RawTx: rawTx,
 		Signatures: []action.Signature{
 			{
-				Signer: keys.PublicKey{keys.ED25519, fromPubKey.Bytes()[5:]},
+				Signer: pubKey,
 				Signed: signature,
 			},
 		},
@@ -266,7 +319,7 @@ func blockCommit(ctx *action.Context) {
 	ctx.StateDB.Reset(root)
 }
 
-func wrapProcessDeliver(stx *scExecuteTx, txHash ethcmn.Hash, ctx *action.Context, rawTx action.RawTx, f func(ctx *action.Context, tx action.RawTx) (bool, action.Response)) (bool, action.Response) {
+func wrapProcessDeliver(stx *nexusTx, txHash ethcmn.Hash, ctx *action.Context, rawTx action.RawTx, f func(ctx *action.Context, tx action.RawTx) (bool, action.Response)) (bool, action.Response) {
 	bhash := ethcmn.BytesToHash(utils.SHA2([]byte("block")))
 	ctx.StateDB.SetHeightHash(2, bhash, true)
 	ctx.StateDB.Prepare(txHash)
@@ -325,7 +378,7 @@ func TestRunner(t *testing.T) {
 	t.Run("test contract store through the transaction and it is OK", func(t *testing.T) {
 		txHash := ethcmn.BytesToHash(utils.SHA2([]byte("test")))
 
-		stx := &scExecuteTx{}
+		stx := &nexusTx{}
 		code := ethcmn.FromHex("0x608060405234801561001057600080fd5b50610233806100206000396000f3fe608060405234801561001057600080fd5b50600436106100415760003560e01c80635f76f6ab146100465780636d4ce63c14610076578063cbed952214610096575b600080fd5b6100746004803603602081101561005c57600080fd5b810190808035151590602001909291905050506100a0565b005b61007e61013c565b60405180821515815260200191505060405180910390f35b61009e61018f565b005b806000803373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060006101000a81548160ff0219169083151502179055503373ffffffffffffffffffffffffffffffffffffffff167fab77f9000c19702a713e62164a239e3764dde2ba5265c7551f9a49e0d304530d60405160405180910390a250565b60008060003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060009054906101000a900460ff16905090565b6040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260058152602001807f68656c6c6f00000000000000000000000000000000000000000000000000000081525060200191505060405180910390fdfea26469706673582212206872039b48bb16fb8cbf559a2e127d91b0af06f0d2d36b97faad6d0f9c335e7864736f6c63430007040033")
 		fmt.Printf("code to deploy: %s\n", ethcmn.Bytes2Hex(code))
 
@@ -405,7 +458,7 @@ func TestRunner(t *testing.T) {
 	})
 
 	t.Run("test contract store through the transaction with not enough gas and it is error", func(t *testing.T) {
-		stx := &scExecuteTx{}
+		stx := &nexusTx{}
 		code := ethcmn.FromHex("0x608060405234801561001057600080fd5b50610233806100206000396000f3fe608060405234801561001057600080fd5b50600436106100415760003560e01c80635f76f6ab146100465780636d4ce63c14610076578063cbed952214610096575b600080fd5b6100746004803603602081101561005c57600080fd5b810190808035151590602001909291905050506100a0565b005b61007e61013c565b60405180821515815260200191505060405180910390f35b61009e61018f565b005b806000803373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060006101000a81548160ff0219169083151502179055503373ffffffffffffffffffffffffffffffffffffffff167fab77f9000c19702a713e62164a239e3764dde2ba5265c7551f9a49e0d304530d60405160405180910390a250565b60008060003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060009054906101000a900460ff16905090565b6040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260058152602001807f68656c6c6f00000000000000000000000000000000000000000000000000000081525060200191505060405180910390fdfea26469706673582212206872039b48bb16fb8cbf559a2e127d91b0af06f0d2d36b97faad6d0f9c335e7864736f6c63430007040033")
 
 		nonce := getNonce(ctx, from.Bytes())
@@ -425,7 +478,7 @@ func TestRunner(t *testing.T) {
 	})
 
 	t.Run("test contract func exec on missed address and it is ok", func(t *testing.T) {
-		stx := &scExecuteTx{}
+		stx := &nexusTx{}
 		to_, _, _ := generateKeyPair()
 		to := keys.Address(to_.Bytes())
 

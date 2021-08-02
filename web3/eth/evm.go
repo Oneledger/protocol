@@ -166,9 +166,8 @@ func (svc *Service) callContract(call rpctypes.CallArgs, height int64) (*action.
 		Value:    balance.Amount(*big.NewInt(gasPrice)),
 	}
 
-	// TODO: Change this when the new sig mechanics will be implemented
 	tx := action.RawTx{
-		Type: action.SC_EXECUTE,
+		Type: action.NEXUS,
 		Fee: action.Fee{
 			Price: price,
 			Gas:   gas,

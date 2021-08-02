@@ -19,8 +19,7 @@ import (
 
 // TODO: Move to the config
 const (
-	RPCTxFeeCap        = 1 // olt
-	UnprotectedAllowed = false
+	RPCTxFeeCap = 1 // olt
 )
 
 // GetTransactionCount returns the number of transactions at the given address up to the given block number.
@@ -259,7 +258,11 @@ func (svc *Service) submitTransaction(tx *ethtypes.Transaction) (common.Hash, er
 		return common.Hash{}, err
 	}
 
-	if !UnprotectedAllowed && !tx.Protected() {
+	if tx.Type() != ethtypes.LegacyTxType {
+		return common.Hash{}, errors.New("only legacy transactions allowed over RPC")
+	}
+
+	if !tx.Protected() {
 		// Ensure only eip155 signed transactions are submitted if EIP155Required is set.
 		return common.Hash{}, errors.New("only replay-protected (EIP-155) transactions allowed over RPC")
 	}
@@ -295,8 +298,10 @@ func (svc *Service) submitTransaction(tx *ethtypes.Transaction) (common.Hash, er
 
 // sendTx directly to the pool, all validation steps was done before
 func (svc *Service) sendTx(signedTx *ethtypes.Transaction) (common.Hash, error) {
-	// TODO: Implement this
-	tmTx := tmtypes.Tx{}
+	tmTx, err := rpcutils.EthToOLSignedTx(signedTx)
+	if err != nil {
+		return common.Hash{}, err
+	}
 	resBrodTx, err := svc.getTMClient().BroadcastTxSync(tmTx)
 	if err != nil {
 		return common.Hash{}, err
