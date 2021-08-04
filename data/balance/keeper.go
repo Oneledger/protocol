@@ -3,6 +3,7 @@ package balance
 import (
 	"fmt"
 	"math/big"
+	"sync/atomic"
 
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
@@ -15,15 +16,15 @@ import (
 type EthAccount struct {
 	Address  keys.Address `json:"address"`
 	CodeHash []byte       `json:"codeHash"`
-	Coins    Coin         `json:"coins"`
+	Amount   *Amount      `json:"amount"`
 	Sequence uint64       `json:"sequence"`
 }
 
-func NewEthAccount(addr keys.Address, coin Coin) *EthAccount {
+func NewEthAccount(addr keys.Address) *EthAccount {
 	return &EthAccount{
 		Address:  addr,
 		CodeHash: ethcrypto.Keccak256(nil),
-		Coins:    coin,
+		Amount:   NewAmountFromInt(0),
 	}
 }
 
@@ -32,82 +33,66 @@ func (acc EthAccount) EthAddress() ethcmn.Address {
 	return ethcmn.BytesToAddress(acc.Address.Bytes())
 }
 
+func (acc *EthAccount) IncrementNonce() uint64 {
+	return atomic.AddUint64(&acc.Sequence, 1)
+}
+
 func (acc EthAccount) Balance() *big.Int {
-	if acc.Coins == (Coin{}) {
-		return big.NewInt(0)
-	}
-	return acc.Coins.Amount.BigInt()
+	return acc.Amount.BigInt()
 }
 
 func (acc *EthAccount) AddBalance(amount *big.Int) {
-	coin := acc.Coins.Plus(Coin{
-		Currency: acc.Coins.Currency,
-		Amount:   NewAmountFromBigInt(amount),
-	})
-	acc.Coins = coin
+	amt := NewAmountFromBigInt(amount)
+	acc.Amount = acc.Amount.Plus(*amt)
 }
 
 func (acc *EthAccount) SubBalance(amount *big.Int) {
-	coin, err := acc.Coins.Minus(Coin{
-		Currency: acc.Coins.Currency,
-		Amount:   NewAmountFromBigInt(amount),
-	})
+	amt := NewAmountFromBigInt(amount)
+	newAmt, err := acc.Amount.Minus(*amt)
 	if err != nil {
-		panic(fmt.Sprintf("Failed to minus balance: %s", err))
+		panic(errors.Errorf("Failed to minus balance: %s", err))
 	}
-	acc.Coins = coin
+	acc.Amount = newAmt
 }
 
 func (acc *EthAccount) SetBalance(amount *big.Int) {
-	acc.Coins = Coin{
-		Currency: acc.Coins.Currency,
-		Amount:   NewAmountFromBigInt(amount),
-	}
+	acc.Amount = NewAmountFromBigInt(amount)
 }
 
 type AccountKeeper interface {
 	NewAccountWithAddress(addr keys.Address) (*EthAccount, error)
+	GetOrCreateAccount(addr keys.Address) (*EthAccount, error)
 	GetAccount(addr keys.Address) (*EthAccount, error)
 	GetVersionedAccount(addr keys.Address, height int64) (*EthAccount, error)
 	SetAccount(account EthAccount) error
 	RemoveAccount(account EthAccount)
-	GetVersionedBalance(addr keys.Address, height int64) (*big.Int, error)
 	WithState(state *storage.State) AccountKeeper
 }
 
 var _ AccountKeeper = (*NesterAccountKeeper)(nil)
 
-// NesterAccountKeeper is used to combine two stores - balance and nonces
+// NesterAccountKeeper is used to keep track balances and nonces
 type NesterAccountKeeper struct {
-	balances   *Store
-	currencies *CurrencySet
-	state      *storage.State
-	prefix     []byte
+	state  *storage.State
+	prefix []byte
 }
 
-func NewNesterAccountKeeper(state *storage.State, balances *Store, currencies *CurrencySet) AccountKeeper {
+func NewNesterAccountKeeper(state *storage.State) AccountKeeper {
 	return &NesterAccountKeeper{
-		balances:   balances,
-		currencies: currencies,
-		state:      state,
-		prefix:     storage.Prefix("keeper"),
+		state:  state,
+		prefix: storage.Prefix("keeper"),
 	}
 }
 
 func (nak *NesterAccountKeeper) WithState(state *storage.State) AccountKeeper {
-	nak.balances.WithState(state)
 	nak.state = state
 	return nak
 }
 
 func (nak *NesterAccountKeeper) NewAccountWithAddress(addr keys.Address) (*EthAccount, error) {
-	coin, err := nak.getOrCreateCurrencyBalance(addr)
-	if err != nil {
-		return nil, errors.Errorf("Failed to get balance: %s", err)
-	}
-	acc := NewEthAccount(addr, coin)
+	acc := NewEthAccount(addr)
 
-	err = nak.SetAccount(*acc)
+	err := nak.SetAccount(*acc)
 	if err != nil {
 		return nil, errors.Errorf("Failed to set account: %s", err)
 	}
@@ -118,32 +103,15 @@ func (nak *NesterAccountKeeper) NewAccountWithAddress(addr keys.Address) (*EthAc
 	return acc, nil
 }
 
-func (nak *NesterAccountKeeper) GetVersionedBalance(addr keys.Address, height int64) (*big.Int, error) {
-	key := nak.balances.BuildKey(addr, nil)
-	data := nak.balances.State.GetVersioned(height, key)
-	if len(data) == 0 {
-		return nil, errors.Errorf("Balance for address '%s' not found", addr)
-	}
-	amt := NewAmount(0)
-	err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(data, amt)
+func (nak *NesterAccountKeeper) GetOrCreateAccount(addr keys.Address) (*EthAccount, error) {
+	eoa, err := nak.GetAccount(addr)
 	if err != nil {
-		return nil, err
-	}
-	return amt.BigInt(), nil
-}
-
-func (nak *NesterAccountKeeper) getOrCreateCurrencyBalance(addr keys.Address) (Coin, error) {
-	balance, _ := nak.balances.GetBalance(addr, nak.currencies)
-	coin := balance.Amounts["OLT"]
-	if coin.Amount == nil {
-		currency, ok := nak.currencies.GetCurrencyByName("OLT")
-		if !ok {
-			return Coin{}, errors.Errorf("Failed to get currency OLT")
+		eoa, err = nak.NewAccountWithAddress(addr)
+		if err != nil {
+			return nil, err
 		}
-		coin.Amount = NewAmountFromBigInt(big.NewInt(0))
-		coin.Currency = currency
 	}
-	return coin, nil
+	return eoa, nil
 }
 
 func (nak *NesterAccountKeeper) GetAccount(addr keys.Address) (*EthAccount, error) {
@@ -154,18 +122,12 @@ func (nak *NesterAccountKeeper) GetAccount(addr keys.Address) (*EthAccount, erro
 		return nil, err
 	}
 
-	ea := &EthAccount{}
-	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(dat, ea)
+	eoa := &EthAccount{}
+	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(dat, eoa)
 	if err != nil {
 		return nil, err
 	}
-
-	coin, err := nak.getOrCreateCurrencyBalance(addr)
-	if err != nil {
-		return nil, err
-	}
-	ea.Coins = coin
-	return ea, nil
+	return eoa, nil
 }
 
 func (nak *NesterAccountKeeper) GetVersionedAccount(addr keys.Address, height int64) (*EthAccount, error) {
@@ -176,18 +138,12 @@ func (nak *NesterAccountKeeper) GetVersionedAccount(addr keys.Address, height in
 		return nil, errors.New(fmt.Sprintf("Previous state on height '%d' for addr '%s' not found", height, addr))
 	}
 
-	ea := &EthAccount{}
-	err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(dat, ea)
+	eoa := &EthAccount{}
+	err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(dat, eoa)
 	if err != nil {
 		return nil, err
 	}
-
-	coin, err := nak.getOrCreateCurrencyBalance(addr)
-	if err != nil {
-		return nil, err
-	}
-	ea.Coins = coin
-	return ea, nil
+	return eoa, nil
 }
 
 func (nak *NesterAccountKeeper) SetAccount(account EthAccount) error {
@@ -199,10 +155,6 @@ func (nak *NesterAccountKeeper) SetAccount(account EthAccount) error {
 	err = nak.state.Set(storage.StoreKey(prefixKey), dat)
 	if err != nil {
 		return errors.Errorf("Failed to update storage for account: %s", err)
-	}
-	err = nak.balances.SetBalance(account.Address, account.Coins)
-	if err != nil {
-		return errors.Errorf("Failed to set balance: %s", err)
 	}
 	return nil
 }

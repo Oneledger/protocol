@@ -18,8 +18,6 @@ import (
 func TestStateDBRunner(t *testing.T) {
 	db := db.NewDB("test", db.MemDBBackend, "")
 
-	balances := balance.NewStore("tb", storage.NewState(storage.NewChainState("balance", db)))
-
 	currencies := balance.NewCurrencySet()
 	currency := balance.Currency{
 		Name:    "OLT",
@@ -32,10 +30,9 @@ func TestStateDBRunner(t *testing.T) {
 
 	stateDB := NewCommitStateDB(
 		evm.NewContractStore(storage.NewState(storage.NewChainState("contracts", db))),
+		nil,
 		balance.NewNesterAccountKeeper(
 			storage.NewState(storage.NewChainState("keeper", db)),
-			balances,
-			currencies,
 		),
 		logger,
 	)
@@ -44,16 +41,7 @@ func TestStateDBRunner(t *testing.T) {
 
 	acc := &balance.EthAccount{
 		Address: from.Bytes(),
-		Coins: balance.Coin{
-			Currency: balance.Currency{
-				Id:      0,
-				Name:    "OLT",
-				Chain:   0,
-				Decimal: 18,
-				Unit:    "nue",
-			},
-			Amount: balance.NewAmountFromInt(10000),
-		},
+		Amount:  balance.NewAmountFromInt(10000),
 	}
 	stateDB.GetAccountKeeper().SetAccount(*acc)
 

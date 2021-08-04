@@ -21,6 +21,7 @@ var _ ethvm.StateDB = (*CommitStateDB)(nil)
 
 type CommitStateDB struct {
 	contractStore *evm.ContractStore
+	accountMapper *balance.AccountMapper
 	accountKeeper balance.AccountKeeper
 	logger        *log.Logger
 	// The refund counter, also used by state transitioning.
@@ -74,9 +75,10 @@ type CommitStateDB struct {
 //
 // CONTRACT: Stores used for state must be cache-wrapped as the ordering of the
 // key/value space matters in determining the merkle root.
-func NewCommitStateDB(cs *evm.ContractStore, ak balance.AccountKeeper, logger *log.Logger) *CommitStateDB {
+func NewCommitStateDB(cs *evm.ContractStore, am *balance.AccountMapper, ak balance.AccountKeeper, logger *log.Logger) *CommitStateDB {
 	return &CommitStateDB{
 		contractStore:        cs,
+		accountMapper:        am,
 		accountKeeper:        ak,
 		logger:               logger,
 		stateObjects:         []stateEntry{},
@@ -99,8 +101,13 @@ func (s *CommitStateDB) GetContractStore() *evm.ContractStore {
 
 func (s *CommitStateDB) WithState(state *storage.State) *CommitStateDB {
 	s.contractStore.WithState(state)
+	s.accountMapper.WithState(state)
 	s.accountKeeper.WithState(state)
 	return s
+}
+
+func (s *CommitStateDB) GetAccountMapper() *balance.AccountMapper {
+	return s.accountMapper
 }
 
 func (s *CommitStateDB) GetAccountKeeper() balance.AccountKeeper {

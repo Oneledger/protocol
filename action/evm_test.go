@@ -98,10 +98,9 @@ func assemblyCtxData(acc accounts.Account, currencyName string, currencyDecimal 
 	}
 	ctx.StateDB = NewCommitStateDB(
 		evm.NewContractStore(storage.NewState(storage.NewChainState("contracts", db))),
+		nil,
 		balance.NewNesterAccountKeeper(
 			storage.NewState(storage.NewChainState("keeper", db)),
-			ctx.Balances,
-			ctx.Currencies,
 		),
 		ctx.Logger,
 	)

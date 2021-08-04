@@ -102,6 +102,7 @@ type context struct {
 	// evm integration
 	contracts     *evm.ContractStore
 	accountKeeper balance.AccountKeeper
+	accountMapper *balance.AccountMapper
 	stateDB       *action.CommitStateDB
 }
 
@@ -172,13 +173,10 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 
 	// evm
 	ctx.contracts = evm.NewContractStore(storage.NewState(ctx.chainstate))
-	ctx.accountKeeper = balance.NewNesterAccountKeeper(
-		storage.NewState(ctx.chainstate),
-		ctx.balances,
-		ctx.currencies,
-	)
+	ctx.accountMapper = balance.NewAccountMapper(storage.NewState(ctx.chainstate))
+	ctx.accountKeeper = balance.NewNesterAccountKeeper(storage.NewState(ctx.chainstate))
 	logger := log.NewLoggerWithPrefix(ctx.logWriter, "stateDB").WithLevel(log.Level(ctx.cfg.Node.LogLevel))
-	ctx.stateDB = action.NewCommitStateDB(ctx.contracts, ctx.accountKeeper, logger)
+	ctx.stateDB = action.NewCommitStateDB(ctx.contracts, ctx.accountMapper, ctx.accountKeeper, logger)
 
 	err = external_apps.RegisterExtApp(ctx.chainstate, ctx.actionRouter, ctx.extStores, ctx.extServiceMap, ctx.extFunctions)
 	if err != nil {

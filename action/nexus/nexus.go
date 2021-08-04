@@ -2,10 +2,10 @@ package nexus
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/helpers"
+	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/utils"
 	ethcmn "github.com/ethereum/go-ethereum/common"
@@ -132,7 +132,7 @@ func (n nexusTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error)
 	}
 
 	//validate transaction specific field
-	if !nexus.Amount.IsValid(ctx.Currencies) {
+	if !nexus.Amount.IsValid(ctx.Currencies) || nexus.Amount.Currency != action.DEFAULT_CURRENCY {
 		return false, errors.Wrap(action.ErrInvalidAmount, nexus.Amount.String())
 	}
 
@@ -140,8 +140,10 @@ func (n nexusTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error)
 		return false, action.ErrInvalidAddress
 	}
 
-	if len(nexus.Data) == 0 {
-		return false, action.ErrMissingData
+	if nexus.isSendTx() {
+		if nexus.To == nil {
+			return false, errors.Wrap(action.ErrInvalidAddress, "missing \"to\" address")
+		}
 	}
 	return true, nil
 }
@@ -185,20 +187,46 @@ func runNexus(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 }
 
 func runSend(ctx *action.Context, tx action.RawTx, nexus *Nexus) (bool, action.Response) {
-	coin := nexus.Amount.ToCoin(ctx.Currencies)
-
-	err := ctx.Balances.MinusFromAddress(nexus.From.Bytes(), coin)
+	keeper := ctx.StateDB.GetAccountKeeper()
+	from, err := keeper.GetOrCreateAccount(nexus.From)
 	if err != nil {
-		log := fmt.Sprint("error debiting balance in send transaction ", nexus.From, "err", err)
-		return false, action.Response{Log: log}
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrInvalidAddress, nexus.Tags(), err)
+	}
+	// always increment it event error
+	from.IncrementNonce()
+	defer func() {
+		keeper.SetAccount(*from)
+	}()
+
+	if from.Amount.LessThan(nexus.Amount.Value) {
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrNotEnoughFund, nexus.Tags(), errors.New("insufficient balance"))
 	}
 
-	err = ctx.Balances.AddToAddress(nexus.To.Bytes(), coin)
-	if err != nil {
-		log := fmt.Sprint("error crediting balance in send transaction ", nexus.From, "err", err)
-		return false, action.Response{Log: log}
+	// substract balance from
+	from.SubBalance(nexus.Amount.Value.BigInt())
+
+	toAddr := *nexus.To
+
+	am := ctx.StateDB.GetAccountMapper()
+
+	aj, err := am.Get(*nexus.To, balance.INM)
+	if err == nil && aj.Enabled {
+		ctx.Logger.Debug("Found mapping address for address", toAddr)
+		toAddr = aj.Address
 	}
 
+	to, err := keeper.GetOrCreateAccount(toAddr)
+	if err != nil {
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrInvalidAddress, nexus.Tags(), err)
+	}
+
+	// increment balance to
+	to.AddBalance(nexus.Amount.Value.BigInt())
+
+	err = keeper.SetAccount(*to)
+	if err != nil {
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrUnserializable, nexus.Tags(), errors.New("failed to update account store"))
+	}
 	return true, action.Response{
 		Events:  action.GetEvent(nexus.Tags(), "nexus_send"),
 		GasUsed: int64(ethparams.TxGas),
@@ -208,6 +236,10 @@ func runSend(ctx *action.Context, tx action.RawTx, nexus *Nexus) (bool, action.R
 func runSmartContract(ctx *action.Context, tx action.RawTx, nexus *Nexus) (bool, action.Response) {
 	evmTx := action.NewEVMTransaction(ctx.StateDB, ctx.Header, nexus.From, nexus.To, nexus.Nonce, nexus.Amount.Value.BigInt(), nexus.Data, false)
 	tags := nexus.Tags()
+	if len(nexus.Data) == 0 {
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrMissingData, tags, errors.New("missing data"))
+	}
+
 	vmenv := evmTx.NewEVM()
 	execResult, err := evmTx.Apply(vmenv, tx)
 	if err != nil {
