@@ -122,6 +122,10 @@ func (nak *NesterAccountKeeper) GetAccount(addr keys.Address) (*EthAccount, erro
 		return nil, err
 	}
 
+	if len(dat) == 0 {
+		return nil, errors.Errorf("account does not exist")
+	}
+
 	eoa := &EthAccount{}
 	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(dat, eoa)
 	if err != nil {

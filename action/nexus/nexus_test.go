@@ -318,6 +318,8 @@ func blockCommit(ctx *action.Context) {
 		panic(err)
 	}
 	ctx.StateDB.Reset(root)
+
+	ctx.Balances.State.Commit()
 }
 
 func wrapProcessDeliver(stx *nexusTx, txHash ethcmn.Hash, ctx *action.Context, rawTx action.RawTx, f func(ctx *action.Context, tx action.RawTx) (bool, action.Response)) (bool, action.Response) {
@@ -419,6 +421,60 @@ func TestRunner_Send(t *testing.T) {
 		assert.False(t, ok)
 
 		blockCommit(ctx)
+	})
+
+	t.Run("test send amount to legacy 0lt address and it is ok", func(t *testing.T) {
+		from, fromPubKey, fromPrikey := generateKeyPair()
+		oltReceiver, _, _ := generateKeyPair()
+		to, _, _ := generateKeyPair()
+
+		acc := &balance.EthAccount{
+			Address: from.Bytes(),
+			Amount:  balance.NewAmountFromInt(10000),
+		}
+		ctx.StateDB.GetAccountKeeper().SetAccount(*acc)
+
+		// create legacy map
+		_, err := ctx.StateDB.GetAccountMapper().GetOrCreateED25519ToETHECDSA(oltReceiver, to)
+		assert.NoError(t, err)
+
+		stx := &nexusTx{}
+
+		value := big.NewInt(100)
+		nonce := getNonce(ctx, from.Bytes())
+		tx := assemblyExecuteData(from, &to, nonce, value, fromPubKey, fromPrikey, make([]byte, 0), 21_000)
+		assert.Equal(t, 0, int(nonce))
+
+		ok, err := stx.Validate(ctx, tx)
+		assert.NoError(t, err)
+		assert.True(t, ok)
+
+		ok, _ = stx.ProcessDeliver(ctx, tx.RawTx)
+		assert.True(t, ok)
+
+		blockCommit(ctx)
+
+		keeper := ctx.StateDB.GetAccountKeeper()
+		fromAcc, _ := keeper.GetAccount(from)
+		_, err = keeper.GetAccount(to)
+		assert.Error(t, err) // acc not created
+
+		resAmt, _ := acc.Amount.Minus(balance.Amount(*value))
+		assert.Equal(t, fromAcc.Amount.BigInt(), resAmt.BigInt())
+
+		fromNonce := getNonce(ctx, from.Bytes())
+		assert.Equal(t, 1, int(fromNonce))
+
+		toNonce := getNonce(ctx, to.Bytes())
+		assert.Equal(t, 0, int(toNonce))
+
+		// legacy confirm
+		legacyBal, err := ctx.Balances.GetBalance(oltReceiver, ctx.Currencies)
+		assert.NoError(t, err)
+		assert.Equal(t, legacyBal.Amounts[action.DEFAULT_CURRENCY].Amount.BigInt(), value)
+
+		legacyNonce := getNonce(ctx, oltReceiver.Bytes())
+		assert.Equal(t, 0, int(legacyNonce))
 	})
 }
 

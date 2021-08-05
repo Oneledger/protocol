@@ -5,7 +5,6 @@ import (
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/helpers"
-	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/utils"
 	ethcmn "github.com/ethereum/go-ethereum/common"
@@ -192,9 +191,9 @@ func runSend(ctx *action.Context, tx action.RawTx, nexus *Nexus) (bool, action.R
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrInvalidAddress, nexus.Tags(), err)
 	}
-	// always increment it event error
-	from.IncrementNonce()
+	// always increment it event error and update appropriate account
 	defer func() {
+		from.IncrementNonce()
 		keeper.SetAccount(*from)
 	}()
 
@@ -205,28 +204,34 @@ func runSend(ctx *action.Context, tx action.RawTx, nexus *Nexus) (bool, action.R
 	// substract balance from
 	from.SubBalance(nexus.Amount.Value.BigInt())
 
-	toAddr := *nexus.To
-
 	am := ctx.StateDB.GetAccountMapper()
 
-	aj, err := am.Get(*nexus.To, balance.INM)
+	// legacy compatibility
+	aj, err := am.Get(*nexus.To, keys.ETHSECP)
 	if err == nil && aj.Enabled {
-		ctx.Logger.Debug("Found mapping address for address", toAddr)
-		toAddr = aj.Address
+		ctx.Logger.Debug("Found mapping address for address", ethcmn.BytesToAddress(*nexus.To), "as", aj.Legacy.Address)
+
+		coin := nexus.Amount.ToCoin(ctx.Currencies)
+
+		err = ctx.Balances.AddToAddress(aj.Legacy.Address, coin)
+		if err != nil {
+			return helpers.LogAndReturnFalse(ctx.Logger, action.ErrInvalidAmount, nexus.Tags(), err)
+		}
+	} else {
+		to, err := keeper.GetOrCreateAccount(*nexus.To)
+		if err != nil {
+			return helpers.LogAndReturnFalse(ctx.Logger, action.ErrInvalidAddress, nexus.Tags(), err)
+		}
+
+		// increment balance to
+		to.AddBalance(nexus.Amount.Value.BigInt())
+
+		err = keeper.SetAccount(*to)
+		if err != nil {
+			return helpers.LogAndReturnFalse(ctx.Logger, action.ErrUnserializable, nexus.Tags(), errors.New("failed to update account store"))
+		}
 	}
 
-	to, err := keeper.GetOrCreateAccount(toAddr)
-	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrInvalidAddress, nexus.Tags(), err)
-	}
-
-	// increment balance to
-	to.AddBalance(nexus.Amount.Value.BigInt())
-
-	err = keeper.SetAccount(*to)
-	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrUnserializable, nexus.Tags(), errors.New("failed to update account store"))
-	}
 	return true, action.Response{
 		Events:  action.GetEvent(nexus.Tags(), "nexus_send"),
 		GasUsed: int64(ethparams.TxGas),

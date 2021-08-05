@@ -83,6 +83,7 @@ const (
 	TxErrGasOverflow        = 300111
 	TxErrInvalidExtTx       = 300112
 	TxErrMaliciousValidator = 300113
+	TxErrInvalidNonce       = 300114
 
 	ExternalErr                        = 400100
 	ExternalErrBitcoinTxNotFound       = 400101
