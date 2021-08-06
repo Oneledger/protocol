@@ -358,7 +358,6 @@ func TestRunner_Send(t *testing.T) {
 		if err != nil {
 			panic(err)
 		}
-		ctx.Balances.State.Commit()
 
 		stx := &nexusTx{}
 
