@@ -341,7 +341,6 @@ func newAcc(ctx *action.Context, from keys.Address, amount int64) *balance.EthAc
 		Amount:   balance.NewAmountFromInt(amount),
 	})
 	ctx.StateDB.GetAccountKeeper().SetAccount(*acc)
-	ctx.Balances.State.Commit()
 	return acc
 }
 

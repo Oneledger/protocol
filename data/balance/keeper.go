@@ -49,6 +49,9 @@ func (acc *EthAccount) AddBalance(amount *big.Int) {
 		Currency: acc.Coins.Currency,
 		Amount:   NewAmountFromBigInt(amount),
 	})
+	if coin.Amount.BigInt().Sign() == -1 {
+		panic("underflow amount")
+	}
 	acc.Coins = coin
 }
 
@@ -139,15 +142,16 @@ func (nak *NesterAccountKeeper) GetVersionedBalance(addr keys.Address, height in
 }
 
 func (nak *NesterAccountKeeper) getOrCreateCurrencyBalance(addr keys.Address) (Coin, error) {
-	balance, _ := nak.balances.GetBalance(addr, nak.currencies)
-	coin := balance.Amounts["OLT"]
-	if coin.Amount == nil {
-		currency, ok := nak.currencies.GetCurrencyByName("OLT")
-		if !ok {
-			return Coin{}, errors.Errorf("Failed to get currency OLT")
+	currency, ok := nak.currencies.GetCurrencyByName("OLT")
+	if !ok {
+		return Coin{}, errors.Errorf("Failed to get currency OLT")
+	}
+	coin, _ := nak.balances.GetBalanceForCurr(addr, &currency)
+	if coin == (Coin{}) {
+		coin = Coin{
+			Currency: currency,
+			Amount:   NewAmountFromBigInt(big.NewInt(0)),
 		}
-		coin.Amount = NewAmountFromBigInt(big.NewInt(0))
-		coin.Currency = currency
 	}
 	return coin, nil
 }

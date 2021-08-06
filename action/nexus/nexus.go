@@ -192,6 +192,15 @@ func runSend(ctx *action.Context, tx action.RawTx, nexus *Nexus) (bool, action.R
 		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrInvalidAddress, nexus.Tags(), err)
 	}
 
+	// TODO: Make sequential order pool sometime
+	// as it required some tendermint changes like price auction priority
+	if from.Sequence > nexus.Nonce {
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrInvalidNonce, nexus.Tags(), errors.Errorf("nonce too low"))
+		// NOTE: Maybe we do not need this?
+	} else if from.Sequence < nexus.Nonce {
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrInvalidNonce, nexus.Tags(), errors.Errorf("nonce too high"))
+	}
+
 	// always increment it event error and update appropriate account
 	defer func() {
 		from.IncrementNonce()
