@@ -45,5 +45,5 @@ func (svc *Service) getStateHeight(height int64) int64 {
 }
 
 func (svc *Service) GetStateDB() *action.CommitStateDB {
-	return action.NewCommitStateDB(svc.ctx.GetContractStore(), nil, svc.ctx.GetAccountKeeper(), svc.logger)
+	return action.NewCommitStateDB(svc.ctx.GetContractStore(), svc.ctx.GetAccountKeeper(), svc.logger)
 }

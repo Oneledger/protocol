@@ -153,11 +153,10 @@ func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, se
 	ctx.Logger = log.NewLoggerWithPrefix(os.Stdout, "Test-Logger")
 	ctx.StateDB = action.NewCommitStateDB(
 		evm.NewContractStore(storage.NewState(storage.NewChainState("contracts", db))),
-		balance.NewAccountMapper(
-			storage.NewState(storage.NewChainState("mapper", db)),
-		),
 		balance.NewNesterAccountKeeper(
 			storage.NewState(storage.NewChainState("keeper", db)),
+			ctx.Balances,
+			ctx.Currencies,
 		),
 		ctx.Logger,
 	)
@@ -335,18 +334,33 @@ func getNonce(ctx *action.Context, from keys.Address) uint64 {
 	return ctx.StateDB.GetNonce(ethcmn.BytesToAddress(from.Bytes()))
 }
 
+func newAcc(ctx *action.Context, from keys.Address, amount int64) *balance.EthAccount {
+	currency, _ := ctx.Currencies.GetCurrencyByName("OLT")
+	acc := balance.NewEthAccount(from.Bytes(), balance.Coin{
+		Currency: currency,
+		Amount:   balance.NewAmountFromInt(amount),
+	})
+	ctx.StateDB.GetAccountKeeper().SetAccount(*acc)
+	ctx.Balances.State.Commit()
+	return acc
+}
+
 func TestRunner_Send(t *testing.T) {
 	// generating default data
 	ctx := assemblyCtxData("OLT", 18, true, false, false, nil)
+	currency, _ := ctx.Currencies.GetCurrencyByName("OLT")
 
 	t.Run("test send amount to some eoa and it is OK", func(t *testing.T) {
 		from, fromPubKey, fromPrikey := generateKeyPair()
 		to, _, _ := generateKeyPair()
-		acc := &balance.EthAccount{
-			Address: from.Bytes(),
-			Amount:  balance.NewAmountFromInt(10000),
+
+		acc := newAcc(ctx, from, 10000)
+		err := ctx.StateDB.GetAccountKeeper().SetAccount(*acc)
+		if err != nil {
+			panic(err)
 		}
-		ctx.StateDB.GetAccountKeeper().SetAccount(*acc)
+		ctx.Balances.State.Commit()
+
 		stx := &nexusTx{}
 
 		value := big.NewInt(100)
@@ -367,9 +381,12 @@ func TestRunner_Send(t *testing.T) {
 		fromAcc, _ := keeper.GetAccount(from)
 		toAcc, _ := keeper.GetAccount(to)
 
-		resAmt, _ := acc.Amount.Minus(balance.Amount(*value))
-		assert.Equal(t, fromAcc.Amount.BigInt(), resAmt.BigInt())
-		assert.Equal(t, toAcc.Amount.BigInt(), value)
+		resAmt, _ := acc.Coins.Minus(balance.Coin{
+			Currency: currency,
+			Amount:   (*balance.Amount)(value),
+		})
+		assert.Equal(t, resAmt.Amount.BigInt(), fromAcc.Coins.Amount.BigInt())
+		assert.Equal(t, value, toAcc.Coins.Amount.BigInt())
 
 		fromNonce := getNonce(ctx, from.Bytes())
 		assert.Equal(t, 1, int(fromNonce))
@@ -381,11 +398,8 @@ func TestRunner_Send(t *testing.T) {
 	t.Run("test send minus amount to some eoa and it is error", func(t *testing.T) {
 		from, fromPubKey, fromPrikey := generateKeyPair()
 		to, _, _ := generateKeyPair()
-		acc := &balance.EthAccount{
-			Address: from.Bytes(),
-			Amount:  balance.NewAmountFromInt(10000),
-		}
-		ctx.StateDB.GetAccountKeeper().SetAccount(*acc)
+		newAcc(ctx, from, 10000)
+
 		stx := &nexusTx{}
 
 		value := big.NewInt(-100)
@@ -401,11 +415,8 @@ func TestRunner_Send(t *testing.T) {
 	t.Run("test send overflow amount to some eoa and it is error", func(t *testing.T) {
 		from, fromPubKey, fromPrikey := generateKeyPair()
 		to, _, _ := generateKeyPair()
-		acc := &balance.EthAccount{
-			Address: from.Bytes(),
-			Amount:  balance.NewAmountFromInt(10000),
-		}
-		ctx.StateDB.GetAccountKeeper().SetAccount(*acc)
+		newAcc(ctx, from, 10000)
+
 		stx := &nexusTx{}
 
 		value := big.NewInt(10001)
@@ -421,60 +432,6 @@ func TestRunner_Send(t *testing.T) {
 		assert.False(t, ok)
 
 		blockCommit(ctx)
-	})
-
-	t.Run("test send amount to legacy 0lt address and it is ok", func(t *testing.T) {
-		from, fromPubKey, fromPrikey := generateKeyPair()
-		oltReceiver, _, _ := generateKeyPair()
-		to, _, _ := generateKeyPair()
-
-		acc := &balance.EthAccount{
-			Address: from.Bytes(),
-			Amount:  balance.NewAmountFromInt(10000),
-		}
-		ctx.StateDB.GetAccountKeeper().SetAccount(*acc)
-
-		// create legacy map
-		_, err := ctx.StateDB.GetAccountMapper().GetOrCreateED25519ToETHECDSA(oltReceiver, to)
-		assert.NoError(t, err)
-
-		stx := &nexusTx{}
-
-		value := big.NewInt(100)
-		nonce := getNonce(ctx, from.Bytes())
-		tx := assemblyExecuteData(from, &to, nonce, value, fromPubKey, fromPrikey, make([]byte, 0), 21_000)
-		assert.Equal(t, 0, int(nonce))
-
-		ok, err := stx.Validate(ctx, tx)
-		assert.NoError(t, err)
-		assert.True(t, ok)
-
-		ok, _ = stx.ProcessDeliver(ctx, tx.RawTx)
-		assert.True(t, ok)
-
-		blockCommit(ctx)
-
-		keeper := ctx.StateDB.GetAccountKeeper()
-		fromAcc, _ := keeper.GetAccount(from)
-		_, err = keeper.GetAccount(to)
-		assert.Error(t, err) // acc not created
-
-		resAmt, _ := acc.Amount.Minus(balance.Amount(*value))
-		assert.Equal(t, fromAcc.Amount.BigInt(), resAmt.BigInt())
-
-		fromNonce := getNonce(ctx, from.Bytes())
-		assert.Equal(t, 1, int(fromNonce))
-
-		toNonce := getNonce(ctx, to.Bytes())
-		assert.Equal(t, 0, int(toNonce))
-
-		// legacy confirm
-		legacyBal, err := ctx.Balances.GetBalance(oltReceiver, ctx.Currencies)
-		assert.NoError(t, err)
-		assert.Equal(t, legacyBal.Amounts[action.DEFAULT_CURRENCY].Amount.BigInt(), value)
-
-		legacyNonce := getNonce(ctx, oltReceiver.Bytes())
-		assert.Equal(t, 0, int(legacyNonce))
 	})
 }
 
@@ -503,13 +460,14 @@ func TestRunner_SmartContract(t *testing.T) {
 
 	// generating default data
 	ctx := assemblyCtxData("OLT", 18, true, false, false, nil)
+	currency, _ := ctx.Currencies.GetCurrencyByName("OLT")
 
 	from, fromPubKey, fromPrikey := generateKeyPair()
 
-	acc := &balance.EthAccount{
-		Address: from.Bytes(),
-		Amount:  balance.NewAmountFromInt(10000),
-	}
+	acc := balance.NewEthAccount(from.Bytes(), balance.Coin{
+		Currency: currency,
+		Amount:   balance.NewAmountFromInt(10000),
+	})
 	ctx.StateDB.GetAccountKeeper().SetAccount(*acc)
 
 	t.Run("test contract store through the transaction and it is OK", func(t *testing.T) {

@@ -124,7 +124,7 @@ func (svc *Service) GetTransactionReceipt(hash common.Hash) (*rpctypes.Transacti
 		status = 1
 	}
 
-	stateDB := action.NewCommitStateDB(svc.ctx.GetContractStore(), nil, svc.ctx.GetAccountKeeper(), svc.logger)
+	stateDB := action.NewCommitStateDB(svc.ctx.GetContractStore(), svc.ctx.GetAccountKeeper(), svc.logger)
 
 	logs, err := stateDB.GetLogs(hash)
 	if err != nil {

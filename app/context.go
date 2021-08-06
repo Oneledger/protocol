@@ -26,7 +26,6 @@ import (
 	"github.com/Oneledger/protocol/action/eth"
 	action_pen "github.com/Oneledger/protocol/action/evidence"
 	action_gov "github.com/Oneledger/protocol/action/governance"
-	legacy "github.com/Oneledger/protocol/action/legacy"
 	action_netwkdeleg "github.com/Oneledger/protocol/action/network_delegation"
 	nexus "github.com/Oneledger/protocol/action/nexus"
 	action_ons "github.com/Oneledger/protocol/action/ons"
@@ -103,7 +102,6 @@ type context struct {
 	// evm integration
 	contracts     *evm.ContractStore
 	accountKeeper balance.AccountKeeper
-	accountMapper *balance.AccountMapper
 	stateDB       *action.CommitStateDB
 }
 
@@ -174,10 +172,13 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 
 	// evm
 	ctx.contracts = evm.NewContractStore(storage.NewState(ctx.chainstate))
-	ctx.accountMapper = balance.NewAccountMapper(storage.NewState(ctx.chainstate))
-	ctx.accountKeeper = balance.NewNesterAccountKeeper(storage.NewState(ctx.chainstate))
+	ctx.accountKeeper = balance.NewNesterAccountKeeper(
+		storage.NewState(ctx.chainstate),
+		ctx.balances,
+		ctx.currencies,
+	)
 	logger := log.NewLoggerWithPrefix(ctx.logWriter, "stateDB").WithLevel(log.Level(ctx.cfg.Node.LogLevel))
-	ctx.stateDB = action.NewCommitStateDB(ctx.contracts, ctx.accountMapper, ctx.accountKeeper, logger)
+	ctx.stateDB = action.NewCommitStateDB(ctx.contracts, ctx.accountKeeper, logger)
 
 	err = external_apps.RegisterExtApp(ctx.chainstate, ctx.actionRouter, ctx.extStores, ctx.extServiceMap, ctx.extFunctions)
 	if err != nil {
@@ -201,7 +202,6 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 
 	_ = transfer.EnableSend(ctx.actionRouter)
 	_ = nexus.EnableNexus(ctx.actionRouter)
-	_ = legacy.EnableLegacy(ctx.actionRouter)
 	_ = action_ons.EnableONS(ctx.actionRouter)
 
 	//"btc" service temporarily disabled

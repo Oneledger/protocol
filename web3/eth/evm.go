@@ -118,7 +118,7 @@ func (svc *Service) callContract(call rpctypes.CallArgs, height int64) (*action.
 		isPending = true
 	}
 	// TODO: Add versioning support
-	stateDB := action.NewCommitStateDB(svc.ctx.GetContractStore(), nil, svc.ctx.GetAccountKeeper(), svc.logger)
+	stateDB := action.NewCommitStateDB(svc.ctx.GetContractStore(), svc.ctx.GetAccountKeeper(), svc.logger)
 	bhash := stateDB.GetHeightHash(blockNum)
 	stateDB.SetHeightHash(blockNum, bhash, false)
 

@@ -81,12 +81,12 @@ func (svc *Service) GetBalance(address common.Address, blockNrOrHash rpc.BlockNu
 		svc.logger.Debug("eth_getBalance", "height", blockNum)
 	}
 
-	eoa, err := svc.ctx.GetAccountKeeper().GetVersionedAccount(address.Bytes(), blockNum)
+	balance, err := svc.ctx.GetAccountKeeper().GetVersionedBalance(address.Bytes(), blockNum)
 	if err != nil {
 		svc.logger.Debug("eth_getBalance", "account_not_found", address)
 		return (*hexutil.Big)(big.NewInt(0)), nil
 	}
 	// involve pending balance
-	total := new(big.Int).Add(eoa.Balance(), pendingBalance)
+	total := new(big.Int).Add(balance, pendingBalance)
 	return (*hexutil.Big)(total), nil
 }
