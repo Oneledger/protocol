@@ -304,6 +304,7 @@ func (ctx *context) Web3Services() (map[string]web3types.Web3Service, error) {
 		ctx.validators,
 		ctx.contracts,
 		ctx.accountKeeper,
+		ctx.feePool,
 		&ctx.node,
 		&ctx.cfg,
 	)

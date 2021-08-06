@@ -149,7 +149,16 @@ func (n nexusTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error)
 
 func (n nexusTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (ok bool, result action.Response) {
 	ctx.Logger.Detail("Processing Nexus Transaction for CheckTx", tx)
-	// NOTE: We do not need to run a logic, but only calculate a gas
+	// TODO: Remove this here
+	nexus := &Nexus{}
+	err := nexus.Unmarshal(tx.Data)
+	if err != nil {
+		return false, action.Response{Log: err.Error()}
+	}
+	if nexus.isSendTx() {
+		return runSend(ctx, tx, nexus)
+	}
+	// NOTE: We do not need to run a logic on smart contract, but only calculate a gas
 	// maybe it will be required a stateDB copy without deliver and clear it's dirties
 	ok = true
 	result = action.Response{GasUsed: -1}

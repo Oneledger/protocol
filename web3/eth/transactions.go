@@ -266,12 +266,13 @@ func (svc *Service) submitTransaction(tx *ethtypes.Transaction) (common.Hash, er
 		// Ensure only eip155 signed transactions are submitted if EIP155Required is set.
 		return common.Hash{}, errors.New("only replay-protected (EIP-155) transactions allowed over RPC")
 	}
+	// TODO: Add validateTx as pool check in go ethereum
+
 	// TODO: Add pre check if the smae tx exists in the pool before send
 	txHash, err := svc.sendTx(tx)
 	if err != nil {
 		return common.Hash{}, err
 	}
-	config := action.EthereumConfig(tx.ChainId().String())
 
 	// Print a log with full tx details for manual investigations and interventions
 	resBlock, err := svc.getTMClient().Block(nil)
@@ -281,7 +282,7 @@ func (svc *Service) submitTransaction(tx *ethtypes.Transaction) (common.Hash, er
 	if resBlock.Block == nil {
 		return common.Hash{}, err
 	}
-	signer := ethtypes.MakeSigner(config, big.NewInt(resBlock.Block.Height))
+	signer := ethtypes.NewEIP155Signer(tx.ChainId())
 	from, err := ethtypes.Sender(signer, tx)
 	if err != nil {
 		return common.Hash{}, err
@@ -308,6 +309,10 @@ func (svc *Service) sendTx(signedTx *ethtypes.Transaction) (common.Hash, error) 
 	}
 	txHash := common.BytesToHash(resBrodTx.Hash)
 	if resBrodTx.Code != 0 {
+		fmt.Println("resBrodTx.Code", resBrodTx.Code)
+		fmt.Println("resBrodTx.Data", resBrodTx.Data)
+		fmt.Println("resBrodTx.Log", resBrodTx.Log)
+		fmt.Println("resBrodTx.Hash", resBrodTx.Hash)
 		return common.Hash{}, fmt.Errorf("failed to broadcast tx \"%s\"", txHash.Hex())
 	}
 	return txHash, nil

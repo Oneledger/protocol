@@ -15,6 +15,7 @@ import (
 	rpcutils "github.com/Oneledger/protocol/web3/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	ethparams "github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
@@ -90,19 +91,27 @@ func (svc *Service) EstimateGas(call rpctypes.CallArgs) (hexutil.Uint64, error) 
 	svc.mu.Lock()
 	defer svc.mu.Unlock()
 
-	svc.logger.Debug("eth_estimateGas", "args", call)
-	height := svc.getState().Version()
-	result, err := svc.callContract(call, height)
-	if err != nil {
-		return 0, err
+	var (
+		gas uint64
+		err error
+	)
+	if len(*call.Data) == 0 {
+		gas = ethparams.TxGas
+	} else {
+		svc.logger.Debug("eth_estimateGas", "args", call)
+		height := svc.getState().Version()
+		result, err := svc.callContract(call, height)
+		if err != nil {
+			return 0, err
+		}
+		// If the result contains a revert reason, try to unpack and return it.
+		if len(result.Revert()) > 0 {
+			return 0, rpctypes.NewRevertError(result)
+		}
+		// TODO: change 1000 buffer for more accurate buffer
+		gas = result.UsedGas + 1000
 	}
-	// If the result contains a revert reason, try to unpack and return it.
-	if len(result.Revert()) > 0 {
-		return 0, rpctypes.NewRevertError(result)
-	}
-	// TODO: change 1000 buffer for more accurate buffer
-	gas := result.UsedGas + 1000
-	return hexutil.Uint64(gas), result.Err
+	return hexutil.Uint64(gas), err
 }
 
 func (svc *Service) callContract(call rpctypes.CallArgs, height int64) (*action.ExecutionResult, error) {
