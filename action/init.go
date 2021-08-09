@@ -72,10 +72,6 @@ const (
 	// Nexus transactions (new sends + evm)
 	NEXUS Type = 0x101
 
-	// Legacy conversion for new wallet types
-	LEGACY_CONNECT Type = 0x201
-	LEGACY_SEND    Type = 0x202
-
 	//EOF here Only used as a marker to mark the end of Type list
 	//So that the query for Types can return all Types dynamically
 	//, when there is a change made in Type list
@@ -139,8 +135,6 @@ func init() {
 	RegisterTxType(RELEASE, "RELEASE")
 
 	RegisterTxType(NEXUS, "NEXUS")
-	RegisterTxType(LEGACY_CONNECT, "LEGACY_CONNECT")
-	RegisterTxType(LEGACY_SEND, "LEGACY_SEND")
 }
 
 func RegisterTxType(value Type, name string) {

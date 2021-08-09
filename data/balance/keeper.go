@@ -49,9 +49,6 @@ func (acc *EthAccount) AddBalance(amount *big.Int) {
 		Currency: acc.Coins.Currency,
 		Amount:   NewAmountFromBigInt(amount),
 	})
-	if coin.Amount.BigInt().Sign() == -1 {
-		panic("underflow amount")
-	}
 	acc.Coins = coin
 }
 
@@ -81,6 +78,9 @@ type AccountKeeper interface {
 	SetAccount(account EthAccount) error
 	RemoveAccount(account EthAccount)
 	GetVersionedBalance(addr keys.Address, height int64) (*big.Int, error)
+	GetNonce(addr keys.Address) uint64
+	GetBalance(addr keys.Address) *big.Int
+	GetState() *storage.State
 	WithState(state *storage.State) AccountKeeper
 }
 
@@ -101,6 +101,10 @@ func NewNesterAccountKeeper(state *storage.State, balances *Store, currencies *C
 		state:      state,
 		prefix:     storage.Prefix("keeper"),
 	}
+}
+
+func (nak *NesterAccountKeeper) GetState() *storage.State {
+	return nak.state
 }
 
 func (nak *NesterAccountKeeper) WithState(state *storage.State) AccountKeeper {
@@ -231,4 +235,19 @@ func (nak *NesterAccountKeeper) SetAccount(account EthAccount) error {
 func (nak *NesterAccountKeeper) RemoveAccount(account EthAccount) {
 	prefixKey := append(nak.prefix, account.Address.Bytes()...)
 	nak.state.Delete(prefixKey)
+}
+
+func (nak *NesterAccountKeeper) GetNonce(addr keys.Address) uint64 {
+	acc, err := nak.GetAccount(addr)
+	if err != nil {
+		return 0
+	}
+	return acc.Sequence
+}
+func (nak *NesterAccountKeeper) GetBalance(addr keys.Address) *big.Int {
+	acc, err := nak.GetAccount(addr)
+	if err != nil {
+		return big.NewInt(0)
+	}
+	return acc.Balance()
 }

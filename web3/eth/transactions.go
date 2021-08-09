@@ -6,6 +6,7 @@ import (
 	"math/big"
 
 	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/utils"
 	rpctypes "github.com/Oneledger/protocol/web3/types"
 	rpcutils "github.com/Oneledger/protocol/web3/utils"
@@ -15,6 +16,10 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rpc"
 	tmtypes "github.com/tendermint/tendermint/types"
+)
+
+var (
+	jsonSerializer = serialize.GetSerializer(serialize.NETWORK)
 )
 
 // TODO: Move to the config
@@ -309,11 +314,15 @@ func (svc *Service) sendTx(signedTx *ethtypes.Transaction) (common.Hash, error) 
 	}
 	txHash := common.BytesToHash(resBrodTx.Hash)
 	if resBrodTx.Code != 0 {
-		fmt.Println("resBrodTx.Code", resBrodTx.Code)
-		fmt.Println("resBrodTx.Data", resBrodTx.Data)
-		fmt.Println("resBrodTx.Log", resBrodTx.Log)
-		fmt.Println("resBrodTx.Hash", resBrodTx.Hash)
-		return common.Hash{}, fmt.Errorf("failed to broadcast tx \"%s\"", txHash.Hex())
+		unpackedData := struct {
+			Msg string `json:"msg"`
+		}{}
+
+		err = jsonSerializer.Deserialize([]byte(resBrodTx.Log), &unpackedData)
+		if err == nil {
+			return common.Hash{}, fmt.Errorf(unpackedData.Msg)
+		}
+		return common.Hash{}, fmt.Errorf(resBrodTx.Log)
 	}
 	return txHash, nil
 }

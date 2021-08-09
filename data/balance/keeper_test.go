@@ -81,26 +81,6 @@ func TestKeeper(t *testing.T) {
 		assert.Equal(t, uint64(0), acc.Sequence)
 	})
 
-	t.Run("test balance underflow and it is error", func(t *testing.T) {
-		keeper := prepareKeeperEnv(t)
-
-		addr := common.Address{}
-		acc, err := keeper.NewAccountWithAddress(addr.Bytes())
-		assert.NoError(t, err)
-
-		value := big.NewInt(-100)
-		assertPanic(t, func() {
-			acc.AddBalance(value)
-		})
-		keeper.SetAccount(*acc)
-
-		acc, err = keeper.GetAccount(addr.Bytes())
-		assert.NoError(t, err)
-		assert.Equal(t, big.NewInt(0), acc.Coins.Amount.BigInt())
-		assert.Equal(t, addr.Bytes(), acc.Address.Bytes())
-		assert.Equal(t, uint64(0), acc.Sequence)
-	})
-
 	t.Run("test get or create account and it is OK", func(t *testing.T) {
 		keeper := prepareKeeperEnv(t)
 

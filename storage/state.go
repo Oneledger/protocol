@@ -33,6 +33,10 @@ func (s *State) WithGas(gc GasCalculator) *State {
 	}
 }
 
+func (s *State) GetCalculator() GasCalculator {
+	return s.gc
+}
+
 func (s *State) WithoutGas() *State {
 
 	s.cache = NewSessionedDirectStorage(SESSION_CACHE, "state")

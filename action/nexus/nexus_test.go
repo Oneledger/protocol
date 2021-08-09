@@ -7,6 +7,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"math"
 	"math/big"
 	"os"
 	"strings"
@@ -62,7 +63,9 @@ func setupServer() config.Server {
 func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, setLogger bool, setCoin bool, setCoinAddr crypto.Address) *action.Context {
 	ctx := &action.Context{}
 	db := db.NewDB("test", db.MemDBBackend, "")
-	cs := storage.NewState(storage.NewChainState("balance", db))
+	gc := storage.NewGasCalculator(100_100_500)
+	cs := storage.NewState(storage.NewChainState("balance", db)).WithGas(gc)
+
 	// store
 	var store *balance.Store
 	if setStore {
@@ -152,9 +155,9 @@ func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, se
 	}
 	ctx.Logger = log.NewLoggerWithPrefix(os.Stdout, "Test-Logger")
 	ctx.StateDB = action.NewCommitStateDB(
-		evm.NewContractStore(storage.NewState(storage.NewChainState("contracts", db))),
+		evm.NewContractStore(storage.NewState(storage.NewChainState("contracts", db)).WithGas(gc)),
 		balance.NewNesterAccountKeeper(
-			storage.NewState(storage.NewChainState("keeper", db)),
+			storage.NewState(storage.NewChainState("keeper", db)).WithGas(gc),
 			ctx.Balances,
 			ctx.Currencies,
 		),
@@ -220,15 +223,16 @@ func assemblyExecuteData(from keys.Address, to *keys.Address, nonce uint64, valu
 	chainId := utils.HashToBigInt("test-1")
 	chainIdMul := new(big.Int).Mul(chainId, big.NewInt(2))
 
-	var ethTo ethcmn.Address
+	var ethTo *ethcmn.Address
 	if to != nil {
-		ethTo = ethcmn.BytesToAddress(to.Bytes())
+		ethTo = new(ethcmn.Address)
+		*ethTo = ethcmn.BytesToAddress(to.Bytes())
 	}
 	legacyTx := &ethtypes.LegacyTx{
 		Nonce:    nonce,
 		GasPrice: big.NewInt(10000000000),
 		Gas:      uint64(gas),
-		To:       &ethTo,
+		To:       ethTo,
 		Value:    value,
 		Data:     code,
 	}
@@ -338,7 +342,7 @@ func newAcc(ctx *action.Context, from keys.Address, amount int64) *balance.EthAc
 	currency, _ := ctx.Currencies.GetCurrencyByName("OLT")
 	acc := balance.NewEthAccount(from.Bytes(), balance.Coin{
 		Currency: currency,
-		Amount:   balance.NewAmountFromInt(amount),
+		Amount:   balance.NewAmountFromInt(amount * int64(math.Pow(float64(10), float64(18)))),
 	})
 	ctx.StateDB.GetAccountKeeper().SetAccount(*acc)
 	return acc
@@ -417,7 +421,7 @@ func TestRunner_Send(t *testing.T) {
 
 		stx := &nexusTx{}
 
-		value := big.NewInt(10001)
+		value := big.NewInt(10001 * int64(math.Pow(float64(10), float64(18))))
 		nonce := getNonce(ctx, from.Bytes())
 		tx := assemblyExecuteData(from, &to, nonce, value, fromPubKey, fromPrikey, make([]byte, 0), 21_000)
 		assert.Equal(t, 0, int(nonce))
@@ -458,15 +462,10 @@ func TestRunner_SmartContract(t *testing.T) {
 
 	// generating default data
 	ctx := assemblyCtxData("OLT", 18, true, false, false, nil)
-	currency, _ := ctx.Currencies.GetCurrencyByName("OLT")
 
 	from, fromPubKey, fromPrikey := generateKeyPair()
 
-	acc := balance.NewEthAccount(from.Bytes(), balance.Coin{
-		Currency: currency,
-		Amount:   balance.NewAmountFromInt(10000),
-	})
-	ctx.StateDB.GetAccountKeeper().SetAccount(*acc)
+	newAcc(ctx, from, 10000)
 
 	t.Run("test contract store through the transaction and it is OK", func(t *testing.T) {
 		txHash := ethcmn.BytesToHash(utils.SHA2([]byte("test")))
@@ -564,7 +563,7 @@ func TestRunner_SmartContract(t *testing.T) {
 		ok, resp := stx.ProcessDeliver(ctx, tx.RawTx)
 		fmt.Printf("resp: %+v \n", resp)
 		assert.False(t, ok)
-		assert.True(t, strings.Contains(resp.Log, "300103")) // intrinsic gas too low code
+		assert.True(t, strings.Contains(resp.Log, "intrinsic gas too low:")) // intrinsic gas too low code
 
 		_, errMsg := getTxStatus(resp)
 		assert.True(t, len(errMsg) == 0)
