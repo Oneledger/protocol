@@ -494,9 +494,21 @@ func (app *App) Start() error {
 		return errors.Wrap(err, "failed to prepare web3 service")
 	}
 
+	// Starting Web3 websocket
+	startWeb3Ws, err := app.websocketStarter()
+	if err != nil {
+		return errors.Wrap(err, "failed to prepare web3 service")
+	}
+
 	err = startRPC()
 	if err != nil {
 		app.logger.Error("Failed to start rpc")
+		return err
+	}
+
+	err = startWeb3Ws()
+	if err != nil {
+		app.logger.Error("Failed to start web3 websocket")
 		return err
 	}
 

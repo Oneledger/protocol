@@ -38,7 +38,7 @@ func NewAPI(clientCtx rpctypes.Web3Context) *PubSubAPI {
 	}
 }
 
-func (api *PubSubAPI) subscribe(conn *websocket.Conn, params []interface{}) (rpc.ID, error) {
+func (api *PubSubAPI) Subscribe(conn *websocket.Conn, params []interface{}) (rpc.ID, error) {
 	method, ok := params[0].(string)
 	if !ok {
 		return "0", fmt.Errorf("invalid parameters")
@@ -47,23 +47,23 @@ func (api *PubSubAPI) subscribe(conn *websocket.Conn, params []interface{}) (rpc
 	switch method {
 	case "newHeads":
 		// TODO: handle extra params
-		return api.subscribeNewHeads(conn)
+		return api.SubscribeNewHeads(conn)
 	case "logs":
 		if len(params) > 1 {
-			return api.subscribeLogs(conn, params[1])
+			return api.SubscribeLogs(conn, params[1])
 		}
 
-		return api.subscribeLogs(conn, nil)
+		return api.SubscribeLogs(conn, nil)
 	case "newPendingTransactions":
-		return api.subscribePendingTransactions(conn)
+		return api.SubscribePendingTransactions(conn)
 	case "syncing":
-		return api.subscribeSyncing(conn)
+		return api.SubscribeSyncing(conn)
 	default:
 		return "0", fmt.Errorf("unsupported method %s", method)
 	}
 }
 
-func (api *PubSubAPI) unsubscribe(id rpc.ID) bool {
+func (api *PubSubAPI) Unsubscribe(id rpc.ID) bool {
 	api.filtersMu.Lock()
 	defer api.filtersMu.Unlock()
 
@@ -77,7 +77,7 @@ func (api *PubSubAPI) unsubscribe(id rpc.ID) bool {
 }
 
 // unsubscribeAll unsubscribes all the current subscriptions
-func (api *PubSubAPI) unsubscribeAll() bool { // nolint: unused
+func (api *PubSubAPI) UnsubscribeAll() bool { // nolint: unused
 	api.filtersMu.Lock()
 	defer api.filtersMu.Unlock()
 
@@ -89,7 +89,7 @@ func (api *PubSubAPI) unsubscribeAll() bool { // nolint: unused
 	return true
 }
 
-func (api *PubSubAPI) subscribeNewHeads(conn *websocket.Conn) (rpc.ID, error) {
+func (api *PubSubAPI) SubscribeNewHeads(conn *websocket.Conn) (rpc.ID, error) {
 	sub, _, err := api.events.SubscribeNewHeads()
 	if err != nil {
 		return "", fmt.Errorf("error creating block filter: %s", err.Error())
@@ -143,7 +143,7 @@ func (api *PubSubAPI) subscribeNewHeads(conn *websocket.Conn) (rpc.ID, error) {
 	return sub.ID(), nil
 }
 
-func (api *PubSubAPI) subscribeLogs(conn *websocket.Conn, extra interface{}) (rpc.ID, error) {
+func (api *PubSubAPI) SubscribeLogs(conn *websocket.Conn, extra interface{}) (rpc.ID, error) {
 	crit := filters.FilterCriteria{}
 
 	if extra != nil {
@@ -261,7 +261,7 @@ func (api *PubSubAPI) subscribeLogs(conn *websocket.Conn, extra interface{}) (rp
 	return sub.ID(), nil
 }
 
-func (api *PubSubAPI) subscribePendingTransactions(conn *websocket.Conn) (rpc.ID, error) {
+func (api *PubSubAPI) SubscribePendingTransactions(conn *websocket.Conn) (rpc.ID, error) {
 	sub, _, err := api.events.SubscribePendingTxs()
 	if err != nil {
 		return "", fmt.Errorf("error creating block filter: %s", err.Error())
@@ -314,6 +314,6 @@ func (api *PubSubAPI) subscribePendingTransactions(conn *websocket.Conn) (rpc.ID
 	return sub.ID(), nil
 }
 
-func (api *PubSubAPI) subscribeSyncing(conn *websocket.Conn) (rpc.ID, error) {
+func (api *PubSubAPI) SubscribeSyncing(conn *websocket.Conn) (rpc.ID, error) {
 	return "", nil
 }

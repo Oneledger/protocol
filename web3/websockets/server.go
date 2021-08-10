@@ -6,19 +6,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Oneledger/protocol/config"
+	"github.com/Oneledger/protocol/log"
+	web3types "github.com/Oneledger/protocol/web3/types"
+	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/gorilla/mux"
+	"github.com/gorilla/websocket"
 	"io/ioutil"
 	"math/big"
 	"net"
 	"net/http"
 	"os"
 	"strings"
-	"time"
-
-	"github.com/Oneledger/protocol/log"
-	web3types "github.com/Oneledger/protocol/web3/types"
-	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/gorilla/websocket"
 )
 
 // WsServer defines a server that handles Ethereum websockets.
@@ -30,8 +28,10 @@ type WsServer struct {
 
 // NewServer creates a new websocket server instance.
 func NewServer(ctx web3types.Web3Context, config *config.Server) *WsServer {
+	// TODO: make a new web3 websocket address in config.toml
+	strings.Replace(config.Network.RPCAddress, "266", "276", 1)
 	return &WsServer{
-		Address: config.Network.RPCAddress,
+		Address: strings.Replace(config.Network.RPCAddress, "266", "276", 1),
 		api:     NewAPI(ctx),
 		logger:  log.NewLoggerWithPrefix(os.Stdout, "ws"),
 	}
@@ -55,25 +55,25 @@ func (s *WsServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.readLoop(wsConn)
 }
 
+// Name returns the JSON-RPC service name
+func (s *WsServer) Name() string {
+	return "Ethereum Websocket"
+}
+
 // Start runs the websocket server
 func (s *WsServer) Start() error {
 	ws := mux.NewRouter()
-	ws.Handle("/", s)
+	ws.Handle("/ws", s)
 
-	errCh := make(chan error)
 	go func() {
-		err := http.ListenAndServe(s.Address, ws)
+		s.logger.Info("starting web3 websocket server on " + s.Address[6:])
+		err := http.ListenAndServe(s.Address[6:], ws)
 		if err != nil {
-			errCh <- err
+			s.logger.Fatal("start web3 websocket server error ", err.Error())
 		}
 	}()
 
-	select {
-	case err := <-errCh:
-		return err
-	case <-time.After(5 * time.Second): // assume server started successfully
-		return nil
-	}
+	return nil
 }
 
 func (s *WsServer) sendErrResponse(conn *websocket.Conn, msg string) {
@@ -116,7 +116,7 @@ func (s *WsServer) readLoop(wsConn *websocket.Conn) {
 				continue
 			}
 
-			id, err := s.api.subscribe(wsConn, params)
+			id, err := s.api.Subscribe(wsConn, params)
 			if err != nil {
 				s.sendErrResponse(wsConn, err.Error())
 				continue
@@ -142,7 +142,7 @@ func (s *WsServer) readLoop(wsConn *websocket.Conn) {
 				continue
 			}
 
-			ok = s.api.unsubscribe(rpc.ID(ids[0].(string)))
+			ok = s.api.Unsubscribe(rpc.ID(ids[0].(string)))
 			res := &SubscriptionResponseJSON{
 				Jsonrpc: "2.0",
 				ID:      1,
