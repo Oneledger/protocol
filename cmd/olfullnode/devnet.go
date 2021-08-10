@@ -213,11 +213,11 @@ func (n node) connectionDetails() string {
 }
 
 // This function maintains a running counter of ports
-func portGenerator(startingPort int) func() int {
+func portGenerator(startingPort int, counter int) func() int {
 	count := startingPort
 	return func() int {
 		port := count
-		count++
+		count += counter
 		return port
 	}
 }
@@ -242,8 +242,10 @@ func generateIP(nodeID int) (result string) {
 
 func generateAddress(nodeID int, port int, flags ...bool) string {
 	// flags
-	var hasProtocol, isRPC bool
+	var hasProtocol, isRPC, isWS bool
 	switch len(flags) {
+	case 3:
+		hasProtocol, isRPC, isWS = flags[0], flags[1], flags[2]
 	case 2:
 		hasProtocol, isRPC = flags[0], flags[1]
 	case 1:
@@ -254,7 +256,9 @@ func generateAddress(nodeID int, port int, flags ...bool) string {
 	var prefix string
 	ip := generateIP(nodeID)
 	protocol := "tcp://"
-	if isRPC {
+	if isWS {
+		protocol = "ws://"
+	} else if isRPC {
 		protocol = "http://"
 	}
 	if hasProtocol {
@@ -340,8 +344,9 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		args.dbType = "goleveldb"
 	}
 
-	generatePort := portGenerator(26600)
-	generateWeb3Port := portGenerator(10545)
+	generatePort := portGenerator(26600, 1)
+	generateWeb3Port := portGenerator(8545, 10)
+	generateWeb3WsPort := portGenerator(8546, 10)
 
 	validatorList := make([]consensus.GenesisValidator, args.numValidators)
 	nodeList := make([]node, totalNodes)
@@ -381,7 +386,9 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		cfg.Network.RPCAddress = generateAddress(i, generatePort(), true)
 		cfg.Network.P2PAddress = generateAddress(i, generatePort(), true)
 		cfg.Network.SDKAddress = generateAddress(i, generatePort(), true)
-		cfg.Network.Web3Address = generateAddress(i, generateWeb3Port(), true, true)
+
+		cfg.Web3.HTTPAddress = generateAddress(i, generateWeb3Port(), true, true)
+		cfg.Web3.WSAddress = generateAddress(i, generateWeb3WsPort(), true, false, true)
 
 		dirs := []string{configDir, dataDir, nodeDataDir}
 		for _, dir := range dirs {

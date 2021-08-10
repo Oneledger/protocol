@@ -23,7 +23,7 @@ type Server struct {
 func NewServer(w io.Writer, config *config.Server) (*Server, error) {
 	logger := log.NewLoggerWithPrefix(w, "rpc")
 
-	url, err := url.Parse(config.Network.Web3Address)
+	url, err := url.Parse(config.Web3.HTTPAddress)
 	if err != nil {
 		return nil, err
 	}

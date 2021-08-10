@@ -139,8 +139,9 @@ func runGenesis(_ *cobra.Command, _ []string) error {
 		args.dbType = "goleveldb"
 	}
 
-	generatePort := portGenerator(26600)
-	generateWeb3Port := portGenerator(10545)
+	generatePort := portGenerator(26600, 1)
+	generateWeb3Port := portGenerator(8545, 10)
+	generateWeb3WsPort := portGenerator(8546, 10)
 
 	persistentPeers := make([]string, totalNodes)
 	nodeList := make([]node, totalNodes)
@@ -200,7 +201,9 @@ func runGenesis(_ *cobra.Command, _ []string) error {
 		cfg.Network.RPCAddress = generateAddress(i, generatePort(), true)
 		cfg.Network.P2PAddress = generateAddress(i, generatePort(), true)
 		cfg.Network.SDKAddress = generateAddress(i, generatePort(), true)
-		cfg.Network.Web3Address = generateAddress(i, generateWeb3Port(), true, true)
+
+		cfg.Web3.HTTPAddress = generateAddress(i, generateWeb3Port(), true, true)
+		cfg.Web3.WSAddress = generateAddress(i, generateWeb3WsPort(), true, false, true)
 
 		n := node{isValidator: isValidator, cfg: cfg, key: nodekey, esdcaPk: ecdsaPk}
 		if isValidator {
