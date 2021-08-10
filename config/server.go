@@ -44,6 +44,7 @@ func toConfigDuration(d time.Duration) Duration {
 type Server struct {
 	Node           *NodeConfig                `toml:"node"`
 	Network        *NetworkConfig             `toml:"network"`
+	Web3           *Web3Config                `toml:"web3"`
 	P2P            *P2PConfig                 `toml:"p2p"`
 	Mempool        *MempoolConfig             `toml:"mempool"`
 	Consensus      *ConsensusConfig           `toml:"consensus"`
@@ -167,6 +168,7 @@ func DefaultServerConfig() *Server {
 	return &Server{
 		Node:           DefaultNodeConfig(),
 		Network:        DefaultNetworkConfig(),
+		Web3:           DefaultWeb3Config(),
 		P2P:            DefaultP2PConfig(),
 		Mempool:        DefaultMempoolConfig(),
 		Consensus:      DefaultConsensusConfig(),
@@ -267,8 +269,6 @@ type NetworkConfig struct {
 	ExternalP2PAddress string `toml:"external_p2p_address" desc:"Address to advertise for incoming peers to connect to"`
 
 	SDKAddress string `toml:"sdk_address"`
-
-	Web3Address string `toml:"web3_address" desc:"Address to new RPC endpoint based on web3"`
 }
 
 func DefaultNetworkConfig() *NetworkConfig {
@@ -278,7 +278,18 @@ func DefaultNetworkConfig() *NetworkConfig {
 		P2PAddress:         "tcp://127.0.0.1:26611",
 		ExternalP2PAddress: "",
 		SDKAddress:         "http://127.0.0.1:26631",
-		Web3Address:        "http://127.0.0.1:8545",
+	}
+}
+
+type Web3Config struct {
+	HTTPAddress string `toml:"http_address" desc:"HTTP RPC endpoint""`
+	WSAddress   string `toml:"ws_address" desc:"Websocket RPC endpoint"`
+}
+
+func DefaultWeb3Config() *Web3Config {
+	return &Web3Config{
+		HTTPAddress: "http://127.0.0.1:8545",
+		WSAddress:   "ws://127.0.0.1:8546",
 	}
 }
 
