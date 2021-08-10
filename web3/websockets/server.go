@@ -29,7 +29,6 @@ type WsServer struct {
 // NewServer creates a new websocket server instance.
 func NewServer(ctx web3types.Web3Context, config *config.Server) *WsServer {
 	// TODO: make a new web3 websocket address in config.toml
-	strings.Replace(config.Network.RPCAddress, "266", "276", 1)
 	return &WsServer{
 		Address: strings.Replace(config.Network.RPCAddress, "266", "276", 1),
 		api:     NewAPI(ctx),
