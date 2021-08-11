@@ -71,7 +71,7 @@ func (acc *EthAccount) SetBalance(amount *big.Int) {
 }
 
 type AccountKeeper interface {
-	NewAccountWithAddress(addr keys.Address) (*EthAccount, error)
+	NewAccountWithAddress(addr keys.Address, setAcc bool) (*EthAccount, error)
 	GetOrCreateAccount(addr keys.Address) (*EthAccount, error)
 	GetAccount(addr keys.Address) (*EthAccount, error)
 	GetVersionedAccount(addr keys.Address, height int64) (*EthAccount, error)
@@ -113,20 +113,21 @@ func (nak *NesterAccountKeeper) WithState(state *storage.State) AccountKeeper {
 	return nak
 }
 
-func (nak *NesterAccountKeeper) NewAccountWithAddress(addr keys.Address) (*EthAccount, error) {
+func (nak *NesterAccountKeeper) NewAccountWithAddress(addr keys.Address, setAcc bool) (*EthAccount, error) {
 	coin, err := nak.getOrCreateCurrencyBalance(addr)
 	if err != nil {
 		return nil, errors.Errorf("Failed to get balance: %s", err)
 	}
 	acc := NewEthAccount(addr, coin)
-
-	err = nak.SetAccount(*acc)
-	if err != nil {
-		return nil, errors.Errorf("Failed to set account: %s", err)
-	}
-	acc, err = nak.GetAccount(addr)
-	if err != nil {
-		return nil, errors.Errorf("Failed to get account: %s", err)
+	if setAcc {
+		err = nak.SetAccount(*acc)
+		if err != nil {
+			return nil, errors.Errorf("Failed to set account: %s", err)
+		}
+		acc, err = nak.GetAccount(addr)
+		if err != nil {
+			return nil, errors.Errorf("Failed to get account: %s", err)
+		}
 	}
 	return acc, nil
 }
@@ -163,7 +164,7 @@ func (nak *NesterAccountKeeper) getOrCreateCurrencyBalance(addr keys.Address) (C
 func (nak *NesterAccountKeeper) GetOrCreateAccount(addr keys.Address) (*EthAccount, error) {
 	eoa, err := nak.GetAccount(addr)
 	if err != nil {
-		eoa, err = nak.NewAccountWithAddress(addr)
+		eoa, err = nak.NewAccountWithAddress(addr, true)
 		if err != nil {
 			return nil, err
 		}
@@ -245,9 +246,9 @@ func (nak *NesterAccountKeeper) GetNonce(addr keys.Address) uint64 {
 	return acc.Sequence
 }
 func (nak *NesterAccountKeeper) GetBalance(addr keys.Address) *big.Int {
-	acc, err := nak.GetAccount(addr)
+	coin, err := nak.getOrCreateCurrencyBalance(addr)
 	if err != nil {
 		return big.NewInt(0)
 	}
-	return acc.Balance()
+	return coin.Amount.BigInt()
 }

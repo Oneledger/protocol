@@ -302,11 +302,11 @@ func (ctx *context) Web3Services() (map[string]web3types.Web3Service, error) {
 		log.NewLoggerWithPrefix(ctx.logWriter, "web3").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
 		&extSvcs,
 		ctx.validators,
-		ctx.contracts,
-		ctx.accountKeeper,
 		ctx.feePool,
 		&ctx.node,
 		&ctx.cfg,
+		ctx.chainstate,
+		ctx.currencies,
 	)
 	// registering services
 	web3Ctx.DefaultRegisterForAll()

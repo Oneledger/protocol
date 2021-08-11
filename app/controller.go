@@ -125,20 +125,11 @@ func (app *App) commitVMChanges(req *abciTypes.RequestEndBlock) {
 	// apply state
 	csdb.WithState(app.Context.deliver)
 
-	// Update account balances before committing other parts of state
-	csdb.UpdateAccounts()
-
-	// Commit state objects to store
-	root, err := csdb.Commit(false)
-	if err != nil {
-		panic(err)
-	}
-
 	// Apply bloom
 	csdb.SetBlockBloom(uint64(req.GetHeight()), csdb.Bloom.Bytes())
 
 	// reset all cache after account data has been committed, that make sure node state consistent
-	if err = csdb.Reset(root); err != nil {
+	if err := csdb.Reset(ethcmn.Hash{}); err != nil {
 		panic(err)
 	}
 }
@@ -151,7 +142,7 @@ func (app *App) blockBeginner() blockBeginner {
 
 		// Update last block height and hash
 		if app.Context.cfg.IsNexusUpdate(req.Header.GetHeight()) {
-			app.Context.stateDB.WithState(app.Context.deliver).SetHeightHash(uint64(req.Header.GetHeight()), ethcmn.BytesToHash(req.GetHash()), true)
+			app.Context.stateDB.WithState(app.Context.deliver).SetHeightHash(uint64(req.Header.GetHeight()), ethcmn.BytesToHash(req.GetHash()))
 		}
 
 		feeOpt, err := app.Context.govern.GetFeeOption()

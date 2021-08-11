@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/utils"
 	rpctypes "github.com/Oneledger/protocol/web3/types"
@@ -129,7 +128,7 @@ func (svc *Service) GetTransactionReceipt(hash common.Hash) (*rpctypes.Transacti
 		status = 1
 	}
 
-	stateDB := action.NewCommitStateDB(svc.ctx.GetContractStore(), svc.ctx.GetAccountKeeper(), svc.logger)
+	stateDB := svc.GetStateDB()
 
 	logs, err := stateDB.GetLogs(hash)
 	if err != nil {

@@ -9,6 +9,7 @@ import (
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
+	"github.com/Oneledger/protocol/storage"
 	"github.com/Oneledger/protocol/web3/eth"
 	"github.com/Oneledger/protocol/web3/net"
 	rpctypes "github.com/Oneledger/protocol/web3/types"
@@ -20,11 +21,11 @@ type Context struct {
 	logger         *log.Logger
 	externalAPI    *client.ExtServiceContext
 	validatorStore *identity.ValidatorStore
-	contractStore  *evm.ContractStore
-	accountKeeper  balance.AccountKeeper
 	feePool        *fees.Store
 	nodeContext    *node.Context
 	cfg            *config.Server
+	chainstate     *storage.ChainState
+	currencies     *balance.CurrencySet
 
 	services map[string]rpctypes.Web3Service
 }
@@ -32,10 +33,10 @@ type Context struct {
 // NewContext Initializing context with properties
 func NewContext(
 	logger *log.Logger, extAPI *client.ExtServiceContext,
-	validatorStore *identity.ValidatorStore, contractStore *evm.ContractStore,
-	accountKeeper balance.AccountKeeper, feePool *fees.Store, nodeContext *node.Context, cfg *config.Server,
+	validatorStore *identity.ValidatorStore, feePool *fees.Store, nodeContext *node.Context, cfg *config.Server,
+	chainstate *storage.ChainState, currencies *balance.CurrencySet,
 ) rpctypes.Web3Context {
-	return &Context{logger, extAPI, validatorStore, contractStore, accountKeeper, feePool, nodeContext, cfg, make(map[string]rpctypes.Web3Service, 0)}
+	return &Context{logger, extAPI, validatorStore, feePool, nodeContext, cfg, chainstate, currencies, make(map[string]rpctypes.Web3Service, 0)}
 }
 
 // DefaultRegisterForAll regs services from the namespaces
@@ -68,11 +69,17 @@ func (ctx *Context) GetValidatorStore() *identity.ValidatorStore {
 }
 
 func (ctx *Context) GetContractStore() *evm.ContractStore {
-	return ctx.contractStore
+	return evm.NewContractStore(storage.NewState(ctx.chainstate))
 }
 
 func (ctx *Context) GetAccountKeeper() balance.AccountKeeper {
-	return ctx.accountKeeper
+	balanceStore := balance.NewStore("b", storage.NewState(ctx.chainstate))
+	accountKeeper := balance.NewNesterAccountKeeper(
+		storage.NewState(ctx.chainstate),
+		balanceStore,
+		ctx.currencies,
+	)
+	return accountKeeper
 }
 
 func (ctx *Context) GetFeePool() *fees.Store {

@@ -50,7 +50,7 @@ func TestKeeper(t *testing.T) {
 		_, err := keeper.GetAccount(addr.Bytes())
 		assert.Error(t, err)
 
-		acc, err := keeper.NewAccountWithAddress(addr.Bytes())
+		acc, err := keeper.NewAccountWithAddress(addr.Bytes(), true)
 		assert.NoError(t, err)
 		assert.Equal(t, big.NewInt(0), acc.Coins.Amount.BigInt())
 		assert.Equal(t, addr.Bytes(), acc.Address.Bytes())
@@ -67,7 +67,7 @@ func TestKeeper(t *testing.T) {
 		keeper := prepareKeeperEnv(t)
 
 		addr := common.Address{}
-		acc, err := keeper.NewAccountWithAddress(addr.Bytes())
+		acc, err := keeper.NewAccountWithAddress(addr.Bytes(), true)
 		assert.NoError(t, err)
 
 		value := big.NewInt(100)

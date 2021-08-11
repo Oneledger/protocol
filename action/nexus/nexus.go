@@ -2,7 +2,6 @@ package nexus
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/helpers"
@@ -269,23 +268,33 @@ func runNexus(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
 	ctx.Logger.Detail("Nexus tx is send:", nexus.isSendTx())
 
+	tags := nexus.Tags()
+
 	err = nexus.validateTx(ctx, tx, false)
-	fmt.Println(err)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, status_codes.ProtocolError{
 			Msg:  err.Error(),
 			Code: status_codes.InvalidParams,
-		}, nexus.Tags(), err)
+		}, tags, err)
 	}
 
 	evmTx := action.NewEVMTransaction(ctx.StateDB, ctx.Header, nexus.From, nexus.To, nexus.Nonce, nexus.Amount.Value.BigInt(), nexus.Data, false)
-	tags := nexus.Tags()
 
 	vmenv := evmTx.NewEVM()
 	execResult, err := evmTx.Apply(vmenv, tx)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrWrongTxType, tags, err)
+		ctx.Logger.Debugf("Execution apply VM got err: %s\n", err.Error())
+		tags = append(tags, action.UintTag("tx.status", ethtypes.ReceiptStatusFailed))
+		tags = append(tags, kv.Pair{
+			Key:   []byte("tx.error"),
+			Value: []byte(err.Error()),
+		})
+		return helpers.LogAndReturnFalse(ctx.Logger, status_codes.ProtocolError{
+			Msg:  err.Error(),
+			Code: status_codes.TxErrVMExecution,
+		}, tags, err)
 	}
+
 	if execResult.Failed() {
 		ctx.Logger.Debugf("Execution result got err: %s\n", execResult.Err.Error())
 		tags = append(tags, action.UintTag("tx.status", ethtypes.ReceiptStatusFailed))

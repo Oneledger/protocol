@@ -163,7 +163,8 @@ func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, se
 		),
 		ctx.Logger,
 	)
-	ctx.StateDB.SetHeightHash(uint64(ctx.Header.Height), ethcmn.Hash{}, true)
+	ctx.State = store.State
+	ctx.StateDB.SetHeightHash(uint64(ctx.Header.Height), ethcmn.Hash{})
 	return ctx
 }
 
@@ -276,7 +277,7 @@ func getReturnData(resp action.Response) (data []byte) {
 		evt := resp.Events[i]
 		for j := range evt.Attributes {
 			attr := evt.Attributes[j]
-			if string(attr.Key) == "tx.data" {
+			if string(attr.Key) == "tx.returnData" {
 				data = attr.Value
 			}
 		}
@@ -327,7 +328,7 @@ func blockCommit(ctx *action.Context) {
 
 func wrapProcessDeliver(stx *nexusTx, txHash ethcmn.Hash, ctx *action.Context, rawTx action.RawTx, f func(ctx *action.Context, tx action.RawTx) (bool, action.Response)) (bool, action.Response) {
 	bhash := ethcmn.BytesToHash(utils.SHA2([]byte("block")))
-	ctx.StateDB.SetHeightHash(2, bhash, true)
+	ctx.StateDB.SetHeightHash(2, bhash)
 	ctx.StateDB.Prepare(txHash)
 	ok, resp := f(ctx, rawTx)
 	blockCommit(ctx)
