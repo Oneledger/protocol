@@ -37,12 +37,6 @@ type nodeCmdContext struct {
 	seedMode          bool
 	shouldWriteConfig bool
 	rootDir           string
-	web3Http          bool
-	web3HttpAddr      string
-	web3HttpPort      string
-	web3Ws            bool
-	web3WsAddr        string
-	web3WsPort        string
 }
 
 // init reads the configuration file
@@ -85,14 +79,6 @@ func (ctx *nodeCmdContext) init(rootDir string) error {
 		ctx.cfg.P2P.SeedMode = ctx.seedMode
 	}
 
-	if ctx.web3Http {
-		ctx.cfg.Web3.HTTPAddress = "http://" + ctx.web3HttpAddr + ":" + ctx.web3HttpPort
-	}
-
-	if ctx.web3Ws {
-		ctx.cfg.Web3.WSAddress = "ws://" + ctx.web3WsAddr + ":" + ctx.web3WsPort
-	}
-
 	return nil
 }
 
@@ -119,19 +105,6 @@ func init() {
 	nodeCmd.Flags().BoolVar(&nodeCtx.seedMode, "seed-mode", false, "List of seeds to connect to")
 
 	nodeCmd.Flags().BoolVarP(&nodeCtx.shouldWriteConfig, "write-config", "w", false, "Write all specified flags to configuration file")
-
-	nodeCmd.Flags().BoolVarP(&nodeCtx.web3Http, "web3.http", "", false, "Enable the Web3 HTTP-RPC server")
-
-	nodeCmd.Flags().StringVar(&nodeCtx.web3HttpAddr, "web3.http.addr", "127.0.0.1", "Web3 HTTP-RPC server listening interface (default: 127.0.0.1)")
-
-	nodeCmd.Flags().StringVar(&nodeCtx.web3HttpPort, "web3.http.port", "8545", "Web3 HTTP-RPC server listening port (default: 8545)")
-
-	nodeCmd.Flags().BoolVarP(&nodeCtx.web3Ws, "web3.ws", "", false, "Enable the Web3 WS-RPC server")
-
-	nodeCmd.Flags().StringVar(&nodeCtx.web3WsAddr, "web3.ws.addr", "127.0.0.1", "Web3 WS-RPC server listening interface (default: 127.0.0.1)")
-
-	nodeCmd.Flags().StringVar(&nodeCtx.web3WsPort, "web3.ws.port", "8645", "Web3 WS-RPC server listening port (default: 8645)")
-
 }
 
 // Start a node to run continously
