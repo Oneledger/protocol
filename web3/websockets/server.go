@@ -28,9 +28,8 @@ type WsServer struct {
 
 // NewServer creates a new websocket server instance.
 func NewServer(ctx web3types.Web3Context, config *config.Server) *WsServer {
-	// TODO: make a new web3 websocket address in config.toml
 	return &WsServer{
-		Address: strings.Replace(config.Network.RPCAddress, "266", "276", 1),
+		Address: config.Web3.WSAddress,
 		api:     NewAPI(ctx),
 		logger:  log.NewLoggerWithPrefix(os.Stdout, "ws"),
 	}
@@ -65,8 +64,8 @@ func (s *WsServer) Start() error {
 	ws.Handle("/ws", s)
 
 	go func() {
-		s.logger.Info("starting web3 websocket server on " + s.Address[6:])
-		err := http.ListenAndServe(s.Address[6:], ws)
+		s.logger.Info("starting web3 websocket server on " + s.Address[5:])
+		err := http.ListenAndServe(s.Address[5:], ws)
 		if err != nil {
 			s.logger.Fatal("start web3 websocket server error ", err.Error())
 		}
