@@ -233,6 +233,7 @@ func (api *PubSubAPI) SubscribeLogs(conn *websocket.Conn, extra interface{}) (rp
 					res := &SubscriptionNotification{
 						Jsonrpc: "2.0",
 						Method:  "eth_subscription",
+						ID:      1,
 						Params: &SubscriptionResult{
 							Subscription: sub.ID(),
 							Result:       logs,

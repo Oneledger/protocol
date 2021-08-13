@@ -33,6 +33,7 @@ type wsSubscription struct {
 type SubscriptionNotification struct {
 	Jsonrpc string              `json:"jsonrpc"`
 	Method  string              `json:"method"`
+	ID      float64             `json:"id"`
 	Params  *SubscriptionResult `json:"params"`
 }
 

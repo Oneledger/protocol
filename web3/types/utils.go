@@ -306,7 +306,7 @@ func StateAndHeaderByNumberOrHash(tmClient rpcclient.Client, blockNrOrHash rpc.B
 	return 0, errors.New("invalid arguments; neither block nor hash specified")
 }
 
-// ResultData represents the data returned in an sdk.Result
+// ResultData represents the data returned
 type ResultData struct {
 	ContractAddress *common.Address `json:"contract_address"`
 	Bloom           ethtypes.Bloom  `json:"bloom"`
