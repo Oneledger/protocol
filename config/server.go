@@ -44,7 +44,7 @@ func toConfigDuration(d time.Duration) Duration {
 type Server struct {
 	Node           *NodeConfig                `toml:"node"`
 	Network        *NetworkConfig             `toml:"network"`
-	Web3           *Web3Config                `toml:"web3"`
+	API            *APIConfig                 `toml:"api"`
 	P2P            *P2PConfig                 `toml:"p2p"`
 	Mempool        *MempoolConfig             `toml:"mempool"`
 	Consensus      *ConsensusConfig           `toml:"consensus"`
@@ -168,7 +168,7 @@ func DefaultServerConfig() *Server {
 	return &Server{
 		Node:           DefaultNodeConfig(),
 		Network:        DefaultNetworkConfig(),
-		Web3:           DefaultWeb3Config(),
+		API:            DefaultAPIConfig(),
 		P2P:            DefaultP2PConfig(),
 		Mempool:        DefaultMempoolConfig(),
 		Consensus:      DefaultConsensusConfig(),
@@ -281,15 +281,45 @@ func DefaultNetworkConfig() *NetworkConfig {
 	}
 }
 
-type Web3Config struct {
-	HTTPAddress string `toml:"http_address" desc:"HTTP RPC endpoint""`
-	WSAddress   string `toml:"ws_address" desc:"Websocket RPC endpoint"`
+type HTTPConfig struct {
+	Enabled bool   `toml:"enabled" desc:"Enable the HTTP-RPC server"`
+	Addr    string `toml:"addr" desc:"HTTP-RPC server listening interface (default: \"localhost\")"`
+	Port    int    `toml:"port" desc:"HTTP-RPC server listening port (default: 8545)"`
+
+	API        []string `toml:"api" desc:"API's offered over the HTTP-RPC interface"`
+	CORSDomain []string `toml:"corsdomain" desc:"Comma separated list of domains from which to accept cross origin requests (browser enforced)"`
+	VHosts     []string `toml:"vhosts" desc:"Comma separated list of virtual hostnames from which to accept requests (server enforced). Accepts '*' wildcard. (default: \"localhost\")"`
 }
 
-func DefaultWeb3Config() *Web3Config {
-	return &Web3Config{
-		HTTPAddress: "http://127.0.0.1:8545",
-		WSAddress:   "ws://127.0.0.1:8546",
+type WSConfig struct {
+	Enabled bool   `toml:"enabled" desc:"Enable the WS-RPC server"`
+	Addr    string `toml:"addr" desc:"WS-RPC server listening interface (default: \"localhost\")"`
+	Port    int    `toml:"port" desc:"WS-RPC server listening port (default: 8546)"`
+
+	API     []string `toml:"api" desc:"API's offered over the WS-RPC interface"`
+	Origins []string `toml:"origins" desc:"Origins from which to accept websockets requests"`
+}
+
+type APIConfig struct {
+	HTTPConfig *HTTPConfig `toml:"http"`
+	WSConfig   *WSConfig   `toml:"ws"`
+}
+
+func DefaultAPIConfig() *APIConfig {
+	return &APIConfig{
+		HTTPConfig: &HTTPConfig{
+			Addr:       "localhost",
+			Port:       8545,
+			API:        []string{"eth", "web3", "net"},
+			CORSDomain: make([]string, 0),
+			VHosts:     []string{"localhost"},
+		},
+		WSConfig: &WSConfig{
+			Addr:    "localhost",
+			Port:    8546,
+			API:     []string{"eth", "web3", "net"},
+			Origins: make([]string, 0),
+		},
 	}
 }
 
