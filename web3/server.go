@@ -2,56 +2,100 @@ package web3
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
+	"os"
+	"time"
 
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/log"
+	rpctypes "github.com/Oneledger/protocol/web3/types"
 
+	"github.com/ethereum/go-ethereum/node"
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
 // Server holds an RPC server that is served over HTTP
 type Server struct {
-	rpc    *rpc.Server
-	logger *log.Logger
-	cfg    *config.Server
-	url    *url.URL
+	rpc     *rpc.Server
+	logger  *log.Logger
+	cfg     *config.Server
+	httpURL *url.URL
+	wsURL   *url.URL
 }
 
-func NewServer(w io.Writer, config *config.Server) (*Server, error) {
-	logger := log.NewLoggerWithPrefix(w, "rpc")
-
-	url, err := url.Parse(config.Web3.HTTPAddress)
-	if err != nil {
-		return nil, err
-	}
+func NewServer(config *config.Server) *Server {
 	return &Server{
-		rpc:    rpc.NewServer(),
-		logger: logger,
+		logger: log.NewLoggerWithPrefix(os.Stdout, "rpc"),
 		cfg:    config,
-		url:    url,
-	}, nil
+	}
 }
 
-func (s *Server) RegisterName(name string, receiver interface{}) error {
-	return s.rpc.RegisterName(name, receiver)
+func RegisterApis(src *rpc.Server, apis map[string]rpctypes.Web3Service) error {
+	for name, svc := range apis {
+		err := src.RegisterName(name, svc)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
-func (s *Server) Start() error {
-	var err error
+func (s *Server) start(srv *rpc.Server, handler http.Handler, rpcInfo interface{}, apis map[string]rpctypes.Web3Service) error {
+	var (
+		err               error
+		uri               string
+		enabled           bool
+		availableAPINames []string
+		availableAPIs     = make(map[string]rpctypes.Web3Service, 0)
+		name              string
+	)
 	channel := make(chan error)
+	timeout := make(chan error)
 
-	// TODO: Add cors handling
-	http.HandleFunc("/", s.rpc.ServeHTTP)
+	switch rpcCfg := rpcInfo.(type) {
+	case *config.HTTPConfig:
+		name = "HTTP"
+		uri = fmt.Sprintf("%s:%d", rpcCfg.Addr, rpcCfg.Port)
+		enabled = rpcCfg.Enabled
+		availableAPINames = rpcCfg.API
+	case *config.WSConfig:
+		name = "WS"
+		uri = fmt.Sprintf("%s:%d", rpcCfg.Addr, rpcCfg.Port)
+		enabled = rpcCfg.Enabled
+		availableAPINames = rpcCfg.API
+	default:
+		s.logger.Info("Config for Web3 RPC not properly configured, skipping")
+		return nil
+	}
+
+	if !enabled {
+		s.logger.Info("Web3 " + name + " RPC server not enabled, skipping")
+		return nil
+	}
+
+	for _, apiName := range availableAPINames {
+		apiService, ok := apis[apiName]
+		if ok {
+			availableAPIs[apiName] = apiService
+		}
+	}
+
+	if err := RegisterApis(srv, availableAPIs); err != nil {
+		return err
+	}
+
+	//Timeout Go routine
+	go func() {
+		time.Sleep(time.Duration(2) * time.Second)
+		timeout <- nil
+	}()
 
 	go func(ch chan error) {
-		defer s.rpc.Stop()
+		defer srv.Stop()
 
-		uri := fmt.Sprintf("%s:%s", s.url.Hostname(), s.url.Port())
-		s.logger.Info("starting Web3 RPC server on " + uri)
-		err := http.ListenAndServe(uri, nil)
+		s.logger.Info("starting Web3 " + name + " RPC server on " + uri)
+		err := http.ListenAndServe(uri, handler)
 		if err != nil {
 			s.logger.Fatalf("server: %s", err)
 		}
@@ -60,7 +104,20 @@ func (s *Server) Start() error {
 
 	select {
 	case err = <-channel:
+	case err = <-timeout:
 	}
 
 	return err
+}
+
+func (s *Server) StartHTTP(apis map[string]rpctypes.Web3Service) error {
+	srv := rpc.NewServer()
+	handler := node.NewHTTPHandlerStack(srv, s.cfg.API.HTTPConfig.CORSDomain, s.cfg.API.HTTPConfig.VHosts)
+	return s.start(srv, handler, s.cfg.API.HTTPConfig, apis)
+}
+
+func (s *Server) StartWS(apis map[string]rpctypes.Web3Service) error {
+	srv := rpc.NewServer()
+	handler := srv.WebsocketHandler(s.cfg.API.WSConfig.Origins)
+	return s.start(srv, handler, s.cfg.API.WSConfig, apis)
 }

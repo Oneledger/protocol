@@ -114,12 +114,8 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	}
 
 	ctx.rpc = rpc.NewServer(logWriter, &cfg)
-	// new rpc service
-	web3, err := web3.NewServer(logWriter, &cfg)
-	if err != nil {
-		return ctx, errors.Wrap(err, "web3 api failed")
-	}
-	ctx.web3 = web3
+	// new (web3) rpc service
+	ctx.web3 = web3.NewServer(&cfg)
 
 	db, err := storage.GetDatabase("chainstate", ctx.dbDir(), ctx.cfg.Node.DB)
 	if err != nil {

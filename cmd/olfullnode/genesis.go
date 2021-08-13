@@ -140,8 +140,8 @@ func runGenesis(_ *cobra.Command, _ []string) error {
 	}
 
 	generatePort := portGenerator(26600, 1)
-	generateWeb3Port := portGenerator(8545, 10)
-	generateWeb3WsPort := portGenerator(8546, 10)
+	generateWeb3HTTPPort := portGenerator(8545, 10)
+	generateWeb3WSPort := portGenerator(8546, 10)
 
 	persistentPeers := make([]string, totalNodes)
 	nodeList := make([]node, totalNodes)
@@ -202,8 +202,9 @@ func runGenesis(_ *cobra.Command, _ []string) error {
 		cfg.Network.P2PAddress = generateAddress(i, generatePort(), true)
 		cfg.Network.SDKAddress = generateAddress(i, generatePort(), true)
 
-		cfg.Web3.HTTPAddress = generateAddress(i, generateWeb3Port(), true, true)
-		cfg.Web3.WSAddress = generateAddress(i, generateWeb3WsPort(), true, false, true)
+		cfg.API = config.DefaultAPIConfig()
+		cfg.API.HTTPConfig.Port = generateWeb3HTTPPort()
+		cfg.API.WSConfig.Port = generateWeb3WSPort()
 
 		n := node{isValidator: isValidator, cfg: cfg, key: nodekey, esdcaPk: ecdsaPk}
 		if isValidator {
