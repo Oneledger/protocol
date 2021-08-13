@@ -1,6 +1,7 @@
 package app
 
 import (
+	websockets "github.com/Oneledger/protocol/web3/websocket"
 	"net/url"
 	"os"
 
@@ -493,9 +494,21 @@ func (app *App) Start() error {
 		return errors.Wrap(err, "failed to prepare web3 service")
 	}
 
+	// Starting Web3 websocket
+	startWeb3Ws, err := app.websocketStarter()
+	if err != nil {
+		return errors.Wrap(err, "failed to prepare web3 service")
+	}
+
 	err = startRPC()
 	if err != nil {
 		app.logger.Error("Failed to start rpc")
+		return err
+	}
+
+	err = startWeb3Ws()
+	if err != nil {
+		app.logger.Error("Failed to start web3 websocket")
 		return err
 	}
 
@@ -542,6 +555,17 @@ func (app *App) web3Starter() (func() error, error) {
 	}
 
 	return app.Context.web3.Start, nil
+}
+
+func (app *App) websocketStarter() (func() error, error) {
+	noop := func() error { return nil }
+
+	web3Context, err := app.Context.Web3Context()
+	if err != nil {
+		return noop, err
+	}
+	app.Context.ws = websockets.NewServer(web3Context, &app.Context.cfg)
+	return app.Context.ws.Start, nil
 }
 
 func (app *App) rpcStarter() (func() error, error) {

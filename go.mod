@@ -13,6 +13,8 @@ require (
 	github.com/go-kit/kit v0.10.0
 	github.com/google/go-cmp v0.5.4
 	github.com/google/uuid v1.1.5
+	github.com/gorilla/mux v1.7.3
+	github.com/gorilla/websocket v1.4.2
 	github.com/kr/text v0.2.0 // indirect
 	github.com/magiconair/properties v1.8.1
 	github.com/mattn/go-colorable v0.1.7 // indirect

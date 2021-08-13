@@ -1,6 +1,7 @@
 package app
 
 import (
+	websockets "github.com/Oneledger/protocol/web3/websocket"
 	"io"
 	"os"
 	"path/filepath"
@@ -61,6 +62,7 @@ type context struct {
 
 	rpc          *rpc.Server
 	web3         *web3.Server
+	ws           *websockets.WsServer
 	actionRouter action.Router
 
 	//db for chain state storage
@@ -115,11 +117,11 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 
 	ctx.rpc = rpc.NewServer(logWriter, &cfg)
 	// new rpc service
-	web3, err := web3.NewServer(logWriter, &cfg)
+	web3Server, err := web3.NewServer(logWriter, &cfg)
 	if err != nil {
 		return ctx, errors.Wrap(err, "web3 api failed")
 	}
-	ctx.web3 = web3
+	ctx.web3 = web3Server
 
 	db, err := storage.GetDatabase("chainstate", ctx.dbDir(), ctx.cfg.Node.DB)
 	if err != nil {
@@ -294,6 +296,16 @@ func (ctx *context) Balances() *balance.Context {
 }
 
 func (ctx *context) Web3Services() (map[string]web3types.Web3Service, error) {
+	// registering services
+	web3Ctx, err := ctx.Web3Context()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to start service context")
+	}
+	web3Ctx.DefaultRegisterForAll()
+	return web3Ctx.ServiceList(), nil
+}
+
+func (ctx *context) Web3Context() (web3types.Web3Context, error) {
 	extSvcs, err := client.NewExtServiceContext(ctx.cfg.Network.RPCAddress, ctx.cfg.Network.SDKAddress)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to start service context")
@@ -309,7 +321,7 @@ func (ctx *context) Web3Services() (map[string]web3types.Web3Service, error) {
 	)
 	// registering services
 	web3Ctx.DefaultRegisterForAll()
-	return web3Ctx.ServiceList(), nil
+	return web3Ctx, nil
 }
 
 func (ctx *context) Services() (service.Map, error) {
