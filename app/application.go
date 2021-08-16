@@ -489,13 +489,13 @@ func (app *App) Start() error {
 
 	err = app.Context.web3.StartHTTP(web3Services)
 	if err != nil {
-		app.logger.Error("Failed to start web3 http rpc")
+		app.logger.Error("Failed to start web3 http rpc, details", err)
 		return err
 	}
 
 	err = app.Context.web3.StartWS(web3Services)
 	if err != nil {
-		app.logger.Error("Failed to start web3 ws rpc")
+		app.logger.Error("Failed to start web3 ws rpc, details", err)
 		return err
 	}
 
