@@ -41,7 +41,7 @@ func RegisterApis(src *rpc.Server, apis map[string]rpctypes.Web3Service) error {
 	return nil
 }
 
-func (s *Server) start(srv *rpc.Server, handler http.Handler, rpcInfo interface{}, apis map[string]rpctypes.Web3Service) error {
+func (s *Server) start(rpcInfo interface{}, apis map[string]rpctypes.Web3Service) error {
 	var (
 		err               error
 		uri               string
@@ -49,7 +49,9 @@ func (s *Server) start(srv *rpc.Server, handler http.Handler, rpcInfo interface{
 		availableAPINames []string
 		availableAPIs     = make(map[string]rpctypes.Web3Service, 0)
 		name              string
+		handler           http.Handler
 	)
+	srv := rpc.NewServer()
 	channel := make(chan error)
 	timeout := make(chan error)
 
@@ -59,11 +61,13 @@ func (s *Server) start(srv *rpc.Server, handler http.Handler, rpcInfo interface{
 		uri = fmt.Sprintf("%s:%d", rpcCfg.Addr, rpcCfg.Port)
 		enabled = rpcCfg.Enabled
 		availableAPINames = rpcCfg.API
+		handler = node.NewHTTPHandlerStack(srv, s.cfg.API.HTTPConfig.CORSDomain, s.cfg.API.HTTPConfig.VHosts)
 	case *config.WSConfig:
 		name = "WS"
 		uri = fmt.Sprintf("%s:%d", rpcCfg.Addr, rpcCfg.Port)
 		enabled = rpcCfg.Enabled
 		availableAPINames = rpcCfg.API
+		handler = srv.WebsocketHandler(s.cfg.API.WSConfig.Origins)
 	default:
 		s.logger.Info("Config for Web3 RPC not properly configured, skipping")
 		return nil
@@ -111,13 +115,17 @@ func (s *Server) start(srv *rpc.Server, handler http.Handler, rpcInfo interface{
 }
 
 func (s *Server) StartHTTP(apis map[string]rpctypes.Web3Service) error {
-	srv := rpc.NewServer()
-	handler := node.NewHTTPHandlerStack(srv, s.cfg.API.HTTPConfig.CORSDomain, s.cfg.API.HTTPConfig.VHosts)
-	return s.start(srv, handler, s.cfg.API.HTTPConfig, apis)
+	if s.cfg.API == nil {
+		s.logger.Info("Config for Web3 API not set, skipping")
+		return nil
+	}
+	return s.start(s.cfg.API.HTTPConfig, apis)
 }
 
 func (s *Server) StartWS(apis map[string]rpctypes.Web3Service) error {
-	srv := rpc.NewServer()
-	handler := srv.WebsocketHandler(s.cfg.API.WSConfig.Origins)
-	return s.start(srv, handler, s.cfg.API.WSConfig, apis)
+	if s.cfg.API == nil {
+		s.logger.Info("Config for Web3 API not set, skipping")
+		return nil
+	}
+	return s.start(s.cfg.API.WSConfig, apis)
 }
