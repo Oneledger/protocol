@@ -113,7 +113,7 @@ func (n *Nexus) getEthSigner(ctx *action.Context) ethtypes.Signer {
 
 func (n *Nexus) validateSigner(ctx *action.Context, tx action.SignedTx) error {
 	if len(tx.Signatures) != 1 {
-		return action.ErrInvalidSignature
+		return errors.New("invalid signatures count")
 	}
 
 	//validate basic signature
@@ -121,15 +121,16 @@ func (n *Nexus) validateSigner(ctx *action.Context, tx action.SignedTx) error {
 	ethTx := n.tmToEthTx(ctx, tx.RawTx)
 	ethTx, err := ethTx.WithSignature(signer, tx.Signatures[0].Signed)
 	if err != nil {
-		return action.ErrInvalidSignature
+		return err
 	}
 	// Make sure the transaction is signed properly.
 	addr, err := signer.Sender(ethTx)
 	if err != nil {
 		return ethcore.ErrInvalidSender
 	}
+
 	if !n.From.Equal(addr.Bytes()) {
-		return action.ErrInvalidAddress
+		return errors.New("mismatch sender")
 	}
 	return nil
 }
@@ -166,6 +167,10 @@ func (n *Nexus) validateTx(ctx *action.Context, tmTx action.RawTx, local bool) e
 	// Ensure the transaction adheres to nonce ordering
 	if keeper.GetNonce(n.From) > tx.Nonce() {
 		return ethcore.ErrNonceTooLow
+	}
+	// NOTE: Tx in forward is not supported right now, so throw an error to prevent a gas consumption
+	if keeper.GetNonce(n.From) < tx.Nonce() {
+		return ethcore.ErrNonceTooHigh
 	}
 	// Transactor should have enough funds to cover the costs
 	// cost == V + GP * GL
@@ -280,6 +285,7 @@ func runNexus(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
 	evmTx := action.NewEVMTransaction(ctx.StateDB, ctx.Header, nexus.From, nexus.To, nexus.Nonce, nexus.Amount.Value.BigInt(), nexus.Data, false)
 
+	snap := ctx.StateDB.Snapshot()
 	vmenv := evmTx.NewEVM()
 	execResult, err := evmTx.Apply(vmenv, tx)
 	if err != nil {
@@ -289,6 +295,8 @@ func runNexus(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 			Key:   []byte("tx.error"),
 			Value: []byte(err.Error()),
 		})
+		// must revert the snapshot in case of error
+		ctx.StateDB.RevertToSnapshot(snap)
 		return helpers.LogAndReturnFalse(ctx.Logger, status_codes.ProtocolError{
 			Msg:  err.Error(),
 			Code: status_codes.TxErrVMExecution,

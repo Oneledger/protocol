@@ -290,6 +290,15 @@ func (svc *Service) submitTransaction(tx *ethtypes.Transaction) (common.Hash, er
 		return common.Hash{}, err
 	}
 
+	chainID, err := svc.ChainId()
+	if err != nil {
+		return common.Hash{}, err
+	}
+
+	if signer.ChainID().Cmp(chainID.ToInt()) != 0 {
+		return common.Hash{}, errors.New("wrong chain id specified for RPC")
+	}
+
 	if tx.To() == nil {
 		addr := crypto.CreateAddress(from, tx.Nonce())
 		svc.logger.Info("Submitted contract creation", "hash", txHash.Hex(), "from", from, "nonce", tx.Nonce(), "contract", addr.Hex(), "value", tx.Value())
