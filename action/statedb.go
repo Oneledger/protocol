@@ -140,12 +140,16 @@ func (s *CommitStateDB) Commit(deleteEmptyObjects bool) (ethcmn.Hash, error) {
 
 	// remove dirty state object entries based on the journal
 	for _, dirty := range s.journal.dirties {
+		s.logger.Debug("VM: remove dirty for", dirty.address)
 		s.stateObjectsDirty[dirty.address] = struct{}{}
 	}
 
 	// set the state objects
 	for _, stateEntry := range s.stateObjects {
 		_, isDirty := s.stateObjectsDirty[stateEntry.address]
+
+		s.logger.Debug("VM: starting to process commit entry", stateEntry.address)
+		s.logger.Debug("VM: entry is dirty", isDirty)
 
 		switch {
 		case stateEntry.stateObject.suicided || (isDirty && deleteEmptyObjects && stateEntry.stateObject.empty()):
@@ -200,6 +204,8 @@ func (s *CommitStateDB) Finalise(deleteEmptyObjects bool) error {
 			// ignore it here.
 			continue
 		}
+
+		s.logger.Debug("VM: starting to process finalize entry", dirty.address)
 
 		stateEntry := s.stateObjects[idx]
 		if stateEntry.stateObject.suicided || (deleteEmptyObjects && stateEntry.stateObject.empty()) {
@@ -615,6 +621,7 @@ func (s *CommitStateDB) GetOrNewStateObject(addr ethcmn.Address) StateObject {
 	so := s.getStateObject(addr)
 	if so == nil || so.deleted {
 		so, _ = s.createObject(addr)
+		s.logger.Debug("VM: account created", addr)
 	}
 	return so
 }

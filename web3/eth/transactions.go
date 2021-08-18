@@ -49,7 +49,7 @@ func (svc *Service) GetTransactionCount(address common.Address, blockNrOrHash rp
 
 	// for pending
 	if height == rpctypes.PendingBlockNumber {
-		txLen = ethAcc.Sequence + rpcutils.GetPendingTxCountByAddress(svc.getTMClient(), address)
+		txLen += rpcutils.GetPendingTxCountByAddress(svc.getTMClient(), address)
 	}
 	n := hexutil.Uint64(txLen)
 	return &n, nil
@@ -270,9 +270,7 @@ func (svc *Service) submitTransaction(tx *ethtypes.Transaction) (common.Hash, er
 		// Ensure only eip155 signed transactions are submitted if EIP155Required is set.
 		return common.Hash{}, errors.New("only replay-protected (EIP-155) transactions allowed over RPC")
 	}
-	// TODO: Add validateTx as pool check in go ethereum
 
-	// TODO: Add pre check if the smae tx exists in the pool before send
 	txHash, err := svc.sendTx(tx)
 	if err != nil {
 		return common.Hash{}, err

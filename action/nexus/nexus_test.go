@@ -347,14 +347,81 @@ func newAcc(ctx *action.Context, from keys.Address, amount int64) *balance.EthAc
 		Currency: currency,
 		Amount:   balance.NewAmountFromInt(amount * int64(math.Pow(float64(10), float64(18)))),
 	})
-	ctx.StateDB.GetAccountKeeper().SetAccount(*acc)
+	err := ctx.StateDB.GetAccountKeeper().SetAccount(*acc)
+	if err != nil {
+		panic(err)
+	}
 	return acc
+}
+
+func legacyAcc(ctx *action.Context, from keys.Address, amount int64) {
+	currency, _ := ctx.Currencies.GetCurrencyByName("OLT")
+	coin := balance.Coin{
+		Currency: currency,
+		Amount:   balance.NewAmountFromInt(amount * int64(math.Pow(float64(10), float64(18)))),
+	}
+	err := ctx.Balances.SetBalance(from, coin)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func TestRunner_Send(t *testing.T) {
 	// generating default data
 	ctx := assemblyCtxData("OLT", 18, true, false, false, nil)
 	currency, _ := ctx.Currencies.GetCurrencyByName("OLT")
+
+	t.Run("test send amount from one eoa to another and it is OK", func(t *testing.T) {
+		from, fromPubKey, fromPrikey := generateKeyPair()
+		to, _, _ := generateKeyPair()
+
+		sender := newAcc(ctx, from, 10000)
+		err := ctx.StateDB.GetAccountKeeper().SetAccount(*sender)
+		if err != nil {
+			panic(err)
+		}
+
+		receiver := newAcc(ctx, to, 0)
+		err = ctx.StateDB.GetAccountKeeper().SetAccount(*receiver)
+		if err != nil {
+			panic(err)
+		}
+
+		stx := &nexusTx{}
+
+		value := big.NewInt(100)
+		nonce := getNonce(ctx, from.Bytes())
+		tx := assemblyExecuteData(from, &to, nonce, value, fromPubKey, fromPrikey, make([]byte, 0), 21_000)
+		assert.Equal(t, 0, int(nonce))
+
+		ok, err := stx.Validate(ctx, tx)
+		assert.NoError(t, err)
+		assert.True(t, ok)
+
+		ok, _ = stx.ProcessDeliver(ctx, tx.RawTx)
+		assert.True(t, ok)
+
+		blockCommit(ctx)
+
+		keeper := ctx.StateDB.GetAccountKeeper()
+		fromAcc, err := keeper.GetAccount(from)
+		assert.NoError(t, err)
+		toAcc, err := keeper.GetAccount(to)
+		assert.NoError(t, err)
+
+		resAmt, _ := sender.Coins.Minus(balance.Coin{
+			Currency: currency,
+			Amount:   (*balance.Amount)(value),
+		})
+		assert.Equal(t, resAmt.Amount.BigInt(), fromAcc.Coins.Amount.BigInt())
+		assert.Equal(t, value, toAcc.Coins.Amount.BigInt())
+
+		fromNonce := getNonce(ctx, from.Bytes())
+		assert.Equal(t, 1, int(fromNonce))
+
+		toNonce := getNonce(ctx, to.Bytes())
+		assert.Equal(t, 0, int(toNonce))
+	})
 
 	t.Run("test send amount to some eoa and it is OK", func(t *testing.T) {
 		from, fromPubKey, fromPrikey := generateKeyPair()
@@ -463,14 +530,50 @@ func TestRunner_SmartContract(t *testing.T) {
 	// 	}
 	// }
 
-	// generating default data
-	ctx := assemblyCtxData("OLT", 18, true, false, false, nil)
+	t.Run("test contract deployment when user has legacy balance without ethereum balance and it is OK", func(t *testing.T) {
+		// generating default data
+		ctx := assemblyCtxData("OLT", 18, true, false, false, nil)
 
-	from, fromPubKey, fromPrikey := generateKeyPair()
+		from, fromPubKey, fromPrikey := generateKeyPair()
 
-	newAcc(ctx, from, 10000)
+		// legacy acc set of balance
+		legacyAcc(ctx, from, 10000)
+
+		txHash := ethcmn.BytesToHash(utils.SHA2([]byte("test")))
+
+		stx := &nexusTx{}
+		code := ethcmn.FromHex("0x608060405234801561001057600080fd5b50610233806100206000396000f3fe608060405234801561001057600080fd5b50600436106100415760003560e01c80635f76f6ab146100465780636d4ce63c14610076578063cbed952214610096575b600080fd5b6100746004803603602081101561005c57600080fd5b810190808035151590602001909291905050506100a0565b005b61007e61013c565b60405180821515815260200191505060405180910390f35b61009e61018f565b005b806000803373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060006101000a81548160ff0219169083151502179055503373ffffffffffffffffffffffffffffffffffffffff167fab77f9000c19702a713e62164a239e3764dde2ba5265c7551f9a49e0d304530d60405160405180910390a250565b60008060003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060009054906101000a900460ff16905090565b6040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260058152602001807f68656c6c6f00000000000000000000000000000000000000000000000000000081525060200191505060405180910390fdfea26469706673582212206872039b48bb16fb8cbf559a2e127d91b0af06f0d2d36b97faad6d0f9c335e7864736f6c63430007040033")
+		fmt.Printf("code to deploy: %s\n", ethcmn.Bytes2Hex(code))
+
+		nonce := getNonce(ctx, from.Bytes())
+		tx := assemblyExecuteData(from.Bytes(), nil, nonce, big.NewInt(0), fromPubKey, fromPrikey, code, 232115)
+		assert.Equal(t, int(nonce), 0)
+
+		ok, err := stx.Validate(ctx, tx)
+		assert.NoError(t, err)
+		assert.True(t, ok)
+
+		logs, _ := ctx.StateDB.GetLogs(txHash)
+		assert.Equal(t, len(logs), 0, "Logs must be empty as tx not executed")
+
+		ok, resp := wrapProcessDeliver(stx, txHash, ctx, tx.RawTx, stx.ProcessDeliver)
+		assert.True(t, ok)
+
+		logs, _ = ctx.StateDB.GetLogs(txHash)
+		assert.Equal(t, len(logs), 0, "Logs must be empty as contract only deployed and no event in the constructor")
+
+		status, errMsg := getTxStatus(resp)
+		assert.True(t, status == ethtypes.ReceiptStatusSuccessful, fmt.Sprintf("Got error: %s", errMsg))
+	})
 
 	t.Run("test contract store through the transaction and it is OK", func(t *testing.T) {
+		// generating default data
+		ctx := assemblyCtxData("OLT", 18, true, false, false, nil)
+
+		from, fromPubKey, fromPrikey := generateKeyPair()
+
+		newAcc(ctx, from, 10000)
+
 		txHash := ethcmn.BytesToHash(utils.SHA2([]byte("test")))
 
 		stx := &nexusTx{}
@@ -553,6 +656,13 @@ func TestRunner_SmartContract(t *testing.T) {
 	})
 
 	t.Run("test contract store through the transaction with not enough gas and it is error", func(t *testing.T) {
+		// generating default data
+		ctx := assemblyCtxData("OLT", 18, true, false, false, nil)
+
+		from, fromPubKey, fromPrikey := generateKeyPair()
+
+		newAcc(ctx, from, 10000)
+
 		stx := &nexusTx{}
 		code := ethcmn.FromHex("0x608060405234801561001057600080fd5b50610233806100206000396000f3fe608060405234801561001057600080fd5b50600436106100415760003560e01c80635f76f6ab146100465780636d4ce63c14610076578063cbed952214610096575b600080fd5b6100746004803603602081101561005c57600080fd5b810190808035151590602001909291905050506100a0565b005b61007e61013c565b60405180821515815260200191505060405180910390f35b61009e61018f565b005b806000803373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060006101000a81548160ff0219169083151502179055503373ffffffffffffffffffffffffffffffffffffffff167fab77f9000c19702a713e62164a239e3764dde2ba5265c7551f9a49e0d304530d60405160405180910390a250565b60008060003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060009054906101000a900460ff16905090565b6040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260058152602001807f68656c6c6f00000000000000000000000000000000000000000000000000000081525060200191505060405180910390fdfea26469706673582212206872039b48bb16fb8cbf559a2e127d91b0af06f0d2d36b97faad6d0f9c335e7864736f6c63430007040033")
 
@@ -573,6 +683,13 @@ func TestRunner_SmartContract(t *testing.T) {
 	})
 
 	t.Run("test contract func exec on missed address and it is ok", func(t *testing.T) {
+		// generating default data
+		ctx := assemblyCtxData("OLT", 18, true, false, false, nil)
+
+		from, fromPubKey, fromPrikey := generateKeyPair()
+
+		newAcc(ctx, from, 10000)
+
 		stx := &nexusTx{}
 		to_, _, _ := generateKeyPair()
 		to := keys.Address(to_.Bytes())

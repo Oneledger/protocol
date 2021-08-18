@@ -3,6 +3,7 @@ package balance
 import (
 	"fmt"
 	"math/big"
+	"sync"
 
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
@@ -87,6 +88,11 @@ type NesterAccountKeeper struct {
 	currencies *CurrencySet
 	state      *storage.State
 	prefix     []byte
+
+	// as we use two different prefixes, for preventing race conditions when:
+	// 1) Creating a new acc;
+	// 2) Set or update an account;
+	nmu, mu sync.Mutex
 }
 
 func NewNesterAccountKeeper(state *storage.State, balances *Store, currencies *CurrencySet) AccountKeeper {
@@ -109,6 +115,9 @@ func (nak *NesterAccountKeeper) WithState(state *storage.State) AccountKeeper {
 }
 
 func (nak *NesterAccountKeeper) NewAccountWithAddress(addr keys.Address, setAcc bool) (*EthAccount, error) {
+	nak.nmu.Lock()
+	defer nak.nmu.Unlock()
+
 	coin, err := nak.getOrCreateCurrencyBalance(addr)
 	if err != nil {
 		return nil, errors.Errorf("Failed to get balance: %s", err)
@@ -168,6 +177,9 @@ func (nak *NesterAccountKeeper) GetOrCreateAccount(addr keys.Address) (*EthAccou
 }
 
 func (nak *NesterAccountKeeper) GetAccount(addr keys.Address) (*EthAccount, error) {
+	nak.mu.Lock()
+	defer nak.mu.Unlock()
+
 	prefixKey := append(nak.prefix, addr.Bytes()...)
 
 	dat, err := nak.state.Get(storage.StoreKey(prefixKey))
@@ -190,6 +202,9 @@ func (nak *NesterAccountKeeper) GetAccount(addr keys.Address) (*EthAccount, erro
 }
 
 func (nak *NesterAccountKeeper) GetVersionedAccount(addr keys.Address, height int64) (*EthAccount, error) {
+	nak.mu.Lock()
+	defer nak.mu.Unlock()
+
 	prefixKey := append(nak.prefix, addr.Bytes()...)
 
 	dat := nak.state.GetVersioned(height, storage.StoreKey(prefixKey))
@@ -212,6 +227,9 @@ func (nak *NesterAccountKeeper) GetVersionedAccount(addr keys.Address, height in
 }
 
 func (nak *NesterAccountKeeper) SetAccount(account EthAccount) error {
+	nak.mu.Lock()
+	defer nak.mu.Unlock()
+
 	prefixKey := append(nak.prefix, account.Address.Bytes()...)
 	dat, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(&account)
 	if err != nil {
