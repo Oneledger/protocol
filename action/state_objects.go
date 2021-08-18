@@ -278,6 +278,10 @@ func (so *stateObject) AddBalance(amount *big.Int) {
 		}
 		return
 	}
+	so.stateDB.journal.append(balanceChange{
+		account: &so.address,
+		prev:    *so.account.Balance(),
+	})
 	so.account.AddBalance(amount)
 }
 
@@ -287,6 +291,10 @@ func (so *stateObject) SubBalance(amount *big.Int) {
 	if IsZeroAmount(amount) {
 		return
 	}
+	so.stateDB.journal.append(balanceChange{
+		account: &so.address,
+		prev:    *so.account.Balance(),
+	})
 	so.account.SubBalance(amount)
 }
 

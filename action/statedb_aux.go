@@ -73,7 +73,7 @@ func (s *CommitStateDB) setStateObject(so *stateObject) {
 
 // updateStateObject writes the given state object to the store.
 func (s *CommitStateDB) updateStateObject(so *stateObject) error {
-	s.logger.Debugf("Update state object for address '%s' with data: %+v \n", keys.Address(so.Address().Bytes()), so.account)
+	s.logger.Debugf("VM: update state object for address '%s' with nonce: '%d' and balance: '%d' \n", so.Address(), so.account.Sequence, so.account.Balance())
 	if !s.isSimulation {
 		return s.accountKeeper.SetAccount(*so.account)
 	}
