@@ -68,14 +68,20 @@ func (ctx *Context) GetValidatorStore() *identity.ValidatorStore {
 	return ctx.validatorStore
 }
 
+func (ctx *Context) getImmortalState() *storage.State {
+	ctx.logger.Debug("chainstate version", ctx.chainstate.Version, "hash", ctx.chainstate.Hash)
+	return storage.NewState(ctx.chainstate)
+}
+
 func (ctx *Context) GetContractStore() *evm.ContractStore {
-	return evm.NewContractStore(storage.NewState(ctx.chainstate))
+	return evm.NewContractStore(ctx.getImmortalState())
 }
 
 func (ctx *Context) GetAccountKeeper() balance.AccountKeeper {
-	balanceStore := balance.NewStore("b", storage.NewState(ctx.chainstate))
+	state := ctx.getImmortalState()
+	balanceStore := balance.NewStore("b", state)
 	accountKeeper := balance.NewNesterAccountKeeper(
-		storage.NewState(ctx.chainstate),
+		state,
 		balanceStore,
 		ctx.currencies,
 	)

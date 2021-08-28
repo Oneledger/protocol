@@ -33,7 +33,7 @@ func (svc *Service) GetTransactionCount(address common.Address, blockNrOrHash rp
 
 	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.getTMClient(), blockNrOrHash)
 	if err != nil {
-		return nil, err
+		return nil, nil
 	}
 
 	svc.logger.Debug("eth_getTransactionCount", "address", address, "height", height)
@@ -180,7 +180,7 @@ func (svc *Service) GetTransactionByBlockNumberAndIndex(blockNrOrHash rpc.BlockN
 
 	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.getTMClient(), blockNrOrHash)
 	if err != nil {
-		return nil, err
+		return nil, nil
 	}
 	svc.logger.Debug("eth_getTransactionByBlockNumberAndIndex", "height", height, "idx", idx)
 

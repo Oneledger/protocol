@@ -46,7 +46,8 @@ func (svc *Service) GetBalance(address common.Address, blockNrOrHash rpc.BlockNu
 
 	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.getTMClient(), blockNrOrHash)
 	if err != nil {
-		return (*hexutil.Big)(big.NewInt(0)), err
+		svc.logger.Debug("eth_getBalance", "block err", err)
+		return (*hexutil.Big)(big.NewInt(0)), nil
 	}
 
 	var (

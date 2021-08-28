@@ -289,14 +289,14 @@ func runNexus(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	vmenv := evmTx.NewEVM()
 	execResult, err := evmTx.Apply(vmenv, tx)
 	if err != nil {
+		// must revert the snapshot in case of error
+		ctx.StateDB.RevertToSnapshot(snap)
 		ctx.Logger.Debugf("Execution apply VM got err: %s\n", err.Error())
 		tags = append(tags, action.UintTag("tx.status", ethtypes.ReceiptStatusFailed))
 		tags = append(tags, kv.Pair{
 			Key:   []byte("tx.error"),
 			Value: []byte(err.Error()),
 		})
-		// must revert the snapshot in case of error
-		ctx.StateDB.RevertToSnapshot(snap)
 		return helpers.LogAndReturnFalse(ctx.Logger, status_codes.ProtocolError{
 			Msg:  err.Error(),
 			Code: status_codes.TxErrVMExecution,

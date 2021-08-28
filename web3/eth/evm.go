@@ -25,16 +25,23 @@ func (svc *Service) GetStorageAt(address common.Address, key string, blockNrOrHa
 
 	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.getTMClient(), blockNrOrHash)
 	if err != nil {
-		return hexutil.Bytes{}, err
+		svc.logger.Debug("eth_getStorageAt", "block err", err)
+		return hexutil.Bytes{}, nil
 	}
+	height = svc.getStateHeight(height)
+
 	svc.logger.Debug("eth_getStorageAt", "address", address, "key", key, "height", height)
 
 	prefixKey := utils.GetStorageByAddressKey(address, common.HexToHash(key).Bytes())
 	prefixStore := evm.AddressStoragePrefix(address)
 
+	cs := svc.ctx.GetContractStore()
+
 	value := common.Hash{}
-	storeKey := svc.ctx.GetContractStore().GetStoreKey(prefixStore, prefixKey.Bytes())
-	rawValue := svc.ctx.GetContractStore().State.GetVersioned(svc.getStateHeight(height), storeKey)
+	storeKey := cs.GetStoreKey(prefixStore, prefixKey.Bytes())
+
+	rawValue, err := cs.State.GetAtHeight(height, storeKey)
+	svc.logger.Debug("eth_getStorageAt", "address", address, "err", err)
 	if len(rawValue) > 0 {
 		value.SetBytes(rawValue)
 	}
@@ -47,16 +54,26 @@ func (svc *Service) GetCode(address common.Address, blockNrOrHash rpc.BlockNumbe
 
 	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.getTMClient(), blockNrOrHash)
 	if err != nil {
-		return hexutil.Bytes{}, err
+		svc.logger.Debug("eth_getCode", "block err", err)
+		return hexutil.Bytes{}, nil
 	}
+
+	height = svc.getStateHeight(height)
+
 	svc.logger.Debug("eth_getCode", "address", address, "height", height)
 
-	ethAcc, err := svc.ctx.GetAccountKeeper().GetVersionedAccount(address.Bytes(), height)
+	stateDB := svc.GetStateDB()
+	keeper := stateDB.GetAccountKeeper()
+	cs := stateDB.GetContractStore()
+
+	ethAcc, err := keeper.GetAccount(address.Bytes())
 	if err != nil {
 		return hexutil.Bytes{}, nil
 	}
-	storeKey := svc.ctx.GetContractStore().GetStoreKey(evm.KeyPrefixCode, ethAcc.CodeHash)
-	code := svc.ctx.GetContractStore().State.GetVersioned(svc.getStateHeight(height), storeKey)
+	svc.logger.Debug("eth_getCode", "address", address, "code hash", ethAcc.CodeHash)
+	storeKey := cs.GetStoreKey(evm.KeyPrefixCode, ethAcc.CodeHash)
+	code, err := cs.State.GetAtHeight(height, storeKey)
+	svc.logger.Debug("eth_getCode", "address", address, "err", err)
 	return code[:], nil
 }
 
@@ -66,7 +83,8 @@ func (svc *Service) Call(call rpctypes.CallArgs, blockNrOrHash rpc.BlockNumberOr
 
 	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.getTMClient(), blockNrOrHash)
 	if err != nil {
-		return nil, err
+		svc.logger.Debug("eth_call", "block err", err)
+		return nil, nil
 	}
 	svc.logger.Debugf("eth_call args data '%s' with height '%d'", call, height)
 
