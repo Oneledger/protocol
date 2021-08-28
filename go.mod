@@ -9,13 +9,12 @@ require (
 	github.com/cespare/cp v1.1.1 // indirect
 	github.com/davecgh/go-spew v1.1.1
 	github.com/deckarep/golang-set v1.7.1 // indirect
-	github.com/ethereum/go-ethereum v1.10.7
+	github.com/ethereum/go-ethereum v1.10.8
 	github.com/go-kit/kit v0.10.0
 	github.com/google/go-cmp v0.5.4
 	github.com/google/uuid v1.1.5
 	github.com/kr/text v0.2.0 // indirect
 	github.com/magiconair/properties v1.8.1
-	github.com/mattn/go-colorable v0.1.7 // indirect
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/powerman/rpc-codec v1.1.2
@@ -32,7 +31,7 @@ require (
 	github.com/tyler-smith/go-bip39 v1.0.2 // indirect
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
 	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
-	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110
+	golang.org/x/net v0.0.0-20210805182204-aaa1db679c0d
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 )
 

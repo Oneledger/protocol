@@ -224,6 +224,15 @@ func (s *State) ConsumeContractGas(gas Gas) bool {
 	return s.gc.Consume(gas, CONTRACT, true)
 }
 
+func (s *State) GetAtHeight(version int64, key StoreKey) ([]byte, error) {
+	t, err := s.cs.Delivered.GetImmutable(version)
+	if err != nil {
+		return []byte{}, err
+	}
+	_, value := t.Get(key)
+	return value, nil
+}
+
 func (s *State) GetVersioned(version int64, key StoreKey) []byte {
 	_, value := s.cs.GetVersioned(version, key)
 	return value

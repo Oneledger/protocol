@@ -38,7 +38,8 @@ func (svc *Service) GetBlockByHash(hash common.Hash, fullTx bool) (*rpctypes.Blo
 
 	result, err := svc.getTMClient().BlockByHash(hash.Bytes())
 	if err != nil {
-		return nil, err
+		svc.logger.Debug("eth_getBlockByHash", "block err", err)
+		return nil, nil
 	}
 	if result.Block == nil {
 		svc.logger.Debug("eth_getBlockByHash", "block not found with hash", common.Bytes2Hex(hash.Bytes()))
@@ -51,7 +52,8 @@ func (svc *Service) GetBlockByHash(hash common.Hash, fullTx bool) (*rpctypes.Blo
 func (svc *Service) GetBlockByNumber(blockNrOrHash rpc.BlockNumberOrHash, fullTx bool) (*rpctypes.Block, error) {
 	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.getTMClient(), blockNrOrHash)
 	if err != nil {
-		return nil, err
+		svc.logger.Debug("eth_getBlockByNumber", "block err", err)
+		return nil, nil
 	}
 	svc.logger.Debug("eth_getBlockByNumber", "height", height, "fullTx", fullTx)
 
@@ -66,10 +68,11 @@ func (svc *Service) GetBlockByNumber(blockNrOrHash rpc.BlockNumberOrHash, fullTx
 	}
 	result, err := svc.getTMClient().Block(&blockNum)
 	if err != nil {
-		return nil, err
+		svc.logger.Debug("eth_getBlockByNumber", "block err", err)
+		return nil, nil
 	}
 	if result.Block == nil {
-		svc.logger.Debug("eth_getBlockByHash", "block not found with height", blockNum)
+		svc.logger.Debug("eth_getBlockByNumber", "block not found with height", blockNum)
 		return nil, nil
 	}
 	return svc.blockWithBloom(result.Block, fullTx)

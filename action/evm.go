@@ -50,10 +50,27 @@ func AbciHeaderToTendermint(header *abci.Header) tmtypes.Header {
 	}
 }
 
-// GetHashFn implements vm.GetHashFunc for protocol.
-func GetHashFn(s *CommitStateDB) ethvm.GetHashFunc {
-	return func(height uint64) ethcmn.Hash {
-		return s.GetHeightHash(height)
+// GetHashFn implements vm.GetHashFunc for OneLedger protocol. It handles 3 cases:
+//  1. The requested height matches the current height (and thus same epoch number, could take from cache)
+//  2. The requested height is from an previous height from the same chain epoch
+//  3. The requested height is from a height greater than the latest one
+func GetHashFn(s *CommitStateDB, header *abci.Header) ethvm.GetHashFunc {
+	return func(height uint64) common.Hash {
+		switch {
+		case header.GetHeight() == int64(height):
+			// Case 1: The requested height matches the one from the CommitStateDB so we can retrieve the block
+			// hash directly from the CommitStateDB.
+			return s.bhash
+
+		case header.GetHeight() > int64(height):
+			// Case 2: if the chain is not the current height we need to retrieve the hash from the store for the
+			// current chain epoch. This only applies if the current height is greater than the requested height.
+			return s.GetHeightHash(height)
+
+		default:
+			// Case 3: heights greater than the current one returns an empty hash.
+			return common.Hash{}
+		}
 	}
 }
 
@@ -132,7 +149,7 @@ func (etx *EVMTransaction) NewEVM() *ethvm.EVM {
 	blockCtx := ethvm.BlockContext{
 		CanTransfer: ethcore.CanTransfer,
 		Transfer:    ethcore.Transfer,
-		GetHash:     GetHashFn(etx.stateDB),
+		GetHash:     GetHashFn(etx.stateDB, etx.header),
 		Coinbase:    ethcmn.Address{}, // there's no beneficiary since we're not mining
 		GasLimit:    etx.ecfg.gasLimit,
 		BlockNumber: big.NewInt(etx.header.GetHeight()),
@@ -141,6 +158,7 @@ func (etx *EVMTransaction) NewEVM() *ethvm.EVM {
 	}
 
 	vmConfig := ethvm.Config{
+		NoBaseFee: true,
 		ExtraEips: etx.ecfg.extraEIPs,
 	}
 
@@ -170,7 +188,7 @@ func (etx *EVMTransaction) To() *ethcmn.Address {
 }
 
 func (etx *EVMTransaction) Apply(vmenv *ethvm.EVM, tx RawTx) (*ExecutionResult, error) {
-	msg := ethtypes.NewMessage(etx.From(), etx.To(), etx.nonce, etx.value, uint64(tx.Fee.Gas), etx.ecfg.gasPrice, nil, nil, etx.data, make(ethtypes.AccessList, 0), true)
+	msg := ethtypes.NewMessage(etx.From(), etx.To(), etx.nonce, etx.value, uint64(tx.Fee.Gas), etx.ecfg.gasPrice, big.NewInt(0), big.NewInt(0), etx.data, make(ethtypes.AccessList, 0), true)
 
 	txHash := etx.stateDB.GetCurrentTxHash()
 
