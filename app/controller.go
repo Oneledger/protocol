@@ -245,8 +245,6 @@ func (app *App) txChecker() txChecker {
 
 		ok, response := handler.ProcessCheck(txCtx, tx.RawTx)
 
-		app.logger.Debug("Response used gas: ", response.GasUsed)
-
 		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, storage.Gas(len(msg.Tx)), storage.Gas(response.GasUsed))
 
 		logString := marshalLog(ok, response, feeResponse)
@@ -306,8 +304,6 @@ func (app *App) txDeliverer() txDeliverer {
 		app.Context.stateDB.Prepare(ethcmn.BytesToHash(utils.GetTransactionHash(msg.Tx)))
 
 		ok, response := handler.ProcessDeliver(txCtx, tx.RawTx)
-
-		app.logger.Debug("Response used gas: ", response.GasUsed)
 
 		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, storage.Gas(len(msg.Tx)), storage.Gas(response.GasUsed))
 
