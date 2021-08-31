@@ -68,11 +68,12 @@ func EthToOLSignedTx(tx *ethtypes.Transaction) (tmtypes.Tx, error) {
 	}
 	sendAmount := action.NewAmount(action.DEFAULT_CURRENCY, balance.Amount(*value))
 	msg := nexus.Nexus{
-		From:   handler.Address(),
-		To:     to,
-		Amount: *sendAmount,
-		Data:   tx.Data(),
-		Nonce:  tx.Nonce(),
+		From:    handler.Address(),
+		To:      to,
+		Amount:  *sendAmount,
+		Data:    tx.Data(),
+		Nonce:   tx.Nonce(),
+		ChainID: tx.ChainId(),
 	}
 	data, err := msg.Marshal()
 	if err != nil {

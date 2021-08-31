@@ -122,11 +122,6 @@ func (s *CommitStateDB) Prepare(thash ethcmn.Hash) {
 	s.TxCount++
 }
 
-// GetCurrentTxHash return current processing tx hash
-func (s *CommitStateDB) GetCurrentTxHash() ethcmn.Hash {
-	return s.thash
-}
-
 func (s *CommitStateDB) EnableSimulation() {
 	s.isSimulation = true
 }

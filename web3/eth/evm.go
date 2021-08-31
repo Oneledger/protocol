@@ -2,6 +2,7 @@ package eth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/big"
 	"time"
@@ -139,11 +140,19 @@ func (svc *Service) callContract(call rpctypes.CallArgs, height int64) (*action.
 	bhash := stateDB.GetHeightHash(blockNum)
 	stateDB.SetHeightHash(blockNum, bhash)
 
-	block := svc.ctx.GetAPI().Block(int64(blockNum)).Block
+	resBlock := svc.ctx.GetAPI().Block(int64(blockNum))
+	if resBlock == nil {
+		return nil, errors.New("failed to get block")
+	}
+	block := resBlock.Block
 	header := &abci.Header{
 		ChainID: block.ChainID,
 		Height:  block.Height,
 		Time:    block.Time,
+	}
+
+	if call.From == nil {
+		return nil, errors.New("sender not set")
 	}
 
 	var from keys.Address = call.From.Bytes()

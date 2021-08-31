@@ -98,20 +98,6 @@ func EthereumConfig(chainID string) *ethparams.ChainConfig {
 	}
 }
 
-type EVMConfig struct {
-	gasPrice  *big.Int
-	gasLimit  uint64
-	extraEIPs []int
-}
-
-func NewEVMConfig(gasPrice *big.Int, gasLimit uint64, extraEIPs []int) *EVMConfig {
-	return &EVMConfig{
-		gasPrice:  gasPrice,
-		gasLimit:  gasLimit,
-		extraEIPs: extraEIPs,
-	}
-}
-
 type EVMTransaction struct {
 	stateDB      *CommitStateDB
 	header       *abci.Header
@@ -120,7 +106,6 @@ type EVMTransaction struct {
 	nonce        uint64
 	value        *big.Int
 	data         []byte
-	ecfg         *EVMConfig
 	isSimulation bool
 	state        *storage.State
 }
@@ -140,8 +125,6 @@ func NewEVMTransaction(stateDB *CommitStateDB, header *abci.Header, from keys.Ad
 		value:        value,
 		data:         data,
 		isSimulation: isSimulation,
-		// NOTE: Decide what to do with the gas price as we have a fee system
-		ecfg: NewEVMConfig(DefaultGasPrice, DefaultGasLimit, make([]int, 0)),
 	}
 }
 
@@ -150,8 +133,8 @@ func (etx *EVMTransaction) NewEVM() *ethvm.EVM {
 		CanTransfer: ethcore.CanTransfer,
 		Transfer:    ethcore.Transfer,
 		GetHash:     GetHashFn(etx.stateDB, etx.header),
-		Coinbase:    ethcmn.Address{}, // there's no beneficiary since we're not mining
-		GasLimit:    etx.ecfg.gasLimit,
+		Coinbase:    ethcmn.BytesToAddress(etx.header.ProposerAddress),
+		GasLimit:    DefaultGasLimit,
 		BlockNumber: big.NewInt(etx.header.GetHeight()),
 		Time:        big.NewInt(etx.header.Time.Unix()),
 		Difficulty:  big.NewInt(0), // unused. Only required in PoW context
@@ -159,12 +142,12 @@ func (etx *EVMTransaction) NewEVM() *ethvm.EVM {
 
 	vmConfig := ethvm.Config{
 		NoBaseFee: true,
-		ExtraEips: etx.ecfg.extraEIPs,
+		ExtraEips: make([]int, 0), // skip right now
 	}
 
 	txCtx := ethvm.TxContext{
 		Origin:   etx.Origin(),
-		GasPrice: etx.ecfg.gasPrice,
+		GasPrice: DefaultGasPrice,
 	}
 
 	ethConfig := EthereumConfig(etx.header.ChainID)
@@ -188,9 +171,11 @@ func (etx *EVMTransaction) To() *ethcmn.Address {
 }
 
 func (etx *EVMTransaction) Apply(vmenv *ethvm.EVM, tx RawTx) (*ExecutionResult, error) {
-	msg := ethtypes.NewMessage(etx.From(), etx.To(), etx.nonce, etx.value, uint64(tx.Fee.Gas), etx.ecfg.gasPrice, big.NewInt(0), big.NewInt(0), etx.data, make(ethtypes.AccessList, 0), true)
-
-	txHash := etx.stateDB.GetCurrentTxHash()
+	// gas price ignoring here as we have a separate handler for it
+	// no gas fee cap and tips, as another reward system in protocol
+	// nonce not a fake
+	// access list is currently not supported
+	msg := ethtypes.NewMessage(etx.From(), etx.To(), etx.nonce, etx.value, uint64(tx.Fee.Gas), vmenv.TxContext.GasPrice, big.NewInt(0), big.NewInt(0), etx.data, make(ethtypes.AccessList, 0), etx.isSimulation)
 
 	if !etx.isSimulation {
 		// Clear cache of accounts to handle changes outside of the EVM
@@ -200,16 +185,16 @@ func (etx *EVMTransaction) Apply(vmenv *ethvm.EVM, tx RawTx) (*ExecutionResult, 
 	executionResult, err := ApplyMessage(vmenv, msg, new(ethcore.GasPool).AddGas(uint64(uint64(tx.Fee.Gas))))
 
 	if !etx.isSimulation {
+		// only if tx is OK otherwise all are already reverted
 		if err == nil {
-			// calculating bloom
-			logs, err := etx.stateDB.GetLogs(txHash)
+			// calculating bloom for the block
+			logs, err := etx.stateDB.GetLogs(etx.stateDB.thash)
 			if err != nil {
+				// error must not be here, but in case we will have it, to know what to dig
 				return nil, err
 			}
 			bloomInt := big.NewInt(0).SetBytes(ethtypes.LogsBloom(logs))
-			etx.stateDB.logger.Debug("tx hash", txHash, "bloom created", bloomInt)
 			etx.stateDB.Bloom.Or(etx.stateDB.Bloom, bloomInt)
-			etx.stateDB.logger.Debug("block bloom updated", etx.stateDB.Bloom)
 		}
 		// Ensure any modifications are committed to the state
 		if err := etx.stateDB.Finalise(true); err != nil {
@@ -219,7 +204,6 @@ func (etx *EVMTransaction) Apply(vmenv *ethvm.EVM, tx RawTx) (*ExecutionResult, 
 		if _, err := etx.stateDB.Commit(true); err != nil {
 			return nil, err
 		}
-		etx.stateDB.logger.Debugf("State finalized\n")
 	}
 	return executionResult, err
 }

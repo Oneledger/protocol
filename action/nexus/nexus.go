@@ -2,6 +2,7 @@ package nexus
 
 import (
 	"encoding/json"
+	"math/big"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/helpers"
@@ -30,11 +31,12 @@ const (
 )
 
 type Nexus struct {
-	From   action.Address  `json:"from"`
-	To     *action.Address `json:"to"`
-	Amount action.Amount   `json:"amount"`
-	Data   []byte          `json:"data"`
-	Nonce  uint64          `json:"nonce"`
+	From    action.Address  `json:"from"`
+	To      *action.Address `json:"to"`
+	Amount  action.Amount   `json:"amount"`
+	Data    []byte          `json:"data"`
+	Nonce   uint64          `json:"nonce"`
+	ChainID *big.Int        `json:"chainID"`
 }
 
 func (n Nexus) Marshal() ([]byte, error) {
@@ -123,6 +125,10 @@ func (n *Nexus) validateSigner(ctx *action.Context, tx action.SignedTx) error {
 	if err != nil {
 		return err
 	}
+	// Accept only tx with matched chain ID
+	if ethTx.ChainId().Cmp(n.ChainID) != 0 {
+		return ethtypes.ErrInvalidChainId
+	}
 	// Make sure the transaction is signed properly.
 	addr, err := signer.Sender(ethTx)
 	if err != nil {
@@ -141,7 +147,6 @@ func (n *Nexus) validateTx(ctx *action.Context, tmTx action.RawTx, local bool) e
 	tx := n.tmToEthTx(ctx, tmTx)
 
 	keeper := ctx.StateDB.GetAccountKeeper()
-	currentState := keeper.GetState()
 	// Accept only legacy transactions until EIP-2718/2930 activates.
 	if tx.Type() != ethtypes.LegacyTxType {
 		return ethtypes.ErrTxTypeNotSupported
@@ -155,9 +160,8 @@ func (n *Nexus) validateTx(ctx *action.Context, tmTx action.RawTx, local bool) e
 	if tx.Value().Sign() < 0 {
 		return ethcore.ErrNegativeValue
 	}
-	currentMaxGas := uint64(currentState.GetCalculator().GetLimit())
 	// Ensure the transaction doesn't exceed the current block limit gas.
-	if currentMaxGas < tx.Gas() {
+	if action.DefaultGasLimit < tx.Gas() {
 		return ethcore.ErrGasLimit
 	}
 	// Drop non-local transactions under our own minimal accepted gas price
@@ -285,12 +289,9 @@ func runNexus(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 
 	evmTx := action.NewEVMTransaction(ctx.StateDB, ctx.Header, nexus.From, nexus.To, nexus.Nonce, nexus.Amount.Value.BigInt(), nexus.Data, false)
 
-	snap := ctx.StateDB.Snapshot()
 	vmenv := evmTx.NewEVM()
 	execResult, err := evmTx.Apply(vmenv, tx)
 	if err != nil {
-		// must revert the snapshot in case of error
-		ctx.StateDB.RevertToSnapshot(snap)
 		ctx.Logger.Debugf("Execution apply VM got err: %s\n", err.Error())
 		tags = append(tags, action.UintTag("tx.status", ethtypes.ReceiptStatusFailed))
 		tags = append(tags, kv.Pair{
