@@ -151,11 +151,11 @@ func (svc *Service) callContract(call rpctypes.CallArgs, height int64) (*action.
 		Time:    block.Time,
 	}
 
-	if call.From == nil {
-		return nil, errors.New("sender not set")
+	var from keys.Address
+	if call.From != nil {
+		from = call.From.Bytes()
 	}
 
-	var from keys.Address = call.From.Bytes()
 	var to *keys.Address
 	if call.To != nil {
 		to = new(keys.Address)
