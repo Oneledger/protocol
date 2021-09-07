@@ -27,7 +27,7 @@ import (
 	action_pen "github.com/Oneledger/protocol/action/evidence"
 	action_gov "github.com/Oneledger/protocol/action/governance"
 	action_netwkdeleg "github.com/Oneledger/protocol/action/network_delegation"
-	nexus "github.com/Oneledger/protocol/action/nexus"
+	action_olvm "github.com/Oneledger/protocol/action/olvm"
 	action_ons "github.com/Oneledger/protocol/action/ons"
 	action_rewards "github.com/Oneledger/protocol/action/rewards"
 	"github.com/Oneledger/protocol/action/staking"
@@ -192,7 +192,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	}, ctx.jobStore)
 
 	_ = transfer.EnableSend(ctx.actionRouter)
-	_ = nexus.EnableNexus(ctx.actionRouter)
+	_ = action_olvm.EnableNexus(ctx.actionRouter)
 	_ = action_ons.EnableONS(ctx.actionRouter)
 
 	//"btc" service temporarily disabled

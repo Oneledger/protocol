@@ -60,10 +60,11 @@ func LegacyRawBlockAndTxToEthTx(tmBlock *tmtypes.Block, tmTx *tmtypes.Tx, chainI
 		value        hexutil.Big   = hexutil.Big(*big.NewInt(0))
 		input        hexutil.Bytes = make(hexutil.Bytes, 0)
 		unpackedData               = struct {
-			To     *keys.Address  `json:"to"`
-			Amount *action.Amount `json:"amount"`
-			Data   []byte         `json:"data"`
-			Nonce  uint64         `json:"nonce"`
+			ChainID *big.Int       `json:"chainID"`
+			To      *keys.Address  `json:"to"`
+			Amount  *action.Amount `json:"amount"`
+			Data    []byte         `json:"data"`
+			Nonce   uint64         `json:"nonce"`
 		}{}
 		nonce       hexutil.Uint64
 		blockNumber *hexutil.Big
@@ -95,8 +96,13 @@ func LegacyRawBlockAndTxToEthTx(tmBlock *tmtypes.Block, tmTx *tmtypes.Tx, chainI
 		}
 		from = common.BytesToAddress(pubKeyHandler.Address().Bytes())
 
-		// Convert to Ethereum signature format with 'recovery id' v at the end.
-		tmpV := sig[0] - 27
+		var tmpV byte
+		if len(sig) == 65 {
+			tmpV = sig[len(sig)-1:][0]
+		} else {
+			// for legacy support
+			tmpV = byte(int(sig[0]) % 2)
+		}
 
 		r = new(common.Hash)
 		*r = common.BytesToHash(sig[:32])
@@ -104,13 +110,7 @@ func LegacyRawBlockAndTxToEthTx(tmBlock *tmtypes.Block, tmTx *tmtypes.Tx, chainI
 		s = new(common.Hash)
 		*s = common.BytesToHash(sig[32:64])
 
-		if chainID.Sign() == 0 {
-			v = new(big.Int).SetBytes([]byte{tmpV + 27})
-		} else {
-			v = big.NewInt(int64(tmpV + 35))
-			chainIDMul := new(big.Int).Mul(chainID, big.NewInt(2))
-			v.Add(v, chainIDMul)
-		}
+		v = new(big.Int).SetBytes([]byte{tmpV + 27})
 	}
 
 	err = jsonSerializer.Deserialize(lTx.Data, &unpackedData)
@@ -118,6 +118,9 @@ func LegacyRawBlockAndTxToEthTx(tmBlock *tmtypes.Block, tmTx *tmtypes.Tx, chainI
 		if unpackedData.To != nil {
 			to = new(common.Address)
 			*to = common.BytesToAddress(unpackedData.To.Bytes())
+		} else if unpackedData.To == nil && unpackedData.ChainID == nil {
+			// just set as zero
+			to = new(common.Address)
 		}
 		if unpackedData.Amount != nil {
 			value = hexutil.Big(*unpackedData.Amount.Value.BigInt())
