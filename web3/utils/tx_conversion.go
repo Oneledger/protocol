@@ -4,7 +4,7 @@ import (
 	"math/big"
 
 	"github.com/Oneledger/protocol/action"
-	nexus "github.com/Oneledger/protocol/action/nexus"
+	olvm "github.com/Oneledger/protocol/action/olvm"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
@@ -67,7 +67,7 @@ func EthToOLSignedTx(tx *ethtypes.Transaction) (tmtypes.Tx, error) {
 		*to = tx.To().Bytes()
 	}
 	sendAmount := action.NewAmount(action.DEFAULT_CURRENCY, balance.Amount(*value))
-	msg := nexus.Nexus{
+	msg := olvm.Nexus{
 		From:    handler.Address(),
 		To:      to,
 		Amount:  *sendAmount,

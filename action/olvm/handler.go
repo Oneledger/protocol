@@ -172,10 +172,6 @@ func (n *Nexus) validateTx(ctx *action.Context, tmTx action.RawTx, local bool) e
 	if keeper.GetNonce(n.From) > tx.Nonce() {
 		return ethcore.ErrNonceTooLow
 	}
-	// NOTE: Tx in forward is not supported right now, so throw an error to prevent a gas consumption
-	if keeper.GetNonce(n.From) < tx.Nonce() {
-		return ethcore.ErrNonceTooHigh
-	}
 	// Transactor should have enough funds to cover the costs
 	// cost == V + GP * GL
 	if keeper.GetBalance(n.From).Cmp(tx.Cost()) < 0 {
