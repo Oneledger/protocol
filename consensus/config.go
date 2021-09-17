@@ -16,13 +16,14 @@ type Config = tmconfig.Config
 
 // config is used to provider the right arguments for spinning up a new consensus.Node
 type NodeConfig struct {
-	CFG             tmconfig.Config
-	genesisProvider node.GenesisDocProvider
-	privValidator   types.PrivValidator
-	nodeKey         *p2p.NodeKey
-	dbProvider      node.DBProvider
-	metricsProvider node.MetricsProvider
-	logger          tmlog.Logger
+	CFG                   tmconfig.Config
+	genesisProvider       func() (*config.GenesisDoc, error)
+	legacyGenesisProvider node.GenesisDocProvider
+	privValidator         types.PrivValidator
+	nodeKey               *p2p.NodeKey
+	dbProvider            node.DBProvider
+	metricsProvider       node.MetricsProvider
+	logger                tmlog.Logger
 }
 
 // TMConfig returns a ready to go config for starting a new tendermint node,
@@ -38,7 +39,10 @@ func parseConfig(cfg *config.Server) (NodeConfig, error) {
 	rootDir := Dir(cfg.RootDir())
 	tmcfg := cfg.TMConfig()
 
-	genesisProvider := func() (*types.GenesisDoc, error) {
+	genesisProvider := func() (*config.GenesisDoc, error) {
+		return config.GenesisDocFromFile(filepath.Join(rootDir, "config", "genesis.json"))
+	}
+	legacyGenesisProvider := func() (*types.GenesisDoc, error) {
 		return types.GenesisDocFromFile(filepath.Join(rootDir, "config", "genesis.json"))
 	}
 
@@ -71,16 +75,17 @@ func parseConfig(cfg *config.Server) (NodeConfig, error) {
 	nilMetricsProvider := node.DefaultMetricsProvider(tmcfg.Instrumentation)
 	// TODO: Switch DB provider depending on the value of CFG.Node.DB
 	return NodeConfig{
-		CFG:             tmcfg,
-		genesisProvider: genesisProvider,
-		metricsProvider: nilMetricsProvider,
-		privValidator:   privValidator,
-		nodeKey:         nodeKey,
-		dbProvider:      dbProvider,
-		logger:          logger,
+		CFG:                   tmcfg,
+		genesisProvider:       genesisProvider,
+		legacyGenesisProvider: legacyGenesisProvider,
+		metricsProvider:       nilMetricsProvider,
+		privValidator:         privValidator,
+		nodeKey:               nodeKey,
+		dbProvider:            dbProvider,
+		logger:                logger,
 	}, nil
 }
 
-func (nc NodeConfig) GetGenesisDoc() (*types.GenesisDoc, error) {
+func (nc NodeConfig) GetGenesisDoc() (*config.GenesisDoc, error) {
 	return nc.genesisProvider()
 }

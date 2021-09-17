@@ -16,7 +16,7 @@ func NewNode(application abcitypes.Application, nodecfg NodeConfig) (*tmnode.Nod
 		nodecfg.privValidator,
 		nodecfg.nodeKey,
 		clientCreator,
-		nodecfg.genesisProvider,
+		nodecfg.legacyGenesisProvider,
 		tmnode.DefaultDBProvider,
 		nodecfg.metricsProvider,
 		nodecfg.logger)

@@ -49,6 +49,9 @@ type genesisArgument struct {
 	totalFunds          int64
 	initialTokenHolders []string
 
+	// fork
+	frankensteinBlock int64
+
 	ethUrl               string
 	deploySmartcontracts bool
 	cloud                bool
@@ -89,6 +92,8 @@ func init() {
 	genesisCmd.Flags().Int64Var(&genesisCmdArgs.totalFunds, "total_funds", 400000000, "The total amount of tokens in circulation")
 	genesisCmd.Flags().StringSliceVar(&genesisCmdArgs.initialTokenHolders, "initial_token_holders", []string{}, "Initial list of addresses that hold an equal share of Total funds")
 	genesisCmd.Flags().BoolVar(&genesisCmdArgs.deploySmartcontracts, "deploy_smart_contracts", false, "deploy eth contracts")
+	// fork
+	genesisCmd.Flags().Int64Var(&genesisCmdArgs.frankensteinBlock, "frankenstein_block", 1, "Fork block for frankenstein update")
 }
 
 func newMainetContext(args *genesisArgument) (*mainetContext, error) {
@@ -255,6 +260,9 @@ func runGenesis(_ *cobra.Command, _ []string) error {
 		return errors.Wrap(err, "failed to create new genesis file")
 	}
 	genesisDoc.Validators = validatorList
+	genesisDoc.ForkParams = &config.ForkParams{
+		FrankensteinBlock: genesisCmdArgs.frankensteinBlock,
+	}
 
 	for _, nodeName := range ctx.names {
 		nodeDir := filepath.Join(args.outputDir, nodeName)

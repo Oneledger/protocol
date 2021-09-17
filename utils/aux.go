@@ -4,14 +4,19 @@ import (
 	"crypto/ecdsa"
 	"errors"
 	"math/big"
+	"os"
+	"sort"
 	"sync"
 
+	"github.com/Oneledger/protocol/log"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
 	"golang.org/x/crypto/sha3"
 )
+
+var logger = log.NewLoggerWithPrefix(os.Stdout, "utils")
 
 func ToUncompressedSig(R, S, Vb *big.Int) []byte {
 	// encode the signature in uncompressed format
@@ -57,4 +62,17 @@ func RlpHash(x interface{}) (h common.Hash) {
 	rlp.Encode(sha, x)
 	sha.Read(h[:])
 	return h
+}
+
+func PrintStringMap(dict map[string]interface{}, msg string, sorted bool) {
+	keys := make([]string, 0, len(dict))
+	for key := range dict {
+		keys = append(keys, key)
+	}
+	if sorted {
+		sort.Strings(keys)
+	}
+	for _, key := range keys {
+		logger.Infof(msg, key, dict[key])
+	}
 }
