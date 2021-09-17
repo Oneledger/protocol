@@ -69,8 +69,8 @@ const (
 	//Rewards
 	WITHDRAW_REWARD Type = 0x41
 
-	// Nexus transactions (new sends + evm)
-	NEXUS Type = 0x101
+	// OLVM transactions (new sends + evm)
+	OLVM Type = 0x101
 
 	//EOF here Only used as a marker to mark the end of Type list
 	//So that the query for Types can return all Types dynamically
@@ -134,7 +134,7 @@ func init() {
 	RegisterTxType(ALLEGATION_VOTE, "ALLEGATION_VOTE")
 	RegisterTxType(RELEASE, "RELEASE")
 
-	RegisterTxType(NEXUS, "NEXUS")
+	RegisterTxType(OLVM, "OLVM")
 }
 
 func RegisterTxType(value Type, name string) {

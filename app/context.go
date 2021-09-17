@@ -192,7 +192,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	}, ctx.jobStore)
 
 	_ = transfer.EnableSend(ctx.actionRouter)
-	_ = action_olvm.EnableNexus(ctx.actionRouter)
+	_ = action_olvm.EnableOLVM(ctx.actionRouter)
 	_ = action_ons.EnableONS(ctx.actionRouter)
 
 	//"btc" service temporarily disabled

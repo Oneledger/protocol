@@ -193,7 +193,7 @@ func (svc *Service) callContract(call rpctypes.CallArgs, height int64) (*action.
 	}
 
 	tx := action.RawTx{
-		Type: action.NEXUS,
+		Type: action.OLVM,
 		Fee: action.Fee{
 			Price: price,
 			Gas:   gas,

@@ -1,4 +1,4 @@
-package nexus
+package olvm
 
 import (
 	"bytes"
@@ -199,7 +199,7 @@ func getBool(res []byte) bool {
 }
 
 func assemblyExecuteData(from keys.Address, to *keys.Address, nonce uint64, value *big.Int, chainID *big.Int, fromPubKey *ecdsa.PublicKey, fromPrikey *ecdsa.PrivateKey, code []byte, gas int64) action.SignedTx {
-	av := &Nexus{
+	av := &Transaction{
 		From:    from,
 		Amount:  action.Amount{Currency: "OLT", Value: *balance.NewAmountFromBigInt(value)},
 		Data:    code,
@@ -328,7 +328,7 @@ func blockCommit(ctx *action.Context) {
 	ctx.Balances.State.Commit()
 }
 
-func wrapProcessDeliver(stx *nexusTx, txHash ethcmn.Hash, ctx *action.Context, rawTx action.RawTx, f func(ctx *action.Context, tx action.RawTx) (bool, action.Response)) (bool, action.Response) {
+func wrapProcessDeliver(stx *olvmTx, txHash ethcmn.Hash, ctx *action.Context, rawTx action.RawTx, f func(ctx *action.Context, tx action.RawTx) (bool, action.Response)) (bool, action.Response) {
 	bhash := ethcmn.BytesToHash(utils.SHA2([]byte("block")))
 	ctx.StateDB.SetHeightHash(2, bhash)
 	ctx.StateDB.Prepare(txHash)
@@ -389,7 +389,7 @@ func TestRunner_Send(t *testing.T) {
 			panic(err)
 		}
 
-		stx := &nexusTx{}
+		stx := &olvmTx{}
 
 		value := big.NewInt(100)
 		nonce := getNonce(ctx, from.Bytes())
@@ -435,7 +435,7 @@ func TestRunner_Send(t *testing.T) {
 			panic(err)
 		}
 
-		stx := &nexusTx{}
+		stx := &olvmTx{}
 
 		value := big.NewInt(100)
 		nonce := getNonce(ctx, from.Bytes())
@@ -474,7 +474,7 @@ func TestRunner_Send(t *testing.T) {
 		to, _, _ := generateKeyPair()
 		newAcc(ctx, from, 10000)
 
-		stx := &nexusTx{}
+		stx := &olvmTx{}
 
 		value := big.NewInt(-100)
 		nonce := getNonce(ctx, from.Bytes())
@@ -491,7 +491,7 @@ func TestRunner_Send(t *testing.T) {
 		to, _, _ := generateKeyPair()
 		newAcc(ctx, from, 10000)
 
-		stx := &nexusTx{}
+		stx := &olvmTx{}
 
 		value := big.NewInt(10001 * int64(math.Pow(float64(10), float64(18))))
 		nonce := getNonce(ctx, from.Bytes())
@@ -543,7 +543,7 @@ func TestRunner_SmartContract(t *testing.T) {
 
 		txHash := ethcmn.BytesToHash(utils.SHA2([]byte("test")))
 
-		stx := &nexusTx{}
+		stx := &olvmTx{}
 		code := ethcmn.FromHex("0x608060405234801561001057600080fd5b50610233806100206000396000f3fe608060405234801561001057600080fd5b50600436106100415760003560e01c80635f76f6ab146100465780636d4ce63c14610076578063cbed952214610096575b600080fd5b6100746004803603602081101561005c57600080fd5b810190808035151590602001909291905050506100a0565b005b61007e61013c565b60405180821515815260200191505060405180910390f35b61009e61018f565b005b806000803373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060006101000a81548160ff0219169083151502179055503373ffffffffffffffffffffffffffffffffffffffff167fab77f9000c19702a713e62164a239e3764dde2ba5265c7551f9a49e0d304530d60405160405180910390a250565b60008060003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060009054906101000a900460ff16905090565b6040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260058152602001807f68656c6c6f00000000000000000000000000000000000000000000000000000081525060200191505060405180910390fdfea26469706673582212206872039b48bb16fb8cbf559a2e127d91b0af06f0d2d36b97faad6d0f9c335e7864736f6c63430007040033")
 		fmt.Printf("code to deploy: %s\n", ethcmn.Bytes2Hex(code))
 
@@ -578,7 +578,7 @@ func TestRunner_SmartContract(t *testing.T) {
 
 		txHash := ethcmn.BytesToHash(utils.SHA2([]byte("test")))
 
-		stx := &nexusTx{}
+		stx := &olvmTx{}
 		code := ethcmn.FromHex("0x608060405234801561001057600080fd5b50610233806100206000396000f3fe608060405234801561001057600080fd5b50600436106100415760003560e01c80635f76f6ab146100465780636d4ce63c14610076578063cbed952214610096575b600080fd5b6100746004803603602081101561005c57600080fd5b810190808035151590602001909291905050506100a0565b005b61007e61013c565b60405180821515815260200191505060405180910390f35b61009e61018f565b005b806000803373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060006101000a81548160ff0219169083151502179055503373ffffffffffffffffffffffffffffffffffffffff167fab77f9000c19702a713e62164a239e3764dde2ba5265c7551f9a49e0d304530d60405160405180910390a250565b60008060003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060009054906101000a900460ff16905090565b6040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260058152602001807f68656c6c6f00000000000000000000000000000000000000000000000000000081525060200191505060405180910390fdfea26469706673582212206872039b48bb16fb8cbf559a2e127d91b0af06f0d2d36b97faad6d0f9c335e7864736f6c63430007040033")
 		fmt.Printf("code to deploy: %s\n", ethcmn.Bytes2Hex(code))
 
@@ -665,7 +665,7 @@ func TestRunner_SmartContract(t *testing.T) {
 
 		newAcc(ctx, from, 10000)
 
-		stx := &nexusTx{}
+		stx := &olvmTx{}
 		code := ethcmn.FromHex("0x608060405234801561001057600080fd5b50610233806100206000396000f3fe608060405234801561001057600080fd5b50600436106100415760003560e01c80635f76f6ab146100465780636d4ce63c14610076578063cbed952214610096575b600080fd5b6100746004803603602081101561005c57600080fd5b810190808035151590602001909291905050506100a0565b005b61007e61013c565b60405180821515815260200191505060405180910390f35b61009e61018f565b005b806000803373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060006101000a81548160ff0219169083151502179055503373ffffffffffffffffffffffffffffffffffffffff167fab77f9000c19702a713e62164a239e3764dde2ba5265c7551f9a49e0d304530d60405160405180910390a250565b60008060003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060009054906101000a900460ff16905090565b6040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260058152602001807f68656c6c6f00000000000000000000000000000000000000000000000000000081525060200191505060405180910390fdfea26469706673582212206872039b48bb16fb8cbf559a2e127d91b0af06f0d2d36b97faad6d0f9c335e7864736f6c63430007040033")
 
 		nonce := getNonce(ctx, from.Bytes())
@@ -692,7 +692,7 @@ func TestRunner_SmartContract(t *testing.T) {
 
 		newAcc(ctx, from, 10000)
 
-		stx := &nexusTx{}
+		stx := &olvmTx{}
 		to_, _, _ := generateKeyPair()
 		to := keys.Address(to_.Bytes())
 

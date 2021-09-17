@@ -1,4 +1,4 @@
-package nexus
+package olvm
 
 import (
 	"encoding/json"
@@ -30,103 +30,106 @@ const (
 	txMaxSize = 4 * txSlotSize // 128KB
 )
 
-type Nexus struct {
+type Transaction struct {
 	From    action.Address  `json:"from"`
 	To      *action.Address `json:"to"`
 	Amount  action.Amount   `json:"amount"`
 	Data    []byte          `json:"data"`
 	Nonce   uint64          `json:"nonce"`
 	ChainID *big.Int        `json:"chainID"`
+	// for future
+	TxType     int64                `json:"type"`
+	AccessList *ethtypes.AccessList `json:"accessList"`
 }
 
-func (n Nexus) Marshal() ([]byte, error) {
-	return json.Marshal(n)
+func (tx Transaction) Marshal() ([]byte, error) {
+	return json.Marshal(tx)
 }
 
-func (n *Nexus) Unmarshal(data []byte) error {
-	return json.Unmarshal(data, n)
+func (tx *Transaction) Unmarshal(data []byte) error {
+	return json.Unmarshal(data, tx)
 }
 
-func (n Nexus) Signers() []action.Address {
-	return []action.Address{n.From.Bytes()}
+func (tx Transaction) Signers() []action.Address {
+	return []action.Address{tx.From.Bytes()}
 }
 
-func (n Nexus) Type() action.Type {
-	return action.NEXUS
+func (tx Transaction) Type() action.Type {
+	return action.OLVM
 }
 
-func (n Nexus) Tags() kv.Pairs {
+func (tx Transaction) Tags() kv.Pairs {
 	tags := make([]kv.Pair, 0)
 
 	tag := kv.Pair{
 		Key:   []byte("tx.type"),
-		Value: []byte(n.Type().String()),
+		Value: []byte(tx.Type().String()),
 	}
 	tag2 := kv.Pair{
 		Key:   []byte("tx.from"),
-		Value: n.From.Bytes(),
+		Value: tx.From.Bytes(),
 	}
 	tags = append(tags, tag, tag2)
-	if n.To != nil {
+	if tx.To != nil {
 		tags = append(tags, kv.Pair{
 			Key:   []byte("tx.to"),
-			Value: n.To.Bytes(),
+			Value: tx.To.Bytes(),
 		})
 	}
 	tags = append(tags, kv.Pair{
 		Key:   []byte("tx.value"),
-		Value: n.Amount.Value.BigInt().Bytes(),
+		Value: tx.Amount.Value.BigInt().Bytes(),
 	})
 	tags = append(tags, kv.Pair{
 		Key:   []byte("tx.data"),
-		Value: n.Data,
+		Value: tx.Data,
 	})
-	tags = append(tags, action.UintTag("tx.nonce", n.Nonce))
+	tags = append(tags, action.UintTag("tx.nonce", tx.Nonce))
 	return tags
 }
 
-func (n Nexus) isSendTx() bool {
-	if len(n.Data) > 0 {
+func (tx Transaction) isSendTx() bool {
+	if len(tx.Data) > 0 {
 		return false
 	}
 	return true
 }
 
-func (n *Nexus) tmToEthTx(ctx *action.Context, tx action.RawTx) *ethtypes.Transaction {
+func (tx *Transaction) tmToEthTx(ctx *action.Context, raw action.RawTx) *ethtypes.Transaction {
 	var to *ethcmn.Address
-	if n.To != nil {
+	if tx.To != nil {
 		to = new(ethcmn.Address)
-		*to = ethcmn.BytesToAddress(n.To.Bytes())
+		*to = ethcmn.BytesToAddress(tx.To.Bytes())
 	}
 	ethTx := ethtypes.NewTx(&ethtypes.LegacyTx{
-		Nonce:    n.Nonce,
+		Nonce:    tx.Nonce,
 		To:       to,
-		Value:    n.Amount.Value.BigInt(),
-		Gas:      uint64(tx.Fee.Gas),
-		GasPrice: tx.Fee.Price.Value.BigInt(),
-		Data:     n.Data,
+		Value:    tx.Amount.Value.BigInt(),
+		Gas:      uint64(raw.Fee.Gas),
+		GasPrice: raw.Fee.Price.Value.BigInt(),
+		Data:     tx.Data,
 	})
 	return ethTx
 }
 
-func (n *Nexus) getEthSigner(ctx *action.Context) ethtypes.Signer {
+func (tx *Transaction) getEthSigner(ctx *action.Context) ethtypes.Signer {
 	return ethtypes.NewEIP155Signer(utils.HashToBigInt(ctx.Header.ChainID))
 }
 
-func (n *Nexus) validateSigner(ctx *action.Context, tx action.SignedTx) error {
-	if len(tx.Signatures) != 1 {
+func (tx *Transaction) validateSigner(ctx *action.Context, signedTx action.SignedTx) error {
+	if len(signedTx.Signatures) != 1 {
 		return errors.New("invalid signatures count")
 	}
 
 	//validate basic signature
-	signer := n.getEthSigner(ctx)
-	ethTx := n.tmToEthTx(ctx, tx.RawTx)
-	ethTx, err := ethTx.WithSignature(signer, tx.Signatures[0].Signed)
+	signer := tx.getEthSigner(ctx)
+	ethTx := tx.tmToEthTx(ctx, signedTx.RawTx)
+	ethTx, err := ethTx.WithSignature(signer, signedTx.Signatures[0].Signed)
 	if err != nil {
 		return err
 	}
 	// Accept only tx with matched chain ID
-	if ethTx.ChainId().Cmp(n.ChainID) != 0 {
+	if ethTx.ChainId().Cmp(tx.ChainID) != 0 {
 		return ethtypes.ErrInvalidChainId
 	}
 	// Make sure the transaction is signed properly.
@@ -135,7 +138,7 @@ func (n *Nexus) validateSigner(ctx *action.Context, tx action.SignedTx) error {
 		return ethcore.ErrInvalidSender
 	}
 
-	if !n.From.Equal(addr.Bytes()) {
+	if !tx.From.Equal(addr.Bytes()) {
 		return errors.New("mismatch sender")
 	}
 	return nil
@@ -143,101 +146,101 @@ func (n *Nexus) validateSigner(ctx *action.Context, tx action.SignedTx) error {
 
 // validateCheckTx checks whether a transaction is valid according to the consensus
 // rules and adheres to some heuristic limits of the local node (price and size).
-func (n *Nexus) validateTx(ctx *action.Context, tmTx action.RawTx, local bool) error {
-	tx := n.tmToEthTx(ctx, tmTx)
+func (tx *Transaction) validateTx(ctx *action.Context, tmTx action.RawTx, local bool) error {
+	ethTx := tx.tmToEthTx(ctx, tmTx)
 
 	keeper := ctx.StateDB.GetAccountKeeper()
 	// Accept only legacy transactions until EIP-2718/2930 activates.
-	if tx.Type() != ethtypes.LegacyTxType {
+	if ethTx.Type() != ethtypes.LegacyTxType {
 		return ethtypes.ErrTxTypeNotSupported
 	}
 	// Reject transactions over defined size to prevent DOS attacks
-	if uint64(tx.Size()) > txMaxSize {
+	if uint64(ethTx.Size()) > txMaxSize {
 		return ethcore.ErrOversizedData
 	}
 	// Transactions can't be negative. This may never happen using RLP decoded
 	// transactions but may occur if you create a transaction using the RPC.
-	if tx.Value().Sign() < 0 {
+	if ethTx.Value().Sign() < 0 {
 		return ethcore.ErrNegativeValue
 	}
 	// Ensure the transaction doesn't exceed the current block limit gas.
-	if action.DefaultGasLimit < tx.Gas() {
+	if action.DefaultGasLimit < ethTx.Gas() {
 		return ethcore.ErrGasLimit
 	}
 	// Drop non-local transactions under our own minimal accepted gas price
-	if !local && tx.GasPrice().Cmp(ctx.FeePool.GetOpt().MinFee().Amount.BigInt()) < 0 {
+	if !local && ethTx.GasPrice().Cmp(ctx.FeePool.GetOpt().MinFee().Amount.BigInt()) < 0 {
 		return ethcore.ErrUnderpriced
 	}
 	// Ensure the transaction adheres to nonce ordering
-	if keeper.GetNonce(n.From) > tx.Nonce() {
+	if keeper.GetNonce(tx.From) > ethTx.Nonce() {
 		return ethcore.ErrNonceTooLow
 	}
 	// Transactor should have enough funds to cover the costs
 	// cost == V + GP * GL
-	if keeper.GetBalance(n.From).Cmp(tx.Cost()) < 0 {
+	if keeper.GetBalance(tx.From).Cmp(ethTx.Cost()) < 0 {
 		return ethcore.ErrInsufficientFunds
 	}
 	// Ensure the transaction has more gas than the basic tx fee.
-	intrGas, err := ethcore.IntrinsicGas(tx.Data(), tx.AccessList(), tx.To() == nil, true, true)
+	intrGas, err := ethcore.IntrinsicGas(ethTx.Data(), ethTx.AccessList(), ethTx.To() == nil, true, true)
 	if err != nil {
 		return err
 	}
-	if tx.Gas() < intrGas {
+	if ethTx.Gas() < intrGas {
 		return ethcore.ErrIntrinsicGas
 	}
 	return nil
 }
 
-var _ action.Tx = nexusTx{}
+var _ action.Tx = olvmTx{}
 
-type nexusTx struct {
+type olvmTx struct {
 }
 
-func (n nexusTx) Validate(ctx *action.Context, tx action.SignedTx) (bool, error) {
-	// zero means stateDB does not receive a block number so nexus update has not been applied
+func (otx olvmTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
+	// zero means stateDB does not receive a block number so frankenstein update has not been applied
 	if ctx.StateDB.GetCurrentHeight() == 0 {
 		return false, errors.Errorf("not enabled")
 	}
 
-	nexus := &Nexus{}
-	err := nexus.Unmarshal(tx.Data)
+	tx := &Transaction{}
+	err := tx.Unmarshal(signedTx.Data)
 	if err != nil {
 		return false, err
 	}
 
 	//validate basic signature
-	err = nexus.validateSigner(ctx, tx)
+	err = tx.validateSigner(ctx, signedTx)
 	if err != nil {
 		return false, err
 	}
 
-	err = action.ValidateFee(ctx.FeePool.GetOpt(), tx.Fee)
+	err = action.ValidateFee(ctx.FeePool.GetOpt(), signedTx.Fee)
 	if err != nil {
 		return false, err
 	}
 
 	//validate transaction specific field
-	if !nexus.Amount.IsValid(ctx.Currencies) || nexus.Amount.Currency != action.DEFAULT_CURRENCY {
+	if !tx.Amount.IsValid(ctx.Currencies) || tx.Amount.Currency != action.DEFAULT_CURRENCY {
 		return false, action.ErrInvalidCurrency
 	}
 
-	if nexus.From.Err() != nil || nexus.To != nil && nexus.To.Err() != nil {
+	if tx.From.Err() != nil || tx.To != nil && tx.To.Err() != nil {
 		return false, action.ErrInvalidAddress
 	}
 	return true, nil
 }
 
-func (n nexusTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (ok bool, result action.Response) {
-	ctx.Logger.Detail("Processing Nexus Transaction for CheckTx", tx)
-	nexus := &Nexus{}
-	err := nexus.Unmarshal(tx.Data)
+func (otx olvmTx) ProcessCheck(ctx *action.Context, rawTx action.RawTx) (ok bool, result action.Response) {
+	ctx.Logger.Detail("Processing OLVM Transaction for CheckTx", rawTx)
+	tx := &Transaction{}
+	err := tx.Unmarshal(rawTx.Data)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrWrongTxType, nexus.Tags(), err)
+		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrWrongTxType, tx.Tags(), err)
 	}
-	err = nexus.validateTx(ctx, tx, true)
+	err = tx.validateTx(ctx, rawTx, true)
 	if err != nil {
 		return false, action.Response{
-			Events: action.GetEvent(nexus.Tags(), err.Error()),
+			Events: action.GetEvent(tx.Tags(), err.Error()),
 			Log:    err.Error(),
 		}
 	}
@@ -248,34 +251,34 @@ func (n nexusTx) ProcessCheck(ctx *action.Context, tx action.RawTx) (ok bool, re
 	return
 }
 
-func (n nexusTx) ProcessDeliver(ctx *action.Context, tx action.RawTx) (ok bool, result action.Response) {
-	ctx.Logger.Detail("Processing Nexus Transaction for DeliverTx", tx)
-	ok, result = runNexus(ctx, tx)
+func (otx olvmTx) ProcessDeliver(ctx *action.Context, rawTx action.RawTx) (ok bool, result action.Response) {
+	ctx.Logger.Detail("Processing OLVM Transaction for DeliverTx", rawTx)
+	ok, result = runOLVM(ctx, rawTx)
 	return
 }
 
-func (n nexusTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas, gasUsed action.Gas) (bool, action.Response) {
+func (otx olvmTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas, gasUsed action.Gas) (bool, action.Response) {
 	// -1 if ProcessCheck
 	if gasUsed == -1 {
 		return true, action.Response{}
 	}
 	ok, result := action.ContractFeeHandling(ctx, signedTx, gasUsed)
-	ctx.Logger.Detailf("Processing Nexus Transaction for BasicFeeHandling: %+v, status - %t\n", result, ok)
+	ctx.Logger.Detailf("Processing OLVM Transaction for BasicFeeHandling: %+v, status - %t\n", result, ok)
 	return ok, result
 }
 
-func runNexus(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
-	nexus := &Nexus{}
-	err := nexus.Unmarshal(tx.Data)
+func runOLVM(ctx *action.Context, rawTx action.RawTx) (bool, action.Response) {
+	tx := &Transaction{}
+	err := tx.Unmarshal(rawTx.Data)
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
 	}
 
-	ctx.Logger.Detail("Nexus tx is send:", nexus.isSendTx())
+	ctx.Logger.Detail("OLVM tx is send:", tx.isSendTx())
 
-	tags := nexus.Tags()
+	tags := tx.Tags()
 
-	err = nexus.validateTx(ctx, tx, false)
+	err = tx.validateTx(ctx, rawTx, false)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, status_codes.ProtocolError{
 			Msg:  err.Error(),
@@ -283,10 +286,10 @@ func runNexus(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 		}, tags, err)
 	}
 
-	evmTx := action.NewEVMTransaction(ctx.StateDB, ctx.Header, nexus.From, nexus.To, nexus.Nonce, nexus.Amount.Value.BigInt(), nexus.Data, false)
+	evmTx := action.NewEVMTransaction(ctx.StateDB, ctx.Header, tx.From, tx.To, tx.Nonce, tx.Amount.Value.BigInt(), tx.Data, false)
 
 	vmenv := evmTx.NewEVM()
-	execResult, err := evmTx.Apply(vmenv, tx)
+	execResult, err := evmTx.Apply(vmenv, rawTx)
 	if err != nil {
 		ctx.Logger.Debugf("Execution apply VM got err: %s\n", err.Error())
 		tags = append(tags, action.UintTag("tx.status", ethtypes.ReceiptStatusFailed))
@@ -313,7 +316,7 @@ func runNexus(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 			Key:   []byte("tx.returnData"),
 			Value: []byte(execResult.ReturnData),
 		})
-		if nexus.To == nil && len(execResult.ContractAddress.Bytes()) > 0 {
+		if tx.To == nil && len(execResult.ContractAddress.Bytes()) > 0 {
 			ctx.Logger.Debugf("Contract created: %s\n", keys.Address(execResult.ContractAddress.Bytes()))
 			tags = append(tags, kv.Pair{
 				Key:   []byte("tx.contract"),
@@ -323,7 +326,7 @@ func runNexus(ctx *action.Context, tx action.RawTx) (bool, action.Response) {
 	}
 	ctx.Logger.Debugf("Contract TX: status ok - %t, used gas - %d\n", !execResult.Failed(), execResult.UsedGas)
 	return true, action.Response{
-		Events:  action.GetEvent(tags, "nexus"),
+		Events:  action.GetEvent(tags, "olvm"),
 		GasUsed: int64(execResult.UsedGas),
 	}
 }
