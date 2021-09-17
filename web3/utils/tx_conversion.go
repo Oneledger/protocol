@@ -67,7 +67,7 @@ func EthToOLSignedTx(tx *ethtypes.Transaction) (tmtypes.Tx, error) {
 		*to = tx.To().Bytes()
 	}
 	sendAmount := action.NewAmount(action.DEFAULT_CURRENCY, balance.Amount(*value))
-	msg := olvm.Nexus{
+	msg := olvm.Transaction{
 		From:    handler.Address(),
 		To:      to,
 		Amount:  *sendAmount,
@@ -81,7 +81,7 @@ func EthToOLSignedTx(tx *ethtypes.Transaction) (tmtypes.Tx, error) {
 	}
 
 	rawTx := action.RawTx{
-		Type: action.NEXUS,
+		Type: action.OLVM,
 		Data: data,
 		Fee:  fee,
 		Memo: memo,

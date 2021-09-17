@@ -1,4 +1,4 @@
-package nexus
+package olvm
 
 import (
 	"github.com/pkg/errors"
@@ -9,15 +9,15 @@ import (
 
 func init() {
 
-	serialize.RegisterConcrete(new(Nexus), "nexus")
+	serialize.RegisterConcrete(new(Transaction), "olvm")
 
 }
 
-func EnableNexus(r action.Router) error {
+func EnableOLVM(r action.Router) error {
 
-	err := r.AddHandler(action.NEXUS, nexusTx{})
+	err := r.AddHandler(action.OLVM, olvmTx{})
 	if err != nil {
-		return errors.Wrap(err, "nexusTx")
+		return errors.Wrap(err, "olvmTx")
 	}
 	return nil
 }
