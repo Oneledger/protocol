@@ -1,3 +1,5 @@
+#!/bin/bash
+
 for name in $(ls -l $OLDATA/devnet | grep Node  | awk '(NR>0){print $9}')
 do
     echo "Saving Data From Node: $name"
@@ -8,6 +10,13 @@ do
     rm -rf $OLDATA/devnet/$name/consensus/data/*.db
     rm -rf $OLDATA/devnet/$name/consensus/data/*.wal
     rm -rf $OLDATA/devnet/$name/consensus/config/addrbook.json
-    cp -f $OLDATA/priv_validator_state.json $OLDATA/devnet/$name/consensus/data/
-done
 
+cat > $OLDATA/devnet/$name/consensus/data/priv_validator_state.json <<EOF
+{
+"height": "0",
+"round": "0",
+"step": 0
+}
+EOF
+
+done

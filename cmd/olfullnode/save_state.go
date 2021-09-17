@@ -4,12 +4,14 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/Oneledger/protocol/data/network_delegation"
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/Oneledger/protocol/data/network_delegation"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -64,6 +66,10 @@ type ValidatorParams struct {
 type publicKey struct {
 	Type  string `json:"type"`
 	Value []byte `json:"value"`
+}
+
+type ForkParams struct {
+	FrankensteinBlock string `json:"frankensteinBlock"`
 }
 
 type GenesisValidator struct {
@@ -331,6 +337,10 @@ func SaveChainState(application *app.App, filename string, directory string) err
 	token, err := jsonDecoder.Token()
 	_, err = fmt.Fprint(writer, token)
 	_, err = writer.Write([]byte("\n"))
+
+	writeStructWithTag(writer, ForkParams{
+		FrankensteinBlock: strconv.Itoa(int(genesisDoc.ForkParams.FrankensteinBlock)),
+	}, "fork")
 
 	for jsonDecoder.More() {
 		token, err = jsonDecoder.Token()

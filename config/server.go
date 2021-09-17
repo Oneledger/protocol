@@ -55,13 +55,6 @@ type Server struct {
 	rootDir string
 }
 
-func (cfg *Server) IsNexusUpdate(height int64) bool {
-	if cfg.Node == nil {
-		panic("Node config not set")
-	}
-	return cfg.Node.NexusBlock != 0 && cfg.Node.NexusBlock <= height
-}
-
 func (cfg *Server) RootDir() string {
 	return cfg.rootDir
 }
@@ -198,9 +191,6 @@ type NodeConfig struct {
 	Auth Authorisation `toml:"Auth" desc:"the OwnerCredentials and RPCPrivateKey should be configured together"`
 
 	ChainStateRotation ChainStateRotationCfg `toml:"ChainStateRotation" desc:"the schedule for chain state rotation"`
-
-	// fork number
-	NexusBlock int64 `toml:"nexus_block" desc:"Start block number of nexus update"`
 }
 
 type Authorisation struct {
@@ -253,9 +243,6 @@ func DefaultNodeConfig() *NodeConfig {
 
 		//"btc" service temporarily disabled
 		Services: []string{"broadcast", "node", "owner", "query", "tx", "eth"},
-
-		// nexus fork
-		NexusBlock: 1_200_000,
 	}
 }
 

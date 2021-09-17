@@ -10,6 +10,7 @@ import (
 
 	"github.com/tendermint/tendermint/libs/kv"
 
+	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/network_delegation"
 	"github.com/Oneledger/protocol/external_apps/common"
 
@@ -95,8 +96,14 @@ func (app *App) chainInitializer() chainInitializer {
 		app.Context.govern.WithState(app.Context.deliver)
 		app.Context.btcTrackers.WithState(app.Context.deliver)
 
-		app.logger.Info("NexusBlock start at height: ", app.Context.cfg.Node.NexusBlock)
-		err := app.setupState(req.AppStateBytes)
+		forkMap, err := app.genesisDoc.ForkParams.ToMap()
+		if err != nil {
+			app.logger.Error("Failed to read fork map", "err", err)
+			return ResponseInitChain{}
+		}
+		utils.PrintStringMap(forkMap, "%s starts at height: %v\n", true)
+
+		err = app.setupState(req.AppStateBytes)
 		// This should cause consensus to halt
 		if err != nil {
 			app.logger.Error("Failed to setupState", "err", err)
@@ -133,14 +140,51 @@ func (app *App) commitVMChanges(req *abciTypes.RequestEndBlock) {
 	}
 }
 
+func (app *App) applyUpdate(req RequestBeginBlock) error {
+	height := req.Header.GetHeight()
+
+	if app.genesisDoc.ForkParams.IsFrankensteinBlock(height) {
+		govern := app.Context.govern
+
+		options, err := govern.GetStakingOptions()
+		if err != nil {
+			return err
+		}
+
+		options.TopValidatorCount = int64(32)
+		options.MinSelfDelegationAmount = *balance.NewAmountFromInt(1_000_000)
+
+		app.logger.Info("Updating top validator count to", options.TopValidatorCount)
+		app.logger.Info("Updating min self delegation amount to", options.MinSelfDelegationAmount)
+
+		err = govern.WithHeight(height).SetStakingOptions(*options)
+		if err != nil {
+			return errors.Wrap(err, "Setup Staking Options")
+		}
+		err = govern.WithHeight(height).SetLUH(governance.LAST_UPDATE_HEIGHT_STAKING)
+		if err != nil {
+			return errors.Wrap(err, "Unable to set last Update height")
+		}
+
+		app.logger.Info("Frankenstein applied at block", height)
+	}
+
+	return nil
+}
+
 func (app *App) blockBeginner() blockBeginner {
 	return func(req RequestBeginBlock) ResponseBeginBlock {
 		defer app.handlePanic()
 		gc := getGasCalculator(app.genesisDoc.ConsensusParams)
 		app.Context.deliver = storage.NewState(app.Context.chainstate).WithGas(gc)
 
+		// Apply update at specific height
+		if err := app.applyUpdate(req); err != nil {
+			panic(err)
+		}
+
 		// Update last block height and hash
-		if app.Context.cfg.IsNexusUpdate(req.Header.GetHeight()) {
+		if app.genesisDoc.ForkParams.IsFrankensteinUpdate(req.Header.GetHeight()) {
 			app.Context.stateDB.WithState(app.Context.deliver).SetHeightHash(uint64(req.Header.GetHeight()), ethcmn.BytesToHash(req.GetHash()))
 		}
 
@@ -346,7 +390,7 @@ func (app *App) blockEnder() blockEnder {
 		app.Context.validators.WithState(app.Context.deliver).ClearEvents()
 
 		// commit changes before the next execution
-		if app.Context.cfg.IsNexusUpdate(req.GetHeight()) {
+		if app.genesisDoc.ForkParams.IsFrankensteinUpdate(req.GetHeight()) {
 			app.commitVMChanges(&req)
 		}
 

@@ -64,7 +64,7 @@ func init() {
 }
 
 type initContext struct {
-	genesis  *consensus.GenesisDoc
+	genesis  *config.GenesisDoc
 	logger   *log.Logger
 	rootDir  string
 	nodeName string

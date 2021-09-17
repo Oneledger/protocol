@@ -2,8 +2,10 @@ package consensus
 
 import (
 	"encoding/json"
-	"github.com/Oneledger/protocol/data/network_delegation"
 	"time"
+
+	"github.com/Oneledger/protocol/config"
+	"github.com/Oneledger/protocol/data/network_delegation"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/types"
@@ -19,22 +21,22 @@ import (
 	"github.com/Oneledger/protocol/serialize"
 )
 
-type GenesisDoc = types.GenesisDoc
 type GenesisValidator = types.GenesisValidator
 
-func NewGenesisDoc(chainID string, states AppState) (*GenesisDoc, error) {
+func NewGenesisDoc(chainID string, states AppState) (*config.GenesisDoc, error) {
 	validators := make([]GenesisValidator, 0)
 
 	appStateBytes, err := states.RawJSON()
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to marshal DefaultAppState")
 	}
-	return &GenesisDoc{
+	return &config.GenesisDoc{
 		GenesisTime:     time.Now(),
 		ChainID:         chainID,
 		ConsensusParams: types.DefaultConsensusParams(),
 		Validators:      validators,
 		AppState:        json.RawMessage(appStateBytes),
+		ForkParams:      config.DefaultForkParams(),
 	}, nil
 }
 
