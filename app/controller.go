@@ -151,8 +151,8 @@ func (app *App) applyUpdate(req RequestBeginBlock) error {
 			return err
 		}
 
-		options.TopValidatorCount = int64(32)
-		options.MinSelfDelegationAmount = *balance.NewAmountFromInt(1_000_000)
+		options.TopValidatorCount = int64(64)
+		options.MinSelfDelegationAmount = *balance.NewAmountFromInt(500_000)
 
 		app.logger.Info("Updating top validator count to", options.TopValidatorCount)
 		app.logger.Info("Updating min self delegation amount to", options.MinSelfDelegationAmount)

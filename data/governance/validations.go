@@ -62,8 +62,8 @@ var (
 	minBlockConfirmation = int64(0)
 	maxBlockConfirmation = int64(50)
 	//Staking
-	minSelfDelegationAmount = balance.NewAmountFromInt(1000000)
-	maxSelfDelegationAmount = balance.NewAmountFromInt(10000000)
+	minSelfDelegationAmount = balance.NewAmountFromInt(500_000)
+	maxSelfDelegationAmount = balance.NewAmountFromInt(10_000_000)
 	minValidatorCount       = int64(8)
 	maxValidatorCount       = int64(64)
 	minMaturityTime         = int64(109200)
