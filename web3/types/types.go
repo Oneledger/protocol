@@ -10,6 +10,8 @@ const (
 	EarliestBlockNumber = 0
 	LatestBlockNumber   = -1
 	PendingBlockNumber  = -2
+	// InitialBlockNumber as tendermint starts at 1 for genesis
+	InitialBlockNumber = 1
 )
 
 // CallArgs represents the arguments for a call.

@@ -53,6 +53,7 @@ utest:
 		github.com/Oneledger/protocol/data/evidence \
 		github.com/Oneledger/protocol/action/transfer \
 		github.com/Oneledger/protocol/action/olvm \
+		github.com/Oneledger/protocol/vm \
 		github.com/Oneledger/protocol/action \
 		github.com/Oneledger/protocol/serialize \
 		github.com/Oneledger/protocol/utils \

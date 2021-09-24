@@ -4,8 +4,8 @@ import (
 	"os"
 	"sync"
 
-	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/log"
+	"github.com/Oneledger/protocol/vm"
 
 	"github.com/Oneledger/protocol/storage"
 	rpctypes "github.com/Oneledger/protocol/web3/types"
@@ -39,13 +39,11 @@ func (svc *Service) getStateHeight(height int64) int64 {
 	case rpctypes.LatestBlockNumber, rpctypes.PendingBlockNumber:
 		return svc.getState().Version()
 	case rpctypes.EarliestBlockNumber:
-		return 1
+		return rpctypes.InitialBlockNumber
 	}
 	return height
 }
 
-func (svc *Service) GetStateDB() *action.CommitStateDB {
-	stateDB := action.NewCommitStateDB(svc.ctx.GetContractStore(), svc.ctx.GetAccountKeeper(), svc.logger)
-	stateDB.EnableSimulation()
-	return stateDB
+func (svc *Service) GetStateDB() *vm.CommitStateDB {
+	return vm.NewCommitStateDB(svc.ctx.GetContractStore(), svc.ctx.GetAccountKeeper(), svc.logger)
 }

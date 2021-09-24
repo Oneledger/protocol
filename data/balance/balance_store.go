@@ -50,6 +50,17 @@ func (st *Store) BuildKey(addr keys.Address, coin *Coin) []byte {
 	return append(st.prefix, key...)
 }
 
+func (st *Store) getVersioned(key storage.StoreKey, height int64) (amt *Amount, err error) {
+	prefixed := append(st.prefix, storage.StoreKey(key)...)
+	dat := st.State.GetVersioned(height, prefixed)
+	amt = NewAmount(0)
+	if len(dat) == 0 {
+		return
+	}
+	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(dat, amt)
+	return
+}
+
 func (st *Store) get(key storage.StoreKey) (amt *Amount, err error) {
 	prefixed := append(st.prefix, storage.StoreKey(key)...)
 	dat, _ := st.State.Get(prefixed)
@@ -202,6 +213,20 @@ func (st *Store) GetBalanceForCurr(address keys.Address, curr *Currency) (coin C
 	key := storage.StoreKey(address.String() + storage.DB_PREFIX + curr.Name)
 
 	amt, err := st.get(key)
+	if err != nil {
+		err = errors.Wrapf(err, "failed to get address balance %s", address.String())
+		return
+	}
+	coin = curr.NewCoinFromAmount(*amt)
+
+	return
+}
+
+func (st *Store) GetVersionedBalanceForCurr(address keys.Address, height int64, curr *Currency) (coin Coin, err error) {
+
+	key := storage.StoreKey(address.String() + storage.DB_PREFIX + curr.Name)
+
+	amt, err := st.getVersioned(key, height)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to get address balance %s", address.String())
 		return

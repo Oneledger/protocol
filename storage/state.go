@@ -33,6 +33,14 @@ func (s *State) WithGas(gc GasCalculator) *State {
 	}
 }
 
+func (s *State) GetGasStore() IGasStore {
+	return s.cache
+}
+
+func (s *State) WithGasStore(gs IGasStore) {
+	s.cache = gs
+}
+
 func (s *State) GetCalculator() GasCalculator {
 	return s.gc
 }

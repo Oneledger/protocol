@@ -1,4 +1,4 @@
-package action
+package vm
 
 import (
 	"math/big"
@@ -155,13 +155,13 @@ type (
 	suicideChange struct {
 		account     *ethcmn.Address
 		prev        bool // whether account had already suicided
-		prevBalance big.Int
+		prevBalance *big.Int
 	}
 
 	// Changes to individual accounts.
 	balanceChange struct {
 		account *ethcmn.Address
-		prev    big.Int
+		prev    *big.Int
 	}
 
 	nonceChange struct {
@@ -251,7 +251,7 @@ func (ch suicideChange) revert(s *CommitStateDB) {
 	so := s.getStateObject(*ch.account)
 	if so != nil {
 		so.suicided = ch.prev
-		so.SetBalance(&ch.prevBalance)
+		so.SetBalance(ch.prevBalance)
 	}
 }
 
@@ -267,7 +267,7 @@ func (ch touchChange) dirtied() *ethcmn.Address {
 }
 
 func (ch balanceChange) revert(s *CommitStateDB) {
-	s.getStateObject(*ch.account).SetBalance(&ch.prev)
+	s.getStateObject(*ch.account).SetBalance(ch.prev)
 }
 
 func (ch balanceChange) dirtied() *ethcmn.Address {
@@ -307,20 +307,12 @@ func (ch refundChange) dirtied() *ethcmn.Address {
 }
 
 func (ch addLogChange) revert(s *CommitStateDB) {
-	logs, err := s.GetLogs(ch.txhash)
-	if err != nil {
-		// panic on unmarshal error
-		panic(err)
+	logs := s.logs[ch.txhash]
+	if len(logs) == 1 {
+		delete(s.logs, ch.txhash)
+	} else {
+		s.logs[ch.txhash] = logs[:len(logs)-1]
 	}
-
-	// delete logs if entry is empty or has only one item
-	if len(logs) <= 1 {
-		s.DeleteLogs(ch.txhash)
-	} else if err := s.SetLogs(ch.txhash, logs[:len(logs)-1]); err != nil {
-		// panic on marshal error
-		panic(err)
-	}
-
 	s.logSize--
 }
 

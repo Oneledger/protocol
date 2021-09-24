@@ -26,6 +26,7 @@ import (
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/storage"
 	"github.com/Oneledger/protocol/utils"
+	"github.com/Oneledger/protocol/vm"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
@@ -154,7 +155,7 @@ func assemblyCtxData(currencyName string, currencyDecimal int, setStore bool, se
 		ChainID: "test-1",
 	}
 	ctx.Logger = log.NewLoggerWithPrefix(os.Stdout, "Test-Logger")
-	ctx.StateDB = action.NewCommitStateDB(
+	ctx.StateDB = vm.NewCommitStateDB(
 		evm.NewContractStore(storage.NewState(storage.NewChainState("contracts", db)).WithGas(gc)),
 		balance.NewNesterAccountKeeper(
 			storage.NewState(storage.NewChainState("keeper", db)).WithGas(gc),
@@ -210,7 +211,7 @@ func assemblyExecuteData(from keys.Address, to *keys.Address, nonce uint64, valu
 		av.To = to
 	}
 	fee := action.Fee{
-		Price: action.Amount{"OLT", *balance.NewAmount(10000000000)},
+		Price: action.Amount{"OLT", *balance.NewAmount(10_000_000_000)},
 		Gas:   gas,
 	}
 	data, _ := av.Marshal()
@@ -231,7 +232,7 @@ func assemblyExecuteData(from keys.Address, to *keys.Address, nonce uint64, valu
 	}
 	legacyTx := &ethtypes.LegacyTx{
 		Nonce:    nonce,
-		GasPrice: big.NewInt(10000000000),
+		GasPrice: fee.Price.Value.BigInt(),
 		Gas:      uint64(gas),
 		To:       ethTo,
 		Value:    value,
@@ -315,10 +316,8 @@ func getContractAddress(resp action.Response) (contractAddress ethcmn.Address) {
 
 func blockCommit(ctx *action.Context) {
 	// simulate block ender
-	ctx.StateDB.Finalise(false)
-	ctx.StateDB.UpdateAccounts()
-	_, err := ctx.StateDB.Commit(false)
-	if err != nil {
+	ctx.StateDB.Finalise(true)
+	if err := ctx.StateDB.UpdateLogs(2); err != nil {
 		panic(err)
 	}
 	if err := ctx.StateDB.Reset(); err != nil {
@@ -326,6 +325,8 @@ func blockCommit(ctx *action.Context) {
 	}
 
 	ctx.Balances.State.Commit()
+	bhash := ethcmn.BytesToHash(utils.SHA2([]byte("block")))
+	ctx.StateDB.SetHeightHash(2, bhash)
 }
 
 func wrapProcessDeliver(stx *olvmTx, txHash ethcmn.Hash, ctx *action.Context, rawTx action.RawTx, f func(ctx *action.Context, tx action.RawTx) (bool, action.Response)) (bool, action.Response) {
@@ -372,6 +373,7 @@ func TestRunner_Send(t *testing.T) {
 	currency, _ := ctx.Currencies.GetCurrencyByName("OLT")
 
 	chainID := utils.HashToBigInt(ctx.Header.ChainID)
+	sendTxFee := new(big.Int).Mul(big.NewInt(21_000), big.NewInt(10_000_000_000))
 
 	t.Run("test send amount from one eoa to another and it is OK", func(t *testing.T) {
 		from, fromPubKey, fromPrikey := generateKeyPair()
@@ -413,7 +415,7 @@ func TestRunner_Send(t *testing.T) {
 
 		resAmt, _ := sender.Coins.Minus(balance.Coin{
 			Currency: currency,
-			Amount:   (*balance.Amount)(value),
+			Amount:   (*balance.Amount)(new(big.Int).Add(value, sendTxFee)),
 		})
 		assert.Equal(t, resAmt.Amount.BigInt(), fromAcc.Coins.Amount.BigInt())
 		assert.Equal(t, value, toAcc.Coins.Amount.BigInt())
@@ -457,7 +459,7 @@ func TestRunner_Send(t *testing.T) {
 
 		resAmt, _ := acc.Coins.Minus(balance.Coin{
 			Currency: currency,
-			Amount:   (*balance.Amount)(value),
+			Amount:   (*balance.Amount)(new(big.Int).Add(value, sendTxFee)),
 		})
 		assert.Equal(t, resAmt.Amount.BigInt(), fromAcc.Coins.Amount.BigInt())
 		assert.Equal(t, value, toAcc.Coins.Amount.BigInt())
@@ -509,6 +511,14 @@ func TestRunner_Send(t *testing.T) {
 	})
 }
 
+func getTxLogs(stateDB *vm.CommitStateDB, bhash ethcmn.Hash, txhash ethcmn.Hash) []*ethtypes.Log {
+	blockLogs, err := stateDB.GetLogs(bhash)
+	if err != nil {
+		return []*ethtypes.Log{}
+	}
+	return blockLogs.Logs[txhash]
+}
+
 func TestRunner_SmartContract(t *testing.T) {
 	// pragma solidity >=0.7.0 <0.8.0;
 
@@ -531,6 +541,8 @@ func TestRunner_SmartContract(t *testing.T) {
 	// 		revert("hello");
 	// 	}
 	// }
+
+	bhash := ethcmn.BytesToHash(utils.SHA2([]byte("block")))
 
 	t.Run("test contract deployment when user has legacy balance without ethereum balance and it is OK", func(t *testing.T) {
 		// generating default data
@@ -555,13 +567,13 @@ func TestRunner_SmartContract(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, ok)
 
-		logs, _ := ctx.StateDB.GetLogs(txHash)
+		logs := getTxLogs(ctx.StateDB, bhash, txHash)
 		assert.Equal(t, len(logs), 0, "Logs must be empty as tx not executed")
 
 		ok, resp := wrapProcessDeliver(stx, txHash, ctx, tx.RawTx, stx.ProcessDeliver)
 		assert.True(t, ok)
 
-		logs, _ = ctx.StateDB.GetLogs(txHash)
+		logs = getTxLogs(ctx.StateDB, bhash, txHash)
 		assert.Equal(t, len(logs), 0, "Logs must be empty as contract only deployed and no event in the constructor")
 
 		status, errMsg := getTxStatus(resp)
@@ -590,13 +602,13 @@ func TestRunner_SmartContract(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, ok)
 
-		logs, _ := ctx.StateDB.GetLogs(txHash)
+		logs := getTxLogs(ctx.StateDB, bhash, txHash)
 		assert.Equal(t, len(logs), 0, "Logs must be empty as tx not executed")
 
 		ok, resp := wrapProcessDeliver(stx, txHash, ctx, tx.RawTx, stx.ProcessDeliver)
 		assert.True(t, ok)
 
-		logs, _ = ctx.StateDB.GetLogs(txHash)
+		logs = getTxLogs(ctx.StateDB, bhash, txHash)
 		assert.Equal(t, len(logs), 0, "Logs must be empty as contract only deployed and no event in the constructor")
 
 		status, errMsg := getTxStatus(resp)
@@ -618,7 +630,7 @@ func TestRunner_SmartContract(t *testing.T) {
 		ok, resp = wrapProcessDeliver(stx, txHash, ctx, tx2.RawTx, stx.ProcessDeliver)
 		assert.True(t, ok)
 
-		logs, _ = ctx.StateDB.GetLogs(txHash)
+		logs = getTxLogs(ctx.StateDB, bhash, txHash)
 		assert.Equal(t, len(logs), 1, "Logs must not be empty as event was emited")
 
 		status, errMsg = getTxStatus(resp)
@@ -638,8 +650,8 @@ func TestRunner_SmartContract(t *testing.T) {
 		ok, resp = wrapProcessDeliver(stx, txHash, ctx, tx3.RawTx, stx.ProcessDeliver)
 		assert.True(t, ok)
 
-		logs, _ = ctx.StateDB.GetLogs(txHash)
-		assert.Equal(t, len(logs), 1, "Logs must not be empty as not removed and taken from previous state")
+		logs = getTxLogs(ctx.StateDB, bhash, txHash)
+		assert.Equal(t, len(logs), 0, "Logs must be empty as logs state were cleared")
 
 		status, errMsg = getTxStatus(resp)
 		data := getReturnData(resp)

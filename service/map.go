@@ -3,6 +3,7 @@ package service
 import (
 	"github.com/Oneledger/protocol/data/network_delegation"
 	"github.com/Oneledger/protocol/external_apps/common"
+	"github.com/Oneledger/protocol/vm"
 	"github.com/pkg/errors"
 
 	"github.com/Oneledger/protocol/data"
@@ -69,7 +70,7 @@ type Context struct {
 	// evm
 	Contracts     *evm.ContractStore
 	AccountKeeper balance.AccountKeeper
-	StateDB       *action.CommitStateDB
+	StateDB       *vm.CommitStateDB
 }
 
 // Map of services, keyed by the name/prefix of the service

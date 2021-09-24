@@ -12,16 +12,22 @@ import (
 )
 
 //Helper Function to log error
-func LogAndReturnFalse(logger *log.Logger, error status_codes.ProtocolError, tags kv.Pairs, err error) (bool, action.Response) {
+func LogAndReturnFalse(logger *log.Logger, sterr status_codes.ProtocolError, tags kv.Pairs, err error) (bool, action.Response) {
 	if err == nil {
 		err = errors.New("No Err String")
 	}
-	logger.Error(error)
+	logger.Error(sterr)
 	result := action.Response{
-		Events: action.GetEvent(tags, error.Msg),
-		Log:    error.Wrap(err).Marshal(),
+		Events: action.GetEvent(tags, sterr.Msg),
+		Log:    sterr.Wrap(err).Marshal(),
 	}
 	return false, result
+}
+
+func LogAndReturnFalseWithGas(logger *log.Logger, sterr status_codes.ProtocolError, tags kv.Pairs, err error, gasUsed int64) (bool, action.Response) {
+	ok, response := LogAndReturnFalse(logger, sterr, tags, err)
+	response.GasUsed = gasUsed
+	return ok, response
 }
 
 func LogAndReturnTrue(logger *log.Logger, tags kv.Pairs, eventType string) (bool, action.Response) {

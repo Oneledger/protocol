@@ -62,7 +62,7 @@ func (svc *Service) GetBlockByNumber(blockNrOrHash rpc.BlockNumberOrHash, fullTx
 	case rpctypes.LatestBlockNumber, rpctypes.PendingBlockNumber:
 		blockNum = svc.getState().Version()
 	case rpctypes.EarliestBlockNumber:
-		blockNum = 1
+		blockNum = rpctypes.InitialBlockNumber
 	default:
 		blockNum = height
 	}
@@ -140,7 +140,7 @@ func (svc *Service) GetBlockTransactionCountByNumber(blockNrOrHash rpc.BlockNumb
 		}
 		txsLen = len(result.Block.Txs)
 	case rpctypes.EarliestBlockNumber:
-		blockNum = 1
+		blockNum = rpctypes.InitialBlockNumber
 		svc.logger.Debug("eth_getBlockTransactionCountByNumber", "height", blockNum, "for last txs")
 
 		result, err := svc.getTMClient().Block(&blockNum)

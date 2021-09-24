@@ -29,4 +29,6 @@ var (
 	ErrInsufficientBalance     = errors.New("insufficient balance")
 	ErrBalanceErrorAddFailed   = codes.ProtocolError{Code: codes.BalanceErrorAddFailed, Msg: "Failed to add balance to account"}
 	ErrBalanceErrorMinusFailed = codes.ProtocolError{Code: codes.BalanceErrorMinusFailed, Msg: "Failed to minus balance from account"}
+
+	ErrAccountNotFound = errors.New("account not found")
 )

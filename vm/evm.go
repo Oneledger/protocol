@@ -1,10 +1,10 @@
-package action
+package vm
 
 import (
+	"math"
 	"math/big"
 
 	"github.com/Oneledger/protocol/data/keys"
-	"github.com/Oneledger/protocol/storage"
 	"github.com/Oneledger/protocol/utils"
 	"github.com/ethereum/go-ethereum/common"
 	ethcmn "github.com/ethereum/go-ethereum/common"
@@ -15,6 +15,17 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 	"github.com/tendermint/tendermint/version"
+)
+
+var (
+	// refunds
+	RefundQuotientFrankenstein uint64 = 3
+
+	// defaults
+	DefaultDifficulty       *big.Int = big.NewInt(1)
+	SimulationBlockGasLimit uint64   = 100_000_000
+	DefaultBlockGasLimit    uint64   = math.MaxInt64
+	DefaultGasPrice         *big.Int = big.NewInt(1_000_000_000)
 )
 
 // AbciHeaderToTendermint is a util function to parse a tendermint ABCI Header to
@@ -77,47 +88,46 @@ func GetHashFn(s *CommitStateDB, header *abci.Header) ethvm.GetHashFunc {
 func EthereumConfig(chainID string) *ethparams.ChainConfig {
 	return &ethparams.ChainConfig{
 		ChainID:        utils.HashToBigInt(chainID),
-		HomesteadBlock: big.NewInt(0),
+		HomesteadBlock: big.NewInt(1),
 
-		DAOForkBlock:   big.NewInt(0),
+		DAOForkBlock:   big.NewInt(1),
 		DAOForkSupport: true,
 
-		EIP150Block: big.NewInt(0),
+		EIP150Block: big.NewInt(1),
 		EIP150Hash:  common.Hash{},
 
-		EIP155Block: big.NewInt(0),
-		EIP158Block: big.NewInt(0),
+		EIP155Block: big.NewInt(1),
+		EIP158Block: big.NewInt(1),
 
-		ByzantiumBlock:      big.NewInt(0),
-		ConstantinopleBlock: big.NewInt(0),
-		PetersburgBlock:     big.NewInt(0),
-		IstanbulBlock:       big.NewInt(0),
-		MuirGlacierBlock:    big.NewInt(0),
-		BerlinBlock:         big.NewInt(0),
-		LondonBlock:         big.NewInt(0),
+		ByzantiumBlock:      big.NewInt(1),
+		ConstantinopleBlock: big.NewInt(1),
+		PetersburgBlock:     big.NewInt(1),
+		IstanbulBlock:       big.NewInt(1),
+		MuirGlacierBlock:    big.NewInt(1),
+		BerlinBlock:         big.NewInt(1),
+		LondonBlock:         big.NewInt(1),
 	}
 }
 
 type EVMTransaction struct {
 	stateDB      *CommitStateDB
+	gaspool      *ethcore.GasPool
 	header       *abci.Header
 	from         keys.Address
 	to           *keys.Address
 	nonce        uint64
 	value        *big.Int
 	data         []byte
+	accessList   *ethtypes.AccessList
+	gas          uint64
+	gasPrice     *big.Int
 	isSimulation bool
-	state        *storage.State
 }
 
-var (
-	DefaultGasLimit uint64   = 10_000_000
-	DefaultGasPrice *big.Int = big.NewInt(0)
-)
-
-func NewEVMTransaction(stateDB *CommitStateDB, header *abci.Header, from keys.Address, to *keys.Address, nonce uint64, value *big.Int, data []byte, isSimulation bool) *EVMTransaction {
+func NewEVMTransaction(stateDB *CommitStateDB, gaspool *ethcore.GasPool, header *abci.Header, from keys.Address, to *keys.Address, nonce uint64, value *big.Int, data []byte, accessList *ethtypes.AccessList, gas uint64, gasPrice *big.Int, isSimulation bool) *EVMTransaction {
 	return &EVMTransaction{
 		stateDB:      stateDB,
+		gaspool:      gaspool,
 		header:       header,
 		from:         from,
 		to:           to,
@@ -125,6 +135,9 @@ func NewEVMTransaction(stateDB *CommitStateDB, header *abci.Header, from keys.Ad
 		value:        value,
 		data:         data,
 		isSimulation: isSimulation,
+		gas:          gas,
+		gasPrice:     gasPrice,
+		accessList:   accessList,
 	}
 }
 
@@ -134,28 +147,23 @@ func (etx *EVMTransaction) NewEVM() *ethvm.EVM {
 		Transfer:    ethcore.Transfer,
 		GetHash:     GetHashFn(etx.stateDB, etx.header),
 		Coinbase:    ethcmn.BytesToAddress(etx.header.ProposerAddress),
-		GasLimit:    DefaultGasLimit,
+		GasLimit:    etx.gaspool.Gas(),
 		BlockNumber: big.NewInt(etx.header.GetHeight()),
 		Time:        big.NewInt(etx.header.Time.Unix()),
-		Difficulty:  big.NewInt(0), // unused. Only required in PoW context
+		Difficulty:  DefaultDifficulty, // 0 or 1, does not matter, api show 1, so let say it here as 1
 	}
 
 	vmConfig := ethvm.Config{
-		NoBaseFee: true,
-		ExtraEips: make([]int, 0), // skip right now
+		ExtraEips: make([]int, 0),
 	}
 
 	txCtx := ethvm.TxContext{
-		Origin:   etx.Origin(),
-		GasPrice: DefaultGasPrice,
+		Origin:   etx.From(),
+		GasPrice: etx.gasPrice,
 	}
 
 	ethConfig := EthereumConfig(etx.header.ChainID)
 	return ethvm.NewEVM(blockCtx, txCtx, etx.stateDB, ethConfig, vmConfig)
-}
-
-func (etx *EVMTransaction) Origin() ethcmn.Address {
-	return ethcmn.BytesToAddress(etx.from)
 }
 
 func (etx *EVMTransaction) From() ethcmn.Address {
@@ -170,38 +178,24 @@ func (etx *EVMTransaction) To() *ethcmn.Address {
 	return &ethTo
 }
 
-func (etx *EVMTransaction) Apply(vmenv *ethvm.EVM, tx RawTx) (*ExecutionResult, error) {
+func (etx *EVMTransaction) AccessList() ethtypes.AccessList {
+	if etx.accessList == nil {
+		return make(ethtypes.AccessList, 0)
+	}
+	return *etx.accessList
+}
+
+func (etx *EVMTransaction) Apply() (*ExecutionResult, error) {
+	vmenv := etx.NewEVM()
 	// gas price ignoring here as we have a separate handler for it
 	// no gas fee cap and tips, as another reward system in protocol
-	// nonce not a fake
-	// access list is currently not supported
-	msg := ethtypes.NewMessage(etx.From(), etx.To(), etx.nonce, etx.value, uint64(tx.Fee.Gas), vmenv.TxContext.GasPrice, big.NewInt(0), big.NewInt(0), etx.data, make(ethtypes.AccessList, 0), etx.isSimulation)
+	msg := ethtypes.NewMessage(etx.From(), etx.To(), etx.nonce, etx.value, etx.gas, etx.gasPrice, big.NewInt(0), big.NewInt(0), etx.data, etx.AccessList(), etx.isSimulation)
+
+	executionResult, err := ApplyMessage(vmenv, msg, etx.gaspool)
 
 	if !etx.isSimulation {
-		// Clear cache of accounts to handle changes outside of the EVM
-		etx.stateDB.UpdateAccounts()
-	}
-
-	executionResult, err := ApplyMessage(vmenv, msg, new(ethcore.GasPool).AddGas(uint64(uint64(tx.Fee.Gas))))
-
-	if !etx.isSimulation {
-		// only if tx is OK otherwise all are already reverted
-		if err == nil {
-			// calculating bloom for the block
-			logs, err := etx.stateDB.GetLogs(etx.stateDB.thash)
-			if err != nil {
-				// error must not be here, but in case we will have it, to know what to dig
-				return nil, err
-			}
-			bloomInt := big.NewInt(0).SetBytes(ethtypes.LogsBloom(logs))
-			etx.stateDB.Bloom.Or(etx.stateDB.Bloom, bloomInt)
-		}
 		// Ensure any modifications are committed to the state
 		if err := etx.stateDB.Finalise(true); err != nil {
-			return nil, err
-		}
-		// Commit state objects to store
-		if _, err := etx.stateDB.Commit(true); err != nil {
 			return nil, err
 		}
 	}

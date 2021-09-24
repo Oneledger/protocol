@@ -1,7 +1,6 @@
 package types
 
 import (
-	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/app/node"
 	"github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/config"
@@ -10,6 +9,7 @@ import (
 	"github.com/Oneledger/protocol/data/fees"
 	"github.com/Oneledger/protocol/identity"
 	"github.com/Oneledger/protocol/log"
+	"github.com/Oneledger/protocol/vm"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/rpc"
 )
@@ -19,7 +19,7 @@ type Web3Service interface{}
 
 type EthService interface {
 	Web3Service
-	GetStateDB() *action.CommitStateDB
+	GetStateDB() *vm.CommitStateDB
 	GetBlockByHash(hash common.Hash, fullTx bool) (*Block, error)
 	GetBlockByNumber(blockNrOrHash rpc.BlockNumberOrHash, fullTx bool) (*Block, error)
 }

@@ -1,4 +1,4 @@
-package action
+package vm
 
 import (
 	"bytes"
@@ -280,7 +280,7 @@ func (so *stateObject) AddBalance(amount *big.Int) {
 	}
 	so.stateDB.journal.append(balanceChange{
 		account: &so.address,
-		prev:    *so.account.Balance(),
+		prev:    new(big.Int).Set(so.account.Balance()),
 	})
 	so.account.AddBalance(amount)
 }
@@ -293,7 +293,7 @@ func (so *stateObject) SubBalance(amount *big.Int) {
 	}
 	so.stateDB.journal.append(balanceChange{
 		account: &so.address,
-		prev:    *so.account.Balance(),
+		prev:    new(big.Int).Set(so.account.Balance()),
 	})
 	so.account.SubBalance(amount)
 }
@@ -303,7 +303,7 @@ func (so *stateObject) SubBalance(amount *big.Int) {
 func (so *stateObject) SetBalance(amount *big.Int) {
 	so.stateDB.journal.append(balanceChange{
 		account: &so.address,
-		prev:    *so.account.Balance(),
+		prev:    new(big.Int).Set(so.account.Balance()),
 	})
 	so.account.SetBalance(amount)
 }
