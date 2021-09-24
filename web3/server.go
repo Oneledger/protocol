@@ -51,9 +51,10 @@ func (s *Server) start(rpcInfo interface{}, apis map[string]rpctypes.Web3Service
 		name              string
 		handler           http.Handler
 	)
-	srv := rpc.NewServer()
+	rpcSrv := rpc.NewServer()
 	channel := make(chan error)
 	timeout := make(chan error)
+	keepAlive := true
 
 	switch rpcCfg := rpcInfo.(type) {
 	case *config.HTTPConfig:
@@ -61,17 +62,26 @@ func (s *Server) start(rpcInfo interface{}, apis map[string]rpctypes.Web3Service
 		uri = fmt.Sprintf("%s:%d", rpcCfg.Addr, rpcCfg.Port)
 		enabled = rpcCfg.Enabled
 		availableAPINames = rpcCfg.API
-		handler = node.NewHTTPHandlerStack(srv, s.cfg.API.HTTPConfig.CORSDomain, s.cfg.API.HTTPConfig.VHosts)
+		keepAlive = rpcCfg.KeepAlive
+		handler = node.NewHTTPHandlerStack(rpcSrv, s.cfg.API.HTTPConfig.CORSDomain, s.cfg.API.HTTPConfig.VHosts)
 	case *config.WSConfig:
 		name = "WS"
 		uri = fmt.Sprintf("%s:%d", rpcCfg.Addr, rpcCfg.Port)
 		enabled = rpcCfg.Enabled
 		availableAPINames = rpcCfg.API
-		handler = srv.WebsocketHandler(s.cfg.API.WSConfig.Origins)
+		handler = rpcSrv.WebsocketHandler(s.cfg.API.WSConfig.Origins)
 	default:
 		s.logger.Info("Config for Web3 RPC not properly configured, skipping")
 		return nil
 	}
+
+	srv := &http.Server{
+		Addr:         uri,
+		Handler:      handler,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+	}
+	srv.SetKeepAlivesEnabled(keepAlive)
 
 	if !enabled {
 		s.logger.Info("Web3 " + name + " RPC server not enabled, skipping")
@@ -85,7 +95,7 @@ func (s *Server) start(rpcInfo interface{}, apis map[string]rpctypes.Web3Service
 		}
 	}
 
-	if err := RegisterApis(srv, availableAPIs); err != nil {
+	if err := RegisterApis(rpcSrv, availableAPIs); err != nil {
 		return err
 	}
 
@@ -96,10 +106,10 @@ func (s *Server) start(rpcInfo interface{}, apis map[string]rpctypes.Web3Service
 	}()
 
 	go func(ch chan error) {
-		defer srv.Stop()
+		defer rpcSrv.Stop()
 
 		s.logger.Info("starting Web3 " + name + " RPC server on " + uri)
-		err := http.ListenAndServe(uri, handler)
+		err := srv.ListenAndServe()
 		if err != nil {
 			s.logger.Fatalf("server: %s", err)
 		}

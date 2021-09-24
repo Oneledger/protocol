@@ -273,6 +273,7 @@ type HTTPConfig struct {
 	Addr    string `toml:"addr" desc:"HTTP-RPC server listening interface (default: \"localhost\")"`
 	Port    int    `toml:"port" desc:"HTTP-RPC server listening port (default: 8545)"`
 
+	KeepAlive  bool     `toml:"keepalive" desc:"API's keep alive. Note: only very resource-constrained environments or servers in the process of shutting down should disable them (default: true)"`
 	API        []string `toml:"api" desc:"API's offered over the HTTP-RPC interface"`
 	CORSDomain []string `toml:"corsdomain" desc:"Comma separated list of domains from which to accept cross origin requests (browser enforced)"`
 	VHosts     []string `toml:"vhosts" desc:"Comma separated list of virtual hostnames from which to accept requests (server enforced). Accepts '*' wildcard. (default: \"localhost\")"`
@@ -297,6 +298,7 @@ func DefaultAPIConfig() *APIConfig {
 		HTTPConfig: &HTTPConfig{
 			Addr:       "localhost",
 			Port:       8545,
+			KeepAlive:  true,
 			API:        []string{"eth", "web3", "net"},
 			CORSDomain: make([]string, 0),
 			VHosts:     []string{"localhost"},
