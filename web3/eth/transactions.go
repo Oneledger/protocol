@@ -28,8 +28,8 @@ const (
 
 // GetTransactionCount returns the number of transactions at the given address up to the given block number.
 func (svc *Service) GetTransactionCount(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (*hexutil.Uint64, error) {
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
+	// svc.mu.Lock()
+	// defer svc.mu.Unlock()
 
 	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.getTMClient(), blockNrOrHash)
 	if err != nil {
@@ -57,8 +57,8 @@ func (svc *Service) GetTransactionCount(address common.Address, blockNrOrHash rp
 
 // GetTransactionByHash returns the transaction identified by hash.
 func (svc *Service) GetTransactionByHash(hash common.Hash) (*rpctypes.Transaction, error) {
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
+	// svc.mu.Lock()
+	// defer svc.mu.Unlock()
 
 	chainID, err := svc.ChainId()
 	if err != nil {
@@ -90,8 +90,8 @@ func (svc *Service) GetTransactionByHash(hash common.Hash) (*rpctypes.Transactio
 
 // GetTransactionReceipt returns the transaction receipt identified by hash.
 func (svc *Service) GetTransactionReceipt(hash common.Hash) (*rpctypes.TransactionReceipt, error) {
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
+	// svc.mu.Lock()
+	// defer svc.mu.Unlock()
 
 	svc.logger.Debug("eth_getTransactionReceipt", "hash", hash)
 	resTx, err := svc.getTMClient().Tx(hash.Bytes(), false)
@@ -161,8 +161,8 @@ func (svc *Service) GetTransactionReceipt(hash common.Hash) (*rpctypes.Transacti
 
 // GetTransactionByBlockHashAndIndex returns the transaction identified by block hash and index.
 func (svc *Service) GetTransactionByBlockHashAndIndex(hash common.Hash, idx hexutil.Uint64) (*rpctypes.Transaction, error) {
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
+	// svc.mu.Lock()
+	// defer svc.mu.Unlock()
 
 	svc.logger.Debug("eth_getTransactionByBlockHashAndIndex", "hash", hash, "idx", idx)
 	resBlock, err := svc.getTMClient().BlockByHash(hash.Bytes())
@@ -175,8 +175,8 @@ func (svc *Service) GetTransactionByBlockHashAndIndex(hash common.Hash, idx hexu
 
 // GetTransactionByBlockNumberAndIndex returns the transaction identified by number and index.
 func (svc *Service) GetTransactionByBlockNumberAndIndex(blockNrOrHash rpc.BlockNumberOrHash, idx hexutil.Uint64) (*rpctypes.Transaction, error) {
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
+	// svc.mu.Lock()
+	// defer svc.mu.Unlock()
 
 	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.getTMClient(), blockNrOrHash)
 	if err != nil {
