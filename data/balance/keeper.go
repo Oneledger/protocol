@@ -3,9 +3,11 @@ package balance
 import (
 	"fmt"
 	"math/big"
+	"os"
 	"sync"
 
 	"github.com/Oneledger/protocol/data/keys"
+	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/storage"
 	ethcmn "github.com/ethereum/go-ethereum/common"
@@ -67,16 +69,13 @@ func (acc *EthAccount) SetBalance(amount *big.Int) {
 }
 
 type AccountKeeper interface {
-	NewAccountWithAddress(addr keys.Address, setAcc bool) (*EthAccount, error)
-	GetOrCreateAccount(addr keys.Address) (*EthAccount, error)
+	NewAccountWithAddress(addr keys.Address) (*EthAccount, error)
 	GetAccount(addr keys.Address) (*EthAccount, error)
 	GetVersionedAccount(addr keys.Address, height int64) (*EthAccount, error)
 	SetAccount(account EthAccount) error
 	RemoveAccount(account EthAccount)
-	GetVersionedBalance(addr keys.Address, height int64) (*big.Int, error)
 	GetNonce(addr keys.Address) uint64
 	GetBalance(addr keys.Address) *big.Int
-	GetState() *storage.State
 	WithState(state *storage.State) AccountKeeper
 }
 
@@ -88,6 +87,7 @@ type NesterAccountKeeper struct {
 	currencies *CurrencySet
 	state      *storage.State
 	prefix     []byte
+	logger     *log.Logger
 
 	// as we use two different prefixes, for preventing race conditions when:
 	// 1) Creating a new acc;
@@ -101,11 +101,8 @@ func NewNesterAccountKeeper(state *storage.State, balances *Store, currencies *C
 		currencies: currencies,
 		state:      state,
 		prefix:     storage.Prefix("keeper"),
+		logger:     log.NewLoggerWithPrefix(os.Stdout, "account_keeper"),
 	}
-}
-
-func (nak *NesterAccountKeeper) GetState() *storage.State {
-	return nak.state
 }
 
 func (nak *NesterAccountKeeper) WithState(state *storage.State) AccountKeeper {
@@ -114,48 +111,37 @@ func (nak *NesterAccountKeeper) WithState(state *storage.State) AccountKeeper {
 	return nak
 }
 
-func (nak *NesterAccountKeeper) NewAccountWithAddress(addr keys.Address, setAcc bool) (*EthAccount, error) {
+func (nak *NesterAccountKeeper) NewAccountWithAddress(addr keys.Address) (*EthAccount, error) {
 	nak.nmu.Lock()
 	defer nak.nmu.Unlock()
 
-	coin, err := nak.getOrCreateCurrencyBalance(addr)
+	coin, err := nak.getOrCreateCurrencyBalance(addr, nil)
 	if err != nil {
 		return nil, errors.Errorf("Failed to get balance: %s", err)
 	}
 	acc := NewEthAccount(addr, coin)
-	if setAcc {
-		err = nak.SetAccount(*acc)
-		if err != nil {
-			return nil, errors.Errorf("Failed to set account: %s", err)
-		}
-		acc, err = nak.GetAccount(addr)
-		if err != nil {
-			return nil, errors.Errorf("Failed to get account: %s", err)
-		}
+	err = nak.SetAccount(*acc)
+	if err != nil {
+		return nil, errors.Errorf("Failed to set account: %s", err)
+	}
+	acc, err = nak.GetAccount(addr)
+	if err != nil {
+		return nil, errors.Errorf("Failed to get account: %s", err)
 	}
 	return acc, nil
 }
 
-func (nak *NesterAccountKeeper) GetVersionedBalance(addr keys.Address, height int64) (*big.Int, error) {
-	key := nak.balances.BuildKey(addr, nil)
-	data := nak.balances.State.GetVersioned(height, key)
-	if len(data) == 0 {
-		return nil, errors.Errorf("Balance for address '%s' not found", addr)
-	}
-	amt := NewAmount(0)
-	err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(data, amt)
-	if err != nil {
-		return nil, err
-	}
-	return amt.BigInt(), nil
-}
-
-func (nak *NesterAccountKeeper) getOrCreateCurrencyBalance(addr keys.Address) (Coin, error) {
+func (nak *NesterAccountKeeper) getOrCreateCurrencyBalance(addr keys.Address, height *int64) (Coin, error) {
 	currency, ok := nak.currencies.GetCurrencyByName("OLT")
 	if !ok {
 		return Coin{}, errors.Errorf("Failed to get currency OLT")
 	}
-	coin, _ := nak.balances.GetBalanceForCurr(addr, &currency)
+	var coin Coin
+	if height != nil {
+		coin, _ = nak.balances.GetVersionedBalanceForCurr(addr, *height, &currency)
+	} else {
+		coin, _ = nak.balances.GetBalanceForCurr(addr, &currency)
+	}
 	if coin == (Coin{}) {
 		coin = Coin{
 			Currency: currency,
@@ -165,15 +151,16 @@ func (nak *NesterAccountKeeper) getOrCreateCurrencyBalance(addr keys.Address) (C
 	return coin, nil
 }
 
-func (nak *NesterAccountKeeper) GetOrCreateAccount(addr keys.Address) (*EthAccount, error) {
-	eoa, err := nak.GetAccount(addr)
-	if err != nil {
-		eoa, err = nak.NewAccountWithAddress(addr, true)
-		if err != nil {
-			return nil, err
-		}
+// legacyFix for old accounts without balance
+func (nak *NesterAccountKeeper) legacyFix(addr keys.Address, coin Coin) (*EthAccount, error) {
+	ea := NewEthAccount(addr, coin)
+	// if balance is exists like in genesis or other place set, assume that we already have an account as legacy
+	// and we need to update it with new one
+	if len(ea.Balance().Bits()) != 0 {
+		nak.logger.Debug("Legacy acc processing", ea.Address)
+		return ea, nil
 	}
-	return eoa, nil
+	return nil, ErrAccountNotFound
 }
 
 func (nak *NesterAccountKeeper) GetAccount(addr keys.Address) (*EthAccount, error) {
@@ -187,13 +174,17 @@ func (nak *NesterAccountKeeper) GetAccount(addr keys.Address) (*EthAccount, erro
 		return nil, err
 	}
 
-	ea := &EthAccount{}
-	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(dat, ea)
+	coin, err := nak.getOrCreateCurrencyBalance(addr, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	coin, err := nak.getOrCreateCurrencyBalance(addr)
+	if len(dat) == 0 {
+		return nak.legacyFix(addr, coin)
+	}
+
+	ea := &EthAccount{}
+	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(dat, ea)
 	if err != nil {
 		return nil, err
 	}
@@ -208,20 +199,22 @@ func (nak *NesterAccountKeeper) GetVersionedAccount(addr keys.Address, height in
 	prefixKey := append(nak.prefix, addr.Bytes()...)
 
 	dat := nak.state.GetVersioned(height, storage.StoreKey(prefixKey))
+
+	coin, err := nak.getOrCreateCurrencyBalance(addr, &height)
+	if err != nil {
+		return nil, err
+	}
+
 	if len(dat) == 0 {
-		return nil, errors.New(fmt.Sprintf("Previous state on height '%d' for addr '%s' not found", height, addr))
+		return nak.legacyFix(addr, coin)
 	}
 
 	ea := &EthAccount{}
-	err := serialize.GetSerializer(serialize.PERSISTENT).Deserialize(dat, ea)
+	err = serialize.GetSerializer(serialize.PERSISTENT).Deserialize(dat, ea)
 	if err != nil {
 		return nil, err
 	}
 
-	coin, err := nak.getOrCreateCurrencyBalance(addr)
-	if err != nil {
-		return nil, err
-	}
 	ea.Coins = coin
 	return ea, nil
 }
@@ -229,6 +222,10 @@ func (nak *NesterAccountKeeper) GetVersionedAccount(addr keys.Address, height in
 func (nak *NesterAccountKeeper) SetAccount(account EthAccount) error {
 	nak.mu.Lock()
 	defer nak.mu.Unlock()
+
+	// cache and not store this balance in account as we have another store
+	coins := account.Coins
+	account.Coins = Coin{}
 
 	prefixKey := append(nak.prefix, account.Address.Bytes()...)
 	dat, err := serialize.GetSerializer(serialize.PERSISTENT).Serialize(&account)
@@ -239,7 +236,7 @@ func (nak *NesterAccountKeeper) SetAccount(account EthAccount) error {
 	if err != nil {
 		return errors.Errorf("Failed to update storage for account: %s", err)
 	}
-	err = nak.balances.SetBalance(account.Address, account.Coins)
+	err = nak.balances.SetBalance(account.Address, coins)
 	if err != nil {
 		return errors.Errorf("Failed to set balance: %s", err)
 	}
@@ -259,7 +256,7 @@ func (nak *NesterAccountKeeper) GetNonce(addr keys.Address) uint64 {
 	return acc.Sequence
 }
 func (nak *NesterAccountKeeper) GetBalance(addr keys.Address) *big.Int {
-	coin, err := nak.getOrCreateCurrencyBalance(addr)
+	coin, err := nak.getOrCreateCurrencyBalance(addr, nil)
 	if err != nil {
 		return big.NewInt(0)
 	}

@@ -15,8 +15,6 @@ import (
 // Accounts returns the list of accounts available to this node.
 func (svc *Service) Accounts() ([]common.Address, error) {
 	svc.logger.Debug("eth_accounts")
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
 
 	addresses := make([]common.Address, 0) // return [] instead of nil if empty
 
@@ -41,9 +39,6 @@ func (svc *Service) Accounts() ([]common.Address, error) {
 
 // GetBalance returns the provided account's balance up to the provided block number.
 func (svc *Service) GetBalance(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (*hexutil.Big, error) {
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
-
 	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.getTMClient(), blockNrOrHash)
 	if err != nil {
 		svc.logger.Debug("eth_getBalance", "block err", err)
@@ -75,17 +70,20 @@ func (svc *Service) GetBalance(address common.Address, blockNrOrHash rpc.BlockNu
 		blockNum = svc.getState().Version()
 		svc.logger.Debug("eth_getBalance", "height", blockNum, "latest")
 	case rpctypes.EarliestBlockNumber:
-		blockNum = 1
+		blockNum = rpctypes.InitialBlockNumber
 		svc.logger.Debug("eth_getBalance", "height", blockNum, "earliest")
 	default:
 		blockNum = height
 		svc.logger.Debug("eth_getBalance", "height", blockNum)
 	}
 
-	balance, err := svc.ctx.GetAccountKeeper().GetVersionedBalance(address.Bytes(), blockNum)
+	var balance *big.Int
+	acc, err := svc.ctx.GetAccountKeeper().GetVersionedAccount(address.Bytes(), blockNum)
 	if err != nil {
 		svc.logger.Debug("eth_getBalance", "account_not_found", address)
 		balance = big.NewInt(0)
+	} else {
+		balance = acc.Balance()
 	}
 	// involve pending balance
 	total := new(big.Int).Add(balance, pendingBalance)

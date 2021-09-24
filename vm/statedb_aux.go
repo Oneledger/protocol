@@ -1,8 +1,9 @@
-package action
+package vm
 
 import (
 	"fmt"
 
+	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 )
@@ -12,7 +13,7 @@ import (
 func (s *CommitStateDB) createObject(addr ethcmn.Address) (newObj, prevObj *stateObject) {
 	prevObj = s.getStateObject(addr)
 
-	acc, _ := s.accountKeeper.NewAccountWithAddress(keys.Address(addr.Bytes()), !s.isSimulation)
+	acc, _ := s.accountKeeper.NewAccountWithAddress(keys.Address(addr.Bytes()))
 	newObj = newStateObject(s, acc)
 	newObj.setNonce(0) // sets the object to dirty
 
@@ -43,7 +44,10 @@ func (s *CommitStateDB) getStateObject(addr ethcmn.Address) (stateObject *stateO
 	// otherwise, attempt to fetch the account from the account mapper
 	acc, err := s.accountKeeper.GetAccount(keys.Address(addr.Bytes()))
 	if err != nil {
-		s.setError(fmt.Errorf("no account found for address: %s", addr.String()))
+		if err != balance.ErrAccountNotFound {
+			// if not this error, means something wrong
+			s.setError(fmt.Errorf("failed to get account %s, error: %s", addr.String(), err))
+		}
 		return nil
 	}
 
@@ -74,10 +78,7 @@ func (s *CommitStateDB) setStateObject(so *stateObject) {
 // updateStateObject writes the given state object to the store.
 func (s *CommitStateDB) updateStateObject(so *stateObject) error {
 	s.logger.Debugf("VM: update state object for address '%s' with nonce: '%d' and balance: '%d' \n", so.Address(), so.account.Sequence, so.account.Balance())
-	if !s.isSimulation {
-		return s.accountKeeper.SetAccount(*so.account)
-	}
-	return nil
+	return s.accountKeeper.SetAccount(*so.account)
 }
 
 // setError remembers the first non-nil error it is called with.
@@ -88,15 +89,15 @@ func (s *CommitStateDB) setError(err error) {
 }
 
 func (s *CommitStateDB) clearJournalAndRefund() {
-	s.journal = newJournal()
+	if len(s.journal.entries) > 0 {
+		s.journal = newJournal()
+		s.refund = 0
+	}
 	s.validRevisions = s.validRevisions[:0]
-	s.refund = 0
 }
 
 // deleteStateObject removes the given state object from the state store.
 func (s *CommitStateDB) deleteStateObject(so *stateObject) {
 	so.deleted = true
-	if !s.isSimulation {
-		s.accountKeeper.RemoveAccount(*so.account)
-	}
+	s.accountKeeper.RemoveAccount(*so.account)
 }

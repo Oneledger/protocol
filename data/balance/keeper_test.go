@@ -50,7 +50,7 @@ func TestKeeper(t *testing.T) {
 		_, err := keeper.GetAccount(addr.Bytes())
 		assert.Error(t, err)
 
-		acc, err := keeper.NewAccountWithAddress(addr.Bytes(), true)
+		acc, err := keeper.NewAccountWithAddress(addr.Bytes())
 		assert.NoError(t, err)
 		assert.Equal(t, big.NewInt(0), acc.Coins.Amount.BigInt())
 		assert.Equal(t, addr.Bytes(), acc.Address.Bytes())
@@ -67,7 +67,7 @@ func TestKeeper(t *testing.T) {
 		keeper := prepareKeeperEnv(t)
 
 		addr := common.Address{}
-		acc, err := keeper.NewAccountWithAddress(addr.Bytes(), true)
+		acc, err := keeper.NewAccountWithAddress(addr.Bytes())
 		assert.NoError(t, err)
 
 		value := big.NewInt(100)
@@ -77,26 +77,6 @@ func TestKeeper(t *testing.T) {
 		acc, err = keeper.GetAccount(addr.Bytes())
 		assert.NoError(t, err)
 		assert.Equal(t, value, acc.Coins.Amount.BigInt())
-		assert.Equal(t, addr.Bytes(), acc.Address.Bytes())
-		assert.Equal(t, uint64(0), acc.Sequence)
-	})
-
-	t.Run("test get or create account and it is OK", func(t *testing.T) {
-		keeper := prepareKeeperEnv(t)
-
-		addr := common.Address{}
-		_, err := keeper.GetAccount(addr.Bytes())
-		assert.Error(t, err)
-
-		acc, err := keeper.GetOrCreateAccount(addr.Bytes())
-		assert.NoError(t, err)
-		assert.Equal(t, big.NewInt(0), acc.Coins.Amount.BigInt())
-		assert.Equal(t, addr.Bytes(), acc.Address.Bytes())
-		assert.Equal(t, uint64(0), acc.Sequence)
-
-		acc, err = keeper.GetAccount(addr.Bytes())
-		assert.NoError(t, err)
-		assert.Equal(t, big.NewInt(0), acc.Coins.Amount.BigInt())
 		assert.Equal(t, addr.Bytes(), acc.Address.Bytes())
 		assert.Equal(t, uint64(0), acc.Sequence)
 	})

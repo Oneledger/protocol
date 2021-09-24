@@ -10,6 +10,7 @@ import (
 	netwkDeleg "github.com/Oneledger/protocol/data/network_delegation"
 	"github.com/Oneledger/protocol/data/rewards"
 	"github.com/Oneledger/protocol/identity"
+	"github.com/Oneledger/protocol/vm"
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/client"
@@ -41,13 +42,13 @@ type Service struct {
 	govUpdate       *action.GovernaceUpdateAndValidate
 
 	// evm
-	stateDB *action.CommitStateDB
+	stateDB *vm.CommitStateDB
 }
 
 func NewService(ctx client.ExtServiceContext, router action.Router, currencies *balance.CurrencySet,
 	feePool *fees.Store, domains *ons.DomainStore, govern *governance.Store, delegators *delegation.DelegationStore, evidenceStore *evidence.EvidenceStore, netwkDelegators *netwkDeleg.MasterStore, validators *identity.ValidatorStore,
 	logger *log.Logger, trackers *bitcoin.TrackerStore, proposalMaster *governance.ProposalMasterStore, rewardMaster *rewards.RewardMasterStore, extStores data.Router, govUpdate *action.GovernaceUpdateAndValidate,
-	stateDB *action.CommitStateDB,
+	stateDB *vm.CommitStateDB,
 ) *Service {
 	return &Service{
 		ext:             ctx,

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/Oneledger/protocol/action"
+	"github.com/Oneledger/protocol/vm"
 	ethabi "github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
@@ -27,7 +27,7 @@ func (e *revertError) ErrorData() interface{} {
 	return e.reason
 }
 
-func NewRevertError(result *action.ExecutionResult) *revertError {
+func NewRevertError(result *vm.ExecutionResult) *revertError {
 	reason, errUnpack := ethabi.UnpackRevert(result.Revert())
 	err := errors.New("execution reverted")
 	if errUnpack == nil {

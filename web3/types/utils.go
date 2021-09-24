@@ -11,6 +11,7 @@ import (
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/utils"
+	"github.com/Oneledger/protocol/vm"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -22,18 +23,24 @@ import (
 
 var jsonSerializer serialize.Serializer = serialize.GetSerializer(serialize.NETWORK)
 
-// GetContractAddress taken the contract address from event logs
-func GetContractAddress(res *abci.ResponseDeliverTx) (contractAddress *common.Address) {
+type TmTxLog struct {
+	ContractAddress common.Address
+	Status          uint64
+}
+
+// GetTxTmLogs take important information about contract, status, etc.
+func GetTxTmLogs(res *abci.ResponseDeliverTx) *TmTxLog {
+	tx := &TmTxLog{}
 	for _, evt := range res.Events {
 		for _, attr := range evt.Attributes {
 			if bytes.Equal(attr.Key, []byte("tx.contract")) {
-				contractAddress = new(common.Address)
-				*contractAddress = common.BytesToAddress(attr.Value)
-				return
+				tx.ContractAddress = common.BytesToAddress(attr.Value)
+			} else if bytes.Equal(attr.Key, []byte("tx.status")) {
+				tx.Status = uint64(attr.Value[0])
 			}
 		}
 	}
-	return
+	return tx
 }
 
 // GetBlockCumulativeGas returns the cumulative gas used on a block up to a given
@@ -195,10 +202,8 @@ func BlockMaxGasFromConsensusParams(tmClient rpcclient.Client) (int64, error) {
 
 	gasLimit := resConsParams.ConsensusParams.Block.MaxGas
 	if gasLimit == -1 {
-		// Sets gas limit to max uint32 to not error with javascript dev tooling
-		// This -1 value indicating no block gas limit is set to max uint64 with geth hexutils
-		// which errors certain javascript dev tooling which only supports up to 53 bits
-		gasLimit = int64(^uint32(0))
+		// Sets gas limit as vm gas limit for new limitation after frankenstein update
+		gasLimit = int64(vm.DefaultBlockGasLimit)
 	}
 
 	return gasLimit, nil
@@ -277,8 +282,8 @@ func FormatBlock(
 		StateRoot:        common.BytesToHash(header.AppHash),
 		Miner:            common.BytesToAddress(header.ProposerAddress.Bytes()),
 		MixHash:          common.Hash{},
-		Difficulty:       1,
-		TotalDifficulty:  1,
+		Difficulty:       hexutil.Uint64(vm.DefaultDifficulty.Uint64()),
+		TotalDifficulty:  hexutil.Uint64(vm.DefaultDifficulty.Uint64()),
 		ExtraData:        common.Hex2Bytes(""),
 		Size:             hexutil.Uint64(size),
 		GasLimit:         hexutil.Uint64(gasLimit), // Static gas limit

@@ -7,23 +7,21 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/evm"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/utils"
+	"github.com/Oneledger/protocol/vm"
 	rpctypes "github.com/Oneledger/protocol/web3/types"
 	rpcutils "github.com/Oneledger/protocol/web3/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/common/math"
+	ethcore "github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/rpc"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 func (svc *Service) GetStorageAt(address common.Address, key string, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
-
 	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.getTMClient(), blockNrOrHash)
 	if err != nil {
 		svc.logger.Debug("eth_getStorageAt", "block err", err)
@@ -50,9 +48,6 @@ func (svc *Service) GetStorageAt(address common.Address, key string, blockNrOrHa
 }
 
 func (svc *Service) GetCode(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
-
 	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.getTMClient(), blockNrOrHash)
 	if err != nil {
 		svc.logger.Debug("eth_getCode", "block err", err)
@@ -67,7 +62,7 @@ func (svc *Service) GetCode(address common.Address, blockNrOrHash rpc.BlockNumbe
 	keeper := stateDB.GetAccountKeeper()
 	cs := stateDB.GetContractStore()
 
-	ethAcc, err := keeper.GetAccount(address.Bytes())
+	ethAcc, err := keeper.GetVersionedAccount(address.Bytes(), height)
 	if err != nil {
 		return hexutil.Bytes{}, nil
 	}
@@ -79,9 +74,6 @@ func (svc *Service) GetCode(address common.Address, blockNrOrHash rpc.BlockNumbe
 }
 
 func (svc *Service) Call(call rpctypes.CallArgs, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
-
 	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.getTMClient(), blockNrOrHash)
 	if err != nil {
 		svc.logger.Debug("eth_call", "block err", err)
@@ -106,9 +98,6 @@ func (svc *Service) Call(call rpctypes.CallArgs, blockNrOrHash rpc.BlockNumberOr
 }
 
 func (svc *Service) EstimateGas(call rpctypes.CallArgs) (hexutil.Uint64, error) {
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
-
 	svc.logger.Debug("eth_estimateGas", "args", call)
 	height := svc.getState().Version()
 	result, err := svc.callContract(call, height)
@@ -123,14 +112,14 @@ func (svc *Service) EstimateGas(call rpctypes.CallArgs) (hexutil.Uint64, error) 
 	return hexutil.Uint64(result.UsedGas), err
 }
 
-func (svc *Service) callContract(call rpctypes.CallArgs, height int64) (*action.ExecutionResult, error) {
+func (svc *Service) callContract(call rpctypes.CallArgs, height int64) (*vm.ExecutionResult, error) {
 	var (
 		blockNum  uint64
 		isPending bool
 	)
 	switch height {
 	case rpctypes.EarliestBlockNumber:
-		blockNum = 1
+		blockNum = rpctypes.InitialBlockNumber
 	default:
 		blockNum = uint64(svc.getState().Version())
 		isPending = true
@@ -162,14 +151,14 @@ func (svc *Service) callContract(call rpctypes.CallArgs, height int64) (*action.
 		*to = call.To.Bytes()
 	}
 
-	var gasPrice int64 = action.DefaultGasPrice.Int64()
+	var gasPrice *big.Int = vm.DefaultGasPrice
 	if call.GasPrice != nil {
-		gasPrice = call.GasPrice.ToInt().Int64()
+		gasPrice = call.GasPrice.ToInt()
 	}
 
-	var gas int64 = int64(action.DefaultGasLimit)
+	var gas uint64 = vm.SimulationBlockGasLimit
 	if call.Gas != nil {
-		gas = int64(*call.Gas)
+		gas = uint64(*call.Gas)
 	}
 
 	value := new(big.Int)
@@ -187,19 +176,11 @@ func (svc *Service) callContract(call rpctypes.CallArgs, height int64) (*action.
 
 	svc.logger.Debug("eth_callContract", "from", from, "to", to, "gasPrice", gasPrice, "gas", gas, "value", value, "data", data, "nonce", nonce)
 
-	price := action.Amount{
-		Currency: "OLT",
-		Value:    balance.Amount(*big.NewInt(gasPrice)),
-	}
+	// Set infinite balance to the fake caller account.
+	fromAcc := stateDB.GetOrNewStateObject(common.BytesToAddress(from))
+	fromAcc.SetBalance(math.MaxBig256)
 
-	tx := action.RawTx{
-		Type: action.OLVM,
-		Fee: action.Fee{
-			Price: price,
-			Gas:   gas,
-		},
-	}
-	evmTx := action.NewEVMTransaction(stateDB, header, from, to, nonce, value, data, true)
+	evmTx := vm.NewEVMTransaction(stateDB, new(ethcore.GasPool).AddGas(math.MaxUint64), header, from, to, nonce, value, data, nil, gas, gasPrice, true)
 
 	timeout := 10 * time.Second
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
@@ -213,7 +194,7 @@ func (svc *Service) callContract(call rpctypes.CallArgs, height int64) (*action.
 		vmenv.Cancel()
 	}()
 
-	result, err := evmTx.Apply(vmenv, tx)
+	result, err := evmTx.Apply()
 	if vmenv.Cancelled() {
 		return nil, fmt.Errorf("execution aborted (timeout = %v)", timeout)
 	}

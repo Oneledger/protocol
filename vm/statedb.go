@@ -1,4 +1,4 @@
-package action
+package vm
 
 import (
 	"fmt"
@@ -8,10 +8,10 @@ import (
 
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/evm"
-	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/storage"
 	ethcmn "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	ethvm "github.com/ethereum/go-ethereum/core/vm"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
@@ -29,8 +29,9 @@ type CommitStateDB struct {
 	bheight      uint64
 	thash, bhash ethcmn.Hash
 	txIndex      int
-	logs         map[ethcmn.Hash][]*ethtypes.Log
-	logSize      uint
+
+	logs    map[ethcmn.Hash][]*ethtypes.Log
+	logSize uint
 
 	preimages           []preimageEntry
 	hashToPreimageIndex map[ethcmn.Hash]int // map from hash to the index of the preimages slice
@@ -63,13 +64,13 @@ type CommitStateDB struct {
 	// Transaction counter in a block. Used on StateSB's Prepare function.
 	// It is reset to 0 every block on EndBlock so there's no point in storing the counter
 	// to store or adding it as a field on the EVM genesis state.
-	TxCount int
+	txCount int
 
 	// Bloom bytes generation from the logs
-	Bloom *big.Int
+	bloom *big.Int
 
-	// for simulation purposes, so no need to modify a store
-	isSimulation bool
+	// Used for validation in case of fork
+	IsEnabled bool
 }
 
 // NewCommitStateDB returns a reference to a newly initialized CommitStateDB
@@ -91,9 +92,8 @@ func NewCommitStateDB(cs *evm.ContractStore, ak balance.AccountKeeper, logger *l
 		accessList:           newAccessList(),
 		journal:              newJournal(),
 		validRevisions:       []revision{},
-		TxCount:              0,
-		Bloom:                big.NewInt(0),
-		isSimulation:         false,
+		txCount:              0,
+		bloom:                big.NewInt(0),
 	}
 }
 
@@ -111,31 +111,56 @@ func (s *CommitStateDB) GetAccountKeeper() balance.AccountKeeper {
 	return s.accountKeeper
 }
 
+func (s *CommitStateDB) GetAvailableGas() uint64 {
+	gc := s.contractStore.State.GetCalculator()
+	return gc.GetLeft()
+}
+
 // Prepare sets the current transaction hash which is
 // used when the EVM emits new state logs.
 func (s *CommitStateDB) Prepare(thash ethcmn.Hash) {
 	s.thash = thash
-	s.txIndex = s.TxCount
+	s.txIndex = s.txCount
+	// refreshing it
 	s.accessList = newAccessList()
-	// increment tx index
-	// NOTE: Check if it has the same as tendermint make
-	s.TxCount++
 }
 
-func (s *CommitStateDB) EnableSimulation() {
-	s.isSimulation = true
+// Error returns the first non-nil error the StateDB encountered.
+func (s *CommitStateDB) Error() error {
+	return s.dbErr
 }
 
-// Commit writes the state to the appropriate stores. For each state object
-// in the cache, it will either be removed, or have it's code set and/or it's
-// state (storage) updated. In addition, the state object (account) itself will
-// be written. Finally, the root hash (version) will be returned.
-func (s *CommitStateDB) Commit(deleteEmptyObjects bool) (ethcmn.Hash, error) {
-	defer s.clearJournalAndRefund()
+// Finalise finalizes the state objects (accounts) state by setting their state,
+// removing the s destructed objects and clearing the journal as well as the
+// refunds.
+func (s *CommitStateDB) Finalise(deleteEmptyObjects bool) error {
+	// increment tx counter always event the error because tendermint commit a wrong txs
+	s.txCount++
 
-	// remove dirty state object entries based on the journal
+	if s.dbErr != nil {
+		return fmt.Errorf("commit aborted due to earlier error: %v", s.dbErr)
+	}
+
 	for _, dirty := range s.journal.dirties {
-		s.logger.Debug("VM: remove dirty for", dirty.address)
+		idx, exist := s.addressToObjectIndex[dirty.address]
+		if !exist {
+			continue
+		}
+
+		s.logger.Debug("VM: starting to process finalize entry", dirty.address)
+
+		stateEntry := s.stateObjects[idx]
+		if stateEntry.stateObject.suicided || (deleteEmptyObjects && stateEntry.stateObject.empty()) {
+			s.deleteStateObject(stateEntry.stateObject)
+		} else {
+			// Set all the dirty state storage items for the state object in the
+			// protocol and finally set the account in the account mapper.
+			stateEntry.stateObject.commitState()
+			if err := s.updateStateObject(stateEntry.stateObject); err != nil {
+				return err
+			}
+		}
+
 		s.stateObjectsDirty[dirty.address] = struct{}{}
 	}
 
@@ -150,77 +175,27 @@ func (s *CommitStateDB) Commit(deleteEmptyObjects bool) (ethcmn.Hash, error) {
 		case stateEntry.stateObject.suicided || (isDirty && deleteEmptyObjects && stateEntry.stateObject.empty()):
 			// If the state object has been removed, don't bother syncing it and just
 			// remove it from the store.
-			if !s.isSimulation {
-				s.deleteStateObject(stateEntry.stateObject)
-			}
+			s.deleteStateObject(stateEntry.stateObject)
 
 		case isDirty:
 			// write any contract code associated with the state object
 			if stateEntry.stateObject.code != nil && stateEntry.stateObject.dirtyCode {
-				if !s.isSimulation {
-					stateEntry.stateObject.commitCode()
-				}
+				stateEntry.stateObject.commitCode()
 				stateEntry.stateObject.dirtyCode = false
 			}
 
-			if !s.isSimulation {
-				// update the object in the store
-				if err := s.updateStateObject(stateEntry.stateObject); err != nil {
-					return ethcmn.Hash{}, err
-				}
+			// update the object in the store
+			if err := s.updateStateObject(stateEntry.stateObject); err != nil {
+				return err
 			}
 		}
-
 		delete(s.stateObjectsDirty, stateEntry.address)
 	}
-
-	// NOTE: Ethereum returns the trie merkle root here, but as commitment
-	// actually happens in the BaseApp at EndBlocker, we do not know the root at
-	// this time.
-	return ethcmn.Hash{}, nil
-}
-
-// Finalise finalizes the state objects (accounts) state by setting their state,
-// removing the s destructed objects and clearing the journal as well as the
-// refunds.
-func (s *CommitStateDB) Finalise(deleteEmptyObjects bool) error {
-	for _, dirty := range s.journal.dirties {
-		idx, exist := s.addressToObjectIndex[dirty.address]
-		if !exist {
-			// TODO: Maybe do not need this on tendermint
-			// ripeMD is 'touched' at block 1714175, in tx:
-			// 0x1237f737031e40bcde4a8b7e717b2d15e3ecadfe49bb1bbc71ee9deb09c6fcf2
-			//
-			// That tx goes out of gas, and although the notion of 'touched' does not
-			// exist there, the touch-event will still be recorded in the journal.
-			// Since ripeMD is a special snowflake, it will persist in the journal even
-			// though the journal is reverted. In this special circumstance, it may
-			// exist in journal.dirties but not in stateObjects. Thus, we can safely
-			// ignore it here.
-			continue
-		}
-
-		s.logger.Debug("VM: starting to process finalize entry", dirty.address)
-
-		stateEntry := s.stateObjects[idx]
-		if stateEntry.stateObject.suicided || (deleteEmptyObjects && stateEntry.stateObject.empty()) {
-			if !s.isSimulation {
-				s.deleteStateObject(stateEntry.stateObject)
-			}
-		} else {
-			// Set all the dirty state storage items for the state object in the
-			// protocol and finally set the account in the account mapper.
-			if !s.isSimulation {
-				stateEntry.stateObject.commitState()
-				if err := s.updateStateObject(stateEntry.stateObject); err != nil {
-					return err
-				}
-			}
-		}
-
-		s.stateObjectsDirty[dirty.address] = struct{}{}
-	}
-
+	// updating bloom filter
+	s.UpdateBloom()
+	// clear state objects
+	s.stateObjects = make([]stateEntry, 0)
+	s.addressToObjectIndex = make(map[ethcmn.Address]int)
 	// invalidate journal because reverting across transactions is not allowed
 	s.clearJournalAndRefund()
 	return nil
@@ -238,48 +213,27 @@ func (s *CommitStateDB) GetHeightHash(height uint64) ethcmn.Hash {
 // SetHeightHash set hash and height of the block
 func (s *CommitStateDB) SetHeightHash(height uint64, hash ethcmn.Hash) {
 	s.bhash = hash
-	s.bheight = height
-	if !s.isSimulation {
-		s.contractStore.Set(evm.KeyPrefixHeightHash, evm.HeightHashKey(height), hash.Bytes())
-	}
-}
-
-// GetCurrentHeight for get last block number, if zero means update not started
-func (s *CommitStateDB) GetCurrentHeight() uint64 {
-	return s.bheight
-}
-
-// UpdateAccounts updates the nonce and coin balances of accounts
-func (s *CommitStateDB) UpdateAccounts() {
-	for _, stateEntry := range s.stateObjects {
-		addr := keys.Address(stateEntry.address.Bytes())
-		acc, err := s.accountKeeper.GetAccount(addr)
-		if err != nil {
-			continue
-		}
-		if stateEntry.stateObject.Balance().Cmp(acc.Balance()) != 0 ||
-			stateEntry.stateObject.Nonce() != acc.Sequence {
-			stateEntry.stateObject.account = acc
-		}
-	}
+	s.IsEnabled = true
+	s.contractStore.Set(evm.KeyPrefixHeightHash, evm.HeightHashKey(height), hash.Bytes())
 }
 
 // Reset clears out all ephemeral state objects from the state db, but keeps
 // the underlying account mapper and store keys to avoid reloading data for the
 // next operations.
 func (s *CommitStateDB) Reset() error {
-	s.stateObjects = []stateEntry{}
+	s.stateObjects = make([]stateEntry, 0)
 	s.addressToObjectIndex = make(map[ethcmn.Address]int)
 	s.stateObjectsDirty = make(map[ethcmn.Address]struct{})
 	s.thash = ethcmn.Hash{}
 	s.bhash = ethcmn.Hash{}
 	s.txIndex = 0
 	s.logSize = 0
-	s.preimages = []preimageEntry{}
+	s.preimages = make([]preimageEntry, 0)
 	s.hashToPreimageIndex = make(map[ethcmn.Hash]int)
 	s.accessList = newAccessList()
-	s.TxCount = 0
-	s.Bloom = big.NewInt(0)
+	s.txCount = 0
+	s.logs = make(map[ethcmn.Hash][]*ethtypes.Log)
+	s.bloom = big.NewInt(0)
 
 	s.clearJournalAndRefund()
 	return nil
@@ -444,7 +398,7 @@ func (s *CommitStateDB) Suicide(addr ethcmn.Address) bool {
 	s.journal.append(suicideChange{
 		account:     &addr,
 		prev:        so.suicided,
-		prevBalance: *so.Balance(),
+		prevBalance: new(big.Int).Set(so.Balance()),
 	})
 
 	so.markSuicided()
@@ -625,38 +579,45 @@ func (s *CommitStateDB) GetOrNewStateObject(addr ethcmn.Address) StateObject {
 //
 // NOTE: Snapshots of the copied state cannot be applied to the copy.
 func (s *CommitStateDB) Copy() *CommitStateDB {
-
 	// copy all the basic fields, initialize the memory ones
 	state := &CommitStateDB{}
 	CopyCommitStateDB(s, state)
-
 	return state
 }
 
 func CopyCommitStateDB(from, to *CommitStateDB) {
-	from.lock.Lock()
-	defer from.lock.Unlock()
-
+	to.IsEnabled = from.IsEnabled
+	// safe as store states will be changed during process check and deliver
+	to.contractStore = from.contractStore
 	to.accountKeeper = from.accountKeeper
-	to.stateObjects = []stateEntry{}
-	to.addressToObjectIndex = make(map[ethcmn.Address]int)
-	to.stateObjectsDirty = make(map[ethcmn.Address]struct{})
+	to.logger = from.logger
 	to.refund = from.refund
-	to.logSize = from.logSize
-	to.preimages = make([]preimageEntry, len(from.preimages))
-	to.hashToPreimageIndex = make(map[ethcmn.Hash]int, len(from.hashToPreimageIndex))
-	to.journal = newJournal()
+
+	to.bheight = from.bheight
 	to.thash = from.thash
 	to.bhash = from.bhash
 	to.txIndex = from.txIndex
-	validRevisions := make([]revision, len(from.validRevisions))
-	copy(validRevisions, from.validRevisions)
-	to.validRevisions = validRevisions
-	to.nextRevisionID = from.nextRevisionID
-	to.accessList = from.accessList.Copy()
-	to.TxCount = from.TxCount
-	to.Bloom = new(big.Int)
-	*to.Bloom = *from.Bloom
+	to.logs = make(map[ethcmn.Hash][]*ethtypes.Log, len(from.logs))
+	to.logSize = from.logSize
+
+	to.preimages = make([]preimageEntry, len(from.preimages))
+	to.hashToPreimageIndex = make(map[ethcmn.Hash]int, len(from.hashToPreimageIndex))
+
+	to.stateObjects = make([]stateEntry, len(from.journal.dirties))
+	to.addressToObjectIndex = make(map[ethcmn.Address]int)
+	to.stateObjectsDirty = make(map[ethcmn.Address]struct{}, len(from.journal.dirties))
+
+	// no need to copy it as it will be filled by tx, not took too much for execution
+	to.accessList = newAccessList()
+
+	to.journal = newJournal()
+
+	// snapshots ignoring
+	to.validRevisions = make([]revision, 0)
+	to.nextRevisionID = 0
+
+	to.txCount = from.txCount
+	to.bloom = new(big.Int).Set(from.bloom)
 
 	// copy the dirty states, logs, and preimages
 	for _, dirty := range from.journal.dirties {
@@ -681,28 +642,22 @@ func CopyCommitStateDB(from, to *CommitStateDB) {
 	for addr := range from.stateObjectsDirty {
 		if idx, exist := to.addressToObjectIndex[addr]; !exist {
 			to.setStateObject(from.stateObjects[idx].stateObject.deepCopy(to))
-			to.stateObjectsDirty[addr] = struct{}{}
 		}
+		to.stateObjectsDirty[addr] = struct{}{}
+	}
+
+	for hash, logs := range from.logs {
+		cpy := make([]*types.Log, len(logs))
+		for i, l := range logs {
+			cpy[i] = new(types.Log)
+			*cpy[i] = *l
+		}
+		to.logs[hash] = cpy
 	}
 
 	// copy pre-images
-	for i, preimageEntry := range from.preimages {
-		to.preimages[i] = preimageEntry
-		to.hashToPreimageIndex[preimageEntry.hash] = i
+	for i, preimage := range from.preimages {
+		to.preimages[i] = preimage
+		to.hashToPreimageIndex[preimage.hash] = i
 	}
-}
-
-// Set bloom bytes to store by block height
-func (s *CommitStateDB) SetBlockBloom(height uint64, bz []byte) error {
-	bloom := ethtypes.BytesToBloom(bz)
-	return s.contractStore.Set(evm.KeyPrefixBloom, evm.BloomKey(height), bloom.Bytes())
-}
-
-// Get bloom by block height
-func (s *CommitStateDB) GetBlockBloom(height uint64) ethtypes.Bloom {
-	bz, _ := s.contractStore.Get(evm.KeyPrefixBloom, evm.BloomKey(height))
-	if len(bz) == 0 {
-		return ethtypes.Bloom{}
-	}
-	return ethtypes.BytesToBloom(bz)
 }

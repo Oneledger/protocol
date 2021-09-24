@@ -1,4 +1,4 @@
-package action
+package vm
 
 import (
 	"github.com/ethereum/go-ethereum/common"

@@ -18,6 +18,7 @@ var (
 	ErrNotEnoughFund      = codes.ProtocolError{codes.TxErrInsufficientFunds, "not enough fund"}
 	ErrGasOverflow        = codes.ProtocolError{codes.TxErrGasOverflow, "gas used exceed limit"}
 	ErrInvalidExtTx       = codes.ProtocolError{codes.TxErrInvalidExtTx, "invalid external tx"}
+	ErrInvalidVmExecution = codes.ProtocolError{codes.TxErrVMExecution, "execution error"}
 
 	ErrInvalidAddress          = codes.ErrBadAddress
 	ErrInvalidCurrency         = codes.ProtocolError{codes.TxErrInvalidFeeCurrency, "invalid fee currency"}

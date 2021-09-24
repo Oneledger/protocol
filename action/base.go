@@ -150,38 +150,30 @@ func StakingPayerFeeHandling(ctx *Context, feePayer keys.Address, signedTx Signe
 	return true, Response{GasWanted: signedTx.Fee.Gas, GasUsed: used}
 }
 
-func ContractFeeHandling(ctx *Context, signedTx SignedTx, gasUsed Gas) (bool, Response) {
+func ContractFeeHandling(ctx *Context, signedTx SignedTx, gasUsed Gas, start Gas) (bool, Response) {
+	if gasUsed == 0 {
+		return false, Response{Log: ErrInvalidVmExecution.Error(), GasWanted: signedTx.Fee.Gas}
+	}
+
 	ctx.State.ConsumeContractGas(gasUsed)
-	used := int(gasUsed)
-	// in case of error, gasUsed is zero, so we use a default calculator logic for that
-	if int(gasUsed) == 0 {
-		used = int(ctx.Balances.State.ConsumedGas())
-	}
-	ctx.Logger.Debugf("gas used: %d, gas limit: %d", used, signedTx.Fee.Gas)
+	ctx.Logger.Debugf("gas used: %d, gas limit: %d", gasUsed, signedTx.Fee.Gas)
 
-	// only charge the first signer for now
-	signer := signedTx.Signatures[0].Signer
-	ctx.Logger.Debugf("Getting handler\n")
-	h, err := signer.GetHandler()
-	if err != nil {
-		return false, Response{Log: err.Error()}
+	if int64(gasUsed) > signedTx.Fee.Gas {
+		return false, Response{Log: ErrGasOverflow.Error(), GasWanted: signedTx.Fee.Gas, GasUsed: int64(gasUsed)}
 	}
-	addr := h.Address()
 
-	charge := signedTx.Fee.Price.ToCoin(ctx.Currencies).MultiplyInt(used)
-	ctx.Logger.Debugf("Perform minus balance '%s' with charge: %s\n", addr, charge)
-	err = ctx.Balances.MinusFromAddress(addr, charge)
-	if err != nil {
-		return false, Response{Log: errors.Wrap(err, "charge fee").Error()}
-	}
+	charge := signedTx.Fee.Price.ToCoin(ctx.Currencies).MultiplyInt(int(gasUsed))
+	// NOTE: VM engine in state_transition perform gas * gasPrice evaluation and make a substraction there
+	// so we rely on this and not using minus balance here
+	// here it is only place what to do with charge
 	ctx.Logger.Debugf("Add to pool %s\n", charge)
-	err = ctx.FeePool.AddToPool(charge)
+	err := ctx.FeePool.AddToPool(charge)
 	if err != nil {
-		return false, Response{Log: err.Error()}
+		return false, Response{Log: err.Error(), GasWanted: signedTx.Fee.Gas}
 	}
 
 	// NOTE: For the smart contract we need to eat used gas to prevent redundant vm execution of attacker
-	return true, Response{GasWanted: signedTx.Fee.Gas, GasUsed: int64(used)}
+	return true, Response{GasWanted: signedTx.Fee.Gas, GasUsed: int64(gasUsed)}
 }
 
 func BasicFeeHandling(ctx *Context, signedTx SignedTx, start Gas, size Gas, signatureCnt Gas) (bool, Response) {

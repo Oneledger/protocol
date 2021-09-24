@@ -29,6 +29,9 @@ type GasCalculator interface {
 
 	// Check if the block has fullfill the Gas Limit
 	IsEnough() bool
+
+	// GetLeft return total gas left, used right now in olvm (frankenstein update)
+	GetLeft() uint64
 }
 
 var _ GasCalculator = &gasCalculator{}
@@ -68,11 +71,34 @@ func (g gasCalculator) GetConsumed() Gas {
 	return g.consumed
 }
 
+func (g gasCalculator) GetLeft() uint64 {
+	var availableGas Gas
+
+	if g.consumed >= g.limit {
+		availableGas = 0
+	} else {
+		availableGas = g.limit - g.consumed
+	}
+	return uint64(availableGas)
+}
+
 func NewGasCalculator(limit Gas) GasCalculator {
 	return &gasCalculator{
 		limit:    limit,
 		consumed: 0,
 	}
+}
+
+type IGasStore interface {
+	Set(key StoreKey, value []byte) error
+	Get(key StoreKey) ([]byte, error)
+	Exists(key StoreKey) bool
+	Delete(key StoreKey) (bool, error)
+
+	BeginSession() Session
+	Close()
+	DumpState()
+	GetIterable() Iterable
 }
 
 type GasStore struct {
@@ -81,7 +107,6 @@ type GasStore struct {
 }
 
 func NewGasStore(store SessionedDirectStorage, gc GasCalculator) *GasStore {
-
 	return &GasStore{
 		SessionedDirectStorage: store,
 		GasCalculator:          gc,
@@ -133,5 +158,43 @@ func (g *GasStore) Delete(key StoreKey) (bool, error) {
 		return false, ErrExceedGasLimit
 	}
 
+	return g.SessionedDirectStorage.Delete(key)
+}
+
+// NoGasStore skip gas consume because EVM will calculate it and apply at fee processor
+type NoGasStore struct {
+	SessionedDirectStorage
+	GasCalculator
+}
+
+func NewNoGasStore(store SessionedDirectStorage) *NoGasStore {
+	return &NoGasStore{
+		SessionedDirectStorage: store,
+		GasCalculator:          nil,
+	}
+}
+
+func (g *NoGasStore) Set(key StoreKey, value []byte) error {
+	err := g.SessionedDirectStorage.Set(key, value)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (g *NoGasStore) Get(key StoreKey) ([]byte, error) {
+	value, err := g.SessionedDirectStorage.Get(key)
+	if err != nil {
+		return nil, err
+	}
+	return value, nil
+}
+
+func (g *NoGasStore) Exists(key StoreKey) bool {
+	exist := g.SessionedDirectStorage.Exists(key)
+	return exist
+}
+
+func (g *NoGasStore) Delete(key StoreKey) (bool, error) {
 	return g.SessionedDirectStorage.Delete(key)
 }

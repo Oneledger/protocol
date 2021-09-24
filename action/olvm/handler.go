@@ -6,9 +6,11 @@ import (
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/helpers"
+	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/status_codes"
 	"github.com/Oneledger/protocol/utils"
+	"github.com/Oneledger/protocol/vm"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 	ethcore "github.com/ethereum/go-ethereum/core"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -144,12 +146,9 @@ func (tx *Transaction) validateSigner(ctx *action.Context, signedTx action.Signe
 	return nil
 }
 
-// validateCheckTx checks whether a transaction is valid according to the consensus
+// ValidateEthTx checks whether a transaction is valid according to the consensus
 // rules and adheres to some heuristic limits of the local node (price and size).
-func (tx *Transaction) validateTx(ctx *action.Context, tmTx action.RawTx, local bool) error {
-	ethTx := tx.tmToEthTx(ctx, tmTx)
-
-	keeper := ctx.StateDB.GetAccountKeeper()
+func (tx *Transaction) ValidateEthTx(keeper balance.AccountKeeper, ethTx *ethtypes.Transaction, minFee *big.Int, local bool) error {
 	// Accept only legacy transactions until EIP-2718/2930 activates.
 	if ethTx.Type() != ethtypes.LegacyTxType {
 		return ethtypes.ErrTxTypeNotSupported
@@ -164,15 +163,17 @@ func (tx *Transaction) validateTx(ctx *action.Context, tmTx action.RawTx, local 
 		return ethcore.ErrNegativeValue
 	}
 	// Ensure the transaction doesn't exceed the current block limit gas.
-	if action.DefaultGasLimit < ethTx.Gas() {
+	// NOTE: Change this in future when own tx pool will be implemented
+	if vm.SimulationBlockGasLimit < ethTx.Gas() {
 		return ethcore.ErrGasLimit
 	}
 	// Drop non-local transactions under our own minimal accepted gas price
-	if !local && ethTx.GasPrice().Cmp(ctx.FeePool.GetOpt().MinFee().Amount.BigInt()) < 0 {
+	if !local && ethTx.GasPrice().Cmp(minFee) < 0 {
 		return ethcore.ErrUnderpriced
 	}
 	// Ensure the transaction adheres to nonce ordering
-	if keeper.GetNonce(tx.From) > ethTx.Nonce() {
+	stNonce := keeper.GetNonce(tx.From)
+	if msgNonce := ethTx.Nonce(); stNonce > msgNonce {
 		return ethcore.ErrNonceTooLow
 	}
 	// Transactor should have enough funds to cover the costs
@@ -180,15 +181,19 @@ func (tx *Transaction) validateTx(ctx *action.Context, tmTx action.RawTx, local 
 	if keeper.GetBalance(tx.From).Cmp(ethTx.Cost()) < 0 {
 		return ethcore.ErrInsufficientFunds
 	}
+	return nil
+}
+
+func (tx *Transaction) CheckIntrinsicGas(ethTx *ethtypes.Transaction) (gas uint64, err error) {
 	// Ensure the transaction has more gas than the basic tx fee.
 	intrGas, err := ethcore.IntrinsicGas(ethTx.Data(), ethTx.AccessList(), ethTx.To() == nil, true, true)
 	if err != nil {
-		return err
+		return intrGas, err
 	}
 	if ethTx.Gas() < intrGas {
-		return ethcore.ErrIntrinsicGas
+		return intrGas, ethcore.ErrIntrinsicGas
 	}
-	return nil
+	return intrGas, nil
 }
 
 var _ action.Tx = olvmTx{}
@@ -197,8 +202,7 @@ type olvmTx struct {
 }
 
 func (otx olvmTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
-	// zero means stateDB does not receive a block number so frankenstein update has not been applied
-	if ctx.StateDB.GetCurrentHeight() == 0 {
+	if !ctx.StateDB.IsEnabled {
 		return false, errors.Errorf("not enabled")
 	}
 
@@ -232,20 +236,33 @@ func (otx olvmTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool,
 
 func (otx olvmTx) ProcessCheck(ctx *action.Context, rawTx action.RawTx) (ok bool, result action.Response) {
 	ctx.Logger.Detail("Processing OLVM Transaction for CheckTx", rawTx)
+
 	tx := &Transaction{}
 	err := tx.Unmarshal(rawTx.Data)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrWrongTxType, tx.Tags(), err)
 	}
-	err = tx.validateTx(ctx, rawTx, true)
+
+	ethTx := tx.tmToEthTx(ctx, rawTx)
+	_, err = tx.CheckIntrinsicGas(ethTx)
 	if err != nil {
 		return false, action.Response{
 			Events: action.GetEvent(tx.Tags(), err.Error()),
 			Log:    err.Error(),
 		}
 	}
-	// NOTE: We do not need to run a logic on smart contract, but only calculate a gas
-	// maybe it will be required a stateDB copy without deliver and clear it's dirties
+	err = tx.ValidateEthTx(
+		ctx.StateDB.GetAccountKeeper(),
+		tx.tmToEthTx(ctx, rawTx),
+		ctx.FeePool.GetOpt().MinFee().Amount.BigInt(),
+		true,
+	)
+	if err != nil {
+		return false, action.Response{
+			Events: action.GetEvent(tx.Tags(), err.Error()),
+			Log:    err.Error(),
+		}
+	}
 	ok = true
 	result = action.Response{GasUsed: -1}
 	return
@@ -253,43 +270,67 @@ func (otx olvmTx) ProcessCheck(ctx *action.Context, rawTx action.RawTx) (ok bool
 
 func (otx olvmTx) ProcessDeliver(ctx *action.Context, rawTx action.RawTx) (ok bool, result action.Response) {
 	ctx.Logger.Detail("Processing OLVM Transaction for DeliverTx", rawTx)
-	ok, result = runOLVM(ctx, rawTx)
+	ok, result = runOLVM(ctx, rawTx, false)
 	return
 }
 
-func (otx olvmTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas, gasUsed action.Gas) (bool, action.Response) {
-	// -1 if ProcessCheck
+func (otx olvmTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas, gasUsed action.Gas) (ok bool, result action.Response) {
+	// -1 if ProcessCheck in case no check simulation of OLVM, which decrease a performance
 	if gasUsed == -1 {
-		return true, action.Response{}
+		ok, result = true, action.Response{}
+	} else {
+		ok, result = action.ContractFeeHandling(ctx, signedTx, gasUsed, start)
 	}
-	ok, result := action.ContractFeeHandling(ctx, signedTx, gasUsed)
-	ctx.Logger.Detailf("Processing OLVM Transaction for BasicFeeHandling: %+v, status - %t\n", result, ok)
+	ctx.Logger.Detailf("Processing OLVM Transaction for BasicFeeHandling: status - %t\n", ok)
 	return ok, result
 }
 
-func runOLVM(ctx *action.Context, rawTx action.RawTx) (bool, action.Response) {
+func runOLVM(ctx *action.Context, rawTx action.RawTx, isSimulation bool) (bool, action.Response) {
 	tx := &Transaction{}
 	err := tx.Unmarshal(rawTx.Data)
 	if err != nil {
 		return false, action.Response{Log: err.Error()}
 	}
 
-	ctx.Logger.Detail("OLVM tx is send:", tx.isSendTx())
+	var (
+		stateDB *vm.CommitStateDB
+		gaspool = new(ethcore.GasPool)
+		tags    = tx.Tags()
+	)
 
-	tags := tx.Tags()
-
-	err = tx.validateTx(ctx, rawTx, false)
-	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, status_codes.ProtocolError{
-			Msg:  err.Error(),
-			Code: status_codes.InvalidParams,
-		}, tags, err)
+	// NOTE: Just left in case if process check if have a simulation (not recomended)
+	if isSimulation {
+		stateDB = ctx.StateDB.Copy()
+		gaspool = gaspool.AddGas(vm.SimulationBlockGasLimit)
+	} else {
+		stateDB = ctx.StateDB
+		gaspool = gaspool.AddGas(ctx.StateDB.GetAvailableGas())
 	}
 
-	evmTx := action.NewEVMTransaction(ctx.StateDB, ctx.Header, tx.From, tx.To, tx.Nonce, tx.Amount.Value.BigInt(), tx.Data, false)
+	ethTx := tx.tmToEthTx(ctx, rawTx)
+	intrinsicGas, err := tx.CheckIntrinsicGas(ethTx)
+	if err != nil {
+		return helpers.LogAndReturnFalseWithGas(ctx.Logger, status_codes.ProtocolError{
+			Msg:  err.Error(),
+			Code: status_codes.TxErrIntrinsicGas,
+		}, tags, err, int64(intrinsicGas))
+	}
+	err = tx.ValidateEthTx(
+		stateDB.GetAccountKeeper(),
+		ethTx,
+		ctx.FeePool.GetOpt().MinFee().Amount.BigInt(),
+		isSimulation,
+	)
+	if err != nil {
+		return helpers.LogAndReturnFalseWithGas(ctx.Logger, status_codes.ProtocolError{
+			Msg:  err.Error(),
+			Code: status_codes.InvalidParams,
+		}, tags, err, int64(intrinsicGas))
+	}
 
-	vmenv := evmTx.NewEVM()
-	execResult, err := evmTx.Apply(vmenv, rawTx)
+	evmTx := vm.NewEVMTransaction(stateDB, gaspool, ctx.Header, tx.From, tx.To, tx.Nonce, tx.Amount.Value.BigInt(), tx.Data, tx.AccessList, uint64(rawTx.Fee.Gas), rawTx.Fee.Price.Value.BigInt(), isSimulation)
+
+	execResult, err := evmTx.Apply()
 	if err != nil {
 		ctx.Logger.Debugf("Execution apply VM got err: %s\n", err.Error())
 		tags = append(tags, action.UintTag("tx.status", ethtypes.ReceiptStatusFailed))
@@ -297,10 +338,10 @@ func runOLVM(ctx *action.Context, rawTx action.RawTx) (bool, action.Response) {
 			Key:   []byte("tx.error"),
 			Value: []byte(err.Error()),
 		})
-		return helpers.LogAndReturnFalse(ctx.Logger, status_codes.ProtocolError{
+		return helpers.LogAndReturnFalseWithGas(ctx.Logger, status_codes.ProtocolError{
 			Msg:  err.Error(),
 			Code: status_codes.TxErrVMExecution,
-		}, tags, err)
+		}, tags, err, int64(intrinsicGas))
 	}
 
 	if execResult.Failed() {

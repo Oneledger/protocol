@@ -9,6 +9,7 @@ import (
 	"github.com/Oneledger/protocol/data/evm"
 	"github.com/Oneledger/protocol/external_apps"
 	"github.com/Oneledger/protocol/external_apps/common"
+	"github.com/Oneledger/protocol/vm"
 	"github.com/Oneledger/protocol/web3"
 	web3types "github.com/Oneledger/protocol/web3/types"
 
@@ -102,7 +103,7 @@ type context struct {
 	// evm integration
 	contracts     *evm.ContractStore
 	accountKeeper balance.AccountKeeper
-	stateDB       *action.CommitStateDB
+	stateDB       *vm.CommitStateDB
 }
 
 func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (context, error) {
@@ -169,7 +170,8 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 		ctx.currencies,
 	)
 	logger := log.NewLoggerWithPrefix(ctx.logWriter, "stateDB").WithLevel(log.Level(ctx.cfg.Node.LogLevel))
-	ctx.stateDB = action.NewCommitStateDB(ctx.contracts, ctx.accountKeeper, logger)
+
+	ctx.stateDB = vm.NewCommitStateDB(ctx.contracts, ctx.accountKeeper, logger)
 
 	err = external_apps.RegisterExtApp(ctx.chainstate, ctx.actionRouter, ctx.extStores, ctx.extServiceMap, ctx.extFunctions)
 	if err != nil {

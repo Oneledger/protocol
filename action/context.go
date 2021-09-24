@@ -3,6 +3,7 @@ package action
 import (
 	"github.com/Oneledger/protocol/data"
 	"github.com/Oneledger/protocol/data/rewards"
+	"github.com/Oneledger/protocol/vm"
 
 	abci "github.com/tendermint/tendermint/abci/types"
 
@@ -49,7 +50,7 @@ type Context struct {
 	GovUpdate           *GovernaceUpdateAndValidate
 
 	// evm
-	StateDB *CommitStateDB
+	StateDB *vm.CommitStateDB
 }
 
 func NewContext(r Router, header *abci.Header, state *storage.State,
@@ -60,7 +61,7 @@ func NewContext(r Router, header *abci.Header, state *storage.State,
 	btcTrackers *bitcoin.TrackerStore, ethTrackers *ethereum.TrackerStore, jobStore *jobs.JobStore,
 	lockScriptStore *bitcoin.LockScriptStore, logger *log.Logger, proposalmaster *governance.ProposalMasterStore,
 	rewardmaster *rewards.RewardMasterStore, govern *governance.Store, extStores data.Router, govUpdate *GovernaceUpdateAndValidate,
-	stateDB *CommitStateDB,
+	stateDB *vm.CommitStateDB,
 ) *Context {
 	return &Context{
 		Router:              r,

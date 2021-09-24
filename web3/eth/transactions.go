@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/Oneledger/protocol/action/olvm"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/utils"
 	rpctypes "github.com/Oneledger/protocol/web3/types"
@@ -14,6 +15,7 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rpc"
+	coretypes "github.com/tendermint/tendermint/rpc/core/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
@@ -28,9 +30,6 @@ const (
 
 // GetTransactionCount returns the number of transactions at the given address up to the given block number.
 func (svc *Service) GetTransactionCount(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (*hexutil.Uint64, error) {
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
-
 	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.getTMClient(), blockNrOrHash)
 	if err != nil {
 		return nil, nil
@@ -57,9 +56,6 @@ func (svc *Service) GetTransactionCount(address common.Address, blockNrOrHash rp
 
 // GetTransactionByHash returns the transaction identified by hash.
 func (svc *Service) GetTransactionByHash(hash common.Hash) (*rpctypes.Transaction, error) {
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
-
 	chainID, err := svc.ChainId()
 	if err != nil {
 		svc.logger.Debug("eth_getTransactionByHash", "hash", hash, "failed to get chainId")
@@ -90,9 +86,6 @@ func (svc *Service) GetTransactionByHash(hash common.Hash) (*rpctypes.Transactio
 
 // GetTransactionReceipt returns the transaction receipt identified by hash.
 func (svc *Service) GetTransactionReceipt(hash common.Hash) (*rpctypes.TransactionReceipt, error) {
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
-
 	svc.logger.Debug("eth_getTransactionReceipt", "hash", hash)
 	resTx, err := svc.getTMClient().Tx(hash.Bytes(), false)
 	if err != nil {
@@ -121,24 +114,30 @@ func (svc *Service) GetTransactionReceipt(hash common.Hash) (*rpctypes.Transacti
 		cumulativeGasUsed += rpctypes.GetBlockCumulativeGas(resBlock.Block, int(*tx.TransactionIndex))
 	}
 
+	txLog := rpctypes.GetTxTmLogs(&resTx.TxResult)
+
 	// Set status codes based on tx result
-	var status uint32
+	var status uint64
 	// swap
 	if resTx.TxResult.Code == 0 {
-		status = 1
+		status = txLog.Status
 	}
 
 	stateDB := svc.GetStateDB()
 
-	logs, err := stateDB.GetLogs(hash)
+	blockLogs, err := stateDB.GetLogs(*tx.BlockHash)
 	if err != nil {
 		return nil, err
+	}
+	logs, ok := blockLogs.Logs[hash]
+	if !ok {
+		logs = make([]*ethtypes.Log, 0)
 	}
 	bloom := stateDB.GetBlockBloom(uint64(resBlock.Block.Height))
 
 	var contractAddress *common.Address
 	if tx.To == nil {
-		contractAddress = rpctypes.GetContractAddress(&resTx.TxResult)
+		contractAddress = &txLog.ContractAddress
 	}
 
 	receipt := &rpctypes.TransactionReceipt{
@@ -161,9 +160,6 @@ func (svc *Service) GetTransactionReceipt(hash common.Hash) (*rpctypes.Transacti
 
 // GetTransactionByBlockHashAndIndex returns the transaction identified by block hash and index.
 func (svc *Service) GetTransactionByBlockHashAndIndex(hash common.Hash, idx hexutil.Uint64) (*rpctypes.Transaction, error) {
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
-
 	svc.logger.Debug("eth_getTransactionByBlockHashAndIndex", "hash", hash, "idx", idx)
 	resBlock, err := svc.getTMClient().BlockByHash(hash.Bytes())
 	if err != nil {
@@ -175,9 +171,6 @@ func (svc *Service) GetTransactionByBlockHashAndIndex(hash common.Hash, idx hexu
 
 // GetTransactionByBlockNumberAndIndex returns the transaction identified by number and index.
 func (svc *Service) GetTransactionByBlockNumberAndIndex(blockNrOrHash rpc.BlockNumberOrHash, idx hexutil.Uint64) (*rpctypes.Transaction, error) {
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
-
 	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.getTMClient(), blockNrOrHash)
 	if err != nil {
 		return nil, nil
@@ -215,7 +208,7 @@ func (svc *Service) GetTransactionByBlockNumberAndIndex(blockNrOrHash rpc.BlockN
 
 		return rpctypes.LegacyRawBlockAndTxToEthTx(result.Block, &unconfirmed.Txs[idx], chainID, &idx)
 	case rpctypes.EarliestBlockNumber:
-		blockNum = 1
+		blockNum = rpctypes.InitialBlockNumber
 	case rpctypes.LatestBlockNumber:
 		blockNum = svc.getState().Version()
 	default:
@@ -271,11 +264,6 @@ func (svc *Service) submitTransaction(tx *ethtypes.Transaction) (common.Hash, er
 		return common.Hash{}, errors.New("only replay-protected (EIP-155) transactions allowed over RPC")
 	}
 
-	txHash, err := svc.sendTx(tx)
-	if err != nil {
-		return common.Hash{}, err
-	}
-
 	// Print a log with full tx details for manual investigations and interventions
 	resBlock, err := svc.getTMClient().Block(nil)
 	if err != nil {
@@ -296,7 +284,12 @@ func (svc *Service) submitTransaction(tx *ethtypes.Transaction) (common.Hash, er
 	}
 
 	if signer.ChainID().Cmp(chainID.ToInt()) != 0 {
-		return common.Hash{}, errors.New("wrong chain id specified for RPC")
+		return common.Hash{}, ethtypes.ErrInvalidChainId
+	}
+
+	txHash, err := svc.sendTx(tx)
+	if err != nil {
+		return common.Hash{}, err
 	}
 
 	if tx.To() == nil {
@@ -309,26 +302,65 @@ func (svc *Service) submitTransaction(tx *ethtypes.Transaction) (common.Hash, er
 }
 
 // sendTx directly to the pool, all validation steps was done before
-func (svc *Service) sendTx(signedTx *ethtypes.Transaction) (common.Hash, error) {
-	tmTx, err := rpcutils.EthToOLSignedTx(signedTx)
-	if err != nil {
-		return common.Hash{}, err
-	}
-	resBrodTx, err := svc.getTMClient().BroadcastTxSync(tmTx)
-	if err != nil {
-		return common.Hash{}, err
-	}
-	txHash := common.BytesToHash(resBrodTx.Hash)
-	if resBrodTx.Code != 0 {
-		unpackedData := struct {
-			Msg string `json:"msg"`
-		}{}
+func (svc *Service) sendTx(ethTx *ethtypes.Transaction) (common.Hash, error) {
+	var (
+		resBrodTx *coretypes.ResultBroadcastTx
+		err       error
+	)
+	config := svc.ctx.GetConfig()
 
-		err = jsonSerializer.Deserialize([]byte(resBrodTx.Log), &unpackedData)
-		if err == nil {
-			return common.Hash{}, fmt.Errorf(unpackedData.Msg)
-		}
-		return common.Hash{}, fmt.Errorf(resBrodTx.Log)
+	signedTx, err := rpcutils.EthToOLSignedTx(ethTx)
+	if err != nil {
+		return common.Hash{}, err
 	}
-	return txHash, nil
+
+	olvmTx := &olvm.Transaction{}
+	err = olvmTx.Unmarshal(signedTx.RawTx.Data)
+	if err != nil {
+		return common.Hash{}, err
+	}
+
+	err = olvmTx.ValidateEthTx(svc.ctx.GetAccountKeeper(), ethTx, svc.GasPrice().ToInt(), true)
+	if err != nil {
+		return common.Hash{}, err
+	}
+
+	_, err = olvmTx.CheckIntrinsicGas(ethTx)
+	if err != nil {
+		return common.Hash{}, err
+	}
+
+	packet, err := jsonSerializer.Serialize(signedTx)
+	if err != nil {
+		return common.Hash{}, err
+	}
+
+	// support two scenarios
+	// - for fast fullnode send throughtput (async)
+	// - for web3 wallets to show an errors from validation (sync)
+	if config.Node.UseAsync {
+		svc.logger.Info("Use async mode to propagate tx", tmtypes.Tx(packet).Hash())
+		resBrodTx, err = svc.getTMClient().BroadcastTxAsync(packet)
+		if err != nil {
+			return common.Hash{}, err
+		}
+	} else {
+		svc.logger.Info("Use sync mode to propagate tx", tmtypes.Tx(packet).Hash())
+		resBrodTx, err = svc.getTMClient().BroadcastTxSync(packet)
+		if err != nil {
+			return common.Hash{}, err
+		}
+		if resBrodTx.Code != 0 {
+			unpackedData := struct {
+				Msg string `json:"msg"`
+			}{}
+
+			err = jsonSerializer.Deserialize([]byte(resBrodTx.Log), &unpackedData)
+			if err == nil {
+				return common.Hash{}, fmt.Errorf(unpackedData.Msg)
+			}
+			return common.Hash{}, fmt.Errorf(resBrodTx.Log)
+		}
+	}
+	return common.BytesToHash(resBrodTx.Hash), nil
 }

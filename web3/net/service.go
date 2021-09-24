@@ -1,6 +1,7 @@
 package net
 
 import (
+	"errors"
 	"math/big"
 	"os"
 	"sync"
@@ -51,6 +52,8 @@ func (svc *Service) Version() (string, error) {
 	if err != nil {
 		return "", err
 	}
-
+	if blockResult.Block == nil {
+		return "", errors.New("not loaded")
+	}
 	return utils.HashToBigInt(blockResult.Block.ChainID).String(), nil
 }

@@ -1,4 +1,4 @@
-package action
+package vm
 
 import (
 	"bytes"
@@ -28,7 +28,7 @@ func TestStateDBRunner(t *testing.T) {
 	}
 	currencies.Register(currency)
 
-	logger = log.NewLoggerWithPrefix(os.Stdout, "Test-Logger")
+	logger := log.NewLoggerWithPrefix(os.Stdout, "Test-Logger")
 
 	stateDB := NewCommitStateDB(
 		evm.NewContractStore(storage.NewState(storage.NewChainState("contracts", db))),

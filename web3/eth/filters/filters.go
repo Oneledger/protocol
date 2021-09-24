@@ -4,8 +4,8 @@ import (
 	"math/big"
 	"os"
 
-	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/log"
+	"github.com/Oneledger/protocol/vm"
 	rpctypes "github.com/Oneledger/protocol/web3/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -15,7 +15,7 @@ import (
 
 type Filter struct {
 	svc     rpctypes.EthService
-	stateDB *action.CommitStateDB
+	stateDB *vm.CommitStateDB
 	logger  *log.Logger
 
 	addresses []common.Address
@@ -88,7 +88,7 @@ func (f *Filter) Logs(_ rpctypes.Web3Context) ([]*ethtypes.Log, error) {
 	// If we're doing singleton block filtering, execute and return
 	if f.block != (common.Hash{}) {
 		block, err := f.svc.GetBlockByHash(f.block, false)
-		if err != nil {
+		if block == nil {
 			return nil, err
 		}
 		return f.blockLogs(block)
@@ -111,7 +111,7 @@ func (f *Filter) Logs(_ rpctypes.Web3Context) ([]*ethtypes.Log, error) {
 	for i := f.begin; i <= f.end; i++ {
 		blockNum := ethrpc.BlockNumber(i)
 		block, err := f.svc.GetBlockByNumber(ethrpc.BlockNumberOrHash{BlockNumber: &blockNum}, false)
-		if err != nil {
+		if block == nil {
 			return logs, err
 		}
 
@@ -119,7 +119,7 @@ func (f *Filter) Logs(_ rpctypes.Web3Context) ([]*ethtypes.Log, error) {
 			continue
 		}
 
-		logsMatched := f.checkMatches(block.Transactions)
+		logsMatched := f.checkMatches(block.Hash, block.Transactions)
 		logs = append(logs, logsMatched...)
 	}
 
@@ -134,17 +134,20 @@ func (f *Filter) blockLogs(block *rpctypes.Block) (logs []*types.Log, err error)
 	}
 	var logsList = [][]*ethtypes.Log{}
 
+	blockLogs, err := f.stateDB.GetLogs(block.Hash)
+	if err != nil {
+		return []*ethtypes.Log{}, err
+	}
+
 	f.logger.Debug("blockLogs", "iterate txs", len(block.Transactions))
 	for _, itx := range block.Transactions {
 		txHash, ok := itx.(common.Hash)
 		if !ok {
 			continue
 		}
-		logs, err := f.stateDB.GetLogs(txHash)
-		if err != nil {
-			continue
+		if logs, ok := blockLogs.Logs[txHash]; ok {
+			logsList = append(logsList, logs)
 		}
-		logsList = append(logsList, logs)
 	}
 	f.logger.Debug("blockLogs", "check unfiltered", len(logsList))
 	unfiltered := []*ethtypes.Log{}
@@ -163,15 +166,20 @@ func (f *Filter) blockLogs(block *rpctypes.Block) (logs []*types.Log, err error)
 // checkMatches checks if the logs from the a list of transactions transaction
 // contain any log events that  match the filter criteria. This function is
 // called when the bloom filter signals a potential match.
-func (f *Filter) checkMatches(transactions []interface{}) []*ethtypes.Log {
+func (f *Filter) checkMatches(bHash common.Hash, transactions []interface{}) []*ethtypes.Log {
 	unfiltered := []*ethtypes.Log{}
+
+	blockLogs, err := f.stateDB.GetLogs(bHash)
+	if err != nil {
+		return []*ethtypes.Log{}
+	}
 	for _, itx := range transactions {
 		txHash, ok := itx.(common.Hash)
 		if !ok {
 			continue
 		}
-		logs, err := f.stateDB.GetLogs(txHash)
-		if err != nil {
+		logs, ok := blockLogs.Logs[txHash]
+		if !ok {
 			// ignore error if transaction didn't set any logs (eg: when tx type is not
 			// MsgEthereumTx or MsgEthermint)
 			continue
