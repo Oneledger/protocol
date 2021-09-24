@@ -78,8 +78,8 @@ func (s *Server) start(rpcInfo interface{}, apis map[string]rpctypes.Web3Service
 	srv := &http.Server{
 		Addr:         uri,
 		Handler:      handler,
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
+		ReadTimeout:  60 * time.Second,
+		WriteTimeout: 60 * time.Second,
 	}
 	srv.SetKeepAlivesEnabled(keepAlive)
 
