@@ -21,8 +21,8 @@ import (
 )
 
 func (svc *Service) GetStorageAt(address common.Address, key string, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
+	// svc.mu.Lock()
+	// defer svc.mu.Unlock()
 
 	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.getTMClient(), blockNrOrHash)
 	if err != nil {
@@ -50,8 +50,8 @@ func (svc *Service) GetStorageAt(address common.Address, key string, blockNrOrHa
 }
 
 func (svc *Service) GetCode(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
+	// svc.mu.Lock()
+	// defer svc.mu.Unlock()
 
 	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.getTMClient(), blockNrOrHash)
 	if err != nil {
@@ -79,8 +79,8 @@ func (svc *Service) GetCode(address common.Address, blockNrOrHash rpc.BlockNumbe
 }
 
 func (svc *Service) Call(call rpctypes.CallArgs, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
+	// svc.mu.Lock()
+	// defer svc.mu.Unlock()
 
 	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.getTMClient(), blockNrOrHash)
 	if err != nil {
@@ -106,8 +106,8 @@ func (svc *Service) Call(call rpctypes.CallArgs, blockNrOrHash rpc.BlockNumberOr
 }
 
 func (svc *Service) EstimateGas(call rpctypes.CallArgs) (hexutil.Uint64, error) {
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
+	// svc.mu.Lock()
+	// defer svc.mu.Unlock()
 
 	svc.logger.Debug("eth_estimateGas", "args", call)
 	height := svc.getState().Version()

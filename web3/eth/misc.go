@@ -59,7 +59,7 @@ func (svc *Service) Coinbase() (common.Address, error) {
 		return common.Address{}, err
 	}
 
-	return common.BytesToAddress(pubKeyHander.Bytes()), nil
+	return common.BytesToAddress(pubKeyHander.Address().Bytes()), nil
 }
 
 // Mining returns whether or not this node is currently mining. Always false.

@@ -6,6 +6,7 @@ import (
 
 	"github.com/Oneledger/protocol/action"
 	"github.com/Oneledger/protocol/action/helpers"
+	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/status_codes"
 	"github.com/Oneledger/protocol/utils"
@@ -144,12 +145,9 @@ func (tx *Transaction) validateSigner(ctx *action.Context, signedTx action.Signe
 	return nil
 }
 
-// validateCheckTx checks whether a transaction is valid according to the consensus
+// ValidateEthTx checks whether a transaction is valid according to the consensus
 // rules and adheres to some heuristic limits of the local node (price and size).
-func (tx *Transaction) validateTx(ctx *action.Context, tmTx action.RawTx, local bool) error {
-	ethTx := tx.tmToEthTx(ctx, tmTx)
-
-	keeper := ctx.StateDB.GetAccountKeeper()
+func (tx *Transaction) ValidateEthTx(keeper balance.AccountKeeper, ethTx *ethtypes.Transaction, minFee *big.Int, local bool) error {
 	// Accept only legacy transactions until EIP-2718/2930 activates.
 	if ethTx.Type() != ethtypes.LegacyTxType {
 		return ethtypes.ErrTxTypeNotSupported
@@ -168,7 +166,7 @@ func (tx *Transaction) validateTx(ctx *action.Context, tmTx action.RawTx, local 
 		return ethcore.ErrGasLimit
 	}
 	// Drop non-local transactions under our own minimal accepted gas price
-	if !local && ethTx.GasPrice().Cmp(ctx.FeePool.GetOpt().MinFee().Amount.BigInt()) < 0 {
+	if !local && ethTx.GasPrice().Cmp(minFee) < 0 {
 		return ethcore.ErrUnderpriced
 	}
 	// Ensure the transaction adheres to nonce ordering
@@ -237,7 +235,12 @@ func (otx olvmTx) ProcessCheck(ctx *action.Context, rawTx action.RawTx) (ok bool
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrWrongTxType, tx.Tags(), err)
 	}
-	err = tx.validateTx(ctx, rawTx, true)
+	err = tx.ValidateEthTx(
+		ctx.StateDB.GetAccountKeeper(),
+		tx.tmToEthTx(ctx, rawTx),
+		ctx.FeePool.GetOpt().MinFee().Amount.BigInt(),
+		true,
+	)
 	if err != nil {
 		return false, action.Response{
 			Events: action.GetEvent(tx.Tags(), err.Error()),
@@ -278,7 +281,12 @@ func runOLVM(ctx *action.Context, rawTx action.RawTx) (bool, action.Response) {
 
 	tags := tx.Tags()
 
-	err = tx.validateTx(ctx, rawTx, false)
+	err = tx.ValidateEthTx(
+		ctx.StateDB.GetAccountKeeper(),
+		tx.tmToEthTx(ctx, rawTx),
+		ctx.FeePool.GetOpt().MinFee().Amount.BigInt(),
+		false,
+	)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, status_codes.ProtocolError{
 			Msg:  err.Error(),

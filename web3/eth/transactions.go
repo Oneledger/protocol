@@ -2,9 +2,9 @@ package eth
 
 import (
 	"errors"
-	"fmt"
 	"math/big"
 
+	"github.com/Oneledger/protocol/action/olvm"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/utils"
 	rpctypes "github.com/Oneledger/protocol/web3/types"
@@ -296,7 +296,7 @@ func (svc *Service) submitTransaction(tx *ethtypes.Transaction) (common.Hash, er
 	}
 
 	if signer.ChainID().Cmp(chainID.ToInt()) != 0 {
-		return common.Hash{}, errors.New("wrong chain id specified for RPC")
+		return common.Hash{}, ethtypes.ErrInvalidChainId
 	}
 
 	if tx.To() == nil {
@@ -309,26 +309,31 @@ func (svc *Service) submitTransaction(tx *ethtypes.Transaction) (common.Hash, er
 }
 
 // sendTx directly to the pool, all validation steps was done before
-func (svc *Service) sendTx(signedTx *ethtypes.Transaction) (common.Hash, error) {
-	tmTx, err := rpcutils.EthToOLSignedTx(signedTx)
+func (svc *Service) sendTx(ethTx *ethtypes.Transaction) (common.Hash, error) {
+	signedTx, err := rpcutils.EthToOLSignedTx(ethTx)
 	if err != nil {
 		return common.Hash{}, err
 	}
-	resBrodTx, err := svc.getTMClient().BroadcastTxSync(tmTx)
-	if err != nil {
-		return common.Hash{}, err
-	}
-	txHash := common.BytesToHash(resBrodTx.Hash)
-	if resBrodTx.Code != 0 {
-		unpackedData := struct {
-			Msg string `json:"msg"`
-		}{}
 
-		err = jsonSerializer.Deserialize([]byte(resBrodTx.Log), &unpackedData)
-		if err == nil {
-			return common.Hash{}, fmt.Errorf(unpackedData.Msg)
-		}
-		return common.Hash{}, fmt.Errorf(resBrodTx.Log)
+	olvmTx := &olvm.Transaction{}
+	err = olvmTx.Unmarshal(signedTx.RawTx.Data)
+	if err != nil {
+		return common.Hash{}, err
 	}
-	return txHash, nil
+
+	err = olvmTx.ValidateEthTx(svc.ctx.GetAccountKeeper(), ethTx, svc.GasPrice().ToInt(), true)
+	if err != nil {
+		return common.Hash{}, err
+	}
+
+	packet, err := jsonSerializer.Serialize(signedTx)
+	if err != nil {
+		return common.Hash{}, err
+	}
+
+	resBrodTx, err := svc.getTMClient().BroadcastTxAsync(packet)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	return common.BytesToHash(resBrodTx.Hash), nil
 }

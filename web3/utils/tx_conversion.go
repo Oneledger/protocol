@@ -12,7 +12,6 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/google/uuid"
-	tmtypes "github.com/tendermint/tendermint/types"
 )
 
 var (
@@ -20,7 +19,7 @@ var (
 	big8           = big.NewInt(8)
 )
 
-func EthToOLSignedTx(tx *ethtypes.Transaction) (tmtypes.Tx, error) {
+func EthToOLSignedTx(tx *ethtypes.Transaction) (*action.SignedTx, error) {
 	chainId := tx.ChainId()
 
 	signer := ethtypes.NewEIP155Signer(chainId)
@@ -32,16 +31,16 @@ func EthToOLSignedTx(tx *ethtypes.Transaction) (tmtypes.Tx, error) {
 	sighash := signer.Hash(tx)
 	pub, err := utils.RecoverPlain(sighash, R, S, V, true)
 	if err != nil {
-		return []byte{}, err
+		return nil, err
 	}
 	pubKey, err := keys.GetPublicKeyFromBytes(crypto.CompressPubkey(pub), keys.ETHSECP)
 	if err != nil {
-		return []byte{}, err
+		return nil, err
 	}
 
 	handler, err := pubKey.GetHandler()
 	if err != nil {
-		return []byte{}, err
+		return nil, err
 	}
 
 	sigs := []action.Signature{{Signer: pubKey, Signed: utils.ToUncompressedSig(R, S, V)}}
@@ -49,7 +48,7 @@ func EthToOLSignedTx(tx *ethtypes.Transaction) (tmtypes.Tx, error) {
 	// memo creation
 	uuidNew, err := uuid.NewUUID()
 	if err != nil {
-		return []byte{}, err
+		return nil, err
 	}
 	memo := uuidNew.String()
 
@@ -77,7 +76,7 @@ func EthToOLSignedTx(tx *ethtypes.Transaction) (tmtypes.Tx, error) {
 	}
 	data, err := msg.Marshal()
 	if err != nil {
-		return []byte{}, err
+		return nil, err
 	}
 
 	rawTx := action.RawTx{
@@ -90,10 +89,5 @@ func EthToOLSignedTx(tx *ethtypes.Transaction) (tmtypes.Tx, error) {
 		RawTx:      rawTx,
 		Signatures: sigs,
 	}
-
-	packet, err := jsonSerializer.Serialize(signedTx)
-	if err != nil {
-		return []byte{}, err
-	}
-	return packet, nil
+	return &signedTx, nil
 }

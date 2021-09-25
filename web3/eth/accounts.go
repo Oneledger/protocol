@@ -15,8 +15,8 @@ import (
 // Accounts returns the list of accounts available to this node.
 func (svc *Service) Accounts() ([]common.Address, error) {
 	svc.logger.Debug("eth_accounts")
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
+	// svc.mu.Lock()
+	// defer svc.mu.Unlock()
 
 	addresses := make([]common.Address, 0) // return [] instead of nil if empty
 
@@ -41,8 +41,8 @@ func (svc *Service) Accounts() ([]common.Address, error) {
 
 // GetBalance returns the provided account's balance up to the provided block number.
 func (svc *Service) GetBalance(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (*hexutil.Big, error) {
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
+	// svc.mu.Lock()
+	// defer svc.mu.Unlock()
 
 	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.getTMClient(), blockNrOrHash)
 	if err != nil {
