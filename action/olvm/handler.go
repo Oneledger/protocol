@@ -230,47 +230,23 @@ func (otx olvmTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool,
 
 func (otx olvmTx) ProcessCheck(ctx *action.Context, rawTx action.RawTx) (ok bool, result action.Response) {
 	ctx.Logger.Detail("Processing OLVM Transaction for CheckTx", rawTx)
-	tx := &Transaction{}
-	err := tx.Unmarshal(rawTx.Data)
-	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrWrongTxType, tx.Tags(), err)
-	}
-	err = tx.ValidateEthTx(
-		ctx.StateDB.GetAccountKeeper(),
-		tx.tmToEthTx(ctx, rawTx),
-		ctx.FeePool.GetOpt().MinFee().Amount.BigInt(),
-		true,
-	)
-	if err != nil {
-		return false, action.Response{
-			Events: action.GetEvent(tx.Tags(), err.Error()),
-			Log:    err.Error(),
-		}
-	}
-	// NOTE: We do not need to run a logic on smart contract, but only calculate a gas
-	// maybe it will be required a stateDB copy without deliver and clear it's dirties
-	ok = true
-	result = action.Response{GasUsed: -1}
+	ok, result = runOLVM(ctx, rawTx, true)
 	return
 }
 
 func (otx olvmTx) ProcessDeliver(ctx *action.Context, rawTx action.RawTx) (ok bool, result action.Response) {
 	ctx.Logger.Detail("Processing OLVM Transaction for DeliverTx", rawTx)
-	ok, result = runOLVM(ctx, rawTx)
+	ok, result = runOLVM(ctx, rawTx, false)
 	return
 }
 
 func (otx olvmTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas, gasUsed action.Gas) (bool, action.Response) {
-	// -1 if ProcessCheck
-	if gasUsed == -1 {
-		return true, action.Response{}
-	}
-	ok, result := action.ContractFeeHandling(ctx, signedTx, gasUsed)
+	ok, result := action.ContractFeeHandling(ctx, signedTx, gasUsed, start)
 	ctx.Logger.Detailf("Processing OLVM Transaction for BasicFeeHandling: %+v, status - %t\n", result, ok)
 	return ok, result
 }
 
-func runOLVM(ctx *action.Context, rawTx action.RawTx) (bool, action.Response) {
+func runOLVM(ctx *action.Context, rawTx action.RawTx, isSimulation bool) (bool, action.Response) {
 	tx := &Transaction{}
 	err := tx.Unmarshal(rawTx.Data)
 	if err != nil {
@@ -281,11 +257,20 @@ func runOLVM(ctx *action.Context, rawTx action.RawTx) (bool, action.Response) {
 
 	tags := tx.Tags()
 
+	var stateDB *action.CommitStateDB = ctx.StateDB
+
+	if isSimulation {
+		stateDB = ctx.StateDB.Copy()
+		stateDB.EnableSimulation()
+	} else {
+		stateDB = ctx.StateDB
+	}
+
 	err = tx.ValidateEthTx(
-		ctx.StateDB.GetAccountKeeper(),
+		stateDB.GetAccountKeeper(),
 		tx.tmToEthTx(ctx, rawTx),
 		ctx.FeePool.GetOpt().MinFee().Amount.BigInt(),
-		false,
+		isSimulation,
 	)
 	if err != nil {
 		return helpers.LogAndReturnFalse(ctx.Logger, status_codes.ProtocolError{
@@ -294,7 +279,7 @@ func runOLVM(ctx *action.Context, rawTx action.RawTx) (bool, action.Response) {
 		}, tags, err)
 	}
 
-	evmTx := action.NewEVMTransaction(ctx.StateDB, ctx.Header, tx.From, tx.To, tx.Nonce, tx.Amount.Value.BigInt(), tx.Data, false)
+	evmTx := action.NewEVMTransaction(stateDB, ctx.Header, tx.From, tx.To, tx.Nonce, tx.Amount.Value.BigInt(), tx.Data, isSimulation)
 
 	vmenv := evmTx.NewEVM()
 	execResult, err := evmTx.Apply(vmenv, rawTx)

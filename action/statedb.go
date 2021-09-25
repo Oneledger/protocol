@@ -12,6 +12,7 @@ import (
 	"github.com/Oneledger/protocol/log"
 	"github.com/Oneledger/protocol/storage"
 	ethcmn "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	ethvm "github.com/ethereum/go-ethereum/core/vm"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
@@ -637,7 +638,9 @@ func CopyCommitStateDB(from, to *CommitStateDB) {
 	from.lock.Lock()
 	defer from.lock.Unlock()
 
+	to.contractStore = from.contractStore
 	to.accountKeeper = from.accountKeeper
+	to.logger = from.logger
 	to.stateObjects = []stateEntry{}
 	to.addressToObjectIndex = make(map[ethcmn.Address]int)
 	to.stateObjectsDirty = make(map[ethcmn.Address]struct{})
@@ -647,6 +650,7 @@ func CopyCommitStateDB(from, to *CommitStateDB) {
 	to.hashToPreimageIndex = make(map[ethcmn.Hash]int, len(from.hashToPreimageIndex))
 	to.journal = newJournal()
 	to.thash = from.thash
+	to.bheight = from.bheight
 	to.bhash = from.bhash
 	to.txIndex = from.txIndex
 	validRevisions := make([]revision, len(from.validRevisions))
@@ -683,6 +687,15 @@ func CopyCommitStateDB(from, to *CommitStateDB) {
 			to.setStateObject(from.stateObjects[idx].stateObject.deepCopy(to))
 			to.stateObjectsDirty[addr] = struct{}{}
 		}
+	}
+
+	for hash, logs := range from.logs {
+		cpy := make([]*types.Log, len(logs))
+		for i, l := range logs {
+			cpy[i] = new(types.Log)
+			*cpy[i] = *l
+		}
+		to.logs[hash] = cpy
 	}
 
 	// copy pre-images
