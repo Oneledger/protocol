@@ -1,6 +1,7 @@
 package vm
 
 import (
+	"errors"
 	"os"
 	"testing"
 
@@ -40,25 +41,79 @@ func TestCommitStateDB(t *testing.T) {
 		),
 		logger,
 	)
-	stateDB.SetHeightHash(1, ethcmn.Hash{})
 
-	t.Run("test snapshot and it is ok", func(t *testing.T) {
+	t.Run("test set err and it is ok", func(t *testing.T) {
+		stateDB.Reset()
 		stateDB.SetHeightHash(1, ethcmn.Hash{})
-		defer stateDB.Reset()
 
 		snap := stateDB.Snapshot()
-		assert.Equal(t, 0, len(stateDB.journal.entries))
 
-		stateDB.AddAddressToAccessList(ethcmn.Address{1})
-		assert.Equal(t, 1, len(stateDB.journal.entries))
+		stateDB.GetOrNewStateObject(ethcmn.Address{1})
+		{
+			assert.Equal(t, 1, len(stateDB.stateObjects))
+			assert.Equal(t, 1, len(stateDB.addressToObjectIndex))
+			assert.Equal(t, 1, len(stateDB.journal.entries))
+		}
+
+		stateDB.setError(errors.New("just test err"))
+
+		assert.Error(t, stateDB.Finalise(true))
+		{
+			assert.Equal(t, 1, len(stateDB.stateObjects))
+			assert.Equal(t, 1, len(stateDB.addressToObjectIndex))
+			assert.Equal(t, 1, len(stateDB.journal.entries))
+		}
 
 		stateDB.RevertToSnapshot(snap)
+		{
+			assert.Equal(t, 0, len(stateDB.stateObjects))
+			assert.Equal(t, 0, len(stateDB.addressToObjectIndex))
+			assert.Equal(t, 0, len(stateDB.journal.entries))
+		}
+	})
+
+	t.Run("test finalize and it is ok", func(t *testing.T) {
+		stateDB.Reset()
+		stateDB.SetHeightHash(1, ethcmn.Hash{})
+
+		assert.Equal(t, 0, len(stateDB.journal.entries))
+
+		stateDB.GetOrNewStateObject(ethcmn.Address{1})
+		assert.Equal(t, 1, len(stateDB.stateObjects))
+		assert.Equal(t, 1, len(stateDB.addressToObjectIndex))
+		assert.Equal(t, 1, len(stateDB.journal.entries))
+
+		assert.NoError(t, stateDB.Finalise(true))
+		assert.Equal(t, 0, len(stateDB.stateObjects))
+		assert.Equal(t, 0, len(stateDB.addressToObjectIndex))
 		assert.Equal(t, 0, len(stateDB.journal.entries))
 	})
 
-	t.Run("test copy state db and it is ok", func(t *testing.T) {
+	t.Run("test snapshot and it is ok", func(t *testing.T) {
+		stateDB.Reset()
 		stateDB.SetHeightHash(1, ethcmn.Hash{})
-		defer stateDB.Reset()
+
+		assert.Equal(t, 0, stateDB.nextRevisionID)
+		snap := stateDB.Snapshot()
+		assert.Equal(t, 0, len(stateDB.journal.entries))
+		assert.Equal(t, 1, stateDB.nextRevisionID)
+
+		stateDB.GetOrNewStateObject(ethcmn.Address{1})
+		assert.Equal(t, 1, len(stateDB.stateObjects))
+		assert.Equal(t, 1, len(stateDB.addressToObjectIndex))
+		assert.Equal(t, 1, len(stateDB.journal.entries))
+
+		stateDB.RevertToSnapshot(snap)
+		assert.Equal(t, 0, len(stateDB.stateObjects))
+		assert.Equal(t, 0, len(stateDB.addressToObjectIndex))
+		assert.Equal(t, 0, len(stateDB.journal.entries))
+
+		assert.Equal(t, 1, stateDB.nextRevisionID)
+	})
+
+	t.Run("test copy state db and it is ok", func(t *testing.T) {
+		stateDB.Reset()
+		stateDB.SetHeightHash(1, ethcmn.Hash{})
 
 		stateDB.Snapshot()
 		assert.Equal(t, 0, len(stateDB.journal.entries))
@@ -77,8 +132,8 @@ func TestCommitStateDB(t *testing.T) {
 	})
 
 	t.Run("test log addition and it is ok", func(t *testing.T) {
+		stateDB.Reset()
 		stateDB.SetHeightHash(1, ethcmn.Hash{})
-		defer stateDB.Reset()
 
 		stateDB.thash = ethcmn.BytesToHash([]byte{1, 2})
 		assert.Equal(t, 0, int(stateDB.logSize))

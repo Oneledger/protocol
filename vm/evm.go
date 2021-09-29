@@ -191,11 +191,14 @@ func (etx *EVMTransaction) Apply() (*ExecutionResult, error) {
 	// no gas fee cap and tips, as another reward system in protocol
 	msg := ethtypes.NewMessage(etx.From(), etx.To(), etx.nonce, etx.value, etx.gas, etx.gasPrice, big.NewInt(0), big.NewInt(0), etx.data, etx.AccessList(), etx.isSimulation)
 
+	snapshot := etx.stateDB.Snapshot()
+
 	executionResult, err := ApplyMessage(vmenv, msg, etx.gaspool)
 
 	if !etx.isSimulation {
 		// Ensure any modifications are committed to the state
 		if err := etx.stateDB.Finalise(true); err != nil {
+			etx.stateDB.RevertToSnapshot(snapshot)
 			return nil, err
 		}
 	}

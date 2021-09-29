@@ -257,7 +257,7 @@ func (app *App) txChecker() txChecker {
 		defer app.handlePanic()
 
 		if app.VerifyCache(msg.Tx) {
-			loginfo := fmt.Sprintf("checkTx duplicated tx: %s", hex.EncodeToString(utils.SHA2(msg.Tx)))
+			loginfo := fmt.Sprintf("checkTx duplicated tx: %s", hex.EncodeToString(utils.GetTransactionHash(msg.Tx)))
 			app.logger.Detail(loginfo)
 			return ResponseCheckTx{
 				Code: CodeNotOK.uint32(),
@@ -321,8 +321,11 @@ func (app *App) txDeliverer() txDeliverer {
 	return func(msg RequestDeliverTx) ResponseDeliverTx {
 		defer app.handlePanic()
 
+		app.Context.stateDB.Prepare(ethcmn.BytesToHash(utils.GetTransactionHash(msg.Tx)))
+		defer app.Context.stateDB.Finality()
+
 		if app.VerifyCache(msg.Tx) {
-			loginfo := fmt.Sprintf("deliverTx duplicated tx: %s", hex.EncodeToString(utils.SHA2(msg.Tx)))
+			loginfo := fmt.Sprintf("deliverTx duplicated tx: %s", hex.EncodeToString(utils.GetTransactionHash(msg.Tx)))
 			app.logger.Detail(loginfo)
 			return ResponseDeliverTx{
 				Code: CodeNotOK.uint32(),
@@ -343,8 +346,6 @@ func (app *App) txDeliverer() txDeliverer {
 		handler := txCtx.Router.Handler(tx.Type)
 
 		gas := txCtx.State.ConsumedGas()
-
-		app.Context.stateDB.Prepare(ethcmn.BytesToHash(utils.GetTransactionHash(msg.Tx)))
 
 		ok, response := handler.ProcessDeliver(txCtx, tx.RawTx)
 

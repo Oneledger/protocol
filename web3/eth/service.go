@@ -8,6 +8,7 @@ import (
 	"github.com/Oneledger/protocol/vm"
 
 	"github.com/Oneledger/protocol/storage"
+	rpcfilters "github.com/Oneledger/protocol/web3/eth/filters"
 	rpctypes "github.com/Oneledger/protocol/web3/types"
 
 	rpcclient "github.com/Oneledger/protocol/client"
@@ -19,14 +20,20 @@ type Service struct {
 	ctx    rpctypes.Web3Context
 	logger *log.Logger
 
-	mu sync.Mutex
+	filterAPI *rpcfilters.PublicFilterAPI
+	mu        sync.Mutex
 }
 
 func NewService(ctx rpctypes.Web3Context) *Service {
-	return &Service{ctx: ctx, logger: log.NewLoggerWithPrefix(os.Stdout, "eth")}
+	svc := &Service{
+		ctx:    ctx,
+		logger: log.NewLoggerWithPrefix(os.Stdout, "eth"),
+	}
+	svc.filterAPI = rpcfilters.NewPublicFilterAPI(svc)
+	return svc
 }
 
-func (svc *Service) getTMClient() rpcclient.Client {
+func (svc *Service) GetTMClient() rpcclient.Client {
 	return svc.ctx.GetAPI().RPCClient()
 }
 

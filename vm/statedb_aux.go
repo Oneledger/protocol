@@ -13,7 +13,11 @@ import (
 func (s *CommitStateDB) createObject(addr ethcmn.Address) (newObj, prevObj *stateObject) {
 	prevObj = s.getStateObject(addr)
 
-	acc, _ := s.accountKeeper.NewAccountWithAddress(keys.Address(addr.Bytes()))
+	acc, err := s.accountKeeper.NewAccountWithAddress(keys.Address(addr.Bytes()))
+	if err != nil {
+		s.setError(fmt.Errorf("failed to create a new address for %s", addr.String()))
+		return nil, prevObj
+	}
 	newObj = newStateObject(s, acc)
 	newObj.setNonce(0) // sets the object to dirty
 
@@ -89,10 +93,8 @@ func (s *CommitStateDB) setError(err error) {
 }
 
 func (s *CommitStateDB) clearJournalAndRefund() {
-	if len(s.journal.entries) > 0 {
-		s.journal = newJournal()
-		s.refund = 0
-	}
+	s.journal = newJournal()
+	s.refund = 0
 	s.validRevisions = s.validRevisions[:0]
 }
 

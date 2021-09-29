@@ -22,7 +22,7 @@ import (
 )
 
 func (svc *Service) GetStorageAt(address common.Address, key string, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
-	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.getTMClient(), blockNrOrHash)
+	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.GetTMClient(), blockNrOrHash)
 	if err != nil {
 		svc.logger.Debug("eth_getStorageAt", "block err", err)
 		return hexutil.Bytes{}, nil
@@ -48,7 +48,7 @@ func (svc *Service) GetStorageAt(address common.Address, key string, blockNrOrHa
 }
 
 func (svc *Service) GetCode(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
-	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.getTMClient(), blockNrOrHash)
+	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.GetTMClient(), blockNrOrHash)
 	if err != nil {
 		svc.logger.Debug("eth_getCode", "block err", err)
 		return hexutil.Bytes{}, nil
@@ -74,7 +74,7 @@ func (svc *Service) GetCode(address common.Address, blockNrOrHash rpc.BlockNumbe
 }
 
 func (svc *Service) Call(call rpctypes.CallArgs, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
-	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.getTMClient(), blockNrOrHash)
+	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.GetTMClient(), blockNrOrHash)
 	if err != nil {
 		svc.logger.Debug("eth_call", "block err", err)
 		return nil, nil
@@ -207,7 +207,7 @@ func (svc *Service) getNonce(address common.Address, height uint64, chainID *big
 		pendingNonce uint64
 	)
 	if isPending {
-		pendingNonce = rpcutils.GetPendingTxCountByAddress(svc.getTMClient(), address)
+		pendingNonce = rpcutils.GetPendingTxCountByAddress(svc.GetTMClient(), address)
 	}
 	ethAcc, err := svc.ctx.GetAccountKeeper().GetVersionedAccount(address.Bytes(), int64(height))
 	if err == nil {

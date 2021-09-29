@@ -1,6 +1,8 @@
 package types
 
 import (
+	"math/big"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -24,6 +26,27 @@ type CallArgs struct {
 	Data     *hexutil.Bytes  `json:"data"`
 }
 
+// Header represents a block header in the Ethereum blockchain.
+type Header struct {
+	ParentHash  common.Hash         `json:"parentHash"       gencodec:"required"`
+	UncleHash   common.Hash         `json:"sha3Uncles"       gencodec:"required"`
+	Coinbase    common.Address      `json:"miner"            gencodec:"required"`
+	Root        common.Hash         `json:"stateRoot"        gencodec:"required"`
+	TxHash      common.Hash         `json:"transactionsRoot" gencodec:"required"`
+	ReceiptHash common.Hash         `json:"receiptsRoot"     gencodec:"required"`
+	Bloom       ethtypes.Bloom      `json:"logsBloom"        gencodec:"required"`
+	Difficulty  *big.Int            `json:"difficulty"       gencodec:"required"`
+	Number      *big.Int            `json:"number"           gencodec:"required"`
+	GasLimit    *big.Int            `json:"gasLimit"         gencodec:"required"`
+	GasUsed     *big.Int            `json:"gasUsed"          gencodec:"required"`
+	Time        uint64              `json:"timestamp"        gencodec:"required"`
+	Extra       []byte              `json:"extraData"        gencodec:"required"`
+	Hash        common.Hash         `json:"hash"`
+	Size        uint64              `json:"size"`
+	MixDigest   common.Hash         `json:"mixHash"`
+	Nonce       ethtypes.BlockNonce `json:"nonce"`
+}
+
 // Block represents a block returned to RPC clients.
 type Block struct {
 	Number           hexutil.Uint64      `json:"number"`
@@ -40,7 +63,7 @@ type Block struct {
 	TotalDifficulty  hexutil.Uint64      `json:"totalDifficulty"`
 	ExtraData        hexutil.Bytes       `json:"extraData"`
 	Size             hexutil.Uint64      `json:"size"`
-	GasLimit         hexutil.Uint64      `json:"gasLimit"`
+	GasLimit         *hexutil.Big        `json:"gasLimit"`
 	GasUsed          *hexutil.Big        `json:"gasUsed"`
 	Timestamp        hexutil.Uint64      `json:"timestamp"`
 	Uncles           []common.Hash       `json:"uncles"`

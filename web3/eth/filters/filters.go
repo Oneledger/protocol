@@ -155,7 +155,7 @@ func (f *Filter) blockLogs(block *rpctypes.Block) (logs []*types.Log, err error)
 		unfiltered = append(unfiltered, logs...)
 	}
 	f.logger.Debug("blockLogs", "unfiltered", len(unfiltered))
-	fLogs := filterLogs(unfiltered, nil, nil, f.addresses, f.topics)
+	fLogs := FilterLogs(unfiltered, nil, nil, f.addresses, f.topics)
 	f.logger.Debug("blockLogs", "filtered", len(fLogs))
 	if len(fLogs) == 0 {
 		return []*ethtypes.Log{}, nil
@@ -180,13 +180,11 @@ func (f *Filter) checkMatches(bHash common.Hash, transactions []interface{}) []*
 		}
 		logs, ok := blockLogs.Logs[txHash]
 		if !ok {
-			// ignore error if transaction didn't set any logs (eg: when tx type is not
-			// MsgEthereumTx or MsgEthermint)
 			continue
 		}
 
 		unfiltered = append(unfiltered, logs...)
 	}
 
-	return filterLogs(unfiltered, big.NewInt(f.begin), big.NewInt(f.end), f.addresses, f.topics)
+	return FilterLogs(unfiltered, big.NewInt(f.begin), big.NewInt(f.end), f.addresses, f.topics)
 }

@@ -3,6 +3,7 @@ package types
 import (
 	"github.com/Oneledger/protocol/app/node"
 	"github.com/Oneledger/protocol/client"
+	rpcclient "github.com/Oneledger/protocol/client"
 	"github.com/Oneledger/protocol/config"
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/evm"
@@ -19,6 +20,7 @@ type Web3Service interface{}
 
 type EthService interface {
 	Web3Service
+	GetTMClient() rpcclient.Client
 	GetStateDB() *vm.CommitStateDB
 	GetBlockByHash(hash common.Hash, fullTx bool) (*Block, error)
 	GetBlockByNumber(blockNrOrHash rpc.BlockNumberOrHash, fullTx bool) (*Block, error)

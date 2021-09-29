@@ -19,7 +19,7 @@ func (svc *Service) ProtocolVersion() string {
 func (svc *Service) ChainId() (hexutil.Big, error) {
 	svc.logger.Debug("eth_chainId")
 	// TODO: Find a way to get chain id not from api call
-	genResult, err := svc.getTMClient().Genesis()
+	genResult, err := svc.GetTMClient().Genesis()
 	if err != nil {
 		return hexutil.Big(*big.NewInt(0)), err
 	}
@@ -32,7 +32,7 @@ func (svc *Service) ChainId() (hexutil.Big, error) {
 func (svc *Service) Syncing() (interface{}, error) {
 	svc.logger.Debug("eth_syncing")
 
-	status, err := svc.getTMClient().Status()
+	status, err := svc.GetTMClient().Status()
 	if err != nil {
 		return false, err
 	}

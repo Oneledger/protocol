@@ -117,12 +117,17 @@ func (s *CommitStateDB) GetAvailableGas() uint64 {
 }
 
 // Prepare sets the current transaction hash which is
-// used when the EVM emits new state logs.
+// used when the EVM emits new state logs. (no state change)
 func (s *CommitStateDB) Prepare(thash ethcmn.Hash) {
 	s.thash = thash
 	s.txIndex = s.txCount
 	// refreshing it
 	s.accessList = newAccessList()
+}
+
+// Finality used to increment tx counter, clear staff and etc. (no state change)
+func (s *CommitStateDB) Finality() {
+	s.txCount++
 }
 
 // Error returns the first non-nil error the StateDB encountered.
@@ -134,8 +139,10 @@ func (s *CommitStateDB) Error() error {
 // removing the s destructed objects and clearing the journal as well as the
 // refunds.
 func (s *CommitStateDB) Finalise(deleteEmptyObjects bool) error {
-	// increment tx counter always event the error because tendermint commit a wrong txs
-	s.txCount++
+	defer func() {
+		s.dbErr = nil
+		s.hashToPreimageIndex = make(map[ethcmn.Hash]int)
+	}()
 
 	if s.dbErr != nil {
 		return fmt.Errorf("commit aborted due to earlier error: %v", s.dbErr)
@@ -193,8 +200,9 @@ func (s *CommitStateDB) Finalise(deleteEmptyObjects bool) error {
 	}
 	// updating bloom filter
 	s.UpdateBloom()
-	// clear state objects
+	// clear all state objects in order to have a fresh states at the new tx
 	s.stateObjects = make([]stateEntry, 0)
+	s.stateObjectsDirty = make(map[ethcmn.Address]struct{})
 	s.addressToObjectIndex = make(map[ethcmn.Address]int)
 	// invalidate journal because reverting across transactions is not allowed
 	s.clearJournalAndRefund()
@@ -234,7 +242,8 @@ func (s *CommitStateDB) Reset() error {
 	s.txCount = 0
 	s.logs = make(map[ethcmn.Hash][]*ethtypes.Log)
 	s.bloom = big.NewInt(0)
-
+	s.dbErr = nil
+	s.nextRevisionID = 0
 	s.clearJournalAndRefund()
 	return nil
 }

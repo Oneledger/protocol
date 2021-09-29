@@ -70,6 +70,11 @@ func (s *CommitStateDB) AddLog(log *ethtypes.Log) {
 	s.logSize++
 }
 
+// GetTxLogs return current tx logs
+func (s *CommitStateDB) GetTxLogs() []*ethtypes.Log {
+	return s.logs[s.thash]
+}
+
 // GetLogs returns the current logs for a given transaction hash from the store.
 func (s *CommitStateDB) GetLogs(blockHash ethcmn.Hash) (*BlockLogs, error) {
 	bz, _ := s.contractStore.Get(evm.KeyPrefixLogs, blockHash.Bytes())

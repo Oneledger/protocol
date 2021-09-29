@@ -39,7 +39,7 @@ func (svc *Service) Accounts() ([]common.Address, error) {
 
 // GetBalance returns the provided account's balance up to the provided block number.
 func (svc *Service) GetBalance(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (*hexutil.Big, error) {
-	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.getTMClient(), blockNrOrHash)
+	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.GetTMClient(), blockNrOrHash)
 	if err != nil {
 		svc.logger.Debug("eth_getBalance", "block err", err)
 		return (*hexutil.Big)(big.NewInt(0)), nil
@@ -58,7 +58,7 @@ func (svc *Service) GetBalance(address common.Address, blockNrOrHash rpc.BlockNu
 		if err != nil {
 			return nil, err
 		}
-		rpcutils.GetPendingTxsWithCallback(svc.getTMClient(), (*big.Int)(&chainID), func(tx *rpctypes.Transaction) bool {
+		rpcutils.GetPendingTxsWithCallback(svc.GetTMClient(), (*big.Int)(&chainID), func(tx *rpctypes.Transaction) bool {
 			if bytes.Equal(tx.From.Bytes(), address.Bytes()) {
 				pendingBalance = new(big.Int).Sub(pendingBalance, tx.Value.ToInt())
 			} else if tx.To != nil && bytes.Equal(tx.To.Bytes(), address.Bytes()) {

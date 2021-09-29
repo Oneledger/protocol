@@ -21,7 +21,7 @@ func (svc *Service) BlockNumber() hexutil.Big {
 }
 
 func (svc *Service) blockWithBloom(tmBlock *tmtypes.Block, fullTx bool) (*rpctypes.Block, error) {
-	block, err := rpctypes.EthBlockFromTendermint(svc.getTMClient(), tmBlock, fullTx)
+	block, err := rpctypes.EthBlockFromTendermint(tmBlock, fullTx)
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +36,7 @@ func (svc *Service) blockWithBloom(tmBlock *tmtypes.Block, fullTx bool) (*rpctyp
 func (svc *Service) GetBlockByHash(hash common.Hash, fullTx bool) (*rpctypes.Block, error) {
 	svc.logger.Debug("eth_getBlockByHash", "hash", hash, "fullTx", fullTx)
 
-	result, err := svc.getTMClient().BlockByHash(hash.Bytes())
+	result, err := svc.GetTMClient().BlockByHash(hash.Bytes())
 	if err != nil {
 		svc.logger.Debug("eth_getBlockByHash", "block err", err)
 		return nil, nil
@@ -50,7 +50,7 @@ func (svc *Service) GetBlockByHash(hash common.Hash, fullTx bool) (*rpctypes.Blo
 
 // GetBlockByNumber returns the block identified by number.
 func (svc *Service) GetBlockByNumber(blockNrOrHash rpc.BlockNumberOrHash, fullTx bool) (*rpctypes.Block, error) {
-	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.getTMClient(), blockNrOrHash)
+	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.GetTMClient(), blockNrOrHash)
 	if err != nil {
 		svc.logger.Debug("eth_getBlockByNumber", "block err", err)
 		return nil, nil
@@ -66,7 +66,7 @@ func (svc *Service) GetBlockByNumber(blockNrOrHash rpc.BlockNumberOrHash, fullTx
 	default:
 		blockNum = height
 	}
-	result, err := svc.getTMClient().Block(&blockNum)
+	result, err := svc.GetTMClient().Block(&blockNum)
 	if err != nil {
 		svc.logger.Debug("eth_getBlockByNumber", "block err", err)
 		return nil, nil
@@ -82,7 +82,7 @@ func (svc *Service) GetBlockByNumber(blockNrOrHash rpc.BlockNumberOrHash, fullTx
 func (svc *Service) GetBlockTransactionCountByHash(hash common.Hash) *hexutil.Uint {
 	svc.logger.Debug("eth_getBlockTransactionCountByHash", "hash", hash)
 
-	result, err := svc.getTMClient().BlockByHash(hash.Bytes())
+	result, err := svc.GetTMClient().BlockByHash(hash.Bytes())
 	if err != nil {
 		return nil
 	}
@@ -96,7 +96,7 @@ func (svc *Service) GetBlockTransactionCountByHash(hash common.Hash) *hexutil.Ui
 
 // GetBlockTransactionCountByNumber returns the number of transactions in the block identified by its height.
 func (svc *Service) GetBlockTransactionCountByNumber(blockNrOrHash rpc.BlockNumberOrHash) *hexutil.Uint {
-	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.getTMClient(), blockNrOrHash)
+	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.GetTMClient(), blockNrOrHash)
 	if err != nil {
 		return nil
 	}
@@ -111,7 +111,7 @@ func (svc *Service) GetBlockTransactionCountByNumber(blockNrOrHash rpc.BlockNumb
 		blockNum = svc.getState().Version()
 		svc.logger.Debug("eth_getBlockTransactionCountByNumber", "height", blockNum, "for pending txs")
 
-		result, err := svc.getTMClient().Block(&blockNum)
+		result, err := svc.GetTMClient().Block(&blockNum)
 		if err != nil {
 			return nil
 		}
@@ -120,7 +120,7 @@ func (svc *Service) GetBlockTransactionCountByNumber(blockNrOrHash rpc.BlockNumb
 			return nil
 		}
 
-		unconfirmed, err := svc.getTMClient().UnconfirmedTxs(1000)
+		unconfirmed, err := svc.GetTMClient().UnconfirmedTxs(1000)
 		if err != nil {
 			svc.logger.Debug("eth_getBlockTransactionCountByNumber", "failed to get unconfirmed txs", err)
 			return nil
@@ -130,7 +130,7 @@ func (svc *Service) GetBlockTransactionCountByNumber(blockNrOrHash rpc.BlockNumb
 		blockNum = svc.getState().Version()
 		svc.logger.Debug("eth_getBlockTransactionCountByNumber", "height", blockNum, "for last txs")
 
-		result, err := svc.getTMClient().Block(&blockNum)
+		result, err := svc.GetTMClient().Block(&blockNum)
 		if err != nil {
 			return nil
 		}
@@ -143,7 +143,7 @@ func (svc *Service) GetBlockTransactionCountByNumber(blockNrOrHash rpc.BlockNumb
 		blockNum = rpctypes.InitialBlockNumber
 		svc.logger.Debug("eth_getBlockTransactionCountByNumber", "height", blockNum, "for last txs")
 
-		result, err := svc.getTMClient().Block(&blockNum)
+		result, err := svc.GetTMClient().Block(&blockNum)
 		if err != nil {
 			return nil
 		}
@@ -156,7 +156,7 @@ func (svc *Service) GetBlockTransactionCountByNumber(blockNrOrHash rpc.BlockNumb
 		blockNum = height
 		svc.logger.Debug("eth_getBlockTransactionCountByNumber", "height", blockNum)
 
-		result, err := svc.getTMClient().Block(&blockNum)
+		result, err := svc.GetTMClient().Block(&blockNum)
 		if err != nil {
 			return nil
 		}

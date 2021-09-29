@@ -385,12 +385,6 @@ func TestRunner_Send(t *testing.T) {
 			panic(err)
 		}
 
-		receiver := newAcc(ctx, to, 0)
-		err = ctx.StateDB.GetAccountKeeper().SetAccount(*receiver)
-		if err != nil {
-			panic(err)
-		}
-
 		stx := &olvmTx{}
 
 		value := big.NewInt(100)

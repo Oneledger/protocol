@@ -2,6 +2,7 @@ package olvm
 
 import (
 	"encoding/json"
+	"fmt"
 	"math/big"
 
 	"github.com/Oneledger/protocol/action"
@@ -357,6 +358,16 @@ func runOLVM(ctx *action.Context, rawTx action.RawTx, isSimulation bool) (bool, 
 			Key:   []byte("tx.returnData"),
 			Value: []byte(execResult.ReturnData),
 		})
+
+		// storing logs to tm events
+		tags, err = rlpLogsToEvents(tags, stateDB.GetTxLogs())
+		if err != nil {
+			return helpers.LogAndReturnFalseWithGas(ctx.Logger, status_codes.ProtocolError{
+				Msg:  err.Error(),
+				Code: status_codes.TxErrUnserializable,
+			}, tags, err, int64(intrinsicGas))
+		}
+
 		if tx.To == nil && len(execResult.ContractAddress.Bytes()) > 0 {
 			ctx.Logger.Debugf("Contract created: %s\n", keys.Address(execResult.ContractAddress.Bytes()))
 			tags = append(tags, kv.Pair{
@@ -370,4 +381,23 @@ func runOLVM(ctx *action.Context, rawTx action.RawTx, isSimulation bool) (bool, 
 		Events:  action.GetEvent(tags, "olvm"),
 		GasUsed: int64(execResult.UsedGas),
 	}
+}
+
+func rlpLogsToEvents(tags kv.Pairs, logs []*ethtypes.Log) (kv.Pairs, error) {
+	if len(logs) == 0 {
+		return tags, nil
+	}
+	extTags := make(kv.Pairs, len(tags), len(tags)+len(logs))
+	copy(extTags, tags)
+	for _, log := range logs {
+		rlpLog, err := vm.RLPLogConvert(*log).Encode()
+		if err != nil {
+			return kv.Pairs{}, err
+		}
+		extTags = append(extTags, kv.Pair{
+			Key:   []byte(fmt.Sprintf("tx.logs.%d", log.Index)),
+			Value: rlpLog,
+		})
+	}
+	return extTags, nil
 }

@@ -119,16 +119,7 @@ func (nak *NesterAccountKeeper) NewAccountWithAddress(addr keys.Address) (*EthAc
 	if err != nil {
 		return nil, errors.Errorf("Failed to get balance: %s", err)
 	}
-	acc := NewEthAccount(addr, coin)
-	err = nak.SetAccount(*acc)
-	if err != nil {
-		return nil, errors.Errorf("Failed to set account: %s", err)
-	}
-	acc, err = nak.GetAccount(addr)
-	if err != nil {
-		return nil, errors.Errorf("Failed to get account: %s", err)
-	}
-	return acc, nil
+	return NewEthAccount(addr, coin), nil
 }
 
 func (nak *NesterAccountKeeper) getOrCreateCurrencyBalance(addr keys.Address, height *int64) (Coin, error) {

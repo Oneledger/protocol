@@ -24,7 +24,7 @@ func includes(addresses []common.Address, a common.Address) bool {
 // [null, B] -> anything in first position, B in second position
 // [A, B] -> A in first position and B in second position
 // [[A, B], [A, B]] -> A or B in first position, A or B in second position
-func filterLogs(logs []*types.Log, fromBlock, toBlock *big.Int, addresses []common.Address, topics [][]common.Hash) []*types.Log {
+func FilterLogs(logs []*types.Log, fromBlock, toBlock *big.Int, addresses []common.Address, topics [][]common.Hash) []*types.Log {
 	var ret []*types.Log
 Logs:
 	for _, log := range logs {
@@ -86,4 +86,22 @@ func bloomFilter(bloom ethtypes.Bloom, addresses []common.Address, topics [][]co
 		}
 	}
 	return true
+}
+
+// returnHashes is a helper that will return an empty hash array case the given hash array is nil,
+// otherwise the given hashes array is returned.
+func returnHashes(hashes []common.Hash) []common.Hash {
+	if hashes == nil {
+		return []common.Hash{}
+	}
+	return hashes
+}
+
+// returnLogs is a helper that will return an empty log array in case the given logs array is nil,
+// otherwise the given logs array is returned.
+func returnLogs(logs []*ethtypes.Log) []*ethtypes.Log {
+	if logs == nil {
+		return []*ethtypes.Log{}
+	}
+	return logs
 }

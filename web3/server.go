@@ -3,7 +3,6 @@ package web3
 import (
 	"fmt"
 	"net/http"
-	"net/url"
 	"os"
 	"time"
 
@@ -17,11 +16,8 @@ import (
 
 // Server holds an RPC server that is served over HTTP
 type Server struct {
-	rpc     *rpc.Server
-	logger  *log.Logger
-	cfg     *config.Server
-	httpURL *url.URL
-	wsURL   *url.URL
+	logger *log.Logger
+	cfg    *config.Server
 }
 
 func NewServer(config *config.Server) *Server {
