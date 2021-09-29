@@ -181,7 +181,6 @@ func (st *Store) ValidateETH(opt *ethchain.ChainDriverOption) (bool, error) {
 		return false, err
 	}
 	return reflect.DeepEqual(oldOptions, opt), nil
-	return true, nil
 }
 
 func (st *Store) ValidateBTC(opt *bitcoin.ChainDriverOption) (bool, error) {

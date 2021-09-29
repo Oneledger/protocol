@@ -5,7 +5,6 @@ import (
 	"math"
 	"math/big"
 
-	"github.com/Oneledger/protocol/data/keys"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 	ethcore "github.com/ethereum/go-ethereum/core"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -14,7 +13,14 @@ import (
 	ethparams "github.com/ethereum/go-ethereum/params"
 )
 
-var emptyHash = ethcrypto.Keccak256Hash(nil)
+var (
+	emptyHash = ethcrypto.Keccak256Hash(nil)
+)
+
+const (
+	TxGas                    = ethparams.TxGas
+	TxGasContractCreationGas = ethparams.TxGasContractCreation
+)
 
 /*
 The State Transitioning Model
@@ -36,8 +42,6 @@ type StateTransition struct {
 	msg        Message
 	gas        uint64
 	gasPrice   *big.Int
-	gasFeeCap  *big.Int
-	gasTipCap  *big.Int
 	initialGas uint64
 	value      *big.Int
 	data       []byte
@@ -51,8 +55,6 @@ type Message interface {
 	To() *ethcmn.Address
 
 	GasPrice() *big.Int
-	GasFeeCap() *big.Int
-	GasTipCap() *big.Int
 	Gas() uint64
 	Value() *big.Int
 
@@ -60,15 +62,17 @@ type Message interface {
 	IsFake() bool
 	Data() []byte
 	AccessList() ethtypes.AccessList
+
+	Apply() (*ExecutionResult, error)
 }
 
 // ExecutionResult includes all output after executing given evm
 // message no matter the execution itself is successful or not.
 type ExecutionResult struct {
-	UsedGas         uint64 // Total used gas but include the refunded gas
-	Err             error  // Any error encountered during the execution(listed in core/vm/errors.go)
-	ReturnData      []byte // Returned data from evm(function result or data supplied with revert opcode)
-	ContractAddress keys.Address
+	UsedGas         uint64         // Total used gas but include the refunded gas
+	Err             error          // Any error encountered during the execution(listed in core/vm/errors.go)
+	ReturnData      []byte         // Returned data from evm(function result or data supplied with revert opcode)
+	ContractAddress ethcmn.Address // Contract address creation on success
 }
 
 // Unwrap returns the internal evm error which allows us for further
@@ -99,13 +103,13 @@ func (result *ExecutionResult) Revert() []byte {
 }
 
 // IntrinsicGas computes the 'intrinsic gas' for a message with the given data.
-func IntrinsicGas(data []byte, accessList ethtypes.AccessList, isContractCreation bool, isHomestead, isEIP2028 bool) (uint64, error) {
+func IntrinsicGas(data []byte, accessList ethtypes.AccessList, isContractCreation bool) (uint64, error) {
 	// Set the starting gas for the raw transaction
 	var gas uint64
-	if isContractCreation && isHomestead {
-		gas = ethparams.TxGasContractCreation
+	if isContractCreation {
+		gas = TxGasContractCreationGas
 	} else {
-		gas = ethparams.TxGas
+		gas = TxGas
 	}
 	// Bump the required gas by the amount of transactional data
 	if len(data) > 0 {
@@ -117,10 +121,7 @@ func IntrinsicGas(data []byte, accessList ethtypes.AccessList, isContractCreatio
 			}
 		}
 		// Make sure we don't exceed uint64 for all data combinations
-		nonZeroGas := ethparams.TxDataNonZeroGasFrontier
-		if isEIP2028 {
-			nonZeroGas = ethparams.TxDataNonZeroGasEIP2028
-		}
+		nonZeroGas := ethparams.TxDataNonZeroGasEIP2028
 		if (math.MaxUint64-gas)/nonZeroGas < nz {
 			return 0, ethcore.ErrGasUintOverflow
 		}
@@ -140,17 +141,15 @@ func IntrinsicGas(data []byte, accessList ethtypes.AccessList, isContractCreatio
 }
 
 // NewStateTransition initialises and returns a new state transition object.
-func NewStateTransition(evm *ethvm.EVM, msg Message, gp *ethcore.GasPool) *StateTransition {
+func NewStateTransition(evm *ethvm.EVM, msg *EVMTransaction, gp *ethcore.GasPool) *StateTransition {
 	return &StateTransition{
-		gp:        gp,
-		evm:       evm,
-		msg:       msg,
-		gasPrice:  msg.GasPrice(),
-		gasFeeCap: msg.GasFeeCap(),
-		gasTipCap: msg.GasTipCap(),
-		value:     msg.Value(),
-		data:      msg.Data(),
-		state:     evm.StateDB,
+		gp:       gp,
+		evm:      evm,
+		msg:      msg,
+		gasPrice: msg.GasPrice(),
+		value:    msg.Value(),
+		data:     msg.Data(),
+		state:    evm.StateDB,
 	}
 }
 
@@ -161,7 +160,7 @@ func NewStateTransition(evm *ethvm.EVM, msg Message, gp *ethcore.GasPool) *State
 // the gas used (which includes gas refunds) and an error if it failed. An error always
 // indicates a core error meaning that the message would always fail for that particular
 // state and would never be accepted within a block.
-func ApplyMessage(evm *ethvm.EVM, msg Message, gp *ethcore.GasPool) (*ExecutionResult, error) {
+func ApplyMessage(evm *ethvm.EVM, msg *EVMTransaction, gp *ethcore.GasPool) (*ExecutionResult, error) {
 	return NewStateTransition(evm, msg, gp).TransitionDb()
 }
 
@@ -195,10 +194,12 @@ func (st *StateTransition) preCheck() error {
 	if !st.msg.IsFake() {
 		// Make sure this transaction's nonce is correct.
 		stNonce := st.state.GetNonce(st.msg.From())
-		if msgNonce := st.msg.Nonce(); stNonce < msgNonce {
-			return fmt.Errorf("%w: address %v, tx: %d state: %d", ethcore.ErrNonceTooHigh,
-				st.msg.From().Hex(), msgNonce, stNonce)
-		} else if stNonce > msgNonce {
+		msgNonce := st.msg.Nonce()
+		// if stNonce < msgNonce {
+		// 	return fmt.Errorf("%w: address %v, tx: %d state: %d", ethcore.ErrNonceTooHigh,
+		// 		st.msg.From().Hex(), msgNonce, stNonce)
+		// }
+		if stNonce > msgNonce {
 			return fmt.Errorf("%w: address %v, tx: %d state: %d", ethcore.ErrNonceTooLow,
 				st.msg.From().Hex(), msgNonce, stNonce)
 		}
@@ -228,7 +229,7 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 	// First check this message satisfies all consensus rules before
 	// applying the message. The rules include these clauses
 	//
-	// 1. the nonce of the message caller is correct
+	// 1. the nonce of the message caller is correct (if not, set intrinsic gas)
 	// 2. caller has enough balance to cover transaction fee(gaslimit * gasprice)
 	// 3. the amount of gas required is available in the block
 	// 4. the purchased gas is enough to cover intrinsic usage
@@ -244,7 +245,7 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 	contractCreation := msg.To() == nil
 
 	// Check clauses 4-5, subtract intrinsic gas if everything is correct
-	gas, err := IntrinsicGas(st.data, st.msg.AccessList(), contractCreation, true, true)
+	gas, err := IntrinsicGas(st.data, st.msg.AccessList(), contractCreation)
 	if err != nil {
 		return nil, err
 	}
@@ -259,16 +260,17 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 	}
 
 	// Set up the initial access list.
-	rules := st.evm.ChainConfig().Rules(st.evm.Context.BlockNumber)
-	st.state.PrepareAccessList(msg.From(), msg.To(), ethvm.ActivePrecompiles(rules), msg.AccessList())
+	if rules := st.evm.ChainConfig().Rules(st.evm.Context.BlockNumber); rules.IsBerlin {
+		st.state.PrepareAccessList(msg.From(), msg.To(), ethvm.ActivePrecompiles(rules), msg.AccessList())
+	}
 
 	var (
-		ret   []byte
-		vmerr error // vm errors do not effect consensus and are therefore not assigned to err
-		ca    ethcmn.Address
+		ret          []byte
+		vmerr        error // vm errors do not effect consensus and are therefore not assigned to err
+		contractAddr ethcmn.Address
 	)
 	if contractCreation {
-		ret, ca, st.gas, vmerr = st.evm.Create(sender, st.data, st.gas, st.value)
+		ret, contractAddr, st.gas, vmerr = st.evm.Create(sender, st.data, st.gas, st.value)
 	} else {
 		// Increment the nonce for the next transaction
 		nextNonce := st.state.GetNonce(msg.From()) + 1
@@ -283,11 +285,9 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 		Err:        vmerr,
 		ReturnData: ret,
 	}
-
-	if contractCreation {
-		result.ContractAddress = keys.Address(ca.Bytes())
+	if contractCreation && vmerr == nil {
+		result.ContractAddress = contractAddr
 	}
-
 	return result, nil
 }
 

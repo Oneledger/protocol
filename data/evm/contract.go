@@ -1,18 +1,13 @@
 package evm
 
 import (
-	"encoding/binary"
-
 	"github.com/Oneledger/protocol/storage"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 )
 
 var (
-	KeyPrefixCode       = []byte{0x01}
-	KeyPrefixStorage    = []byte{0x02}
-	KeyPrefixHeightHash = []byte{0x03}
-	KeyPrefixLogs       = []byte{0x04}
-	KeyPrefixBloom      = []byte{0x05}
+	KeyPrefixCode    = []byte{0x01}
+	KeyPrefixStorage = []byte{0x02}
 )
 
 type ContractStore struct {
@@ -71,27 +66,4 @@ func (cs *ContractStore) Iterate(prefix []byte, fn func(key []byte, value []byte
 // AddressStoragePrefix returns a prefix to iterate over a given account storage.
 func AddressStoragePrefix(address ethcmn.Address) []byte {
 	return append(KeyPrefixStorage, address.Bytes()...)
-}
-
-// HeightHashKey returns the key for the given chain epoch and height.
-// The key will be composed in the following order:
-//   key = prefix + bytes(height)
-// This ordering facilitates the iteration by height for the EVM GetHashFn
-// queries.
-func HeightHashKey(height uint64) []byte {
-	buf := make([]byte, 8)
-	binary.PutVarint(buf, int64(height))
-	return buf
-}
-
-// Uint64ToBigEndian - marshals uint64 to a bigendian byte slice so it can be sorted
-func Uint64ToBigEndian(i uint64) []byte {
-	b := make([]byte, 8)
-	binary.BigEndian.PutUint64(b, i)
-	return b
-}
-
-// BloomKey defines the store key for a block Bloom
-func BloomKey(height uint64) []byte {
-	return Uint64ToBigEndian(height)
 }

@@ -97,56 +97,12 @@ type DelegationStatusReply struct {
 
 /* Tx Service */
 
-type EVMTransactionLogsRequest struct {
-	TransactionHash []byte         `json:"transactionHash"`
-	Addresses       []keys.Address `json:"address"`
-	Topics          [][][]byte     `json:"topics"`
-}
-
-type EVMLogReply struct {
-	TransactionHash  string       `json:"transactionHash"`
-	BlockHeight      string       `json:"blockHeight"`
-	BlockHash        string       `json:"blockHash"`
-	Address          keys.Address `json:"address"`
-	Data             string       `json:"data"`
-	Topics           []string     `json:"topics"`
-	LogIndex         string       `json:"logIndex"`
-	TranscationIndex string       `json:"transactionIndex"`
-	Removed          bool         `json:"removed"`
-}
-
-type EVMLogsReply struct {
-	Logs []EVMLogReply `json:"logs"`
-}
-
-type EVMAccountRequest struct {
-	Address  keys.Address `json:"address"`
-	BlockTag string       `json:"blockTag"`
-}
-
-type EVMAccountReply struct {
-	Address  keys.Address `json:"address"`
-	Nonce    uint64       `json:"nonce"`
-	CodeHash string       `json:"codeHash"`
-	Balance  string       `json:"balance"`
-}
-
-type EVMCallReply struct {
-	Result string `json:"result"`
-}
-
-type EVMEstimateGasReply struct {
-	GasUsed uint64 `json:"gasUsed"`
-}
-
 type SendTxRequest struct {
 	From     keys.Address  `json:"from"`
 	To       keys.Address  `json:"to,omitempty"`
 	Amount   action.Amount `json:"amount"`
 	GasPrice action.Amount `json:"gasPrice"`
 	Gas      int64         `json:"gas"`
-	Data     []byte        `json:"data,omitempty"`
-	Nonce    uint64        `json:"nonce,omitempty"`
 }
 
 type SendPoolTxRequest struct {

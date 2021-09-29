@@ -2,6 +2,7 @@ package utils
 
 import (
 	"math/big"
+	"strconv"
 
 	"github.com/Oneledger/protocol/action"
 	olvm "github.com/Oneledger/protocol/action/olvm"
@@ -11,7 +12,6 @@ import (
 	"github.com/Oneledger/protocol/utils"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/google/uuid"
 )
 
 var (
@@ -45,13 +45,6 @@ func EthToOLSignedTx(tx *ethtypes.Transaction) (*action.SignedTx, error) {
 
 	sigs := []action.Signature{{Signer: pubKey, Signed: utils.ToUncompressedSig(R, S, V)}}
 
-	// memo creation
-	uuidNew, err := uuid.NewUUID()
-	if err != nil {
-		return nil, err
-	}
-	memo := uuidNew.String()
-
 	// fee setting
 	gas := int64(tx.Gas())
 	gasPrice := tx.GasPrice()
@@ -83,7 +76,7 @@ func EthToOLSignedTx(tx *ethtypes.Transaction) (*action.SignedTx, error) {
 		Type: action.OLVM,
 		Data: data,
 		Fee:  fee,
-		Memo: memo,
+		Memo: strconv.FormatUint(tx.Nonce(), 10),
 	}
 	signedTx := action.SignedTx{
 		RawTx:      rawTx,

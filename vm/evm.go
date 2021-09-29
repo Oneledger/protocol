@@ -3,6 +3,8 @@ package vm
 import (
 	"math"
 	"math/big"
+	"os"
+	"sync"
 
 	"github.com/Oneledger/protocol/data/keys"
 	"github.com/Oneledger/protocol/utils"
@@ -13,8 +15,6 @@ import (
 	ethvm "github.com/ethereum/go-ethereum/core/vm"
 	ethparams "github.com/ethereum/go-ethereum/params"
 	abci "github.com/tendermint/tendermint/abci/types"
-	tmtypes "github.com/tendermint/tendermint/types"
-	"github.com/tendermint/tendermint/version"
 )
 
 var (
@@ -26,57 +26,42 @@ var (
 	SimulationBlockGasLimit uint64   = 100_000_000
 	DefaultBlockGasLimit    uint64   = math.MaxInt64
 	DefaultGasPrice         *big.Int = big.NewInt(1_000_000_000)
+
+	_ Message = (*EVMTransaction)(nil)
 )
-
-// AbciHeaderToTendermint is a util function to parse a tendermint ABCI Header to
-// tendermint types Header.
-func AbciHeaderToTendermint(header *abci.Header) tmtypes.Header {
-	return tmtypes.Header{
-		Version: version.Consensus{
-			Block: version.Protocol(header.Version.Block),
-			App:   version.Protocol(header.Version.App),
-		},
-		ChainID: header.ChainID,
-		Height:  header.Height,
-		Time:    header.Time,
-
-		LastBlockID: tmtypes.BlockID{
-			Hash: header.LastBlockId.Hash,
-			PartsHeader: tmtypes.PartSetHeader{
-				Total: int(header.LastBlockId.PartsHeader.Total),
-				Hash:  header.LastBlockId.PartsHeader.Hash,
-			},
-		},
-		LastCommitHash: header.LastCommitHash,
-		DataHash:       header.DataHash,
-
-		ValidatorsHash:     header.ValidatorsHash,
-		NextValidatorsHash: header.NextValidatorsHash,
-		ConsensusHash:      header.ConsensusHash,
-		AppHash:            header.AppHash,
-		LastResultsHash:    header.LastResultsHash,
-
-		EvidenceHash:    header.EvidenceHash,
-		ProposerAddress: header.ProposerAddress,
-	}
-}
 
 // GetHashFn implements vm.GetHashFunc for OneLedger protocol. It handles 3 cases:
 //  1. The requested height matches the current height (and thus same epoch number, could take from cache)
 //  2. The requested height is from an previous height from the same chain epoch
 //  3. The requested height is from a height greater than the latest one
 func GetHashFn(s *CommitStateDB, header *abci.Header) ethvm.GetHashFunc {
+	cache := make(map[uint64]ethcmn.Hash)
+	var rw sync.Mutex
+
 	return func(height uint64) common.Hash {
+		s.logger.Detail("GetHashFn current header height", header.GetHeight(), "with requested height", height)
 		switch {
 		case header.GetHeight() == int64(height):
 			// Case 1: The requested height matches the one from the CommitStateDB so we can retrieve the block
 			// hash directly from the CommitStateDB.
+			// NOTE: Will never occur, left in case of VM changes
 			return s.bhash
 
 		case header.GetHeight() > int64(height):
 			// Case 2: if the chain is not the current height we need to retrieve the hash from the store for the
 			// current chain epoch. This only applies if the current height is greater than the requested height.
-			return s.GetHeightHash(height)
+			// We are sure that we will have it in block store as it is commited
+
+			// NOTE: In case of concurrency
+			rw.Lock()
+			defer rw.Unlock()
+
+			if hash, ok := cache[height]; ok {
+				return hash
+			}
+			hash := s.GetBlockHash(height)
+			cache[height] = hash
+			return hash
 
 		default:
 			// Case 3: heights greater than the current one returns an empty hash.
@@ -122,6 +107,9 @@ type EVMTransaction struct {
 	gas          uint64
 	gasPrice     *big.Int
 	isSimulation bool
+
+	// debug olvm
+	debug bool
 }
 
 func NewEVMTransaction(stateDB *CommitStateDB, gaspool *ethcore.GasPool, header *abci.Header, from keys.Address, to *keys.Address, nonce uint64, value *big.Int, data []byte, accessList *ethtypes.AccessList, gas uint64, gasPrice *big.Int, isSimulation bool) *EVMTransaction {
@@ -141,6 +129,10 @@ func NewEVMTransaction(stateDB *CommitStateDB, gaspool *ethcore.GasPool, header 
 	}
 }
 
+func (etx *EVMTransaction) SetVMDebug(debug bool) {
+	etx.debug = debug
+}
+
 func (etx *EVMTransaction) NewEVM() *ethvm.EVM {
 	blockCtx := ethvm.BlockContext{
 		CanTransfer: ethcore.CanTransfer,
@@ -148,13 +140,21 @@ func (etx *EVMTransaction) NewEVM() *ethvm.EVM {
 		GetHash:     GetHashFn(etx.stateDB, etx.header),
 		Coinbase:    ethcmn.BytesToAddress(etx.header.ProposerAddress),
 		GasLimit:    etx.gaspool.Gas(),
-		BlockNumber: big.NewInt(etx.header.GetHeight()),
-		Time:        big.NewInt(etx.header.Time.Unix()),
-		Difficulty:  DefaultDifficulty, // 0 or 1, does not matter, api show 1, so let say it here as 1
+		BlockNumber: new(big.Int).SetInt64(etx.header.GetHeight()),
+		Time:        new(big.Int).SetInt64(etx.header.Time.Unix()),
+		Difficulty:  new(big.Int).Set(DefaultDifficulty), // 0 or 1, does not matter, api show 1, so let say it here as 1
 	}
 
+	ethConfig := EthereumConfig(etx.header.ChainID)
 	vmConfig := ethvm.Config{
 		ExtraEips: make([]int, 0),
+	}
+	if etx.debug {
+		vmConfig.Debug = true
+		vmConfig.Tracer = ethvm.NewMarkdownLogger(&ethvm.LogConfig{
+			Debug:     true,
+			Overrides: ethConfig,
+		}, os.Stdout)
 	}
 
 	txCtx := ethvm.TxContext{
@@ -162,7 +162,6 @@ func (etx *EVMTransaction) NewEVM() *ethvm.EVM {
 		GasPrice: etx.gasPrice,
 	}
 
-	ethConfig := EthereumConfig(etx.header.ChainID)
 	return ethvm.NewEVM(blockCtx, txCtx, etx.stateDB, ethConfig, vmConfig)
 }
 
@@ -185,15 +184,34 @@ func (etx *EVMTransaction) AccessList() ethtypes.AccessList {
 	return *etx.accessList
 }
 
+func (etx *EVMTransaction) IsFake() bool {
+	return etx.isSimulation
+}
+
+func (etx *EVMTransaction) Nonce() uint64 {
+	return etx.nonce
+}
+
+func (etx *EVMTransaction) Data() []byte {
+	return etx.data
+}
+
+func (etx *EVMTransaction) Value() *big.Int {
+	return etx.value
+}
+
+func (etx *EVMTransaction) Gas() uint64 {
+	return etx.gas
+}
+
+func (etx *EVMTransaction) GasPrice() *big.Int {
+	return etx.gasPrice
+}
+
 func (etx *EVMTransaction) Apply() (*ExecutionResult, error) {
-	vmenv := etx.NewEVM()
-	// gas price ignoring here as we have a separate handler for it
-	// no gas fee cap and tips, as another reward system in protocol
-	msg := ethtypes.NewMessage(etx.From(), etx.To(), etx.nonce, etx.value, etx.gas, etx.gasPrice, big.NewInt(0), big.NewInt(0), etx.data, etx.AccessList(), etx.isSimulation)
+	executionResult, err := ApplyMessage(etx.NewEVM(), etx, etx.gaspool)
 
-	executionResult, err := ApplyMessage(vmenv, msg, etx.gaspool)
-
-	if !etx.isSimulation {
+	if !etx.IsFake() {
 		// Ensure any modifications are committed to the state
 		if err := etx.stateDB.Finalise(true); err != nil {
 			return nil, err

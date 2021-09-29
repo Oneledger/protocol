@@ -3,7 +3,6 @@ package web3
 import (
 	"fmt"
 	"net/http"
-	"net/url"
 	"os"
 	"time"
 
@@ -17,11 +16,8 @@ import (
 
 // Server holds an RPC server that is served over HTTP
 type Server struct {
-	rpc     *rpc.Server
-	logger  *log.Logger
-	cfg     *config.Server
-	httpURL *url.URL
-	wsURL   *url.URL
+	logger *log.Logger
+	cfg    *config.Server
 }
 
 func NewServer(config *config.Server) *Server {
@@ -106,13 +102,13 @@ func (s *Server) start(rpcInfo interface{}, apis map[string]rpctypes.Web3Service
 	}()
 
 	go func(ch chan error) {
-		defer rpcSrv.Stop()
-
 		s.logger.Info("starting Web3 " + name + " RPC server on " + uri)
 		err := srv.ListenAndServe()
 		if err != nil {
-			s.logger.Fatalf("server: %s", err)
+			s.logger.Fatalf("server error, details: %s", err)
 		}
+		srv.Shutdown(nil)
+		rpcSrv.Stop()
 		ch <- err
 	}(channel)
 

@@ -5,18 +5,19 @@ import (
 	"os"
 
 	"github.com/Oneledger/protocol/log"
-	"github.com/Oneledger/protocol/vm"
 	rpctypes "github.com/Oneledger/protocol/web3/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	ethrpc "github.com/ethereum/go-ethereum/rpc"
+	abci "github.com/tendermint/tendermint/abci/types"
+	tmrpccore "github.com/tendermint/tendermint/rpc/core"
+	tmcoretypes "github.com/tendermint/tendermint/rpc/core/types"
+	"github.com/tendermint/tendermint/store"
 )
 
 type Filter struct {
-	svc     rpctypes.EthService
-	stateDB *vm.CommitStateDB
-	logger  *log.Logger
+	logger     *log.Logger
+	blockStore *store.BlockStore
 
 	addresses []common.Address
 	topics    [][]common.Hash
@@ -27,9 +28,9 @@ type Filter struct {
 
 // NewBlockFilter creates a new filter which directly inspects the contents of
 // a block to figure out whether it is interesting or not.
-func NewBlockFilter(svc rpctypes.EthService, block common.Hash, addresses []common.Address, topics [][]common.Hash) *Filter {
+func NewBlockFilter(blockStore *store.BlockStore, block common.Hash, addresses []common.Address, topics [][]common.Hash) *Filter {
 	// Create a generic filter and convert it into a block filter
-	filter := newFilter(svc, addresses, topics)
+	filter := newFilter(blockStore, addresses, topics)
 	filter.block = block
 	filter.logger.Debug("NewBlockFilter", "block", block)
 	return filter
@@ -37,7 +38,7 @@ func NewBlockFilter(svc rpctypes.EthService, block common.Hash, addresses []comm
 
 // NewRangeFilter creates a new filter which uses a bloom filter on blocks to
 // figure out whether a particular block is interesting or not.
-func NewRangeFilter(svc rpctypes.EthService, begin, end int64, addresses []common.Address, topics [][]common.Hash) *Filter {
+func NewRangeFilter(blockStore *store.BlockStore, begin, end int64, addresses []common.Address, topics [][]common.Hash) *Filter {
 	// Flatten the address and topic filter clauses into a single bloombits filter
 	// system. Since the bloombits are not positional, nil topics are permitted,
 	// which get flattened into a nil byte slice.
@@ -57,7 +58,7 @@ func NewRangeFilter(svc rpctypes.EthService, begin, end int64, addresses []commo
 		filters = append(filters, filter)
 	}
 	// Create a generic filter and convert it into a range filter
-	filter := newFilter(svc, addresses, topics)
+	filter := newFilter(blockStore, addresses, topics)
 	filter.begin = begin
 	filter.end = end
 	filter.logger.Debug("NewRangeFilter", "begin", filter.begin, "end", filter.end)
@@ -66,13 +67,12 @@ func NewRangeFilter(svc rpctypes.EthService, begin, end int64, addresses []commo
 
 // newFilter creates a generic filter that can either filter based on a block hash,
 // or based on range queries. The search criteria needs to be explicitly set.
-func newFilter(svc rpctypes.EthService, addresses []common.Address, topics [][]common.Hash) *Filter {
+func newFilter(blockStore *store.BlockStore, addresses []common.Address, topics [][]common.Hash) *Filter {
 	return &Filter{
-		svc:       svc,
-		logger:    log.NewLoggerWithPrefix(os.Stdout, "filters"),
-		addresses: addresses,
-		topics:    topics,
-		stateDB:   svc.GetStateDB(),
+		logger:     log.NewLoggerWithPrefix(os.Stdout, "filters"),
+		blockStore: blockStore,
+		addresses:  addresses,
+		topics:     topics,
 	}
 }
 
@@ -84,21 +84,25 @@ func (f *Filter) BloomStatus() (uint64, uint64) {
 
 // Logs searches the blockchain for matching log entries, returning all from the
 // first block that contains matches, updating the start of the filter accordingly.
-func (f *Filter) Logs(_ rpctypes.Web3Context) ([]*ethtypes.Log, error) {
+func (f *Filter) Logs() ([]*ethtypes.Log, error) {
 	// If we're doing singleton block filtering, execute and return
 	if f.block != (common.Hash{}) {
-		block, err := f.svc.GetBlockByHash(f.block, false)
+		block := f.blockStore.LoadBlockByHash(f.block.Bytes())
 		if block == nil {
-			return nil, err
+			return returnLogs(nil), nil
 		}
-		return f.blockLogs(block)
+		blockResults, err := tmrpccore.BlockResults(nil, &block.Height)
+		if err != nil {
+			return returnLogs(nil), nil
+		}
+		return f.blockLogs(blockResults)
 	}
-	lastHeight := ethrpc.LatestBlockNumber
-	block, _ := f.svc.GetBlockByNumber(ethrpc.BlockNumberOrHash{BlockNumber: &lastHeight}, false)
+	lastHeight := f.blockStore.Height()
+	block := f.blockStore.LoadBlock(lastHeight)
 	if block == nil {
-		return nil, nil
+		return returnLogs(nil), nil
 	}
-	head := block.Number
+	head := block.Height
 
 	if f.begin == -1 {
 		f.begin = int64(head)
@@ -109,17 +113,16 @@ func (f *Filter) Logs(_ rpctypes.Web3Context) ([]*ethtypes.Log, error) {
 	// Gather all indexed logs, and finish with non indexed ones
 	logs := []*ethtypes.Log{}
 	for i := f.begin; i <= f.end; i++ {
-		blockNum := ethrpc.BlockNumber(i)
-		block, err := f.svc.GetBlockByNumber(ethrpc.BlockNumberOrHash{BlockNumber: &blockNum}, false)
-		if block == nil {
-			return logs, err
+		blockResults, err := tmrpccore.BlockResults(nil, &i)
+		if err != nil {
+			return logs, nil
 		}
 
-		if len(block.Transactions) == 0 {
+		if len(blockResults.TxsResults) == 0 {
 			continue
 		}
 
-		logsMatched := f.checkMatches(block.Hash, block.Transactions)
+		logsMatched := f.checkMatches(blockResults.TxsResults)
 		logs = append(logs, logsMatched...)
 	}
 
@@ -127,27 +130,19 @@ func (f *Filter) Logs(_ rpctypes.Web3Context) ([]*ethtypes.Log, error) {
 }
 
 // blockLogs returns the logs matching the filter criteria within a single block.
-func (f *Filter) blockLogs(block *rpctypes.Block) (logs []*types.Log, err error) {
-	f.logger.Debug("blockLogs", "block height", block.Number)
-	if !bloomFilter(block.LogsBloom, f.addresses, f.topics) {
+func (f *Filter) blockLogs(blockResults *tmcoretypes.ResultBlockResults) (logs []*types.Log, err error) {
+	f.logger.Debug("blockLogs", "block height", blockResults.Height)
+
+	bloom := rpctypes.GetBlockBloom(blockResults.EndBlockEvents)
+	if !bloomFilter(bloom, f.addresses, f.topics) {
 		return []*ethtypes.Log{}, nil
 	}
 	var logsList = [][]*ethtypes.Log{}
 
-	blockLogs, err := f.stateDB.GetLogs(block.Hash)
-	if err != nil {
-		return []*ethtypes.Log{}, err
-	}
-
-	f.logger.Debug("blockLogs", "iterate txs", len(block.Transactions))
-	for _, itx := range block.Transactions {
-		txHash, ok := itx.(common.Hash)
-		if !ok {
-			continue
-		}
-		if logs, ok := blockLogs.Logs[txHash]; ok {
-			logsList = append(logsList, logs)
-		}
+	f.logger.Debug("blockLogs", "iterate txs", len(blockResults.TxsResults))
+	for index, tx := range blockResults.TxsResults {
+		logReceipt := rpctypes.GetTxEthLogs(tx, uint32(index))
+		logsList = append(logsList, logReceipt.Logs)
 	}
 	f.logger.Debug("blockLogs", "check unfiltered", len(logsList))
 	unfiltered := []*ethtypes.Log{}
@@ -155,7 +150,7 @@ func (f *Filter) blockLogs(block *rpctypes.Block) (logs []*types.Log, err error)
 		unfiltered = append(unfiltered, logs...)
 	}
 	f.logger.Debug("blockLogs", "unfiltered", len(unfiltered))
-	fLogs := filterLogs(unfiltered, nil, nil, f.addresses, f.topics)
+	fLogs := FilterLogs(unfiltered, nil, nil, f.addresses, f.topics)
 	f.logger.Debug("blockLogs", "filtered", len(fLogs))
 	if len(fLogs) == 0 {
 		return []*ethtypes.Log{}, nil
@@ -166,27 +161,13 @@ func (f *Filter) blockLogs(block *rpctypes.Block) (logs []*types.Log, err error)
 // checkMatches checks if the logs from the a list of transactions transaction
 // contain any log events that  match the filter criteria. This function is
 // called when the bloom filter signals a potential match.
-func (f *Filter) checkMatches(bHash common.Hash, transactions []interface{}) []*ethtypes.Log {
+func (f *Filter) checkMatches(transactions []*abci.ResponseDeliverTx) []*ethtypes.Log {
 	unfiltered := []*ethtypes.Log{}
 
-	blockLogs, err := f.stateDB.GetLogs(bHash)
-	if err != nil {
-		return []*ethtypes.Log{}
-	}
-	for _, itx := range transactions {
-		txHash, ok := itx.(common.Hash)
-		if !ok {
-			continue
-		}
-		logs, ok := blockLogs.Logs[txHash]
-		if !ok {
-			// ignore error if transaction didn't set any logs (eg: when tx type is not
-			// MsgEthereumTx or MsgEthermint)
-			continue
-		}
-
-		unfiltered = append(unfiltered, logs...)
+	for index, tx := range transactions {
+		logReceipt := rpctypes.GetTxEthLogs(tx, uint32(index))
+		unfiltered = append(unfiltered, logReceipt.Logs...)
 	}
 
-	return filterLogs(unfiltered, big.NewInt(f.begin), big.NewInt(f.end), f.addresses, f.topics)
+	return FilterLogs(unfiltered, big.NewInt(f.begin), big.NewInt(f.end), f.addresses, f.topics)
 }

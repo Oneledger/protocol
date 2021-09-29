@@ -54,14 +54,7 @@ func (c *sessionCache) DumpState() {
 	fmt.Println("--- Start dump store data keys ---")
 	for _, key := range keys2 {
 		value := c.store[key]
-
-		var val []byte
-		if len(value) > 24 {
-			val = value[:24]
-		} else {
-			val = value
-		}
-		fmt.Println("key", key, "value", val)
+		fmt.Println("key", key, "value", value)
 	}
 	fmt.Println("--- End dump store data keys ---")
 }

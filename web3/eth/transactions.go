@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/Oneledger/protocol/action/olvm"
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/Oneledger/protocol/utils"
+	"github.com/Oneledger/protocol/vm"
 	rpctypes "github.com/Oneledger/protocol/web3/types"
 	rpcutils "github.com/Oneledger/protocol/web3/utils"
 	"github.com/ethereum/go-ethereum/common"
@@ -15,7 +15,9 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rpc"
-	coretypes "github.com/tendermint/tendermint/rpc/core/types"
+	abci "github.com/tendermint/tendermint/abci/types"
+	mempl "github.com/tendermint/tendermint/mempool"
+	tmrpccore "github.com/tendermint/tendermint/rpc/core"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
@@ -30,7 +32,7 @@ const (
 
 // GetTransactionCount returns the number of transactions at the given address up to the given block number.
 func (svc *Service) GetTransactionCount(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (*hexutil.Uint64, error) {
-	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.getTMClient(), blockNrOrHash)
+	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.GetBlockStore(), blockNrOrHash)
 	if err != nil {
 		return nil, nil
 	}
@@ -48,7 +50,7 @@ func (svc *Service) GetTransactionCount(address common.Address, blockNrOrHash rp
 
 	// for pending
 	if height == rpctypes.PendingBlockNumber {
-		txLen += rpcutils.GetPendingTxCountByAddress(svc.getTMClient(), address)
+		txLen += rpcutils.GetPendingTxCountByAddress(svc.GetMempool(), address)
 	}
 	n := hexutil.Uint64(txLen)
 	return &n, nil
@@ -63,10 +65,10 @@ func (svc *Service) GetTransactionByHash(hash common.Hash) (*rpctypes.Transactio
 	}
 
 	svc.logger.Debug("eth_getTransactionByHash", "hash", hash)
-	resTx, err := svc.getTMClient().Tx(hash.Bytes(), false)
+	tx, err := tmrpccore.Tx(nil, hash.Bytes(), false)
 	if err != nil {
 		// Try to get pending
-		pendingTx, err := rpcutils.GetPendingTx(svc.getTMClient(), hash, (*big.Int)(&chainID))
+		pendingTx, err := rpcutils.GetPendingTx(svc.GetMempool(), hash, (*big.Int)(&chainID))
 		if err != nil {
 			svc.logger.Debug("eth_getTransactionByHash", "hash", hash, "tx not found")
 			return nil, nil
@@ -74,70 +76,62 @@ func (svc *Service) GetTransactionByHash(hash common.Hash) (*rpctypes.Transactio
 		return pendingTx, nil
 	}
 
-	resBlock, err := svc.getTMClient().Block(&resTx.Height)
-	if err != nil {
+	block := svc.GetBlockStore().LoadBlock(tx.Height)
+	if block == nil {
 		svc.logger.Debug("eth_getTransactionByHash", "hash", hash, "block not found")
 		return nil, err
 	}
 
-	txIndex := hexutil.Uint64(resTx.Index)
-	return rpctypes.LegacyRawBlockAndTxToEthTx(resBlock.Block, &resTx.Tx, (*big.Int)(&chainID), &txIndex)
+	txIndex := hexutil.Uint64(tx.Index)
+	return rpctypes.LegacyRawBlockAndTxToEthTx(block, &tx.Tx, (*big.Int)(&chainID), &txIndex)
 }
 
 // GetTransactionReceipt returns the transaction receipt identified by hash.
 func (svc *Service) GetTransactionReceipt(hash common.Hash) (*rpctypes.TransactionReceipt, error) {
 	svc.logger.Debug("eth_getTransactionReceipt", "hash", hash)
-	resTx, err := svc.getTMClient().Tx(hash.Bytes(), false)
+	tx, err := tmrpccore.Tx(nil, hash.Bytes(), false)
 	if err != nil {
 		return nil, nil
 	}
 
-	resBlock, err := svc.getTMClient().Block(&resTx.Height)
-	if err != nil {
-		svc.logger.Debug("eth_getTransactionReceipt", "hash", hash, "err", err)
-		return nil, err
-	}
-	if resBlock.Block == nil {
+	block := svc.GetBlockStore().LoadBlock(tx.Height)
+	if block == nil {
 		svc.logger.Debug("eth_getTransactionReceipt", "hash", hash, "block not found")
 		return nil, nil
 	}
 
-	chainID := utils.HashToBigInt(resBlock.Block.ChainID)
-	txIndex := hexutil.Uint64(resTx.Index)
-	tx, err := rpctypes.LegacyRawBlockAndTxToEthTx(resBlock.Block, &resTx.Tx, chainID, &txIndex)
+	chainID := utils.HashToBigInt(block.ChainID)
+	txIndex := hexutil.Uint64(tx.Index)
+	oneTx, err := rpctypes.LegacyRawBlockAndTxToEthTx(block, &tx.Tx, chainID, &txIndex)
 	if err != nil {
 		return nil, err
 	}
 
-	cumulativeGasUsed := uint64(resTx.TxResult.GasUsed)
-	if tx.TransactionIndex != nil && int(*tx.TransactionIndex) != 0 {
-		cumulativeGasUsed += rpctypes.GetBlockCumulativeGas(resBlock.Block, int(*tx.TransactionIndex))
+	cumulativeGasUsed := uint64(tx.TxResult.GasUsed)
+	if tx.Index != 0 {
+		cumulativeGasUsed += rpctypes.GetBlockCumulativeGas(block, int(tx.Index))
 	}
 
-	txLog := rpctypes.GetTxTmLogs(&resTx.TxResult)
-
+	var (
+		contractAddress *common.Address
+		bloom           = vm.BytesToBloom(make([]byte, 6))
+		logs            = make([]*ethtypes.Log, 0)
+	)
 	// Set status codes based on tx result
-	var status uint64
-	// swap
-	if resTx.TxResult.Code == 0 {
-		status = txLog.Status
-	}
+	status := ethtypes.ReceiptStatusSuccessful
+	if tx.TxResult.GetCode() == 1 {
+		status = ethtypes.ReceiptStatusFailed
+	} else {
+		logReceipt := rpctypes.GetTxEthLogs(&tx.TxResult, tx.Index)
+		status = logReceipt.Status
 
-	stateDB := svc.GetStateDB()
-
-	blockLogs, err := stateDB.GetLogs(*tx.BlockHash)
-	if err != nil {
-		return nil, err
-	}
-	logs, ok := blockLogs.Logs[hash]
-	if !ok {
-		logs = make([]*ethtypes.Log, 0)
-	}
-	bloom := stateDB.GetBlockBloom(uint64(resBlock.Block.Height))
-
-	var contractAddress *common.Address
-	if tx.To == nil {
-		contractAddress = &txLog.ContractAddress
+		if status == ethtypes.ReceiptStatusSuccessful {
+			if oneTx.To == nil {
+				contractAddress = logReceipt.ContractAddress
+			}
+			logs = logReceipt.Logs
+			bloom = logReceipt.Bloom
+		}
 	}
 
 	receipt := &rpctypes.TransactionReceipt{
@@ -145,14 +139,14 @@ func (svc *Service) GetTransactionReceipt(hash common.Hash) (*rpctypes.Transacti
 		CumulativeGasUsed: hexutil.Uint64(cumulativeGasUsed),
 		LogsBloom:         bloom,
 		Logs:              logs,
-		TransactionHash:   tx.Hash,
+		TransactionHash:   oneTx.Hash,
 		ContractAddress:   contractAddress,
-		GasUsed:           hexutil.Uint64(resTx.TxResult.GasUsed),
-		BlockHash:         *tx.BlockHash,
-		BlockNumber:       *tx.BlockNumber,
-		TransactionIndex:  *tx.TransactionIndex,
-		From:              tx.From,
-		To:                tx.To,
+		GasUsed:           hexutil.Uint64(tx.TxResult.GasUsed),
+		BlockHash:         *oneTx.BlockHash,
+		BlockNumber:       *oneTx.BlockNumber,
+		TransactionIndex:  *oneTx.TransactionIndex,
+		From:              oneTx.From,
+		To:                oneTx.To,
 	}
 
 	return receipt, nil
@@ -161,17 +155,17 @@ func (svc *Service) GetTransactionReceipt(hash common.Hash) (*rpctypes.Transacti
 // GetTransactionByBlockHashAndIndex returns the transaction identified by block hash and index.
 func (svc *Service) GetTransactionByBlockHashAndIndex(hash common.Hash, idx hexutil.Uint64) (*rpctypes.Transaction, error) {
 	svc.logger.Debug("eth_getTransactionByBlockHashAndIndex", "hash", hash, "idx", idx)
-	resBlock, err := svc.getTMClient().BlockByHash(hash.Bytes())
-	if err != nil {
+	block := svc.GetBlockStore().LoadBlockByHash(hash.Bytes())
+	if block == nil {
 		svc.logger.Debug("eth_getTransactionByBlockHashAndIndex", "hash", hash, "idx", idx, "block not found")
-		return nil, err
+		return nil, nil
 	}
-	return svc.getTransactionByBlockAndIndex(resBlock.Block, idx)
+	return svc.getTransactionByBlockAndIndex(block, idx)
 }
 
 // GetTransactionByBlockNumberAndIndex returns the transaction identified by number and index.
 func (svc *Service) GetTransactionByBlockNumberAndIndex(blockNrOrHash rpc.BlockNumberOrHash, idx hexutil.Uint64) (*rpctypes.Transaction, error) {
-	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.getTMClient(), blockNrOrHash)
+	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.GetBlockStore(), blockNrOrHash)
 	if err != nil {
 		return nil, nil
 	}
@@ -186,27 +180,21 @@ func (svc *Service) GetTransactionByBlockNumberAndIndex(blockNrOrHash rpc.BlockN
 		blockNum = svc.getStateHeight(height)
 		svc.logger.Debug("eth_getTransactionByBlockNumberAndIndex", "height", blockNum, "idx", idx, "for pending txs")
 
-		result, err := svc.getTMClient().Block(&blockNum)
-		if err != nil {
-			return nil, err
-		}
-		if result.Block == nil {
+		block := svc.GetBlockStore().LoadBlock(blockNum)
+		if block == nil {
 			svc.logger.Debug("eth_getTransactionByBlockNumberAndIndex", "height", blockNum, "idx", idx, "block not found with height")
 			return nil, nil
 		}
 
-		unconfirmed, err := svc.getTMClient().UnconfirmedTxs(1000)
-		if err != nil {
-			svc.logger.Debug("eth_getTransactionByBlockNumberAndIndex", "height", blockNum, "idx", idx, "failed to get unconfirmed txs", err)
-			return nil, err
-		}
+		txs := svc.GetMempool().ReapMaxTxs(50)
+
 		// return if index out of bounds
-		if uint64(idx) >= uint64(len(unconfirmed.Txs)) {
+		if uint64(idx) >= uint64(len(txs)) {
 			return nil, nil
 		}
-		chainID := utils.HashToBigInt(result.Block.ChainID)
+		chainID := utils.HashToBigInt(block.ChainID)
 
-		return rpctypes.LegacyRawBlockAndTxToEthTx(result.Block, &unconfirmed.Txs[idx], chainID, &idx)
+		return rpctypes.LegacyRawBlockAndTxToEthTx(block, &txs[idx], chainID, &idx)
 	case rpctypes.EarliestBlockNumber:
 		blockNum = rpctypes.InitialBlockNumber
 	case rpctypes.LatestBlockNumber:
@@ -215,11 +203,11 @@ func (svc *Service) GetTransactionByBlockNumberAndIndex(blockNrOrHash rpc.BlockN
 		blockNum = height
 	}
 
-	result, err := svc.getTMClient().Block(&blockNum)
-	if err != nil {
-		return nil, err
+	block := svc.GetBlockStore().LoadBlock(blockNum)
+	if block == nil {
+		return nil, nil
 	}
-	return svc.getTransactionByBlockAndIndex(result.Block, idx)
+	return svc.getTransactionByBlockAndIndex(block, idx)
 }
 
 func (svc *Service) getTransactionByBlockAndIndex(block *tmtypes.Block, idx hexutil.Uint64) (*rpctypes.Transaction, error) {
@@ -265,13 +253,6 @@ func (svc *Service) submitTransaction(tx *ethtypes.Transaction) (common.Hash, er
 	}
 
 	// Print a log with full tx details for manual investigations and interventions
-	resBlock, err := svc.getTMClient().Block(nil)
-	if err != nil {
-		return common.Hash{}, err
-	}
-	if resBlock.Block == nil {
-		return common.Hash{}, err
-	}
 	signer := ethtypes.NewEIP155Signer(tx.ChainId())
 	from, err := ethtypes.Sender(signer, tx)
 	if err != nil {
@@ -303,29 +284,9 @@ func (svc *Service) submitTransaction(tx *ethtypes.Transaction) (common.Hash, er
 
 // sendTx directly to the pool, all validation steps was done before
 func (svc *Service) sendTx(ethTx *ethtypes.Transaction) (common.Hash, error) {
-	var (
-		resBrodTx *coretypes.ResultBroadcastTx
-		err       error
-	)
 	config := svc.ctx.GetConfig()
 
 	signedTx, err := rpcutils.EthToOLSignedTx(ethTx)
-	if err != nil {
-		return common.Hash{}, err
-	}
-
-	olvmTx := &olvm.Transaction{}
-	err = olvmTx.Unmarshal(signedTx.RawTx.Data)
-	if err != nil {
-		return common.Hash{}, err
-	}
-
-	err = olvmTx.ValidateEthTx(svc.ctx.GetAccountKeeper(), ethTx, svc.GasPrice().ToInt(), true)
-	if err != nil {
-		return common.Hash{}, err
-	}
-
-	_, err = olvmTx.CheckIntrinsicGas(ethTx)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -338,29 +299,39 @@ func (svc *Service) sendTx(ethTx *ethtypes.Transaction) (common.Hash, error) {
 	// support two scenarios
 	// - for fast fullnode send throughtput (async)
 	// - for web3 wallets to show an errors from validation (sync)
+	mempool := svc.GetMempool()
+	txHash := tmtypes.Tx(packet).Hash()
 	if config.Node.UseAsync {
-		svc.logger.Info("Use async mode to propagate tx", tmtypes.Tx(packet).Hash())
-		resBrodTx, err = svc.getTMClient().BroadcastTxAsync(packet)
+		svc.logger.Info("Use async mode to propagate tx", txHash)
+		err = mempool.CheckTx(packet, nil, mempl.TxInfo{})
 		if err != nil {
 			return common.Hash{}, err
 		}
 	} else {
-		svc.logger.Info("Use sync mode to propagate tx", tmtypes.Tx(packet).Hash())
-		resBrodTx, err = svc.getTMClient().BroadcastTxSync(packet)
+		svc.logger.Info("Use sync mode to propagate tx", txHash)
+		resCh := make(chan *abci.Response, 1)
+		err := mempool.CheckTx(packet, func(res *abci.Response) {
+			resCh <- res
+		}, mempl.TxInfo{})
 		if err != nil {
-			return common.Hash{}, err
+			return common.Hash{}, deserializeError(err.Error())
 		}
+		res := <-resCh
+		resBrodTx := res.GetCheckTx()
 		if resBrodTx.Code != 0 {
-			unpackedData := struct {
-				Msg string `json:"msg"`
-			}{}
-
-			err = jsonSerializer.Deserialize([]byte(resBrodTx.Log), &unpackedData)
-			if err == nil {
-				return common.Hash{}, fmt.Errorf(unpackedData.Msg)
-			}
-			return common.Hash{}, fmt.Errorf(resBrodTx.Log)
+			return common.Hash{}, deserializeError(resBrodTx.Log)
 		}
 	}
-	return common.BytesToHash(resBrodTx.Hash), nil
+	return common.BytesToHash(txHash), nil
+}
+
+func deserializeError(errMsg string) error {
+	unpackedData := struct {
+		Msg string `json:"msg"`
+	}{}
+	err := jsonSerializer.Deserialize([]byte(errMsg), &unpackedData)
+	if err != nil {
+		return fmt.Errorf(errMsg)
+	}
+	return fmt.Errorf(unpackedData.Msg)
 }

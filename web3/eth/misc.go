@@ -18,12 +18,11 @@ func (svc *Service) ProtocolVersion() string {
 // ChainId returns the chain's identifier in hex format
 func (svc *Service) ChainId() (hexutil.Big, error) {
 	svc.logger.Debug("eth_chainId")
-	// TODO: Find a way to get chain id not from api call
-	genResult, err := svc.getTMClient().Genesis()
-	if err != nil {
-		return hexutil.Big(*big.NewInt(0)), err
+	genesis := svc.ctx.GetGenesisDoc()
+	if genesis == nil {
+		return hexutil.Big(*big.NewInt(0)), nil
 	}
-	chainID := utils.HashToBigInt(genResult.Genesis.ChainID)
+	chainID := utils.HashToBigInt(genesis.ChainID)
 	return hexutil.Big(*chainID), nil
 }
 
@@ -32,18 +31,13 @@ func (svc *Service) ChainId() (hexutil.Big, error) {
 func (svc *Service) Syncing() (interface{}, error) {
 	svc.logger.Debug("eth_syncing")
 
-	status, err := svc.getTMClient().Status()
-	if err != nil {
-		return false, err
-	}
-
-	if !status.SyncInfo.CatchingUp {
+	if !svc.ctx.GetConsensusReactor().FastSync() {
 		return false, nil
 	}
 
 	return map[string]interface{}{
-		"startingBlock": nil, // NA
-		"currentBlock":  hexutil.Uint64(status.SyncInfo.LatestBlockHeight),
+		"startingBlock": hexutil.Uint64(1),
+		"currentBlock":  hexutil.Uint64(svc.getState().Version()),
 		"highestBlock":  nil, // NA
 		"pulledStates":  nil, // NA
 		"knownStates":   nil, // NA
@@ -58,7 +52,6 @@ func (svc *Service) Coinbase() (common.Address, error) {
 	if err != nil {
 		return common.Address{}, err
 	}
-
 	return common.BytesToAddress(pubKeyHander.Address().Bytes()), nil
 }
 

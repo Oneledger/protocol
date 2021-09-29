@@ -218,12 +218,3 @@ func BroadcastGovFinalizeVotesTx(jobCtx *JobsContext, proposalID governance.Prop
 	}
 	return nil
 }
-
-func (svc Service) ExistTx(hash []byte) bool {
-	reply, _ := svc.tmrpc.Tx(hash, false)
-	svc.logger.Debugf("Got reply for exist tx: %+v\n", reply)
-	if reply != nil && reply.Height > 0 {
-		return true
-	}
-	return false
-}

@@ -467,6 +467,9 @@ func (app *App) Start() error {
 		app.logger.Error("Failed to start consensus.Node")
 		return errors.Wrap(err, "failed to start new consensus.Node")
 	}
+	// set up block store for context and state db
+	app.logger.Detail("set up block store for context and state db")
+	app.Context.SetBlockStore(app.node.BlockStore())
 	//Start Jobbus
 	_ = app.Context.jobBus.Start(app.Context.JobContext())
 	// Starting Legacy RPC
@@ -481,12 +484,9 @@ func (app *App) Start() error {
 		return err
 	}
 
-	// Starting new (web3) RPC
-	web3Services, err := app.Context.Web3Services()
-	if err != nil {
-		return err
-	}
+	web3Services := app.Context.Web3Services(app.node)
 
+	// Starting new (web3) RPC
 	err = app.Context.web3.StartHTTP(web3Services)
 	if err != nil {
 		app.logger.Error("Failed to start web3 http rpc, details", err)
