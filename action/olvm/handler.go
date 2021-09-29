@@ -2,19 +2,19 @@ package olvm
 
 import (
 	"encoding/json"
+	"fmt"
 	"math/big"
+	"strconv"
 
 	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/Oneledger/protocol/data/balance"
-	"github.com/Oneledger/protocol/data/keys"
-	"github.com/Oneledger/protocol/status_codes"
 	"github.com/Oneledger/protocol/utils"
 	"github.com/Oneledger/protocol/vm"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 	ethcore "github.com/ethereum/go-ethereum/core"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/pkg/errors"
+	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/kv"
 )
 
@@ -30,14 +30,17 @@ const (
 	// more expensive to propagate; larger transactions also take more resources
 	// to validate whether they fit into the pool or not.
 	txMaxSize = 4 * txSlotSize // 128KB
+
+	// enable VM debug mode to print opcodes, gas consumed etc.
+	enableVMDebug = false
 )
 
 type Transaction struct {
+	Nonce   uint64          `json:"nonce"`
 	From    action.Address  `json:"from"`
 	To      *action.Address `json:"to"`
 	Amount  action.Amount   `json:"amount"`
 	Data    []byte          `json:"data"`
-	Nonce   uint64          `json:"nonce"`
 	ChainID *big.Int        `json:"chainID"`
 	// for future
 	TxType     int64                `json:"type"`
@@ -61,7 +64,7 @@ func (tx Transaction) Type() action.Type {
 }
 
 func (tx Transaction) Tags() kv.Pairs {
-	tags := make([]kv.Pair, 0)
+	tags := make([]kv.Pair, 0, 6)
 
 	tag := kv.Pair{
 		Key:   []byte("tx.type"),
@@ -86,7 +89,10 @@ func (tx Transaction) Tags() kv.Pairs {
 		Key:   []byte("tx.data"),
 		Value: tx.Data,
 	})
-	tags = append(tags, action.UintTag("tx.nonce", tx.Nonce))
+	tags = append(tags, kv.Pair{
+		Key:   []byte("tx.nonce"),
+		Value: []byte(strconv.FormatUint(tx.Nonce, 10)),
+	})
 	return tags
 }
 
@@ -146,9 +152,9 @@ func (tx *Transaction) validateSigner(ctx *action.Context, signedTx action.Signe
 	return nil
 }
 
-// ValidateEthTx checks whether a transaction is valid according to the consensus
+// validateEthTx checks whether a transaction is valid according to the consensus
 // rules and adheres to some heuristic limits of the local node (price and size).
-func (tx *Transaction) ValidateEthTx(keeper balance.AccountKeeper, ethTx *ethtypes.Transaction, minFee *big.Int, local bool) error {
+func (tx *Transaction) validateEthTx(keeper balance.AccountKeeper, ethTx *ethtypes.Transaction, minFee *big.Int, local bool) error {
 	// Accept only legacy transactions until EIP-2718/2930 activates.
 	if ethTx.Type() != ethtypes.LegacyTxType {
 		return ethtypes.ErrTxTypeNotSupported
@@ -176,24 +182,24 @@ func (tx *Transaction) ValidateEthTx(keeper balance.AccountKeeper, ethTx *ethtyp
 	if msgNonce := ethTx.Nonce(); stNonce > msgNonce {
 		return ethcore.ErrNonceTooLow
 	}
+	//  else if stNonce < msgNonce {
+	// 	// TODO: Remove this from here and add sending to pool again
+	// 	return ethcore.ErrNonceTooHigh
+	// }
 	// Transactor should have enough funds to cover the costs
 	// cost == V + GP * GL
 	if keeper.GetBalance(tx.From).Cmp(ethTx.Cost()) < 0 {
 		return ethcore.ErrInsufficientFunds
 	}
-	return nil
-}
-
-func (tx *Transaction) CheckIntrinsicGas(ethTx *ethtypes.Transaction) (gas uint64, err error) {
 	// Ensure the transaction has more gas than the basic tx fee.
-	intrGas, err := ethcore.IntrinsicGas(ethTx.Data(), ethTx.AccessList(), ethTx.To() == nil, true, true)
+	intrGas, err := vm.IntrinsicGas(ethTx.Data(), ethTx.AccessList(), ethTx.To() == nil)
 	if err != nil {
-		return intrGas, err
+		return err
 	}
 	if ethTx.Gas() < intrGas {
-		return intrGas, ethcore.ErrIntrinsicGas
+		return ethcore.ErrIntrinsicGas
 	}
-	return intrGas, nil
+	return nil
 }
 
 var _ action.Tx = olvmTx{}
@@ -202,7 +208,7 @@ type olvmTx struct {
 }
 
 func (otx olvmTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool, error) {
-	if !ctx.StateDB.IsEnabled {
+	if !ctx.StateDB.Enabled() {
 		return false, errors.Errorf("not enabled")
 	}
 
@@ -231,143 +237,163 @@ func (otx olvmTx) Validate(ctx *action.Context, signedTx action.SignedTx) (bool,
 	if tx.From.Err() != nil || tx.To != nil && tx.To.Err() != nil {
 		return false, action.ErrInvalidAddress
 	}
+
+	err = tx.validateEthTx(
+		ctx.StateDB.GetAccountKeeper(),
+		tx.tmToEthTx(ctx, signedTx.RawTx),
+		ctx.FeePool.GetOpt().MinFee().Amount.BigInt(),
+		true,
+	)
+	if err != nil {
+		return false, err
+	}
+
+	memoNonce, err := strconv.ParseUint(signedTx.Memo, 10, 0)
+	if err != nil {
+		return false, err
+	}
+
+	// double spend protection
+	if memoNonce != tx.Nonce {
+		return false, errors.New("wrong memo for nonce")
+	}
+
 	return true, nil
 }
 
 func (otx olvmTx) ProcessCheck(ctx *action.Context, rawTx action.RawTx) (ok bool, result action.Response) {
 	ctx.Logger.Detail("Processing OLVM Transaction for CheckTx", rawTx)
-
-	tx := &Transaction{}
-	err := tx.Unmarshal(rawTx.Data)
-	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrWrongTxType, tx.Tags(), err)
-	}
-
-	ethTx := tx.tmToEthTx(ctx, rawTx)
-	_, err = tx.CheckIntrinsicGas(ethTx)
-	if err != nil {
-		return false, action.Response{
-			Events: action.GetEvent(tx.Tags(), err.Error()),
-			Log:    err.Error(),
-		}
-	}
-	err = tx.ValidateEthTx(
-		ctx.StateDB.GetAccountKeeper(),
-		tx.tmToEthTx(ctx, rawTx),
-		ctx.FeePool.GetOpt().MinFee().Amount.BigInt(),
-		true,
-	)
-	if err != nil {
-		return false, action.Response{
-			Events: action.GetEvent(tx.Tags(), err.Error()),
-			Log:    err.Error(),
-		}
-	}
-	ok = true
-	result = action.Response{GasUsed: -1}
-	return
+	return ResponseSuccess(action.GetEvent(make(kv.Pairs, 0), HandlerName), action.SkipFee)
 }
 
 func (otx olvmTx) ProcessDeliver(ctx *action.Context, rawTx action.RawTx) (ok bool, result action.Response) {
 	ctx.Logger.Detail("Processing OLVM Transaction for DeliverTx", rawTx)
-	ok, result = runOLVM(ctx, rawTx, false)
+	ok, result = runOLVM(ctx, rawTx)
 	return
 }
 
 func (otx olvmTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas, gasUsed action.Gas) (ok bool, result action.Response) {
-	// -1 if ProcessCheck in case no check simulation of OLVM, which decrease a performance
-	if gasUsed == -1 {
-		ok, result = true, action.Response{}
-	} else {
-		ok, result = action.ContractFeeHandling(ctx, signedTx, gasUsed, start)
-	}
+	ok, result = action.ContractFeeHandling(ctx, signedTx, gasUsed, start)
 	ctx.Logger.Detailf("Processing OLVM Transaction for BasicFeeHandling: status - %t\n", ok)
 	return ok, result
 }
 
-func runOLVM(ctx *action.Context, rawTx action.RawTx, isSimulation bool) (bool, action.Response) {
+func runOLVM(ctx *action.Context, rawTx action.RawTx) (bool, action.Response) {
 	tx := &Transaction{}
 	err := tx.Unmarshal(rawTx.Data)
 	if err != nil {
-		return false, action.Response{Log: err.Error()}
+		return ResponseFailed(tx.Tags(), err, action.WrongFee)
 	}
 
-	var (
-		stateDB *vm.CommitStateDB
-		gaspool = new(ethcore.GasPool)
-		tags    = tx.Tags()
+	evmTx := vm.NewEVMTransaction(
+		ctx.StateDB,
+		new(ethcore.GasPool).AddGas(ctx.StateDB.GetAvailableGas()),
+		ctx.Header,
+		tx.From,
+		tx.To,
+		tx.Nonce,
+		tx.Amount.Value.BigInt(),
+		tx.Data,
+		tx.AccessList,
+		uint64(rawTx.Fee.Gas),
+		rawTx.Fee.Price.Value.BigInt(),
+		false,
 	)
 
-	// NOTE: Just left in case if process check if have a simulation (not recomended)
-	if isSimulation {
-		stateDB = ctx.StateDB.Copy()
-		gaspool = gaspool.AddGas(vm.SimulationBlockGasLimit)
+	evmTx.SetVMDebug(enableVMDebug)
+
+	tags := tx.Tags()
+
+	if execResult, err := evmTx.Apply(); err != nil {
+		ctx.Logger.Detailf("OLVM TX: Execution apply VM got err: %s\n", err.Error())
+
+		tags = responseLogs(tags, ethtypes.ReceiptStatusFailed, err)
+		return ResponseFailed(tags, err, action.WrongFee)
+	} else if execResult.Failed() {
+		ctx.Logger.Detailf("OLVM TX: Execution result VM got err: %s\n", execResult.Err.Error())
+
+		tags = responseLogs(tags, ethtypes.ReceiptStatusFailed, execResult.Err)
+		return ResponseSuccess(action.GetEvent(tags, HandlerName), int64(execResult.UsedGas))
 	} else {
-		stateDB = ctx.StateDB
-		gaspool = gaspool.AddGas(ctx.StateDB.GetAvailableGas())
-	}
+		ctx.Logger.Detail("OLVM TX: Execution result VM got success")
 
-	ethTx := tx.tmToEthTx(ctx, rawTx)
-	intrinsicGas, err := tx.CheckIntrinsicGas(ethTx)
-	if err != nil {
-		return helpers.LogAndReturnFalseWithGas(ctx.Logger, status_codes.ProtocolError{
-			Msg:  err.Error(),
-			Code: status_codes.TxErrIntrinsicGas,
-		}, tags, err, int64(intrinsicGas))
-	}
-	err = tx.ValidateEthTx(
-		stateDB.GetAccountKeeper(),
-		ethTx,
-		ctx.FeePool.GetOpt().MinFee().Amount.BigInt(),
-		isSimulation,
-	)
-	if err != nil {
-		return helpers.LogAndReturnFalseWithGas(ctx.Logger, status_codes.ProtocolError{
-			Msg:  err.Error(),
-			Code: status_codes.InvalidParams,
-		}, tags, err, int64(intrinsicGas))
-	}
+		logTags, err := rlpLogsToTags(ctx.StateDB.GetTxLogs())
+		if err != nil {
+			tags = responseLogs(tags, ethtypes.ReceiptStatusFailed, err)
+			ctx.Logger.Detail("OLVM TX: Failed to process logs")
+			return ResponseFailed(tags, err, int64(execResult.UsedGas))
+		}
 
-	evmTx := vm.NewEVMTransaction(stateDB, gaspool, ctx.Header, tx.From, tx.To, tx.Nonce, tx.Amount.Value.BigInt(), tx.Data, tx.AccessList, uint64(rawTx.Fee.Gas), rawTx.Fee.Price.Value.BigInt(), isSimulation)
+		tags = responseLogs(tags, ethtypes.ReceiptStatusSuccessful, nil)
+		if len(execResult.ContractAddress.Bytes()) > 0 {
+			ctx.Logger.Detailf("Contract created: %s\n", execResult.ContractAddress)
+			tags = append(tags, kv.Pair{
+				Key:   []byte("tx.contract"),
+				Value: execResult.ContractAddress.Bytes(),
+			})
+		}
 
-	execResult, err := evmTx.Apply()
+		events := action.GetEvent(tags, HandlerName)
+		if len(logTags) > 0 {
+			logEvent := types.Event{
+				Type:       fmt.Sprintf("%s.logs", HandlerName),
+				Attributes: logTags,
+			}
+			events = append(events, logEvent)
+		}
+		return ResponseSuccess(events, int64(execResult.UsedGas))
+	}
+}
+
+func ResponseFailed(tags kv.Pairs, err error, gasUsed int64) (bool, action.Response) {
+	result := action.Response{
+		Events:  action.GetEvent(tags, HandlerName),
+		Log:     action.ErrInvalidVmExecution.Wrap(err).Marshal(),
+		GasUsed: gasUsed,
+	}
+	return false, result
+}
+
+func ResponseSuccess(events []types.Event, gasUsed int64) (bool, action.Response) {
+	result := action.Response{
+		Events:  events,
+		GasUsed: gasUsed,
+	}
+	return true, result
+}
+
+func responseLogs(tags []kv.Pair, status uint64, err error) []kv.Pair {
+	tags = append(tags, kv.Pair{
+		Key:   []byte("tx.status"),
+		Value: []byte(strconv.Itoa(int(status))),
+	})
 	if err != nil {
-		ctx.Logger.Debugf("Execution apply VM got err: %s\n", err.Error())
-		tags = append(tags, action.UintTag("tx.status", ethtypes.ReceiptStatusFailed))
 		tags = append(tags, kv.Pair{
 			Key:   []byte("tx.error"),
 			Value: []byte(err.Error()),
 		})
-		return helpers.LogAndReturnFalseWithGas(ctx.Logger, status_codes.ProtocolError{
-			Msg:  err.Error(),
-			Code: status_codes.TxErrVMExecution,
-		}, tags, err, int64(intrinsicGas))
 	}
+	return tags
+}
 
-	if execResult.Failed() {
-		ctx.Logger.Debugf("Execution result got err: %s\n", execResult.Err.Error())
-		tags = append(tags, action.UintTag("tx.status", ethtypes.ReceiptStatusFailed))
-		tags = append(tags, kv.Pair{
-			Key:   []byte("tx.error"),
-			Value: []byte(execResult.Err.Error()),
-		})
-	} else {
-		tags = append(tags, action.UintTag("tx.status", ethtypes.ReceiptStatusSuccessful))
-		tags = append(tags, kv.Pair{
-			Key:   []byte("tx.returnData"),
-			Value: []byte(execResult.ReturnData),
-		})
-		if tx.To == nil && len(execResult.ContractAddress.Bytes()) > 0 {
-			ctx.Logger.Debugf("Contract created: %s\n", keys.Address(execResult.ContractAddress.Bytes()))
-			tags = append(tags, kv.Pair{
-				Key:   []byte("tx.contract"),
-				Value: []byte(execResult.ContractAddress.Bytes()),
-			})
+func rlpLogsToTags(logs []*ethtypes.Log) (kv.Pairs, error) {
+	if len(logs) == 0 {
+		return kv.Pairs{}, nil
+	}
+	extTags := make(kv.Pairs, 0, len(logs)+1)
+	extTags = append(extTags, kv.Pair{
+		Key:   []byte("tx.bloom"),
+		Value: vm.LogsBloom(logs),
+	})
+	for _, log := range logs {
+		rlpLog, err := vm.RLPLogConvert(*log).Encode()
+		if err != nil {
+			return kv.Pairs{}, err
 		}
+		extTags = append(extTags, kv.Pair{
+			Key:   []byte(fmt.Sprintf("tx.logs.%d", log.Index)),
+			Value: rlpLog,
+		})
 	}
-	ctx.Logger.Debugf("Contract TX: status ok - %t, used gas - %d\n", !execResult.Failed(), execResult.UsedGas)
-	return true, action.Response{
-		Events:  action.GetEvent(tags, "olvm"),
-		GasUsed: int64(execResult.UsedGas),
-	}
+	return extTags, nil
 }

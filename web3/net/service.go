@@ -28,32 +28,18 @@ func NewService(ctx rpctypes.Web3Context) *Service {
 }
 
 func (svc *Service) Listening() bool {
-	netInfo, err := svc.ctx.GetAPI().RPCClient().NetInfo()
-	if err != nil {
-		svc.logger.Error(err)
-		return false
-	}
-	return netInfo.Listening
+	return svc.ctx.GetNode().IsListening()
 }
 
 func (svc *Service) PeerCount() hexutil.Big {
-	netInfo, err := svc.ctx.GetAPI().RPCClient().NetInfo()
-	if err != nil {
-		svc.logger.Error(err)
-		return hexutil.Big(*big.NewInt(int64(0)))
-	}
-
-	return hexutil.Big(*big.NewInt(int64(netInfo.NPeers)))
+	return hexutil.Big(*big.NewInt(int64(len(svc.ctx.GetSwitch().Peers().List()))))
 }
 
 func (svc *Service) Version() (string, error) {
 	svc.logger.Debug("net_version")
-	blockResult, err := svc.ctx.GetAPI().RPCClient().Block(nil)
-	if err != nil {
-		return "", err
+	genesis := svc.ctx.GetGenesisDoc()
+	if genesis == nil {
+		return "", errors.New("version not found")
 	}
-	if blockResult.Block == nil {
-		return "", errors.New("not loaded")
-	}
-	return utils.HashToBigInt(blockResult.Block.ChainID).String(), nil
+	return utils.HashToBigInt(genesis.ChainID).String(), nil
 }

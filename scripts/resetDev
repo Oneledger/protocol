@@ -4,16 +4,24 @@ echo
 
 rm -rf $OLDATA/devnet/*
 
-olfullnode init devnet --dir $OLDATA/devnet --nonvalidators 5 \
+olfullnode init devnet --dir $OLDATA/devnet --validators 2 --nonvalidators 1 \
   --empty_blocks \
-  --loglevel 4 \
+  --loglevel 5 \
   --total_funds 1000000000 \
   --maturity_time 4 \
   --deleg_rewards_maturity_time 4 \
   --rewards_interval 1 \
   --funding_deadline 10 \
   --voting_deadline 12 \
-  --timeout_commit 1000 \
+  --timeout_commit 3000 \
+  --top_validators 16 \
+  --initial_token_holders 73b72d6EE63e16c898AD18C7f447846BfC3AB1aC,0D43536d52289a0249222Ab48eE7CE9A5A35361b,1c4d8fd351846b3a337c0cd22f1ee33680db3c50 \
+  --chain_id devnet \
+  --use_async true \
+  --archive_node true \
+  --cache_size 0 \
+  --frankenstein_block 25 \
+
 #  --db_type cleveldb
 #  --deploy_smart_contracts \
 #  -eth_rpc https://rinkeby.infura.io/v3

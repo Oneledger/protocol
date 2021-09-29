@@ -192,8 +192,7 @@ const (
 	RewardsUnableToWithdraw         = 800002
 	RewardsYearRewardsMissing       = 800003
 
-	TxErrVMExecution  = 900001
-	TxErrIntrinsicGas = 900002
+	TxErrVMExecution = 900001
 
 	//Ethereum Errors
 

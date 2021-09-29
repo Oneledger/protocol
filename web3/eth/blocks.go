@@ -3,12 +3,11 @@ package eth
 import (
 	"math/big"
 
-	"github.com/Oneledger/protocol/data/evm"
 	rpctypes "github.com/Oneledger/protocol/web3/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rpc"
+	tmrpccore "github.com/tendermint/tendermint/rpc/core"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
@@ -21,14 +20,15 @@ func (svc *Service) BlockNumber() hexutil.Big {
 }
 
 func (svc *Service) blockWithBloom(tmBlock *tmtypes.Block, fullTx bool) (*rpctypes.Block, error) {
-	block, err := rpctypes.EthBlockFromTendermint(svc.getTMClient(), tmBlock, fullTx)
+	results, err := tmrpccore.BlockResults(nil, &tmBlock.Height)
 	if err != nil {
 		return nil, err
 	}
-	bz, _ := svc.ctx.GetContractStore().Get(evm.KeyPrefixBloom, evm.BloomKey(uint64(tmBlock.Height)))
-	if len(bz) > 0 {
-		block.LogsBloom = ethtypes.BytesToBloom(bz)
+	block, err := rpctypes.EthBlockFromTendermint(tmBlock, fullTx)
+	if err != nil {
+		return nil, err
 	}
+	block.LogsBloom = rpctypes.GetBlockBloom(results.EndBlockEvents)
 	return block, nil
 }
 
@@ -36,21 +36,17 @@ func (svc *Service) blockWithBloom(tmBlock *tmtypes.Block, fullTx bool) (*rpctyp
 func (svc *Service) GetBlockByHash(hash common.Hash, fullTx bool) (*rpctypes.Block, error) {
 	svc.logger.Debug("eth_getBlockByHash", "hash", hash, "fullTx", fullTx)
 
-	result, err := svc.getTMClient().BlockByHash(hash.Bytes())
-	if err != nil {
-		svc.logger.Debug("eth_getBlockByHash", "block err", err)
-		return nil, nil
-	}
-	if result.Block == nil {
+	block := svc.GetBlockStore().LoadBlockByHash(hash.Bytes())
+	if block == nil {
 		svc.logger.Debug("eth_getBlockByHash", "block not found with hash", common.Bytes2Hex(hash.Bytes()))
 		return nil, nil
 	}
-	return svc.blockWithBloom(result.Block, fullTx)
+	return svc.blockWithBloom(block, fullTx)
 }
 
 // GetBlockByNumber returns the block identified by number.
 func (svc *Service) GetBlockByNumber(blockNrOrHash rpc.BlockNumberOrHash, fullTx bool) (*rpctypes.Block, error) {
-	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.getTMClient(), blockNrOrHash)
+	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.GetBlockStore(), blockNrOrHash)
 	if err != nil {
 		svc.logger.Debug("eth_getBlockByNumber", "block err", err)
 		return nil, nil
@@ -66,37 +62,30 @@ func (svc *Service) GetBlockByNumber(blockNrOrHash rpc.BlockNumberOrHash, fullTx
 	default:
 		blockNum = height
 	}
-	result, err := svc.getTMClient().Block(&blockNum)
-	if err != nil {
-		svc.logger.Debug("eth_getBlockByNumber", "block err", err)
-		return nil, nil
-	}
-	if result.Block == nil {
+	block := svc.GetBlockStore().LoadBlock(blockNum)
+	if block == nil {
 		svc.logger.Debug("eth_getBlockByNumber", "block not found with height", blockNum)
 		return nil, nil
 	}
-	return svc.blockWithBloom(result.Block, fullTx)
+	return svc.blockWithBloom(block, fullTx)
 }
 
 // GetBlockTransactionCountByHash returns the number of transactions in the block identified by hash.
 func (svc *Service) GetBlockTransactionCountByHash(hash common.Hash) *hexutil.Uint {
 	svc.logger.Debug("eth_getBlockTransactionCountByHash", "hash", hash)
 
-	result, err := svc.getTMClient().BlockByHash(hash.Bytes())
-	if err != nil {
-		return nil
-	}
-	if result.Block == nil {
+	block := svc.GetBlockStore().LoadBlockByHash(hash.Bytes())
+	if block == nil {
 		svc.logger.Debug("eth_getBlockTransactionCountByHash", "block not found with hash", common.Bytes2Hex(hash.Bytes()))
 		return nil
 	}
-	n := hexutil.Uint(len(result.Block.Txs))
+	n := hexutil.Uint(len(block.Txs))
 	return &n
 }
 
 // GetBlockTransactionCountByNumber returns the number of transactions in the block identified by its height.
 func (svc *Service) GetBlockTransactionCountByNumber(blockNrOrHash rpc.BlockNumberOrHash) *hexutil.Uint {
-	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.getTMClient(), blockNrOrHash)
+	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.GetBlockStore(), blockNrOrHash)
 	if err != nil {
 		return nil
 	}
@@ -111,60 +100,43 @@ func (svc *Service) GetBlockTransactionCountByNumber(blockNrOrHash rpc.BlockNumb
 		blockNum = svc.getState().Version()
 		svc.logger.Debug("eth_getBlockTransactionCountByNumber", "height", blockNum, "for pending txs")
 
-		result, err := svc.getTMClient().Block(&blockNum)
-		if err != nil {
-			return nil
-		}
-		if result.Block == nil {
+		block := svc.GetBlockStore().LoadBlock(blockNum)
+		if block == nil {
 			svc.logger.Debug("eth_getBlockTransactionCountByNumber", "block not found with height", blockNum)
 			return nil
 		}
 
-		unconfirmed, err := svc.getTMClient().UnconfirmedTxs(1000)
-		if err != nil {
-			svc.logger.Debug("eth_getBlockTransactionCountByNumber", "failed to get unconfirmed txs", err)
-			return nil
-		}
-		txsLen = len(result.Block.Txs) + len(unconfirmed.Txs)
+		txsLen = len(block.Txs) + svc.GetMempool().Size()
 	case rpctypes.LatestBlockNumber:
 		blockNum = svc.getState().Version()
 		svc.logger.Debug("eth_getBlockTransactionCountByNumber", "height", blockNum, "for last txs")
 
-		result, err := svc.getTMClient().Block(&blockNum)
-		if err != nil {
-			return nil
-		}
-		if result.Block == nil {
+		block := svc.GetBlockStore().LoadBlock(blockNum)
+		if block == nil {
 			svc.logger.Debug("eth_getBlockTransactionCountByNumber", "block not found with height", blockNum)
 			return nil
 		}
-		txsLen = len(result.Block.Txs)
+		txsLen = len(block.Txs)
 	case rpctypes.EarliestBlockNumber:
 		blockNum = rpctypes.InitialBlockNumber
 		svc.logger.Debug("eth_getBlockTransactionCountByNumber", "height", blockNum, "for last txs")
 
-		result, err := svc.getTMClient().Block(&blockNum)
-		if err != nil {
-			return nil
-		}
-		if result.Block == nil {
+		block := svc.GetBlockStore().LoadBlock(blockNum)
+		if block == nil {
 			svc.logger.Debug("eth_getBlockTransactionCountByNumber", "block not found with height", blockNum)
 			return nil
 		}
-		txsLen = len(result.Block.Txs)
+		txsLen = len(block.Txs)
 	default:
 		blockNum = height
 		svc.logger.Debug("eth_getBlockTransactionCountByNumber", "height", blockNum)
 
-		result, err := svc.getTMClient().Block(&blockNum)
-		if err != nil {
-			return nil
-		}
-		if result.Block == nil {
+		block := svc.GetBlockStore().LoadBlock(blockNum)
+		if block == nil {
 			svc.logger.Debug("eth_getBlockTransactionCountByNumber", "block not found with height", blockNum)
 			return nil
 		}
-		txsLen = len(result.Block.Txs)
+		txsLen = len(block.Txs)
 	}
 
 	svc.logger.Debug("eth_getBlockTransactionCountByNumber", "height", blockNum, "txsLen", txsLen)

@@ -17,12 +17,13 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
 	ethcore "github.com/ethereum/go-ethereum/core"
+	ethvm "github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/rpc"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 func (svc *Service) GetStorageAt(address common.Address, key string, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
-	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.getTMClient(), blockNrOrHash)
+	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.GetBlockStore(), blockNrOrHash)
 	if err != nil {
 		svc.logger.Debug("eth_getStorageAt", "block err", err)
 		return hexutil.Bytes{}, nil
@@ -48,7 +49,7 @@ func (svc *Service) GetStorageAt(address common.Address, key string, blockNrOrHa
 }
 
 func (svc *Service) GetCode(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
-	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.getTMClient(), blockNrOrHash)
+	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.GetBlockStore(), blockNrOrHash)
 	if err != nil {
 		svc.logger.Debug("eth_getCode", "block err", err)
 		return hexutil.Bytes{}, nil
@@ -74,7 +75,7 @@ func (svc *Service) GetCode(address common.Address, blockNrOrHash rpc.BlockNumbe
 }
 
 func (svc *Service) Call(call rpctypes.CallArgs, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
-	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.getTMClient(), blockNrOrHash)
+	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.GetBlockStore(), blockNrOrHash)
 	if err != nil {
 		svc.logger.Debug("eth_call", "block err", err)
 		return nil, nil
@@ -99,17 +100,98 @@ func (svc *Service) Call(call rpctypes.CallArgs, blockNrOrHash rpc.BlockNumberOr
 
 func (svc *Service) EstimateGas(call rpctypes.CallArgs) (hexutil.Uint64, error) {
 	svc.logger.Debug("eth_estimateGas", "args", call)
-	height := svc.getState().Version()
-	result, err := svc.callContract(call, height)
-	if err != nil {
-		return 0, err
+
+	// Determine the lowest and highest possible gas limits to binary search in between
+	var (
+		height        = svc.getState().Version()
+		lo     uint64 = vm.TxGas - 1
+		hi     uint64
+		cap    uint64
+	)
+
+	if uint64(call.Gas) >= vm.TxGas {
+		hi = uint64(call.Gas)
+	} else {
+		hi = vm.SimulationBlockGasLimit
 	}
-	// If the result contains a revert reason, try to unpack and return it.
-	if len(result.Revert()) > 0 {
-		return 0, rpctypes.NewRevertError(result)
+
+	stateDB := svc.GetStateDB()
+
+	// Recap the highest gas allowance with account's balance.
+	if call.GasPrice != nil && call.GasPrice.ToInt().BitLen() != 0 {
+		balance := stateDB.GetAccountKeeper().GetBalance(call.From.Bytes()) // from can't be nil
+		available := new(big.Int).Set(balance)
+		if call.Value != nil {
+			if call.Value.ToInt().Cmp(available) >= 0 {
+				return 0, errors.New("insufficient funds for transfer")
+			}
+			available.Sub(available, call.Value.ToInt())
+		}
+		allowance := new(big.Int).Div(available, call.GasPrice.ToInt())
+		if allowance.IsUint64() && hi > allowance.Uint64() {
+			transfer := call.Value
+			if transfer == nil {
+				transfer = new(hexutil.Big)
+			}
+			svc.logger.Warn("Gas estimation capped by limited funds", "original", hi, "balance", balance,
+				"sent", transfer, "gasprice", call.GasPrice, "fundable", allowance)
+			hi = allowance.Uint64()
+		}
 	}
-	svc.logger.Debug("eth_estimateGas", "gas", result.UsedGas)
-	return hexutil.Uint64(result.UsedGas), err
+	cap = hi
+
+	// Create a helper to check if a gas allowance results in an executable transaction
+	executable := func(gas uint64) (bool, *vm.ExecutionResult, error) {
+		call.Gas = hexutil.Uint64(gas)
+
+		snapshot := stateDB.Snapshot()
+		res, err := svc.callContract(call, height)
+		stateDB.RevertToSnapshot(snapshot)
+
+		if err != nil {
+			if errors.Is(err, ethcore.ErrIntrinsicGas) {
+				return true, nil, nil // Special case, raise gas limit
+			}
+			return true, nil, err // Bail out
+		}
+		return res.Failed(), res, nil
+	}
+	// Execute the binary search and hone in on an executable gas limit
+	for lo+1 < hi {
+		mid := (hi + lo) / 2
+		failed, _, err := executable(mid)
+
+		// If the error is not nil(consensus error), it means the provided message
+		// call or transaction will never be accepted no matter how much gas it is
+		// assigned. Return the error directly, don't struggle any more
+		if err != nil {
+			return 0, err
+		}
+		if failed {
+			lo = mid
+		} else {
+			hi = mid
+		}
+	}
+	// Reject the transaction as invalid if it still fails at the highest allowance
+	if hi == cap {
+		failed, result, err := executable(hi)
+		if err != nil {
+			return 0, err
+		}
+		if failed {
+			if result != nil && result.Err != ethvm.ErrOutOfGas {
+				if len(result.Revert()) > 0 {
+					return 0, rpctypes.NewRevertError(result)
+				}
+				return 0, result.Err
+			}
+			// Otherwise, the specified gas cap is too low
+			return 0, fmt.Errorf("gas required exceeds allowance (%d)", cap)
+		}
+	}
+	svc.logger.Debug("eth_estimateGas", "gas", hi)
+	return hexutil.Uint64(hi), nil
 }
 
 func (svc *Service) callContract(call rpctypes.CallArgs, height int64) (*vm.ExecutionResult, error) {
@@ -125,25 +207,20 @@ func (svc *Service) callContract(call rpctypes.CallArgs, height int64) (*vm.Exec
 		isPending = true
 	}
 
-	stateDB := svc.GetStateDB()
-	bhash := stateDB.GetHeightHash(blockNum)
-	stateDB.SetHeightHash(blockNum, bhash)
-
-	resBlock := svc.ctx.GetAPI().Block(int64(blockNum))
-	if resBlock == nil {
+	block := svc.GetBlockStore().LoadBlock(int64(blockNum))
+	if block == nil {
 		return nil, errors.New("failed to get block")
 	}
-	block := resBlock.Block
+	stateDB := svc.GetStateDB()
+	stateDB.SetBlockHash(common.BytesToHash(block.Hash()))
+
 	header := &abci.Header{
 		ChainID: block.ChainID,
 		Height:  block.Height,
 		Time:    block.Time,
 	}
 
-	var from keys.Address
-	if call.From != nil {
-		from = call.From.Bytes()
-	}
+	from := keys.Address(call.From.Bytes())
 
 	var to *keys.Address
 	if call.To != nil {
@@ -157,8 +234,8 @@ func (svc *Service) callContract(call rpctypes.CallArgs, height int64) (*vm.Exec
 	}
 
 	var gas uint64 = vm.SimulationBlockGasLimit
-	if call.Gas != nil {
-		gas = uint64(*call.Gas)
+	if call.Gas != 0 {
+		gas = uint64(call.Gas)
 	}
 
 	value := new(big.Int)
@@ -168,8 +245,8 @@ func (svc *Service) callContract(call rpctypes.CallArgs, height int64) (*vm.Exec
 
 	// Set Data if provided
 	var data []byte
-	if call.Data != nil {
-		data = []byte(*call.Data)
+	if len(call.Data) > 0 {
+		data = []byte(call.Data)
 	}
 
 	nonce := svc.getNonce(common.BytesToAddress(from.Bytes()), blockNum, utils.HashToBigInt(block.ChainID), isPending)
@@ -207,7 +284,7 @@ func (svc *Service) getNonce(address common.Address, height uint64, chainID *big
 		pendingNonce uint64
 	)
 	if isPending {
-		pendingNonce = rpcutils.GetPendingTxCountByAddress(svc.getTMClient(), address)
+		pendingNonce = rpcutils.GetPendingTxCountByAddress(svc.GetMempool(), address)
 	}
 	ethAcc, err := svc.ctx.GetAccountKeeper().GetVersionedAccount(address.Bytes(), int64(height))
 	if err == nil {

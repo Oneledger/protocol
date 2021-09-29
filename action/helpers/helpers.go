@@ -24,12 +24,6 @@ func LogAndReturnFalse(logger *log.Logger, sterr status_codes.ProtocolError, tag
 	return false, result
 }
 
-func LogAndReturnFalseWithGas(logger *log.Logger, sterr status_codes.ProtocolError, tags kv.Pairs, err error, gasUsed int64) (bool, action.Response) {
-	ok, response := LogAndReturnFalse(logger, sterr, tags, err)
-	response.GasUsed = gasUsed
-	return ok, response
-}
-
 func LogAndReturnTrue(logger *log.Logger, tags kv.Pairs, eventType string) (bool, action.Response) {
 	logger.Detail(eventType)
 	result := action.Response{

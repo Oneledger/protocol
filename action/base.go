@@ -13,6 +13,11 @@ import (
 	"github.com/Oneledger/protocol/serialize"
 )
 
+const (
+	SkipFee  = -1
+	WrongFee = 0
+)
+
 type MsgData []byte
 
 type Msg interface {
@@ -151,27 +156,27 @@ func StakingPayerFeeHandling(ctx *Context, feePayer keys.Address, signedTx Signe
 }
 
 func ContractFeeHandling(ctx *Context, signedTx SignedTx, gasUsed Gas, start Gas) (bool, Response) {
-	if gasUsed == 0 {
-		return false, Response{Log: ErrInvalidVmExecution.Error(), GasWanted: signedTx.Fee.Gas}
+	switch gasUsed {
+	case SkipFee:
+		return true, Response{}
+	case WrongFee:
+		return false, Response{Log: ErrInvalidVmExecution.Marshal(), GasWanted: signedTx.Fee.Gas}
 	}
 
 	ctx.State.ConsumeContractGas(gasUsed)
-	ctx.Logger.Debugf("gas used: %d, gas limit: %d", gasUsed, signedTx.Fee.Gas)
+	ctx.Logger.Detailf("Gas - used: %d, limit: %d\n", gasUsed, signedTx.Fee.Gas)
 
 	if int64(gasUsed) > signedTx.Fee.Gas {
-		return false, Response{Log: ErrGasOverflow.Error(), GasWanted: signedTx.Fee.Gas, GasUsed: int64(gasUsed)}
+		return false, Response{Log: ErrGasOverflow.Marshal(), GasWanted: signedTx.Fee.Gas, GasUsed: int64(gasUsed)}
 	}
 
 	charge := signedTx.Fee.Price.ToCoin(ctx.Currencies).MultiplyInt(int(gasUsed))
-	// NOTE: VM engine in state_transition perform gas * gasPrice evaluation and make a substraction there
-	// so we rely on this and not using minus balance here
-	// here it is only place what to do with charge
-	ctx.Logger.Debugf("Add to pool %s\n", charge)
+
 	err := ctx.FeePool.AddToPool(charge)
 	if err != nil {
-		return false, Response{Log: err.Error(), GasWanted: signedTx.Fee.Gas}
+		return false, Response{Log: ErrInvalidVmExecution.Wrap(err).Marshal(), GasWanted: signedTx.Fee.Gas}
 	}
-
+	ctx.Logger.Detailf("Add to pool %s\n", charge)
 	// NOTE: For the smart contract we need to eat used gas to prevent redundant vm execution of attacker
 	return true, Response{GasWanted: signedTx.Fee.Gas, GasUsed: int64(gasUsed)}
 }

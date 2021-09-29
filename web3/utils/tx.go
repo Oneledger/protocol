@@ -5,20 +5,16 @@ import (
 	"fmt"
 	"math/big"
 
-	rpcclient "github.com/Oneledger/protocol/client"
 	rpctypes "github.com/Oneledger/protocol/web3/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/tendermint/tendermint/mempool"
 )
 
 // GetPendingTxCountByAddress is used to get pending tx count (nonce) for user address
 // NOTE: Working right now only with legacy tx
-func GetPendingTxCountByAddress(tmClient rpcclient.Client, address common.Address) (total uint64) {
-	unconfirmed, err := tmClient.UnconfirmedTxs(1000)
-	if err != nil {
-		return 0
-	}
-	for _, tx := range unconfirmed.Txs {
+func GetPendingTxCountByAddress(mem mempool.Mempool, address common.Address) (total uint64) {
+	for _, tx := range mem.ReapMaxTxs(50) {
 		lTx, err := rpctypes.ParseLegacyTx(tx)
 		if err != nil {
 			// means tx is not legacy and we need to check is tx is ethereum
@@ -41,30 +37,19 @@ func GetPendingTxCountByAddress(tmClient rpcclient.Client, address common.Addres
 }
 
 // GetPendingTx search for tx in pool
-func GetPendingTx(tmClient rpcclient.Client, hash common.Hash, chainID *big.Int) (*rpctypes.Transaction, error) {
-	unconfirmed, err := tmClient.UnconfirmedTxs(1000)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, uTx := range unconfirmed.Txs {
+func GetPendingTx(mem mempool.Mempool, hash common.Hash, chainID *big.Int) (*rpctypes.Transaction, error) {
+	for _, uTx := range mem.ReapMaxTxs(50) {
 		if bytes.Equal(uTx.Hash(), hash.Bytes()) {
 			return rpctypes.LegacyRawBlockAndTxToEthTx(nil, &uTx, chainID, nil)
 		}
 	}
-	return nil, err
+	return nil, nil
 }
 
 // GetPendingTransactions search for txs in pool
-func GetPendingTxs(tmClient rpcclient.Client, chainID *big.Int) ([]*rpctypes.Transaction, error) {
-	unconfirmed, err := tmClient.UnconfirmedTxs(1000)
-	if err != nil {
-		return nil, err
-	}
-
-	transactions := make([]*rpctypes.Transaction, 0)
-
-	for _, uTx := range unconfirmed.Txs {
+func GetPendingTxs(mem mempool.Mempool, chainID *big.Int) ([]*rpctypes.Transaction, error) {
+	transactions := make([]*rpctypes.Transaction, 0, 50)
+	for _, uTx := range mem.ReapMaxTxs(50) {
 		tx, err := rpctypes.LegacyRawBlockAndTxToEthTx(nil, &uTx, chainID, nil)
 		if err != nil {
 			continue
@@ -75,13 +60,8 @@ func GetPendingTxs(tmClient rpcclient.Client, chainID *big.Int) ([]*rpctypes.Tra
 }
 
 // GetPendingTxsWithCallback search for txs in pool and return in callback form
-func GetPendingTxsWithCallback(tmClient rpcclient.Client, chainID *big.Int, callback func(tx *rpctypes.Transaction) bool) error {
-	unconfirmed, err := tmClient.UnconfirmedTxs(1000)
-	if err != nil {
-		return err
-	}
-
-	for _, uTx := range unconfirmed.Txs {
+func GetPendingTxsWithCallback(mem mempool.Mempool, chainID *big.Int, callback func(tx *rpctypes.Transaction) bool) error {
+	for _, uTx := range mem.ReapMaxTxs(50) {
 		tx, err := rpctypes.LegacyRawBlockAndTxToEthTx(nil, &uTx, chainID, nil)
 		if err != nil {
 			continue

@@ -13,7 +13,11 @@ import (
 func (s *CommitStateDB) createObject(addr ethcmn.Address) (newObj, prevObj *stateObject) {
 	prevObj = s.getStateObject(addr)
 
-	acc, _ := s.accountKeeper.NewAccountWithAddress(keys.Address(addr.Bytes()))
+	acc, err := s.accountKeeper.NewAccountWithAddress(keys.Address(addr.Bytes()))
+	if err != nil {
+		s.setError(fmt.Errorf("failed to create a new address for %s", addr.String()))
+		return nil, prevObj
+	}
 	newObj = newStateObject(s, acc)
 	newObj.setNonce(0) // sets the object to dirty
 
@@ -77,7 +81,7 @@ func (s *CommitStateDB) setStateObject(so *stateObject) {
 
 // updateStateObject writes the given state object to the store.
 func (s *CommitStateDB) updateStateObject(so *stateObject) error {
-	s.logger.Debugf("VM: update state object for address '%s' with nonce: '%d' and balance: '%d' \n", so.Address(), so.account.Sequence, so.account.Balance())
+	s.logger.Detailf("VM: update state object for address '%s' with nonce: '%d' and balance: '%d' \n", so.Address(), so.account.Sequence, so.account.Balance())
 	return s.accountKeeper.SetAccount(*so.account)
 }
 
@@ -89,15 +93,14 @@ func (s *CommitStateDB) setError(err error) {
 }
 
 func (s *CommitStateDB) clearJournalAndRefund() {
-	if len(s.journal.entries) > 0 {
-		s.journal = newJournal()
-		s.refund = 0
-	}
+	s.journal = newJournal()
+	s.refund = 0
 	s.validRevisions = s.validRevisions[:0]
 }
 
 // deleteStateObject removes the given state object from the state store.
 func (s *CommitStateDB) deleteStateObject(so *stateObject) {
 	so.deleted = true
+	s.logger.Detailf("VM: delete state object for address '%s' with nonce: '%d' and balance: '%d' \n", so.Address(), so.account.Sequence, so.account.Balance())
 	s.accountKeeper.RemoveAccount(*so.account)
 }

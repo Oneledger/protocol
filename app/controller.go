@@ -6,9 +6,11 @@ import (
 	"math"
 	"math/big"
 	"runtime/debug"
+	"sort"
 	"strconv"
 
 	"github.com/tendermint/tendermint/libs/kv"
+	tmrpccore "github.com/tendermint/tendermint/rpc/core"
 
 	"github.com/Oneledger/protocol/data/governance"
 	"github.com/Oneledger/protocol/data/network_delegation"
@@ -125,19 +127,6 @@ func (app *App) chainInitializer() chainInitializer {
 	}
 }
 
-func (app *App) commitVMChanges(req *abciTypes.RequestEndBlock) {
-	csdb := app.Context.stateDB.WithState(app.Context.deliver)
-	// Store logs and update bloom
-	if err := csdb.UpdateLogs(uint64(req.GetHeight())); err != nil {
-		panic(err)
-	}
-
-	// Reset all cache after account data has been committed, that make sure node state consistent
-	if err := csdb.Reset(); err != nil {
-		panic(err)
-	}
-}
-
 func (app *App) applyUpdate(req RequestBeginBlock) error {
 	height := req.Header.GetHeight()
 
@@ -169,7 +158,7 @@ func (app *App) applyUpdate(req RequestBeginBlock) error {
 
 	// Update last block height and hash
 	if app.genesisDoc.ForkParams.IsFrankensteinUpdate(req.Header.GetHeight()) {
-		app.Context.stateDB.WithState(app.Context.deliver).SetHeightHash(uint64(req.Header.GetHeight()), ethcmn.BytesToHash(req.GetHash()))
+		app.Context.stateDB.SetBlockHash(ethcmn.BytesToHash(req.GetHash()))
 	}
 
 	return nil
@@ -257,7 +246,7 @@ func (app *App) txChecker() txChecker {
 		defer app.handlePanic()
 
 		if app.VerifyCache(msg.Tx) {
-			loginfo := fmt.Sprintf("checkTx duplicated tx: %s", hex.EncodeToString(utils.SHA2(msg.Tx)))
+			loginfo := fmt.Sprintf("checkTx duplicated tx: %s", hex.EncodeToString(utils.GetTransactionHash(msg.Tx)))
 			app.logger.Detail(loginfo)
 			return ResponseCheckTx{
 				Code: CodeNotOK.uint32(),
@@ -321,13 +310,13 @@ func (app *App) txDeliverer() txDeliverer {
 	return func(msg RequestDeliverTx) ResponseDeliverTx {
 		defer app.handlePanic()
 
-		if app.VerifyCache(msg.Tx) {
-			loginfo := fmt.Sprintf("deliverTx duplicated tx: %s", hex.EncodeToString(utils.SHA2(msg.Tx)))
-			app.logger.Detail(loginfo)
-			return ResponseDeliverTx{
-				Code: CodeNotOK.uint32(),
-				Log:  loginfo,
-			}
+		txHashBytes := utils.GetTransactionHash(msg.Tx)
+		app.Context.stateDB.Prepare(ethcmn.BytesToHash(txHashBytes))
+
+		if cachedResponse, found := app.GetTxFromCache(txHashBytes); found {
+			app.logger.Detailf("deliverTx duplicated tx: %s\n", ethcmn.Bytes2Hex(txHashBytes))
+			app.Context.stateDB.Finality(cachedResponse.Events)
+			return cachedResponse
 		}
 
 		app.Context.deliver.BeginTxSession()
@@ -344,10 +333,7 @@ func (app *App) txDeliverer() txDeliverer {
 
 		gas := txCtx.State.ConsumedGas()
 
-		app.Context.stateDB.Prepare(ethcmn.BytesToHash(utils.GetTransactionHash(msg.Tx)))
-
 		ok, response := handler.ProcessDeliver(txCtx, tx.RawTx)
-
 		feeOk, feeResponse := handler.ProcessFee(txCtx, *tx, gas, storage.Gas(len(msg.Tx)), storage.Gas(response.GasUsed))
 
 		logString := marshalLog(ok, response, feeResponse)
@@ -364,12 +350,13 @@ func (app *App) txDeliverer() txDeliverer {
 		}
 		app.logger.Detail("Deliver Tx: ", result)
 
+		app.Context.stateDB.Finality(response.Events)
+
 		if !(ok && feeOk) {
 			app.Context.deliver.DiscardTxSession()
 		} else {
 			app.Context.deliver.CommitTxSession()
 		}
-
 		return result
 	}
 }
@@ -377,11 +364,6 @@ func (app *App) txDeliverer() txDeliverer {
 func (app *App) blockEnder() blockEnder {
 	return func(req RequestEndBlock) ResponseEndBlock {
 		defer app.handlePanic()
-
-		// commit changes before the next execution
-		if app.genesisDoc.ForkParams.IsFrankensteinUpdate(req.GetHeight()) {
-			app.commitVMChanges(&req)
-		}
 
 		fee, err := app.Context.feePool.WithState(app.Context.deliver).Get([]byte(fees.POOL_KEY))
 		app.logger.Detail("endblock fee", fee, err)
@@ -416,6 +398,17 @@ func (app *App) blockEnder() blockEnder {
 				function(functionParam)
 			}
 		}
+
+		if app.genesisDoc.ForkParams.IsFrankensteinUpdate(req.GetHeight()) {
+			// getting bloom if exist
+			bloomEvt := app.Context.stateDB.GetBloomEvent()
+			if bloomEvt != nil {
+				events = append(events, *bloomEvt)
+			}
+			// Reset all cache after account data has been committed, that make sure node state consistent
+			app.Context.stateDB.Reset()
+		}
+
 		result := ResponseEndBlock{
 			ValidatorUpdates: updates,
 			Events:           events,
@@ -780,16 +773,35 @@ func handleBlockRewards(appCtx *context, block RequestBeginBlock, logger *log.Lo
 
 	//Populate Event with validator rewards
 	result.Type = "block_rewards"
-	for _, value := range kvMap {
-		result.Attributes = append(result.Attributes, value)
+
+	kvKeys := make([]string, 0, len(kvMap))
+	for k := range kvMap {
+		kvKeys = append(kvKeys, k)
+	}
+	sort.Strings(kvKeys)
+	for _, key := range kvKeys {
+		result.Attributes = append(result.Attributes, kvMap[key])
 	}
 
 	return result
 }
 
+func (app *App) GetTxFromCache(hash []byte) (abciTypes.ResponseDeliverTx, bool) {
+	tx, err := tmrpccore.Tx(nil, hash, false)
+	app.logger.Debugf("Got reply for exist by tx hash: %s, err: %s\n", ethcmn.Bytes2Hex(hash), err)
+	if tx != nil && tx.Height > 0 {
+		return tx.TxResult, true
+	}
+	return abciTypes.ResponseDeliverTx{}, false
+}
+
 func (app *App) VerifyCache(tx []byte) bool {
-	hash := utils.GetTransactionHash(tx)
-	return app.Context.internalService.ExistTx(hash)
+	reply, err := tmrpccore.Tx(nil, utils.GetTransactionHash(tx), false)
+	app.logger.Debugf("Got reply for exist tx: %+v, err: %s\n", reply, err)
+	if reply != nil && reply.Height > 0 {
+		return true
+	}
+	return false
 }
 
 func marshalLog(ok bool, response action.Response, feeResponse action.Response) string {

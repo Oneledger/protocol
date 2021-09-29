@@ -77,6 +77,7 @@ func NewChainState(name string, db tmdb.DB) *ChainState {
 		Name:    name,
 		Version: 0,
 	}
+	log.Detail("Chain state:", name)
 	chain.loadDB(db)
 
 	return chain

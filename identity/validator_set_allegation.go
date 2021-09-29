@@ -2,6 +2,10 @@ package identity
 
 import (
 	"fmt"
+	"math"
+	"math/big"
+	"sort"
+
 	"github.com/Oneledger/protocol/data/balance"
 	"github.com/Oneledger/protocol/data/evidence"
 	govern "github.com/Oneledger/protocol/data/governance"
@@ -9,8 +13,6 @@ import (
 	"github.com/Oneledger/protocol/serialize"
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/kv"
-	"math"
-	"math/big"
 )
 
 // TODO: Reduce power in allegation tracker for GUILTY
@@ -45,15 +47,22 @@ func (vs *ValidatorStore) CheckMaliciousValidators(es *evidence.EvidenceStore, g
 		vs.maliciousValidators[lvh.Address.String()] = lvh
 		return false
 	})
+
+	addresses := make([]string, 0, len(cv.Addresses))
+	for addr := range cv.Addresses {
+		addresses = append(addresses, addr)
+	}
+	sort.Strings(addresses)
+
 	// update found addresses with missed votes
-	for addr, votes := range cv.Addresses {
+	for _, addr := range addresses {
+		votes := cv.Addresses[addr]
 		baddr := keys.Address{}
 		err = baddr.UnmarshalText([]byte(addr))
 		if err != nil {
 			continue
 		}
 		if votes < evidenceOptions.MinVotesRequired {
-
 			key := append(vs.prefix, baddr...)
 			data := vs.store.GetVersioned(vs.lastHeight-1, key)
 			if len(data) == 0 {

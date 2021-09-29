@@ -56,8 +56,15 @@ func TestKeeper(t *testing.T) {
 		assert.Equal(t, addr.Bytes(), acc.Address.Bytes())
 		assert.Equal(t, uint64(0), acc.Sequence)
 
+		_, err = keeper.GetAccount(addr.Bytes())
+		assert.Error(t, err)
+
+		err = keeper.SetAccount(*acc)
+		assert.NoError(t, err)
+
 		acc, err = keeper.GetAccount(addr.Bytes())
 		assert.NoError(t, err)
+
 		assert.Equal(t, big.NewInt(0), acc.Coins.Amount.BigInt())
 		assert.Equal(t, addr.Bytes(), acc.Address.Bytes())
 		assert.Equal(t, uint64(0), acc.Sequence)

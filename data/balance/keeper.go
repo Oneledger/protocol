@@ -90,9 +90,10 @@ type NesterAccountKeeper struct {
 	logger     *log.Logger
 
 	// as we use two different prefixes, for preventing race conditions when:
-	// 1) Creating a new acc;
-	// 2) Set or update an account;
-	nmu, mu sync.Mutex
+	// 1) Creating, fetching accounts;
+	// 2) Balance versioned check as hit map which is not concurrent;
+	mu  sync.Mutex
+	rmu sync.RWMutex
 }
 
 func NewNesterAccountKeeper(state *storage.State, balances *Store, currencies *CurrencySet) AccountKeeper {
@@ -112,26 +113,17 @@ func (nak *NesterAccountKeeper) WithState(state *storage.State) AccountKeeper {
 }
 
 func (nak *NesterAccountKeeper) NewAccountWithAddress(addr keys.Address) (*EthAccount, error) {
-	nak.nmu.Lock()
-	defer nak.nmu.Unlock()
-
 	coin, err := nak.getOrCreateCurrencyBalance(addr, nil)
 	if err != nil {
 		return nil, errors.Errorf("Failed to get balance: %s", err)
 	}
-	acc := NewEthAccount(addr, coin)
-	err = nak.SetAccount(*acc)
-	if err != nil {
-		return nil, errors.Errorf("Failed to set account: %s", err)
-	}
-	acc, err = nak.GetAccount(addr)
-	if err != nil {
-		return nil, errors.Errorf("Failed to get account: %s", err)
-	}
-	return acc, nil
+	return NewEthAccount(addr, coin), nil
 }
 
 func (nak *NesterAccountKeeper) getOrCreateCurrencyBalance(addr keys.Address, height *int64) (Coin, error) {
+	nak.rmu.RLock()
+	defer nak.rmu.RUnlock()
+
 	currency, ok := nak.currencies.GetCurrencyByName("OLT")
 	if !ok {
 		return Coin{}, errors.Errorf("Failed to get currency OLT")

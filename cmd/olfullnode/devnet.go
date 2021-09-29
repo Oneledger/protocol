@@ -146,6 +146,10 @@ type testnetConfig struct {
 	minVotesRequired         int64
 	blockVotesDiff           int64
 	topValidators            int64
+	archiveNode              bool
+	useAsync                 bool
+	cacheSize                uint64
+	frankensteinBlock        int64
 }
 
 func init() {
@@ -177,6 +181,10 @@ func init() {
 	testnetCmd.Flags().Int64Var(&testnetArgs.topValidators, "top_validators", 4, "Set top valdiators for staking")
 	testnetCmd.Flags().BoolVar(&testnetArgs.docker, "docker", false, "set true for deploying on docker")
 	testnetCmd.Flags().StringVar(&testnetArgs.subnet, "subnet", "10.5.0.0/16", "subnet where all docker containers will run")
+	testnetCmd.Flags().BoolVar(&testnetArgs.archiveNode, "archive_node", false, "use archive node to store all info about states")
+	testnetCmd.Flags().BoolVar(&testnetArgs.useAsync, "use_async", false, "async mode for olvm send transaction")
+	testnetCmd.Flags().Uint64Var(&testnetArgs.cacheSize, "cache_size", 10000, "cache size for mempool")
+	testnetCmd.Flags().Int64Var(&testnetArgs.frankensteinBlock, "frankenstein_block", 1, "Fork block for frankenstein update")
 }
 
 func randStr(size int) string {
@@ -388,8 +396,21 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		cfg.Network.SDKAddress = generateAddress(i, generatePort(), true)
 
 		cfg.API = config.DefaultAPIConfig()
+		cfg.API.HTTPConfig.Enabled = true
 		cfg.API.HTTPConfig.Port = generateWeb3HTTPPort()
+		cfg.API.WSConfig.Enabled = true
 		cfg.API.WSConfig.Port = generateWeb3WSPort()
+
+		cfg.Mempool.Recheck = false
+		cfg.Mempool.CacheSize = int(args.cacheSize)
+
+		cfg.Node.UseAsync = args.useAsync
+
+		if args.archiveNode {
+			cfg.Node.ChainStateRotation.Recent = 0
+			cfg.Node.ChainStateRotation.Every = 1
+			cfg.Node.ChainStateRotation.Cycles = 0
+		}
 
 		dirs := []string{configDir, dataDir, nodeDataDir}
 		for _, dir := range dirs {
@@ -547,6 +568,10 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 	}
 	genesisDoc.Validators = validatorList
 
+	genesisDoc.ForkParams = &config.ForkParams{
+		FrankensteinBlock: args.frankensteinBlock,
+	}
+
 	for i := 0; i < totalNodes; i++ {
 		nodeName := ctx.names[i]
 		nodeDir := filepath.Join(args.outputDir, nodeName+"-Node")
@@ -691,24 +716,23 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 				Amount:   *vt.NewCoinFromInt(1000).Amount,
 			})
 		}
-	} else {
-		for _, node := range nodeList {
-			amt := int64(100)
-			if !node.isValidator {
-				amt = 1
-			}
-			share := total.DivideInt64(int64(len(nodeList)))
-			balances = append(balances, consensus.BalanceState{
-				Address:  node.key.PubKey().Address().Bytes(),
-				Currency: olt.Name,
-				Amount:   *olt.NewCoinFromAmount(*share.Amount).Amount,
-			})
-			balances = append(balances, consensus.BalanceState{
-				Address:  node.key.PubKey().Address().Bytes(),
-				Currency: vt.Name,
-				Amount:   *vt.NewCoinFromInt(amt).Amount,
-			})
+	}
+	for _, node := range nodeList {
+		amt := int64(100)
+		if !node.isValidator {
+			amt = 1
 		}
+		share := total.DivideInt64(int64(len(nodeList)))
+		balances = append(balances, consensus.BalanceState{
+			Address:  node.key.PubKey().Address().Bytes(),
+			Currency: olt.Name,
+			Amount:   *olt.NewCoinFromAmount(*share.Amount).Amount,
+		})
+		balances = append(balances, consensus.BalanceState{
+			Address:  node.key.PubKey().Address().Bytes(),
+			Currency: vt.Name,
+			Amount:   *vt.NewCoinFromInt(amt).Amount,
+		})
 	}
 
 	if len(args.initialTokenHolders) > 0 {

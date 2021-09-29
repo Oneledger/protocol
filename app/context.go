@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/Oneledger/protocol/consensus"
 	"github.com/Oneledger/protocol/data/evm"
 	"github.com/Oneledger/protocol/external_apps"
 	"github.com/Oneledger/protocol/external_apps/common"
@@ -13,6 +14,7 @@ import (
 	"github.com/Oneledger/protocol/web3"
 	web3types "github.com/Oneledger/protocol/web3/types"
 
+	"github.com/tendermint/tendermint/store"
 	tmdb "github.com/tendermint/tm-db"
 
 	"github.com/Oneledger/protocol/data"
@@ -104,6 +106,7 @@ type context struct {
 	contracts     *evm.ContractStore
 	accountKeeper balance.AccountKeeper
 	stateDB       *vm.CommitStateDB
+	blockStore    *store.BlockStore
 }
 
 func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (context, error) {
@@ -213,6 +216,11 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 	return ctx, nil
 }
 
+func (ctx *context) SetBlockStore(blockStore *store.BlockStore) {
+	ctx.blockStore = blockStore
+	ctx.stateDB.SetBlockStore(blockStore)
+}
+
 func NewProposalMasterStore(chainstate *storage.ChainState) *governance.ProposalMasterStore {
 	proposals := governance.NewProposalStore("propActive", "propPassed", "propFailed", "propFinalized", "propFinalizeFailed", storage.NewState(chainstate))
 	proposalFunds := governance.NewProposalFundStore("propFunds", storage.NewState(chainstate))
@@ -286,24 +294,17 @@ func (ctx *context) Balances() *balance.Context {
 		ctx.currencies)
 }
 
-func (ctx *context) Web3Services() (map[string]web3types.Web3Service, error) {
-	extSvcs, err := client.NewExtServiceContext(ctx.cfg.Network.RPCAddress, ctx.cfg.Network.SDKAddress)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to start service context")
-	}
+func (ctx *context) Web3Services(node *consensus.Node) map[string]web3types.Web3Service {
 	web3Ctx := web3.NewContext(
 		log.NewLoggerWithPrefix(ctx.logWriter, "web3").WithLevel(log.Level(ctx.cfg.Node.LogLevel)),
-		&extSvcs,
-		ctx.validators,
+		node,
 		ctx.feePool,
 		&ctx.node,
 		&ctx.cfg,
 		ctx.chainstate,
 		ctx.currencies,
 	)
-	// registering services
-	web3Ctx.DefaultRegisterForAll()
-	return web3Ctx.ServiceList(), nil
+	return web3Ctx.ServiceList()
 }
 
 func (ctx *context) Services() (service.Map, error) {

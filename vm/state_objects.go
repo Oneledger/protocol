@@ -254,7 +254,7 @@ func (so *stateObject) SetCode(codeHash ethcmn.Hash, code []byte) {
 
 func (so *stateObject) setCode(codeHash ethcmn.Hash, code []byte) {
 	so.code = code
-	so.logger.Debugf("setCode: %s\n", ethcmn.Bytes2Hex(so.code))
+	so.logger.Detailf("setCode: %s\n", ethcmn.Bytes2Hex(so.code))
 	so.account.CodeHash = codeHash.Bytes()
 	so.dirtyCode = true
 }
@@ -368,11 +368,15 @@ func (so *stateObject) markSuicided() {
 func (so *stateObject) commitState() {
 	prefixStore := evm.AddressStoragePrefix(so.Address())
 
+	so.logger.Detail("VM: dirty storage for commit state", so.address, "st", len(so.dirtyStorage))
+
 	for _, state := range so.dirtyStorage {
-		// NOTE: key is already prefixed from GetStorageByAddressKey
+		// NOTE: key is already prefixed from AddressStoragePrefix
 
 		key := ethcmn.HexToHash(state.Key)
 		value := ethcmn.HexToHash(state.Value)
+
+		so.logger.Detail("VM: commit state - key", key, "value", value)
 
 		// delete empty values from the store
 		if IsEmptyHash(state.Value) {
@@ -397,7 +401,7 @@ func (so *stateObject) commitState() {
 		}
 
 		so.originStorage[idx].Value = state.Value
-		so.logger.Debugf(
+		so.logger.Detailf(
 			"Store data to contract: prefixStore - %s, key - %s, value - %s\n",
 			ethcmn.BytesToHash(prefixStore),
 			key,
@@ -411,6 +415,7 @@ func (so *stateObject) commitState() {
 
 // commitCode persists the state object's code to the ContractStore.
 func (so *stateObject) commitCode() {
+	so.logger.Detail("VM: commit code at key", ethcmn.Bytes2Hex(so.CodeHash()), "with code", ethcmn.Bytes2Hex(so.code))
 	so.stateDB.contractStore.Set(evm.KeyPrefixCode, so.CodeHash(), so.code)
 }
 

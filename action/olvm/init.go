@@ -7,9 +7,11 @@ import (
 	"github.com/Oneledger/protocol/serialize"
 )
 
+const HandlerName = "olvm"
+
 func init() {
 
-	serialize.RegisterConcrete(new(Transaction), "olvm")
+	serialize.RegisterConcrete(new(Transaction), HandlerName)
 
 }
 
