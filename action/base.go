@@ -156,7 +156,7 @@ func ContractFeeHandling(ctx *Context, signedTx SignedTx, gasUsed Gas, start Gas
 	}
 
 	ctx.State.ConsumeContractGas(gasUsed)
-	ctx.Logger.Debugf("gas used: %d, gas limit: %d", gasUsed, signedTx.Fee.Gas)
+	ctx.Logger.Detailf("Gas - used: %d, limit: %d", gasUsed, signedTx.Fee.Gas)
 
 	if int64(gasUsed) > signedTx.Fee.Gas {
 		return false, Response{Log: ErrGasOverflow.Error(), GasWanted: signedTx.Fee.Gas, GasUsed: int64(gasUsed)}
@@ -166,7 +166,7 @@ func ContractFeeHandling(ctx *Context, signedTx SignedTx, gasUsed Gas, start Gas
 	// NOTE: VM engine in state_transition perform gas * gasPrice evaluation and make a substraction there
 	// so we rely on this and not using minus balance here
 	// here it is only place what to do with charge
-	ctx.Logger.Debugf("Add to pool %s\n", charge)
+	ctx.Logger.Detailf("Add to pool %s\n", charge)
 	err := ctx.FeePool.AddToPool(charge)
 	if err != nil {
 		return false, Response{Log: err.Error(), GasWanted: signedTx.Fee.Gas}

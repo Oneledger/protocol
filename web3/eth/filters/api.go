@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Oneledger/protocol/data/evm"
 	"github.com/Oneledger/protocol/log"
 	rpctypes "github.com/Oneledger/protocol/web3/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -195,10 +194,7 @@ func (api *PublicFilterAPI) NewBlockFilter() rpc.ID {
 				if err != nil {
 					continue
 				}
-				bz, _ := api.events.stateDB.GetContractStore().Get(evm.KeyPrefixBloom, evm.BloomKey(uint64(data.Block.Height)))
-				if len(bz) > 0 {
-					header.Bloom = ethtypes.BytesToBloom(bz)
-				}
+				header.Bloom = api.events.stateDB.GetBlockBloom(uint64(data.Block.Height))
 				api.filtersMu.Lock()
 				if f, found := api.filters[headerSub.ID()]; found {
 					f.hashes = append(f.hashes, header.Hash)
@@ -249,11 +245,7 @@ func (api *PublicFilterAPI) NewHeads(ctx context.Context) (*rpc.Subscription, er
 					headersSub.err <- err
 					return
 				}
-				bz, _ := api.events.stateDB.GetContractStore().Get(evm.KeyPrefixBloom, evm.BloomKey(uint64(data.Block.Height)))
-				if len(bz) > 0 {
-					header.Bloom = ethtypes.BytesToBloom(bz)
-				}
-
+				header.Bloom = api.events.stateDB.GetBlockBloom(uint64(data.Block.Height))
 				err = notifier.Notify(rpcSub.ID, header)
 				if err != nil {
 					headersSub.err <- err

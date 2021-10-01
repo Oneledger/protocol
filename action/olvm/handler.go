@@ -333,7 +333,7 @@ func runOLVM(ctx *action.Context, rawTx action.RawTx, isSimulation bool) (bool, 
 
 	execResult, err := evmTx.Apply()
 	if err != nil {
-		ctx.Logger.Debugf("Execution apply VM got err: %s\n", err.Error())
+		ctx.Logger.Detailf("Execution apply VM got err: %s\n", err.Error())
 		tags = append(tags, action.UintTag("tx.status", ethtypes.ReceiptStatusFailed))
 		tags = append(tags, kv.Pair{
 			Key:   []byte("tx.error"),
@@ -346,7 +346,7 @@ func runOLVM(ctx *action.Context, rawTx action.RawTx, isSimulation bool) (bool, 
 	}
 
 	if execResult.Failed() {
-		ctx.Logger.Debugf("Execution result got err: %s\n", execResult.Err.Error())
+		ctx.Logger.Detailf("Execution result got err: %s\n", execResult.Err.Error())
 		tags = append(tags, action.UintTag("tx.status", ethtypes.ReceiptStatusFailed))
 		tags = append(tags, kv.Pair{
 			Key:   []byte("tx.error"),
@@ -369,14 +369,14 @@ func runOLVM(ctx *action.Context, rawTx action.RawTx, isSimulation bool) (bool, 
 		}
 
 		if tx.To == nil && len(execResult.ContractAddress.Bytes()) > 0 {
-			ctx.Logger.Debugf("Contract created: %s\n", keys.Address(execResult.ContractAddress.Bytes()))
+			ctx.Logger.Detailf("Contract created: %s\n", keys.Address(execResult.ContractAddress.Bytes()))
 			tags = append(tags, kv.Pair{
 				Key:   []byte("tx.contract"),
 				Value: []byte(execResult.ContractAddress.Bytes()),
 			})
 		}
 	}
-	ctx.Logger.Debugf("Contract TX: status ok - %t, used gas - %d\n", !execResult.Failed(), execResult.UsedGas)
+	ctx.Logger.Detailf("Contract TX: status ok - %t, used gas - %d\n", !execResult.Failed(), execResult.UsedGas)
 	return true, action.Response{
 		Events:  action.GetEvent(tags, "olvm"),
 		GasUsed: int64(execResult.UsedGas),

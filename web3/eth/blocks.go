@@ -3,11 +3,9 @@ package eth
 import (
 	"math/big"
 
-	"github.com/Oneledger/protocol/data/evm"
 	rpctypes "github.com/Oneledger/protocol/web3/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rpc"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
@@ -25,10 +23,7 @@ func (svc *Service) blockWithBloom(tmBlock *tmtypes.Block, fullTx bool) (*rpctyp
 	if err != nil {
 		return nil, err
 	}
-	bz, _ := svc.ctx.GetContractStore().Get(evm.KeyPrefixBloom, evm.BloomKey(uint64(tmBlock.Height)))
-	if len(bz) > 0 {
-		block.LogsBloom = ethtypes.BytesToBloom(bz)
-	}
+	block.LogsBloom = svc.GetStateDB().GetBlockBloom(uint64(block.Number))
 	return block, nil
 }
 

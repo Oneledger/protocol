@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/Oneledger/protocol/action/olvm"
-	"github.com/Oneledger/protocol/data/evm"
 	"github.com/Oneledger/protocol/vm"
 	onetypes "github.com/Oneledger/protocol/web3/types"
 	rpctypes "github.com/Oneledger/protocol/web3/types"
@@ -282,10 +281,7 @@ func (es *EventSystem) handleChainEvent(ev coretypes.ResultEvent) {
 		if err != nil {
 			continue
 		}
-		bz, _ := es.stateDB.GetContractStore().Get(evm.KeyPrefixBloom, evm.BloomKey(uint64(data.Block.Height)))
-		if len(bz) > 0 {
-			header.Bloom = ethtypes.BytesToBloom(bz)
-		}
+		header.Bloom = es.stateDB.GetBlockBloom(uint64(data.Block.Height))
 		f.headers <- header
 	}
 }

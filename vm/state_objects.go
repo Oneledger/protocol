@@ -254,7 +254,7 @@ func (so *stateObject) SetCode(codeHash ethcmn.Hash, code []byte) {
 
 func (so *stateObject) setCode(codeHash ethcmn.Hash, code []byte) {
 	so.code = code
-	so.logger.Debugf("setCode: %s\n", ethcmn.Bytes2Hex(so.code))
+	so.logger.Detailf("setCode: %s\n", ethcmn.Bytes2Hex(so.code))
 	so.account.CodeHash = codeHash.Bytes()
 	so.dirtyCode = true
 }
@@ -397,7 +397,7 @@ func (so *stateObject) commitState() {
 		}
 
 		so.originStorage[idx].Value = state.Value
-		so.logger.Debugf(
+		so.logger.Detailf(
 			"Store data to contract: prefixStore - %s, key - %s, value - %s\n",
 			ethcmn.BytesToHash(prefixStore),
 			key,

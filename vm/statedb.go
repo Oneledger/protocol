@@ -149,25 +149,11 @@ func (s *CommitStateDB) Finalise(deleteEmptyObjects bool) error {
 	}
 
 	for _, dirty := range s.journal.dirties {
-		idx, exist := s.addressToObjectIndex[dirty.address]
+		_, exist := s.addressToObjectIndex[dirty.address]
 		if !exist {
 			continue
 		}
-
-		s.logger.Debug("VM: starting to process finalize entry", dirty.address)
-
-		stateEntry := s.stateObjects[idx]
-		if stateEntry.stateObject.suicided || (deleteEmptyObjects && stateEntry.stateObject.empty()) {
-			s.deleteStateObject(stateEntry.stateObject)
-		} else {
-			// Set all the dirty state storage items for the state object in the
-			// protocol and finally set the account in the account mapper.
-			stateEntry.stateObject.commitState()
-			if err := s.updateStateObject(stateEntry.stateObject); err != nil {
-				return err
-			}
-		}
-
+		s.logger.Detail("VM: found dirty, add to update queue", dirty.address)
 		s.stateObjectsDirty[dirty.address] = struct{}{}
 	}
 
@@ -175,8 +161,7 @@ func (s *CommitStateDB) Finalise(deleteEmptyObjects bool) error {
 	for _, stateEntry := range s.stateObjects {
 		_, isDirty := s.stateObjectsDirty[stateEntry.address]
 
-		s.logger.Debug("VM: starting to process commit entry", stateEntry.address)
-		s.logger.Debug("VM: entry is dirty", isDirty)
+		s.logger.Detail("VM: starting to process finalise entry", stateEntry.address)
 
 		switch {
 		case stateEntry.stateObject.suicided || (isDirty && deleteEmptyObjects && stateEntry.stateObject.empty()):
@@ -185,6 +170,10 @@ func (s *CommitStateDB) Finalise(deleteEmptyObjects bool) error {
 			s.deleteStateObject(stateEntry.stateObject)
 
 		case isDirty:
+			// Set all the dirty state storage items for the state object in the
+			// protocol and finally set the account in the account mapper.
+			stateEntry.stateObject.commitState()
+
 			// write any contract code associated with the state object
 			if stateEntry.stateObject.code != nil && stateEntry.stateObject.dirtyCode {
 				stateEntry.stateObject.commitCode()
@@ -202,8 +191,9 @@ func (s *CommitStateDB) Finalise(deleteEmptyObjects bool) error {
 	s.UpdateBloom()
 	// clear all state objects in order to have a fresh states at the new tx
 	s.stateObjects = make([]stateEntry, 0)
-	s.stateObjectsDirty = make(map[ethcmn.Address]struct{})
 	s.addressToObjectIndex = make(map[ethcmn.Address]int)
+	// No need as we delete at previous iteration
+	// s.stateObjectsDirty = make(map[ethcmn.Address]struct{})
 	// invalidate journal because reverting across transactions is not allowed
 	s.clearJournalAndRefund()
 	return nil
@@ -579,7 +569,7 @@ func (s *CommitStateDB) GetOrNewStateObject(addr ethcmn.Address) StateObject {
 	so := s.getStateObject(addr)
 	if so == nil || so.deleted {
 		so, _ = s.createObject(addr)
-		s.logger.Debug("VM: account created", addr)
+		s.logger.Detail("VM: account created", addr)
 	}
 	return so
 }
