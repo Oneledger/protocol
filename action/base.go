@@ -156,7 +156,7 @@ func ContractFeeHandling(ctx *Context, signedTx SignedTx, gasUsed Gas, start Gas
 	}
 
 	ctx.State.ConsumeContractGas(gasUsed)
-	ctx.Logger.Detailf("Gas - used: %d, limit: %d", gasUsed, signedTx.Fee.Gas)
+	ctx.Logger.Detailf("Gas - used: %d, limit: %d\n", gasUsed, signedTx.Fee.Gas)
 
 	if int64(gasUsed) > signedTx.Fee.Gas {
 		return false, Response{Log: ErrGasOverflow.Error(), GasWanted: signedTx.Fee.Gas, GasUsed: int64(gasUsed)}

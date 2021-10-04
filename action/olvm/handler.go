@@ -31,6 +31,9 @@ const (
 	// more expensive to propagate; larger transactions also take more resources
 	// to validate whether they fit into the pool or not.
 	txMaxSize = 4 * txSlotSize // 128KB
+
+	// just constant which clarify that we skip fee (checkTx only)
+	skipFee = -1
 )
 
 type Transaction struct {
@@ -265,7 +268,7 @@ func (otx olvmTx) ProcessCheck(ctx *action.Context, rawTx action.RawTx) (ok bool
 		}
 	}
 	ok = true
-	result = action.Response{GasUsed: -1}
+	result = action.Response{GasUsed: skipFee}
 	return
 }
 
@@ -277,7 +280,7 @@ func (otx olvmTx) ProcessDeliver(ctx *action.Context, rawTx action.RawTx) (ok bo
 
 func (otx olvmTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas, gasUsed action.Gas) (ok bool, result action.Response) {
 	// -1 if ProcessCheck in case no check simulation of OLVM, which decrease a performance
-	if gasUsed == -1 {
+	if gasUsed == skipFee {
 		ok, result = true, action.Response{}
 	} else {
 		ok, result = action.ContractFeeHandling(ctx, signedTx, gasUsed, start)
