@@ -362,16 +362,20 @@ func runOLVM(ctx *action.Context, rawTx action.RawTx, isSimulation bool) (bool, 
 			Value: []byte(execResult.ReturnData),
 		})
 
-		// // storing logs to tm events
-		// logTags, err := rlpLogsToEvents(tags, stateDB.GetTxLogs())
-		// if err != nil {
-		// 	return helpers.LogAndReturnFalseWithGas(ctx.Logger, status_codes.ProtocolError{
-		// 		Msg:  err.Error(),
-		// 		Code: status_codes.TxErrUnserializable,
-		// 	}, tags, err, int64(intrinsicGas))
-		// }
+		fmt.Println("OLVM tags before", tags)
+
+		// storing logs to tm events
+		tags, err = rlpLogsToEvents(tags, stateDB.GetTxLogs())
+		if err != nil {
+			return helpers.LogAndReturnFalseWithGas(ctx.Logger, status_codes.ProtocolError{
+				Msg:  err.Error(),
+				Code: status_codes.TxErrUnserializable,
+			}, tags, err, int64(intrinsicGas))
+		}
 
 		// tags = logTags
+
+		fmt.Println("OLVM tags after", tags)
 
 		if tx.To == nil && len(execResult.ContractAddress.Bytes()) > 0 {
 			ctx.Logger.Detailf("Contract created: %s\n", keys.Address(execResult.ContractAddress.Bytes()))
