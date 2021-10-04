@@ -97,6 +97,17 @@ func NewCommitStateDB(cs *evm.ContractStore, ak balance.AccountKeeper, logger *l
 	}
 }
 
+func (s *CommitStateDB) PrintState() {
+	s.logger.Detail("stateObjects", s.stateObjects)
+	s.logger.Detail("addressToObjectIndex", s.addressToObjectIndex)
+	s.logger.Detail("stateObjectsDirty", s.stateObjectsDirty)
+	s.logger.Detail("logs", s.logs)
+	s.logger.Detail("journal", s.journal)
+	s.logger.Detail("validRevisions", s.validRevisions)
+	s.logger.Detail("txCount", s.txCount)
+	s.logger.Detail("bloom", s.bloom)
+}
+
 func (s *CommitStateDB) GetContractStore() *evm.ContractStore {
 	return s.contractStore
 }
