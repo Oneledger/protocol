@@ -131,7 +131,7 @@ func (app *App) commitVMChanges(req *abciTypes.RequestEndBlock) {
 	// if err := csdb.UpdateLogs(uint64(req.GetHeight())); err != nil {
 	// 	panic(err)
 	// }
-	csdb.PrintState()
+	csdb.PrintState(uint64(req.GetHeight()))
 
 	// Reset all cache after account data has been committed, that make sure node state consistent
 	if err := csdb.Reset(); err != nil {

@@ -26,7 +26,6 @@ type CommitStateDB struct {
 	// The refund counter, also used by state transitioning.
 	refund uint64
 
-	bheight      uint64
 	thash, bhash ethcmn.Hash
 	txIndex      int
 
@@ -97,11 +96,20 @@ func NewCommitStateDB(cs *evm.ContractStore, ak balance.AccountKeeper, logger *l
 	}
 }
 
-func (s *CommitStateDB) PrintState() {
+func (s *CommitStateDB) PrintState(height uint64) {
+	s.logger.Detail("sbhash", s.bhash)
+	s.logger.Detail("sbheight", height)
 	s.logger.Detail("stateObjects", s.stateObjects)
 	s.logger.Detail("addressToObjectIndex", s.addressToObjectIndex)
 	s.logger.Detail("stateObjectsDirty", s.stateObjectsDirty)
-	s.logger.Detail("logs", s.logs)
+
+	bl := &BlockLogs{
+		BlockHash:   s.bhash,
+		BlockNumber: height,
+		Logs:        s.logs,
+	}
+	bz, _ := bl.MarshalLogs()
+	s.logger.Detail("logs", string(bz))
 	s.logger.Detail("journal", s.journal)
 	s.logger.Detail("validRevisions", s.validRevisions)
 	s.logger.Detail("txCount", s.txCount)
@@ -603,7 +611,6 @@ func CopyCommitStateDB(from, to *CommitStateDB) {
 	to.logger = from.logger
 	to.refund = from.refund
 
-	to.bheight = from.bheight
 	to.thash = from.thash
 	to.bhash = from.bhash
 	to.txIndex = from.txIndex
