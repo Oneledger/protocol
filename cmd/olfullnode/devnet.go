@@ -388,8 +388,12 @@ func runDevnet(_ *cobra.Command, _ []string) error {
 		cfg.Network.SDKAddress = generateAddress(i, generatePort(), true)
 
 		cfg.API = config.DefaultAPIConfig()
+		cfg.API.HTTPConfig.Enabled = true
 		cfg.API.HTTPConfig.Port = generateWeb3HTTPPort()
+		cfg.API.WSConfig.Enabled = true
 		cfg.API.WSConfig.Port = generateWeb3WSPort()
+
+		cfg.Mempool.Recheck = false
 
 		dirs := []string{configDir, dataDir, nodeDataDir}
 		for _, dir := range dirs {
@@ -691,24 +695,23 @@ func initialState(args *testnetConfig, nodeList []node, option ethchain.ChainDri
 				Amount:   *vt.NewCoinFromInt(1000).Amount,
 			})
 		}
-	} else {
-		for _, node := range nodeList {
-			amt := int64(100)
-			if !node.isValidator {
-				amt = 1
-			}
-			share := total.DivideInt64(int64(len(nodeList)))
-			balances = append(balances, consensus.BalanceState{
-				Address:  node.key.PubKey().Address().Bytes(),
-				Currency: olt.Name,
-				Amount:   *olt.NewCoinFromAmount(*share.Amount).Amount,
-			})
-			balances = append(balances, consensus.BalanceState{
-				Address:  node.key.PubKey().Address().Bytes(),
-				Currency: vt.Name,
-				Amount:   *vt.NewCoinFromInt(amt).Amount,
-			})
+	}
+	for _, node := range nodeList {
+		amt := int64(100)
+		if !node.isValidator {
+			amt = 1
 		}
+		share := total.DivideInt64(int64(len(nodeList)))
+		balances = append(balances, consensus.BalanceState{
+			Address:  node.key.PubKey().Address().Bytes(),
+			Currency: olt.Name,
+			Amount:   *olt.NewCoinFromAmount(*share.Amount).Amount,
+		})
+		balances = append(balances, consensus.BalanceState{
+			Address:  node.key.PubKey().Address().Bytes(),
+			Currency: vt.Name,
+			Amount:   *vt.NewCoinFromInt(amt).Amount,
+		})
 	}
 
 	if len(args.initialTokenHolders) > 0 {

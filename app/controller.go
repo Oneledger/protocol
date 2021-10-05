@@ -127,12 +127,10 @@ func (app *App) chainInitializer() chainInitializer {
 
 func (app *App) commitVMChanges(req *abciTypes.RequestEndBlock) {
 	csdb := app.Context.stateDB.WithState(app.Context.deliver)
-	csdb.PrintState()
 	// Store logs and update bloom
-	// if err := csdb.UpdateLogs(uint64(req.GetHeight())); err != nil {
-	// 	panic(err)
-	// }
-
+	if err := csdb.UpdateLogs(uint64(req.GetHeight())); err != nil {
+		panic(err)
+	}
 	// Reset all cache after account data has been committed, that make sure node state consistent
 	if err := csdb.Reset(); err != nil {
 		panic(err)

@@ -114,13 +114,15 @@ func (svc *Service) GetTransactionReceipt(hash common.Hash) (*rpctypes.Transacti
 		cumulativeGasUsed += rpctypes.GetBlockCumulativeGas(resBlock.Block, int(*tx.TransactionIndex))
 	}
 
-	txLog := rpctypes.GetTxBaseInfo(&resTx.TxResult)
+	logs := rpctypes.GetTxEthLogs(&resTx.TxResult)
+	if logs == nil {
+		logs = make([]*ethtypes.Log, 0)
+	}
 
 	// Set status codes based on tx result
-	var status uint64
-	// swap
-	if resTx.TxResult.Code == 0 {
-		status = txLog.Status
+	status := ethtypes.ReceiptStatusSuccessful
+	if resTx.TxResult.GetCode() == 1 {
+		status = ethtypes.ReceiptStatusFailed
 	}
 
 	stateDB := svc.GetStateDB()
@@ -129,14 +131,15 @@ func (svc *Service) GetTransactionReceipt(hash common.Hash) (*rpctypes.Transacti
 
 	var contractAddress *common.Address
 	if tx.To == nil {
-		contractAddress = txLog.ContractAddress
+		contractAddress = new(common.Address)
+		*contractAddress = crypto.CreateAddress(tx.From, uint64(tx.Nonce))
 	}
 
 	receipt := &rpctypes.TransactionReceipt{
 		Status:            hexutil.Uint64(status),
 		CumulativeGasUsed: hexutil.Uint64(cumulativeGasUsed),
 		LogsBloom:         bloom,
-		Logs:              txLog.Logs,
+		Logs:              logs,
 		TransactionHash:   tx.Hash,
 		ContractAddress:   contractAddress,
 		GasUsed:           hexutil.Uint64(resTx.TxResult.GasUsed),

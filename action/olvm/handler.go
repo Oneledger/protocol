@@ -6,10 +6,7 @@ import (
 	"math/big"
 
 	"github.com/Oneledger/protocol/action"
-	"github.com/Oneledger/protocol/action/helpers"
 	"github.com/Oneledger/protocol/data/balance"
-	"github.com/Oneledger/protocol/data/keys"
-	"github.com/Oneledger/protocol/status_codes"
 	"github.com/Oneledger/protocol/utils"
 	"github.com/Oneledger/protocol/vm"
 	ethcmn "github.com/ethereum/go-ethereum/common"
@@ -31,9 +28,6 @@ const (
 	// more expensive to propagate; larger transactions also take more resources
 	// to validate whether they fit into the pool or not.
 	txMaxSize = 4 * txSlotSize // 128KB
-
-	// just constant which clarify that we skip fee (checkTx only)
-	skipFee = -1
 )
 
 type Transaction struct {
@@ -244,16 +238,13 @@ func (otx olvmTx) ProcessCheck(ctx *action.Context, rawTx action.RawTx) (ok bool
 	tx := &Transaction{}
 	err := tx.Unmarshal(rawTx.Data)
 	if err != nil {
-		return helpers.LogAndReturnFalse(ctx.Logger, action.ErrWrongTxType, tx.Tags(), err)
+		return ResponseFailed(tx.Tags(), err, action.WrongFee)
 	}
 
 	ethTx := tx.tmToEthTx(ctx, rawTx)
 	_, err = tx.CheckIntrinsicGas(ethTx)
 	if err != nil {
-		return false, action.Response{
-			Events: action.GetEvent(tx.Tags(), err.Error()),
-			Log:    err.Error(),
-		}
+		return ResponseFailed(tx.Tags(), err, action.SkipFee)
 	}
 	err = tx.ValidateEthTx(
 		ctx.StateDB.GetAccountKeeper(),
@@ -262,14 +253,9 @@ func (otx olvmTx) ProcessCheck(ctx *action.Context, rawTx action.RawTx) (ok bool
 		true,
 	)
 	if err != nil {
-		return false, action.Response{
-			Events: action.GetEvent(tx.Tags(), err.Error()),
-			Log:    err.Error(),
-		}
+		return ResponseFailed(tx.Tags(), err, action.SkipFee)
 	}
-	ok = true
-	result = action.Response{GasUsed: skipFee}
-	return
+	return ResponseSuccess(tx.Tags(), action.SkipFee)
 }
 
 func (otx olvmTx) ProcessDeliver(ctx *action.Context, rawTx action.RawTx) (ok bool, result action.Response) {
@@ -279,12 +265,7 @@ func (otx olvmTx) ProcessDeliver(ctx *action.Context, rawTx action.RawTx) (ok bo
 }
 
 func (otx olvmTx) ProcessFee(ctx *action.Context, signedTx action.SignedTx, start action.Gas, size action.Gas, gasUsed action.Gas) (ok bool, result action.Response) {
-	// -1 if ProcessCheck in case no check simulation of OLVM, which decrease a performance
-	if gasUsed == skipFee {
-		ok, result = true, action.Response{}
-	} else {
-		ok, result = action.ContractFeeHandling(ctx, signedTx, gasUsed, start)
-	}
+	ok, result = action.ContractFeeHandling(ctx, signedTx, gasUsed, start)
 	ctx.Logger.Detailf("Processing OLVM Transaction for BasicFeeHandling: status - %t\n", ok)
 	return ok, result
 }
@@ -293,13 +274,12 @@ func runOLVM(ctx *action.Context, rawTx action.RawTx, isSimulation bool) (bool, 
 	tx := &Transaction{}
 	err := tx.Unmarshal(rawTx.Data)
 	if err != nil {
-		return false, action.Response{Log: err.Error()}
+		return ResponseFailed(tx.Tags(), err, action.WrongFee)
 	}
 
 	var (
 		stateDB *vm.CommitStateDB
 		gaspool = new(ethcore.GasPool)
-		tags    = tx.Tags()
 	)
 
 	// NOTE: Just left in case if process check if have a simulation (not recomended)
@@ -314,10 +294,7 @@ func runOLVM(ctx *action.Context, rawTx action.RawTx, isSimulation bool) (bool, 
 	ethTx := tx.tmToEthTx(ctx, rawTx)
 	intrinsicGas, err := tx.CheckIntrinsicGas(ethTx)
 	if err != nil {
-		return helpers.LogAndReturnFalseWithGas(ctx.Logger, status_codes.ProtocolError{
-			Msg:  err.Error(),
-			Code: status_codes.TxErrIntrinsicGas,
-		}, tags, err, int64(intrinsicGas))
+		return ResponseFailed(tx.Tags(), err, int64(intrinsicGas))
 	}
 	err = tx.ValidateEthTx(
 		stateDB.GetAccountKeeper(),
@@ -326,74 +303,45 @@ func runOLVM(ctx *action.Context, rawTx action.RawTx, isSimulation bool) (bool, 
 		isSimulation,
 	)
 	if err != nil {
-		return helpers.LogAndReturnFalseWithGas(ctx.Logger, status_codes.ProtocolError{
-			Msg:  err.Error(),
-			Code: status_codes.InvalidParams,
-		}, tags, err, int64(intrinsicGas))
+		return ResponseFailed(tx.Tags(), err, int64(intrinsicGas))
 	}
 
 	evmTx := vm.NewEVMTransaction(stateDB, gaspool, ctx.Header, tx.From, tx.To, tx.Nonce, tx.Amount.Value.BigInt(), tx.Data, tx.AccessList, uint64(rawTx.Fee.Gas), rawTx.Fee.Price.Value.BigInt(), isSimulation)
 
 	execResult, err := evmTx.Apply()
 
-	ctx.Logger.Detail("execResult print state start")
-	stateDB.PrintState()
-	ctx.Logger.Detail("execResult print state end")
 	if err != nil {
-		ctx.Logger.Detailf("Execution apply VM got err: %s\n", err.Error())
-		tags = append(tags, action.UintTag("tx.status", ethtypes.ReceiptStatusFailed))
-		tags = append(tags, kv.Pair{
-			Key:   []byte("tx.error"),
-			Value: []byte(err.Error()),
-		})
-		return helpers.LogAndReturnFalseWithGas(ctx.Logger, status_codes.ProtocolError{
-			Msg:  err.Error(),
-			Code: status_codes.TxErrVMExecution,
-		}, tags, err, int64(intrinsicGas))
-	}
-
-	if execResult.Failed() {
-		ctx.Logger.Detailf("Execution result got err: %s\n", execResult.Err.Error())
-		tags = append(tags, action.UintTag("tx.status", ethtypes.ReceiptStatusFailed))
-		tags = append(tags, kv.Pair{
-			Key:   []byte("tx.error"),
-			Value: []byte(execResult.Err.Error()),
-		})
+		ctx.Logger.Detailf("OLVM TX: Execution apply VM got err: %s\n", err.Error())
+		return ResponseFailed(tx.Tags(), err, int64(intrinsicGas))
+	} else if execResult.Failed() {
+		ctx.Logger.Detailf("OLVM TX: Execution result VM got err: %s\n", execResult.Err.Error())
+		return ResponseFailed(tx.Tags(), execResult.Err, int64(execResult.UsedGas))
 	} else {
-		tags = append(tags, action.UintTag("tx.status", ethtypes.ReceiptStatusSuccessful))
-		tags = append(tags, kv.Pair{
-			Key:   []byte("tx.returnData"),
-			Value: []byte(execResult.ReturnData),
-		})
-
-		// fmt.Println("OLVM tags before", tags)
-
-		// // storing logs to tm events
-		// tags, err = rlpLogsToEvents(tags, stateDB.GetTxLogs())
-		// if err != nil {
-		// 	return helpers.LogAndReturnFalseWithGas(ctx.Logger, status_codes.ProtocolError{
-		// 		Msg:  err.Error(),
-		// 		Code: status_codes.TxErrUnserializable,
-		// 	}, tags, err, int64(intrinsicGas))
-		// }
-
-		// // tags = logTags
-
-		// fmt.Println("OLVM tags after", tags)
-
-		if tx.To == nil && len(execResult.ContractAddress.Bytes()) > 0 {
-			ctx.Logger.Detailf("Contract created: %s\n", keys.Address(execResult.ContractAddress.Bytes()))
-			tags = append(tags, kv.Pair{
-				Key:   []byte("tx.contract"),
-				Value: []byte(execResult.ContractAddress.Bytes()),
-			})
+		tags, err := rlpLogsToEvents(tx.Tags(), stateDB.GetTxLogs())
+		if err != nil {
+			ctx.Logger.Detail("OLVM TX: Failed to process logs")
+			return ResponseFailed(tx.Tags(), err, int64(execResult.UsedGas))
 		}
+		ctx.Logger.Detail("OLVM TX: Execution result VM got success")
+		return ResponseSuccess(tags, int64(execResult.UsedGas))
 	}
-	ctx.Logger.Detailf("Contract TX: status ok - %t, used gas - %d\n", !execResult.Failed(), execResult.UsedGas)
-	return true, action.Response{
-		Events:  action.GetEvent(tags, "olvm"),
-		GasUsed: int64(execResult.UsedGas),
+}
+
+func ResponseFailed(tags kv.Pairs, err error, gasUsed int64) (bool, action.Response) {
+	result := action.Response{
+		Events:  action.GetEvent(tags, HandlerName),
+		Log:     action.ErrInvalidVmExecution.Wrap(err).Marshal(),
+		GasUsed: gasUsed,
 	}
+	return false, result
+}
+
+func ResponseSuccess(tags kv.Pairs, gasUsed int64) (bool, action.Response) {
+	result := action.Response{
+		Events:  action.GetEvent(tags, HandlerName),
+		GasUsed: gasUsed,
+	}
+	return true, result
 }
 
 func rlpLogsToEvents(tags kv.Pairs, logs []*ethtypes.Log) (kv.Pairs, error) {

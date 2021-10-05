@@ -22,36 +22,6 @@ import (
 
 var jsonSerializer serialize.Serializer = serialize.GetSerializer(serialize.NETWORK)
 
-type TmTxLog struct {
-	ContractAddress *common.Address
-	Status          uint64
-	Logs            []*ethtypes.Log
-}
-
-// GetTxBaseInfo return info without logs
-func GetTxBaseInfo(res *abci.ResponseDeliverTx) *TmTxLog {
-	tx := &TmTxLog{
-		Status: 1, // default it is 1 means OK
-		Logs:   make([]*ethtypes.Log, 0, 10),
-	}
-	for _, evt := range res.Events {
-		for _, attr := range evt.Attributes {
-			if bytes.Equal(attr.Key, []byte("tx.contract")) {
-				addr := common.BytesToAddress(attr.Value)
-				tx.ContractAddress = &addr
-			} else if bytes.Equal(attr.Key, []byte("tx.status")) {
-				tx.Status = uint64(attr.Value[0])
-			} else if bytes.Contains(attr.Key, []byte("tx.logs")) {
-				log, err := new(vm.RLPLog).Decode(attr.Value)
-				if err == nil {
-					tx.Logs = append(tx.Logs, log)
-				}
-			}
-		}
-	}
-	return tx
-}
-
 // GetTxEthLogs substract logs from deliver response
 func GetTxEthLogs(res *abci.ResponseDeliverTx) (logs []*ethtypes.Log) {
 	for _, evt := range res.Events {

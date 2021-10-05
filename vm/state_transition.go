@@ -5,7 +5,6 @@ import (
 	"math"
 	"math/big"
 
-	"github.com/Oneledger/protocol/data/keys"
 	ethcmn "github.com/ethereum/go-ethereum/common"
 	ethcore "github.com/ethereum/go-ethereum/core"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -65,10 +64,9 @@ type Message interface {
 // ExecutionResult includes all output after executing given evm
 // message no matter the execution itself is successful or not.
 type ExecutionResult struct {
-	UsedGas         uint64 // Total used gas but include the refunded gas
-	Err             error  // Any error encountered during the execution(listed in core/vm/errors.go)
-	ReturnData      []byte // Returned data from evm(function result or data supplied with revert opcode)
-	ContractAddress keys.Address
+	UsedGas    uint64 // Total used gas but include the refunded gas
+	Err        error  // Any error encountered during the execution(listed in core/vm/errors.go)
+	ReturnData []byte // Returned data from evm(function result or data supplied with revert opcode)
 }
 
 // Unwrap returns the internal evm error which allows us for further
@@ -265,10 +263,9 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 	var (
 		ret   []byte
 		vmerr error // vm errors do not effect consensus and are therefore not assigned to err
-		ca    ethcmn.Address
 	)
 	if contractCreation {
-		ret, ca, st.gas, vmerr = st.evm.Create(sender, st.data, st.gas, st.value)
+		ret, _, st.gas, vmerr = st.evm.Create(sender, st.data, st.gas, st.value)
 	} else {
 		// Increment the nonce for the next transaction
 		nextNonce := st.state.GetNonce(msg.From()) + 1
@@ -283,11 +280,6 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 		Err:        vmerr,
 		ReturnData: ret,
 	}
-
-	if contractCreation {
-		result.ContractAddress = keys.Address(ca.Bytes())
-	}
-
 	return result, nil
 }
 
