@@ -96,17 +96,15 @@ func NewCommitStateDB(cs *evm.ContractStore, ak balance.AccountKeeper, logger *l
 	}
 }
 
-func (s *CommitStateDB) PrintState(height uint64) {
+func (s *CommitStateDB) PrintState() {
 	s.logger.Detail("sbhash", s.bhash)
-	s.logger.Detail("sbheight", height)
 	s.logger.Detail("stateObjects", s.stateObjects)
 	s.logger.Detail("addressToObjectIndex", s.addressToObjectIndex)
 	s.logger.Detail("stateObjectsDirty", s.stateObjectsDirty)
 
 	bl := &BlockLogs{
-		BlockHash:   s.bhash,
-		BlockNumber: height,
-		Logs:        s.logs,
+		BlockHash: s.bhash,
+		Logs:      s.logs,
 	}
 	bz, _ := bl.MarshalLogs()
 	s.logger.Detail("logs", string(bz))

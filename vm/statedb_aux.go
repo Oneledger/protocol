@@ -101,5 +101,6 @@ func (s *CommitStateDB) clearJournalAndRefund() {
 // deleteStateObject removes the given state object from the state store.
 func (s *CommitStateDB) deleteStateObject(so *stateObject) {
 	so.deleted = true
+	s.logger.Detailf("VM: delete state object for address '%s' with nonce: '%d' and balance: '%d' \n", so.Address(), so.account.Sequence, so.account.Balance())
 	s.accountKeeper.RemoveAccount(*so.account)
 }

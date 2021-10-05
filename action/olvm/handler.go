@@ -335,6 +335,10 @@ func runOLVM(ctx *action.Context, rawTx action.RawTx, isSimulation bool) (bool, 
 	evmTx := vm.NewEVMTransaction(stateDB, gaspool, ctx.Header, tx.From, tx.To, tx.Nonce, tx.Amount.Value.BigInt(), tx.Data, tx.AccessList, uint64(rawTx.Fee.Gas), rawTx.Fee.Price.Value.BigInt(), isSimulation)
 
 	execResult, err := evmTx.Apply()
+
+	ctx.Logger.Detail("execResult print state start")
+	stateDB.PrintState()
+	ctx.Logger.Detail("execResult print state end")
 	if err != nil {
 		ctx.Logger.Detailf("Execution apply VM got err: %s\n", err.Error())
 		tags = append(tags, action.UintTag("tx.status", ethtypes.ReceiptStatusFailed))
@@ -362,20 +366,20 @@ func runOLVM(ctx *action.Context, rawTx action.RawTx, isSimulation bool) (bool, 
 			Value: []byte(execResult.ReturnData),
 		})
 
-		fmt.Println("OLVM tags before", tags)
+		// fmt.Println("OLVM tags before", tags)
 
-		// storing logs to tm events
-		tags, err = rlpLogsToEvents(tags, stateDB.GetTxLogs())
-		if err != nil {
-			return helpers.LogAndReturnFalseWithGas(ctx.Logger, status_codes.ProtocolError{
-				Msg:  err.Error(),
-				Code: status_codes.TxErrUnserializable,
-			}, tags, err, int64(intrinsicGas))
-		}
+		// // storing logs to tm events
+		// tags, err = rlpLogsToEvents(tags, stateDB.GetTxLogs())
+		// if err != nil {
+		// 	return helpers.LogAndReturnFalseWithGas(ctx.Logger, status_codes.ProtocolError{
+		// 		Msg:  err.Error(),
+		// 		Code: status_codes.TxErrUnserializable,
+		// 	}, tags, err, int64(intrinsicGas))
+		// }
 
-		// tags = logTags
+		// // tags = logTags
 
-		fmt.Println("OLVM tags after", tags)
+		// fmt.Println("OLVM tags after", tags)
 
 		if tx.To == nil && len(execResult.ContractAddress.Bytes()) > 0 {
 			ctx.Logger.Detailf("Contract created: %s\n", keys.Address(execResult.ContractAddress.Bytes()))
