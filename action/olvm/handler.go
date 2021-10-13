@@ -325,7 +325,7 @@ func runOLVM(ctx *action.Context, rawTx action.RawTx) (bool, action.Response) {
 		}
 
 		tags = responseLogs(tags, ethtypes.ReceiptStatusSuccessful, nil)
-		if len(execResult.ContractAddress.Bytes()) > 0 {
+		if execResult.ContractAddress != (ethcmn.Address{}) {
 			ctx.Logger.Detailf("Contract created: %s\n", execResult.ContractAddress)
 			tags = append(tags, kv.Pair{
 				Key:   []byte("tx.contract"),
