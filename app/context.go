@@ -219,6 +219,7 @@ func newContext(logWriter io.Writer, cfg config.Server, nodeCtx *node.Context) (
 func (ctx *context) SetBlockStore(blockStore *store.BlockStore) {
 	ctx.blockStore = blockStore
 	ctx.stateDB.SetBlockStore(blockStore)
+	ctx.rewardMaster.RewardCm.Init(blockStore)
 }
 
 func NewProposalMasterStore(chainstate *storage.ChainState) *governance.ProposalMasterStore {
