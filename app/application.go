@@ -3,12 +3,14 @@ package app
 import (
 	"net/url"
 	"os"
+	"sync"
 
 	"github.com/Oneledger/protocol/data/network_delegation"
 
 	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/service"
+	"github.com/tendermint/tendermint/store"
 
 	"github.com/Oneledger/protocol/app/node"
 	"github.com/Oneledger/protocol/config"
@@ -434,17 +436,32 @@ func (app *App) Prepare() error {
 	}
 	app.genesisDoc = genesisDoc
 
-	app.node, err = consensus.NewNode(app.ABCI(), nodecfg)
+	blockStoreChan := make(chan *store.BlockStore)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		app.node, err = consensus.NewNode(app.ABCI(), nodecfg, blockStoreChan)
+	}()
+
+	// Init witness store after genesis witnesses loaded in above NewNode
+	app.Context.witnesses.Init(chain.ETHEREUM, app.Context.node.ValidatorAddress())
+
+	// set up dirty block store when ready to prevent issues during node sync
+	app.logger.Debug("awaiting to set up dirty block store for context, rewards and state db")
+	app.Context.SetBlockStore(<-blockStoreChan)
+
+	app.logger.Debug("waiting node preparation...")
+	wg.Wait()
+	app.logger.Debug("node loaded")
 	if err != nil {
 		app.logger.Error("Failed to create consensus.Node")
 		return errors.Wrap(err, "failed to create new consensus.Node")
 	}
 
-	// Init witness store after genesis witnesses loaded in above NewNode
-	app.Context.witnesses.Init(chain.ETHEREUM, app.Context.node.ValidatorAddress())
-
-	// Init reward cumulative store
-	app.Context.rewardMaster.RewardCm.Init(app.node.BlockStore())
+	// set up loaded block store for context and state db
+	app.logger.Debug("set up loaded block store for context, rewards and state db")
+	app.Context.SetBlockStore(app.node.BlockStore())
 
 	// Initialize internal Services
 	app.Context.internalService = event.NewService(app.Context.node,
@@ -467,9 +484,6 @@ func (app *App) Start() error {
 		app.logger.Error("Failed to start consensus.Node")
 		return errors.Wrap(err, "failed to start new consensus.Node")
 	}
-	// set up block store for context and state db
-	app.logger.Detail("set up block store for context and state db")
-	app.Context.SetBlockStore(app.node.BlockStore())
 	//Start Jobbus
 	_ = app.Context.jobBus.Start(app.Context.JobContext())
 	// Starting Legacy RPC
