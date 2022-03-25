@@ -5,6 +5,8 @@ import (
 	"math/big"
 
 	"github.com/Oneledger/protocol/data/accounts"
+	"github.com/Oneledger/protocol/data/fees"
+	"github.com/Oneledger/protocol/data/keys"
 	rpctypes "github.com/Oneledger/protocol/web3/types"
 	rpcutils "github.com/Oneledger/protocol/web3/utils"
 	"github.com/ethereum/go-ethereum/common"
@@ -37,8 +39,25 @@ func (svc *Service) Accounts() ([]common.Address, error) {
 	return addresses, nil
 }
 
+func (svc *Service) getFeePoolBalance() (*big.Int, error) {
+	feePool := svc.ctx.GetFeePool()
+	coin, err := feePool.Get(keys.Address(fees.POOL_KEY))
+	if err != nil {
+		return big.NewInt(0), err
+	}
+
+	if coin.Amount == nil {
+		return big.NewInt(0), nil
+	}
+
+	return coin.Amount.BigInt(), nil
+}
+
 // GetBalance returns the provided account's balance up to the provided block number.
 func (svc *Service) GetBalance(address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (*hexutil.Big, error) {
+	svc.mu.Lock()
+	defer svc.mu.Unlock()
+
 	height, err := rpctypes.StateAndHeaderByNumberOrHash(svc.GetBlockStore(), blockNrOrHash)
 	if err != nil {
 		svc.logger.Debug("eth_getBalance", "block err", err)
@@ -85,6 +104,17 @@ func (svc *Service) GetBalance(address common.Address, blockNrOrHash rpc.BlockNu
 	} else {
 		balance = acc.Balance()
 	}
+
+	// zero address pool
+	zeroAddress := common.HexToAddress("0x0000000000000000000000000000000000000000")
+	if bytes.Equal(zeroAddress[:], address[:]) {
+		zeroBalance, err := svc.getFeePoolBalance()
+		svc.logger.Debug("eth_getBalance", "getting fee address balance")
+		if err == nil {
+			balance = new(big.Int).Add(balance, zeroBalance)
+		}
+	}
+
 	// involve pending balance
 	total := new(big.Int).Add(balance, pendingBalance)
 	return (*hexutil.Big)(total), nil
