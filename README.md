@@ -61,6 +61,11 @@ If everything is set up properly, you can begin testing the OneLedger Protocol w
 See [Make Targets](#make-targets) to see a list of `make` commands you can run to interact with the OneLedger Protocol.
 
 
+### Become a validator
+
+[Docs](https://docs.oneledger.io/docs/develop/node-deployment/docker-validator-deployment)
+
+
 ## License
 
 The OneLedger Protocol is released under the terms of the Apache 2.0 license. See [LICENSE.md](LICENSE.md) for more details or visit https://www.apache.org/licenses/LICENSE-2.0.html.
