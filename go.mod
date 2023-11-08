@@ -5,7 +5,7 @@ require (
 	github.com/allegro/bigcache v1.2.1 // indirect
 	github.com/blockcypher/gobcy v1.3.1
 	github.com/btcsuite/btcd v0.20.1-beta
-	github.com/btcsuite/btcutil v0.0.0-20190425235716-9e5f4b9a998d
+	github.com/btcsuite/btcutil v1.0.2
 	github.com/cespare/cp v1.1.1 // indirect
 	github.com/davecgh/go-spew v1.1.1
 	github.com/deckarep/golang-set v1.7.1 // indirect
@@ -26,7 +26,7 @@ require (
 	github.com/syndtr/goleveldb v1.0.1-0.20210305035536-64b5b1c73954
 	github.com/tendermint/go-amino v0.14.1
 	github.com/tendermint/iavl v0.13.3
-	github.com/tendermint/tendermint v0.33.3
+	github.com/tendermint/tendermint v0.33.6
 	github.com/tendermint/tm-db v0.5.1
 	github.com/tyler-smith/go-bip39 v1.0.2 // indirect
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
